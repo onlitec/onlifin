@@ -53,21 +53,14 @@
                         <label for="initial_balance" class="block text-sm font-medium text-gray-700 mb-1">
                             Saldo Inicial
                         </label>
-                        <input type="text" name="initial_balance" id="initial_balance" 
-                            class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value="{{ old('initial_balance', '0,00') }}" 
-                            required
-                            x-data
-                            x-init="IMask($el, {
-                                mask: Number,
-                                scale: 2,
-                                thousandsSeparator: '.',
-                                radix: ',',
-                                normalizeZeros: true,
-                                padFractional: true,
-                                min: 0,
-                                max: 999999999.99
-                            })">
+                        <input type="text" 
+                               name="initial_balance" 
+                               id="initial_balance" 
+                               x-data="moneyMask" 
+                               x-ref="input"
+                               class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                               placeholder="Saldo Inicial"
+                               required>
                     </div>
 
                     <!-- Descrição -->

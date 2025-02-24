@@ -70,17 +70,13 @@
                             </label>
                             <div class="relative" x-data="moneyMask()">
                                 <input type="text" 
-                                    name="amount_display" 
-                                    id="amount" 
-                                    x-ref="input"
-                                    x-init="initMask()"
-                                    class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    value="{{ old('amount') ? 'R$ ' . number_format(old('amount'), 2, ',', '.') : '' }}" 
-                                    placeholder="R$ 0,00">
-                                <input type="hidden" 
                                     name="amount" 
-                                    x-ref="hiddenInput"
-                                    value="{{ old('amount') }}">
+                                    id="amount" 
+                                    x-data="moneyMask" 
+                                    x-ref="input"
+                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="Valor"
+                                    required>
                             </div>
                             @error('amount')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
