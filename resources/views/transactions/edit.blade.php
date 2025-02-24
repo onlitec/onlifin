@@ -61,15 +61,18 @@
                             <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
                                 Valor
                             </label>
-                            <div class="relative" x-data="moneyMask()">
-                                <input type="text" 
-                                    name="amount" 
-                                    id="amount" 
-                                    x-ref="input"
-                                    x-init="initMask()"
-                                    class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    value="{{ old('amount', number_format($transaction->amount / 100, 2, ',', '.')) }}" 
-                                    placeholder="R$ 0,00">
+                            <div class="relative" x-data="moneyInput">
+                                <div class="flex items-center">
+                                    <span class="text-gray-700 mr-2">R$</span>
+                                    <input type="text" 
+                                           name="amount" 
+                                           id="amount" 
+                                           x-model="amount"
+                                           class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                           value="{{ $transaction->amount }}"
+                                           placeholder="0,00"
+                                           required>
+                                </div>
                             </div>
                         </div>
                     </div>

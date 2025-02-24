@@ -42,16 +42,7 @@ class Transaction extends Model
     // Acessor para formatar o valor
     public function getFormattedAmountAttribute()
     {
-        return 'R$ ' . number_format($this->amount / 100, 2, ',', '.');
-    }
-
-    // Mutator para garantir que o valor seja armazenado corretamente
-    public function setAmountAttribute($value)
-    {
-        if (is_string($value)) {
-            $value = (float) str_replace(',', '.', str_replace('.', '', $value));
-        }
-        $this->attributes['amount'] = $value;
+        return number_format($this->amount / 100, 2, ',', '.');
     }
 
     // Adicione estes métodos auxiliares

@@ -16,6 +16,8 @@
     },
     "dependencies": {
         "@alpinejs/mask": "^3.14.8",
-        "alpinejs": "^3.14.8"
+        "alpinejs": "^3.14.8",
+        "imask": "^7.6.1",
+        "v-money": "^0.8.1"
     }
 }

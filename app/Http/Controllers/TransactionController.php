@@ -61,7 +61,6 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
-        // Verifica se o usuário tem permissão para editar esta transação
         if ($transaction->user_id !== auth()->id()) {
             abort(403);
         }
@@ -78,23 +77,24 @@ class TransactionController extends Controller
             abort(403);
         }
 
-        $validated = $request->validate([
-            'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'date' => 'required|date',
+        $validatedData = $request->validate([
             'type' => 'required|in:income,expense',
-            'status' => 'required|in:pending,paid',
+            'date' => 'required|date',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|string',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
+            'status' => 'required|in:pending,paid',
+            'notes' => 'nullable|string',
         ]);
 
-        // Converte o valor para centavos
-        $validated['amount'] = $validated['amount'] * 100;
+        // O valor já vem em centavos do frontend
+        $validatedData['amount'] = (int) $validatedData['amount'];
 
-        $transaction->update($validated);
+        $transaction->update($validatedData);
 
-        return redirect()
-            ->route('dashboard')
+        // Corrigido o redirecionamento para usar a rota correta de transações
+        return redirect('/transactions')
             ->with('success', 'Transação atualizada com sucesso!');
     }
 
