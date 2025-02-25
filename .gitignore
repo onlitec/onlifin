@@ -1,6 +1,7 @@
 /node_modules
 /public/hot
 /public/storage
+/public/build
 /storage/*.key
 /vendor
 .env
@@ -15,3 +16,37 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Arquivos de build e compilação
+/public/build/assets/*
+/public/build/.vite/*
+/public/build/manifest.json
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de log
+*.log
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Arquivos de ambiente local
+.env.local
+.env.*.local
+
+# Arquivos de cache
+.cache/
+.php_cs.cache
+
+# Arquivos de backup
+*.bak
+*.backup
+*~
+
+# Arquivos específicos do projeto
+estrutura_projeto.txt
