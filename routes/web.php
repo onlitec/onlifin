@@ -32,9 +32,20 @@ Route::middleware('guest')->group(function () {
 
 // Rotas protegidas
 Route::middleware(['web', 'auth'])->group(function () {
-    // Dashboard (mantenha apenas esta)
+    // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index']); // Redireciona a antiga URL
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+    
+    // Transactions - Agrupe todas as rotas de transações aqui
+    Route::prefix('transactions')->group(function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('transactions');
+        Route::get('/create', [TransactionController::class, 'create'])->name('transactions.create');
+        Route::post('/', [TransactionController::class, 'store'])->name('transactions.store');
+        Route::get('/{transaction}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
+        Route::put('/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
+        Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
+        Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])->name('transactions.mark-as-paid');
+    });
     
     // Rotas de Despesas
     Route::get('/expenses', \App\Livewire\Expenses\ExpenseList::class)->name('expenses.index');
@@ -42,14 +53,6 @@ Route::middleware(['web', 'auth'])->group(function () {
     // Rotas de Receitas
     Route::get('/incomes', \App\Livewire\Incomes\IncomeList::class)->name('incomes.index');
 
-    // Transactions
-    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions');
-    Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
-    Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
-    Route::get('/transactions/{transaction}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
-    Route::put('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
-    Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
-    
     // Categories
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
     Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
@@ -97,13 +100,3 @@ Route::post('/logout', function () {
     session()->regenerateToken();
     return redirect('/');
 })->middleware('auth')->name('logout');
-
-// Rotas de Transações
-Route::middleware(['auth'])->group(function () {
-    Route::get('/transactions/{transaction}/edit', [TransactionController::class, 'edit'])
-        ->name('transactions.edit');
-    Route::put('/transactions/{transaction}', [TransactionController::class, 'update'])
-        ->name('transactions.update');
-    Route::patch('/transactions/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])
-        ->name('transactions.mark-as-paid');
-});

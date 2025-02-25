@@ -3,110 +3,83 @@
 namespace App\Livewire\Transactions;
 
 use Livewire\Component;
-use App\Models\Account;
-use App\Models\Category;
 use App\Models\Transaction;
+use App\Models\Category;
+use App\Models\Account;
 
 class FormModal extends Component
 {
-    public $type = 'expense';
+    public $value = 0;
     public $description = '';
-    public $amount = '';
     public $date;
-    public $account_id = '';
+    public $type = 'expense';
     public $category_id = '';
-    public $note = '';
-    public $showRepeat = false;
-    public $showNote = false;
-    public $showAttachment = false;
-    public $showTags = false;
+    public $account_id = '';
+    public $observations = '';
+    public $status = 'pending';
 
     protected $rules = [
-        'description' => 'required|min:3',
-        'amount' => 'required|numeric|min:0.01',
+        'value' => 'required|numeric',
+        'description' => 'required|string|max:255',
         'date' => 'required|date',
-        'account_id' => 'required|exists:accounts,id',
+        'type' => 'required|in:income,expense',
         'category_id' => 'required|exists:categories,id',
+        'account_id' => 'required|exists:accounts,id',
+        'observations' => 'nullable|string',
+        'status' => 'required|in:pending,completed',
     ];
 
-    public function mount($type = null)
+    public function mount()
     {
-        if ($type) {
-            $this->type = $type;
-        }
         $this->date = now()->format('Y-m-d');
+        $this->categories = Category::all();
+        $this->accounts = Account::all();
     }
 
-    public function toggleRepeat()
+    public function updatedValue($value)
     {
-        $this->showRepeat = !$this->showRepeat;
+        // Remove formatação e converte para float
+        $value = str_replace(['R$', '.', ','], ['', '', '.'], $value);
+        $this->value = (float) $value;
     }
 
-    public function toggleNote()
+    public function saveTransaction()
     {
-        $this->showNote = !$this->showNote;
-    }
+        $validatedData = $this->validate();
 
-    public function toggleAttachment()
-    {
-        $this->showAttachment = !$this->showAttachment;
-    }
+        try {
+            Transaction::create([
+                'value' => $this->value,
+                'description' => $this->description,
+                'date' => $this->date,
+                'type' => $this->type,
+                'category_id' => $this->category_id,
+                'account_id' => $this->account_id,
+                'observations' => $this->observations,
+                'status' => $this->status,
+                'user_id' => auth()->id(), // Adiciona o user_id
+            ]);
 
-    public function toggleTags()
-    {
-        $this->showTags = !$this->showTags;
-    }
-
-    public function save()
-    {
-        $this->validate();
-
-        Transaction::create([
-            'description' => $this->description,
-            'amount' => $this->amount,
-            'date' => $this->date,
-            'account_id' => $this->account_id,
-            'category_id' => $this->category_id,
-            'type' => $this->type,
-            'note' => $this->note,
-            'user_id' => auth()->id(),
-        ]);
-
-        $this->reset();
-        $this->dispatch('transactionSaved');
-        $this->closeModal();
-    }
-
-    public function closeModal()
-    {
-        $this->dispatch('closeModal');
-    }
-
-    public function updatedAmount($value)
-    {
-        if (!empty($value)) {
-            // Remove R$ e espaços
-            $value = str_replace(['R$', ' '], '', $value);
-            // Substitui pontos por nada e vírgula por ponto
-            $value = str_replace('.', '', $value);
-            $value = str_replace(',', '.', $value);
-            $this->amount = (float) $value;
+            $this->reset(['value', 'description', 'category_id', 'account_id', 'observations']);
+            $this->date = now()->format('Y-m-d');
+            $this->dispatch('transaction-saved');
+            $this->dispatch('closeModal');
+        } catch (\Exception $e) {
+            \Log::error('Erro ao salvar transação: ' . $e->getMessage());
+            session()->flash('error', 'Erro ao salvar a transação.');
         }
+    }
+
+    public function getFormattedValueProperty()
+    {
+        return 'R$ ' . number_format((float) $this->value, 2, ',', '.');
     }
 
     public function render()
     {
-        try {
-            $accounts = Account::where('user_id', auth()->id())->get();
-            $categories = Category::where('type', $this->type)->get();
-        } catch (\Exception $e) {
-            $accounts = collect();
-            $categories = collect();
-        }
-
         return view('livewire.transactions.form-modal', [
-            'accounts' => $accounts,
-            'categories' => $categories
+            'categories' => Category::where('type', $this->type)->get(),
+            'accounts' => Account::where('user_id', auth()->id())->get(),
         ]);
     }
-} 
+}

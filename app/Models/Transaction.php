@@ -15,13 +15,16 @@ class Transaction extends Model
         'amount',
         'category_id',
         'account_id',
-        'user_id',
-        'notes'
+        'notes',
+        'user_id'
     ];
 
     protected $casts = [
-        'date' => 'datetime',
         'amount' => 'integer',
+        'date' => 'date',
+        'category_id' => 'integer',
+        'account_id' => 'integer',
+        'user_id' => 'integer'
     ];
 
     public function category(): BelongsTo
@@ -39,20 +42,28 @@ class Transaction extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Acessor para formatar o valor
-    public function getFormattedAmountAttribute()
+    public function isPending(): bool
     {
-        return number_format($this->amount / 100, 2, ',', '.');
+        return $this->status === 'pending';
     }
 
-    // Adicione estes métodos auxiliares
-    public function isPaid()
+    public function isPaid(): bool
     {
         return $this->status === 'paid';
     }
 
-    public function isPending()
+    public function isIncome(): bool
     {
-        return $this->status === 'pending';
+        return $this->type === 'income';
+    }
+
+    public function isExpense(): bool
+    {
+        return $this->type === 'expense';
+    }
+
+    public function getFormattedAmountAttribute(): string
+    {
+        return 'R$ ' . number_format($this->amount / 100, 2, ',', '.');
     }
 }

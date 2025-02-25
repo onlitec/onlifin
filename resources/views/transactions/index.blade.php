@@ -31,7 +31,9 @@
                                     <td class="table-cell">{{ $transaction->description }}</td>
                                     <td class="table-cell">{{ $transaction->category->name }}</td>
                                     <td class="table-cell">{{ $transaction->account->name }}</td>
-                                    <td class="table-cell">{{ $transaction->formatted_amount }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $transaction->formatted_amount }}
+                                    </td>
                                     <td class="table-cell">
                                         <span class="badge {{ $transaction->type === 'income' ? 'badge-success' : 'badge-danger' }}">
                                             {{ $transaction->type === 'income' ? 'Receita' : 'Despesa' }}

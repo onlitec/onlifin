@@ -15,6 +15,7 @@
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+    <script src="https://unpkg.com/imask@7.6.1/dist/imask.min.js"></script>
 </head>
 <body class="font-sans antialiased bg-gray-50">
     <div class="min-h-screen flex">

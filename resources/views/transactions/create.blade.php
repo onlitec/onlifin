@@ -68,15 +68,32 @@
                             <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
                                 Valor
                             </label>
-                            <div class="relative" x-data="moneyMask()">
-                                <input type="text" 
-                                    name="amount" 
-                                    id="amount" 
-                                    x-data="moneyMask" 
-                                    x-ref="input"
-                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="Valor"
-                                    required>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">R$</span>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    name="amount"
+                                    x-data
+                                    x-init="
+                                        IMask($el, {
+                                            mask: 'num',
+                                            blocks: {
+                                                num: {
+                                                    mask: Number,
+                                                    scale: 2,
+                                                    thousandsSeparator: '.',
+                                                    padFractionalZeros: true,
+                                                    radix: ',',
+                                                    normalizeZeros: true
+                                                }
+                                            }
+                                        });
+                                    "
+                                    class="mt-1 block w-full pl-10 pr-12 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    placeholder="0,00"
+                                >
                             </div>
                             @error('amount')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

@@ -39,9 +39,9 @@ class TransactionController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Converte o valor para centavos
-        $amount = (float) $validated['amount'];
-        $amount = round($amount * 100);
+        // Remove formatação e converte para centavos
+        $amount = str_replace(['R$', '.', ','], ['', '', '.'], $validated['amount']);
+        $amount = round((float) $amount * 100);
 
         $transaction = Transaction::create([
             'type' => $validated['type'],
@@ -61,74 +61,62 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $categories = Category::all();
-        $accounts = Account::all();
+        $categories = Category::where('type', $transaction->type)->get();
+        $accounts = Account::where('active', true)->get();
 
         return view('transactions.edit', compact('transaction', 'categories', 'accounts'));
     }
 
     public function update(Request $request, Transaction $transaction)
     {
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
-        }
-
         $validatedData = $request->validate([
             'type' => 'required|in:income,expense',
+            'status' => 'required|in:pending,paid',
             'date' => 'required|date',
             'description' => 'required|string|max:255',
             'amount' => 'required|string',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
-            'status' => 'required|in:pending,paid',
             'notes' => 'nullable|string',
         ]);
 
-        // O valor já vem em centavos do frontend
-        $validatedData['amount'] = (int) $validatedData['amount'];
+        // Remove formatação e converte para centavos
+        $amount = str_replace(['R$', '.', ','], ['', '', '.'], $validatedData['amount']);
+        $amount = round((float) $amount * 100);
+        $validatedData['amount'] = $amount;
 
         $transaction->update($validatedData);
 
-        // Corrigido o redirecionamento para usar a rota correta de transações
-        return redirect('/transactions')
+        return redirect()->route('transactions')
             ->with('success', 'Transação atualizada com sucesso!');
     }
 
     public function destroy(Transaction $transaction)
     {
-        // Verifica se o usuário tem permissão para excluir esta transação
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
-        }
-
         try {
             $transaction->delete();
             return redirect()
-                ->back()
+                ->route('transactions')
                 ->with('success', 'Transação excluída com sucesso!');
         } catch (\Exception $e) {
             return redirect()
-                ->back()
+                ->route('transactions')
                 ->with('error', 'Erro ao excluir transação: ' . $e->getMessage());
         }
     }
 
     public function markAsPaid(Transaction $transaction)
     {
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
+        try {
+            $transaction->update(['status' => 'paid']);
+
+            $message = $transaction->type === 'income' 
+                ? 'Receita marcada como recebida!' 
+                : 'Despesa marcada como paga!';
+
+            return back()->with('success', $message);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erro ao atualizar o status da transação.');
         }
-
-        $transaction->update(['status' => 'paid']);
-
-        $message = $transaction->type === 'income' 
-            ? 'Receita marcada como recebida!' 
-            : 'Despesa marcada como paga!';
-
-        return back()->with('success', $message);
     }
 } 
