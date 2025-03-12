@@ -63,13 +63,17 @@
                             </label>
                             <div class="relative" x-data="moneyMask()">
                                 <input type="text" 
-                                    name="amount" 
+                                    name="amount_display" 
                                     id="amount" 
                                     x-ref="input"
                                     x-init="initMask()"
                                     class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     value="{{ old('amount', number_format($transaction->amount / 100, 2, ',', '.')) }}" 
                                     placeholder="R$ 0,00">
+                                <input type="hidden" 
+                                    name="amount" 
+                                    x-ref="hiddenInput"
+                                    value="{{ old('amount', $transaction->amount / 100) }}">
                             </div>
                         </div>
                     </div>
@@ -146,6 +150,12 @@ function moneyMask() {
     return {
         initMask() {
             const input = this.$refs.input;
+            const hiddenInput = this.$refs.hiddenInput;
+            
+            // Garantir que o hiddenInput tenha um valor padrão se vazio
+            if (!hiddenInput.value) {
+                hiddenInput.value = "0";
+            }
             
             const mask = IMask(input, {
                 mask: Number,
@@ -155,8 +165,42 @@ function moneyMask() {
                 normalizeZeros: true,
                 padFractional: true,
                 min: 0,
-                max: 999999999.99
+                max: 999999999.99,
+                transform: (value) => {
+                    return value;
+                }
             });
+
+            // Atualiza o valor oculto ao iniciar
+            this.updateHiddenValue(mask);
+
+            mask.on('accept', () => {
+                // Atualiza o valor oculto quando o valor mudar
+                this.updateHiddenValue(mask);
+            });
+            
+            // Adiciona evento blur para garantir que o valor seja atualizado ao sair do campo
+            input.addEventListener('blur', () => {
+                this.updateHiddenValue(mask);
+            });
+        },
+        
+        // Função para atualizar o valor oculto
+        updateHiddenValue(mask) {
+            const hiddenInput = this.$refs.hiddenInput;
+            
+            // Se o campo estiver vazio, use 0 como valor
+            if (!mask.value && mask.value !== 0) {
+                hiddenInput.value = "0";
+            } else {
+                // Remove formatação e converte para formato do backend
+                let value = mask.value.toString().replace(/\./g, '').replace(',', '.');
+                hiddenInput.value = value;
+            }
+            
+            // Log para debug
+            console.log('Valor digitado:', mask.value);
+            console.log('Valor enviado:', hiddenInput.value);
         }
     }
 }

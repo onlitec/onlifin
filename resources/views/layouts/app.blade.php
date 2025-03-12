@@ -13,6 +13,9 @@
     <!-- Icons -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     
+    <!-- IMask para campos de formulário -->
+    <script src="https://unpkg.com/imask"></script>
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     

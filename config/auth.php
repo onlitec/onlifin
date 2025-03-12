@@ -39,10 +39,7 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
-            'remember' => [
-                'name' => 'remember_web',
-                'expire' => 43200, // 30 dias
-            ],
+            'remember' => 43200, // 30 dias
         ],
     ],
 

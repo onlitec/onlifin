@@ -172,6 +172,11 @@ function moneyMask() {
             const input = this.$refs.input;
             const hiddenInput = this.$refs.hiddenInput;
             
+            // Garantir que o hiddenInput tenha um valor padrão se vazio
+            if (!hiddenInput.value) {
+                hiddenInput.value = "0";
+            }
+            
             const mask = IMask(input, {
                 mask: Number,
                 scale: 2,
@@ -187,15 +192,36 @@ function moneyMask() {
                 }
             });
 
-            mask.on('accept', function() {
-                // Remove formatação e converte para formato do backend
-                let value = mask.value.replace(/\./g, '').replace(',', '.');
-                hiddenInput.value = value;
-                
-                // Log para debug
-                console.log('Valor digitado:', mask.value);
-                console.log('Valor enviado:', value);
+            // Atualiza o valor oculto ao iniciar
+            this.updateHiddenValue(mask);
+
+            mask.on('accept', () => {
+                // Atualiza o valor oculto quando o valor mudar
+                this.updateHiddenValue(mask);
             });
+            
+            // Adiciona evento blur para garantir que o valor seja atualizado ao sair do campo
+            input.addEventListener('blur', () => {
+                this.updateHiddenValue(mask);
+            });
+        },
+        
+        // Função para atualizar o valor oculto
+        updateHiddenValue(mask) {
+            const hiddenInput = this.$refs.hiddenInput;
+            
+            // Se o campo estiver vazio, use 0 como valor
+            if (!mask.value && mask.value !== 0) {
+                hiddenInput.value = "0";
+            } else {
+                // Remove formatação e converte para formato do backend
+                let value = mask.value.toString().replace(/\./g, '').replace(',', '.');
+                hiddenInput.value = value;
+            }
+            
+            // Log para debug
+            console.log('Valor digitado:', mask.value);
+            console.log('Valor enviado:', hiddenInput.value);
         }
     }
 }

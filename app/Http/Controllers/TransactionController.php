@@ -33,14 +33,19 @@ class TransactionController extends Controller
             'status' => 'required|in:pending,paid',
             'date' => 'required|date',
             'description' => 'required|string|max:255',
-            'amount' => 'required|string',
+            'amount' => 'required|numeric',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
             'notes' => 'nullable|string',
         ]);
 
+        // Garante que o amount não seja vazio
+        if (empty($validated['amount'])) {
+            $validated['amount'] = 0;
+        }
+
         // Converte o valor para centavos
-        $amount = (float) str_replace(['R$', '.', ','], ['', '', '.'], $validated['amount']);
+        $amount = (float) $validated['amount'];
         $amount = round($amount * 100);
 
         $transaction = Transaction::create([
@@ -51,7 +56,7 @@ class TransactionController extends Controller
             'amount' => $amount,
             'category_id' => $validated['category_id'],
             'account_id' => $validated['account_id'],
-            'notes' => $validated['notes'],
+            'notes' => $validated['notes'] ?? null,
             'user_id' => auth()->id(),
         ]);
 
@@ -87,10 +92,19 @@ class TransactionController extends Controller
             'status' => 'required|in:pending,paid',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
+            'notes' => 'nullable|string',
         ]);
 
+        // Garante que o amount não seja vazio
+        if (empty($validated['amount'])) {
+            $validated['amount'] = 0;
+        }
+
         // Converte o valor para centavos
-        $validated['amount'] = $validated['amount'] * 100;
+        $validated['amount'] = round($validated['amount'] * 100);
+
+        // Garante que notes pode ser null
+        $validated['notes'] = $validated['notes'] ?? null;
 
         $transaction->update($validated);
 
