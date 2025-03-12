@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app">
         <!-- Totais Gerais -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -633,4 +633,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app> 
+</x-app-layout> 

@@ -14,14 +14,30 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SettingsController;
+use App\Livewire\Transactions\Income;
+use App\Livewire\Transactions\Expenses;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+Route::get('/', function () {
+    return view('welcome');
+});
 
 // Rotas públicas
-Route::get('/', function () {
-    return redirect()->route('login');
-})->middleware('guest');
-
-// Rotas de autenticação
 Route::middleware('guest')->group(function () {
+    Route::get('/', function () {
+        return redirect()->route('login');
+    });
+
     Route::get('login', Login::class)->name('login');
     Route::get('register', Register::class)->name('register');
     
@@ -31,63 +47,75 @@ Route::middleware('guest')->group(function () {
 });
 
 // Rotas protegidas
-Route::middleware(['web', 'auth'])->group(function () {
-    // Dashboard (mantenha apenas esta)
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index']); // Redireciona a antiga URL
+    Route::get('/dashboard', [DashboardController::class, 'index']);
     
-    // Rotas de Despesas
-    Route::get('/expenses', \App\Livewire\Expenses\ExpenseList::class)->name('expenses.index');
+    // Perfil do usuário
+    Route::get('/profile', [SettingsController::class, 'profile'])->name('profile.edit');
+    Route::put('/profile', [SettingsController::class, 'updateProfile'])->name('profile.update');
     
-    // Rotas de Receitas
-    Route::get('/incomes', \App\Livewire\Incomes\IncomeList::class)->name('incomes.index');
-
-    // Transactions
-    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions');
-    Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
-    Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
-    Route::get('/transactions/{transaction}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
-    Route::put('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
-    Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
+    // Transações
+    Route::prefix('transactions')->name('transactions.')->group(function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('index');
+        Route::get('/income', Income::class)->name('income');
+        Route::get('/expenses', Expenses::class)->name('expenses');
+        Route::get('/create/{type?}', [TransactionController::class, 'create'])->name('create');
+        Route::post('/', [TransactionController::class, 'store'])->name('store');
+        Route::get('/{transaction}/edit', [TransactionController::class, 'edit'])->name('edit');
+        Route::put('/{transaction}', [TransactionController::class, 'update'])->name('update');
+        Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
+        Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])->name('mark-as-paid');
+    });
     
-    // Categories
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
-    Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    // Categorias
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [CategoryController::class, 'index'])->name('index');
+        Route::get('/create', [CategoryController::class, 'create'])->name('create');
+        Route::post('/', [CategoryController::class, 'store'])->name('store');
+        Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('edit');
+        Route::put('/{category}', [CategoryController::class, 'update'])->name('update');
+        Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
+    });
     
-    // Accounts
-    Route::get('/accounts', [AccountController::class, 'index'])->name('accounts');
-    Route::get('/accounts/create', [AccountController::class, 'create'])->name('accounts.create');
-    Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');
-    Route::get('/accounts/{account}/edit', [AccountController::class, 'edit'])->name('accounts.edit');
-    Route::put('/accounts/{account}', [AccountController::class, 'update'])->name('accounts.update');
-    Route::delete('/accounts/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
+    // Contas
+    Route::prefix('accounts')->name('accounts.')->group(function () {
+        Route::get('/', [AccountController::class, 'index'])->name('index');
+        Route::get('/create', [AccountController::class, 'create'])->name('create');
+        Route::post('/', [AccountController::class, 'store'])->name('store');
+        Route::get('/{account}/edit', [AccountController::class, 'edit'])->name('edit');
+        Route::put('/{account}', [AccountController::class, 'update'])->name('update');
+        Route::delete('/{account}', [AccountController::class, 'destroy'])->name('destroy');
+    });
 
     // Configurações (protegidas por middleware admin)
-    Route::prefix('settings')->name('settings.')->middleware(['web', 'auth', AdminMiddleware::class])->group(function () {
+    Route::prefix('settings')->name('settings.')->middleware(['auth', AdminMiddleware::class])->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
         Route::get('/users', [SettingsController::class, 'users'])->name('users');
+        Route::get('/users/new', [SettingsController::class, 'createUser'])->name('users.new');
+        Route::post('/users/store', [SettingsController::class, 'storeUser'])->name('users.store');
+        Route::get('/users/edit/{user}', [SettingsController::class, 'editUser'])->name('users.edit');
+        Route::put('/users/update/{user}', [SettingsController::class, 'updateUser'])->name('users.update');
+        Route::get('/users/delete/{user}', [SettingsController::class, 'deleteUser'])->name('users.delete');
         Route::get('/roles', [SettingsController::class, 'roles'])->name('roles');
+        Route::get('/roles/new', [SettingsController::class, 'createRole'])->name('roles.new');
+        Route::post('/roles/store', [SettingsController::class, 'storeRole'])->name('roles.store');
+        Route::get('/roles/edit/{role}', [SettingsController::class, 'editRole'])->name('roles.edit');
+        Route::put('/roles/update/{role}', [SettingsController::class, 'updateRole'])->name('roles.update');
+        Route::get('/roles/delete/{role}', [SettingsController::class, 'deleteRole'])->name('roles.delete');
         
-        // Rotas de Relatórios
+        // Relatórios
         Route::get('/reports', [SettingsController::class, 'reports'])->name('reports');
         Route::post('/reports/transactions', [SettingsController::class, 'generateTransactionsReport'])->name('reports.transactions');
         
-        // Rotas de Backup
+        // Backup
         Route::get('/backup', [SettingsController::class, 'backup'])->name('backup');
         Route::post('/backup', [SettingsController::class, 'createBackup'])->name('backup.create');
         Route::get('/backup/{filename}', [SettingsController::class, 'downloadBackup'])->name('backup.download');
         Route::delete('/backup/{filename}', [SettingsController::class, 'deleteBackup'])->name('backup.delete');
         Route::post('/backup/restore', [SettingsController::class, 'restoreBackup'])->name('backup.restore');
     });
-
-    // Rota de teste para o middleware admin
-    Route::get('/test-admin', function () {
-        return 'Se você vê isso, você é admin!';
-    })->middleware(AdminMiddleware::class);
 });
 
 // Rota de logout
@@ -97,13 +125,3 @@ Route::post('/logout', function () {
     session()->regenerateToken();
     return redirect('/');
 })->middleware('auth')->name('logout');
-
-// Rotas de Transações
-Route::middleware(['auth'])->group(function () {
-    Route::get('/transactions/{transaction}/edit', [TransactionController::class, 'edit'])
-        ->name('transactions.edit');
-    Route::put('/transactions/{transaction}', [TransactionController::class, 'update'])
-        ->name('transactions.update');
-    Route::patch('/transactions/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])
-        ->name('transactions.mark-as-paid');
-});

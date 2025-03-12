@@ -14,9 +14,12 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
 use ZipArchive;
+use Livewire\WithPagination;
 
 class SettingsController extends Controller
 {
+    use WithPagination;
+
     public function index()
     {
         return view('settings.index');
@@ -24,14 +27,142 @@ class SettingsController extends Controller
 
     public function users()
     {
-        $users = User::with('roles')->get();
+        $users = User::with('roles')->paginate(10);
         return view('settings.users.index', compact('users'));
+    }
+
+    public function createUser()
+    {
+        $roles = Role::all();
+        return view('settings.users.create', compact('roles'));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|min:3',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:8|confirmed',
+            'roles' => 'array',
+            'is_active' => 'boolean'
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+            'is_active' => $request->has('is_active')
+        ]);
+
+        if ($request->has('roles')) {
+            $user->roles()->sync($request->roles);
+        }
+
+        return redirect()->route('settings.users')->with('message', 'Usuário criado com sucesso!');
+    }
+
+    public function editUser(User $user)
+    {
+        $roles = Role::all();
+        $userRoles = $user->roles->pluck('id')->toArray();
+        return view('settings.users.edit', compact('user', 'roles', 'userRoles'));
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $request->validate([
+            'name' => 'required|min:3',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'roles' => 'array',
+            'is_active' => 'boolean'
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'is_active' => $request->has('is_active')
+        ]);
+
+        if ($request->has('password') && !empty($request->password)) {
+            $request->validate([
+                'password' => 'min:8|confirmed'
+            ]);
+            $user->password = bcrypt($request->password);
+            $user->save();
+        }
+
+        $user->roles()->sync($request->roles ?? []);
+
+        return redirect()->route('settings.users')->with('message', 'Usuário atualizado com sucesso!');
+    }
+
+    public function deleteUser(User $user)
+    {
+        $user->delete();
+        return redirect()->route('settings.users')->with('message', 'Usuário excluído com sucesso!');
     }
 
     public function roles()
     {
         $roles = Role::with('permissions')->get();
         return view('settings.roles.index', compact('roles'));
+    }
+
+    public function createRole()
+    {
+        $permissions = Permission::all();
+        return view('settings.roles.create', compact('permissions'));
+    }
+
+    public function storeRole(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|min:3|unique:roles,name',
+            'description' => 'nullable|string',
+            'permissions' => 'array'
+        ]);
+
+        $role = Role::create([
+            'name' => $request->name,
+            'description' => $request->description
+        ]);
+
+        if ($request->has('permissions')) {
+            $role->permissions()->sync($request->permissions);
+        }
+
+        return redirect()->route('settings.roles')->with('message', 'Perfil criado com sucesso!');
+    }
+
+    public function editRole(Role $role)
+    {
+        $permissions = Permission::all();
+        $rolePermissions = $role->permissions->pluck('id')->toArray();
+        return view('settings.roles.edit', compact('role', 'permissions', 'rolePermissions'));
+    }
+
+    public function updateRole(Request $request, Role $role)
+    {
+        $request->validate([
+            'name' => 'required|min:3|unique:roles,name,' . $role->id,
+            'description' => 'nullable|string',
+            'permissions' => 'array'
+        ]);
+
+        $role->update([
+            'name' => $request->name,
+            'description' => $request->description
+        ]);
+
+        $role->permissions()->sync($request->permissions ?? []);
+
+        return redirect()->route('settings.roles')->with('message', 'Perfil atualizado com sucesso!');
+    }
+
+    public function deleteRole(Role $role)
+    {
+        $role->delete();
+        return redirect()->route('settings.roles')->with('message', 'Perfil excluído com sucesso!');
     }
 
     public function permissions()
@@ -43,6 +174,37 @@ class SettingsController extends Controller
     public function reports()
     {
         return view('settings.reports.index');
+    }
+
+    public function profile()
+    {
+        $user = auth()->user();
+        return view('settings.profile.edit', compact('user'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+        
+        $request->validate([
+            'name' => 'required|min:3',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        if ($request->has('password') && !empty($request->password)) {
+            $request->validate([
+                'password' => 'min:8|confirmed'
+            ]);
+            $user->password = bcrypt($request->password);
+            $user->save();
+        }
+
+        return redirect()->route('profile.edit')->with('message', 'Perfil atualizado com sucesso!');
     }
 
     public function backup()

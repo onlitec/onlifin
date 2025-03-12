@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app">
         <div class="mb-6">
             <h1 class="text-2xl font-bold text-gray-900">Configurações</h1>
@@ -87,4 +87,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app> 
+</x-app-layout> 

@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app">
         <div class="mb-6 flex items-center justify-between">
             <h1>Transações</h1>
@@ -95,4 +95,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app> 
+</x-app-layout> 

@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app">
         <div class="mb-6 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-900">Gerenciamento de Backup</h1>
@@ -167,7 +167,7 @@
             </div>
         </div>
     </div>
-</x-layouts.app>
+</x-app-layout>
 
 <!-- Adicione no final do arquivo -->
 <div id="backupDetailsModal" class="modal hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">

@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app max-w-4xl mx-auto">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
@@ -6,7 +6,7 @@
                 <h1 class="text-2xl font-bold text-gray-900">Nova Transação</h1>
                 <p class="mt-1 text-sm text-gray-600">Preencha os dados para registrar uma nova transação</p>
             </div>
-            <a href="{{ route('transactions') }}" class="btn btn-secondary">
+            <a href="{{ route('transactions.index') }}" class="btn btn-secondary">
                 <i class="ri-arrow-left-line mr-2"></i>
                 Voltar
             </a>
@@ -152,7 +152,7 @@
 
                 <!-- Botões -->
                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3 rounded-b-xl">
-                    <a href="{{ route('transactions') }}" class="btn btn-secondary">
+                    <a href="{{ route('transactions.index') }}" class="btn btn-secondary">
                         Cancelar
                     </a>
                     <button type="submit" class="btn btn-primary">
@@ -163,7 +163,7 @@
             </form>
         </div>
     </div>
-</x-layouts.app>
+</x-app-layout>
 
 <script>
 function moneyMask() {

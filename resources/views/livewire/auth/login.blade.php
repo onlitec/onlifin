@@ -42,11 +42,22 @@
 
         <!-- Remember me -->
         <div class="flex items-center justify-between mb-4">
-            <label class="flex items-center">
-                <input type="checkbox" wire:model="remember" class="form-checkbox">
-                <span class="ml-2 text-sm">Lembrar-me</span>
+            <label class="flex items-center cursor-pointer">
+                <input 
+                    type="checkbox" 
+                    wire:model="remember" 
+                    class="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out border-gray-300 rounded" 
+                    id="remember"
+                >
+                <span class="ml-2 text-sm text-gray-600">Lembrar-me</span>
             </label>
         </div>
+
+        @if(config('app.debug'))
+            <div class="mt-2 text-xs text-gray-500">
+                Remember status: {{ $remember ? 'true' : 'false' }}
+            </div>
+        @endif
 
         <!-- Botão Login -->
         <button type="submit" class="auth-button">
@@ -60,15 +71,4 @@
             </a>
         </div>
     </form>
-
-    @if(config('app.debug'))
-        <div class="mt-4 p-4 bg-gray-100 rounded text-sm">
-            <p>Debug Info:</p>
-            <pre>{{ json_encode([
-                'email' => $email,
-                'password_length' => strlen($password),
-                'remember' => $remember
-            ], JSON_PRETTY_PRINT) }}</pre>
-        </div>
-    @endif
 </div>

@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app">
         <!-- Cabeçalho do Dashboard -->
         <div class="mb-6">
@@ -78,7 +78,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-gray-900">Últimas Transações</h2>
-                <a href="{{ route('transactions') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                <a href="{{ route('transactions.index') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                     Ver todas
                     <i class="ri-arrow-right-line ml-1"></i>
                 </a>
@@ -121,4 +121,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app>
+</x-app-layout>

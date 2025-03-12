@@ -40,7 +40,7 @@ class TransactionController extends Controller
         ]);
 
         // Converte o valor para centavos
-        $amount = (float) $validated['amount'];
+        $amount = (float) str_replace(['R$', '.', ','], ['', '', '.'], $validated['amount']);
         $amount = round($amount * 100);
 
         $transaction = Transaction::create([
@@ -55,7 +55,8 @@ class TransactionController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        return redirect()->route('transactions')
+        $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
+        return redirect()->route($redirectRoute)
             ->with('success', 'Transação criada com sucesso!');
     }
 
@@ -66,8 +67,8 @@ class TransactionController extends Controller
             abort(403);
         }
 
-        $categories = Category::all();
-        $accounts = Account::all();
+        $categories = Category::where('type', $transaction->type)->get();
+        $accounts = Account::where('active', true)->get();
 
         return view('transactions.edit', compact('transaction', 'categories', 'accounts'));
     }
@@ -93,8 +94,8 @@ class TransactionController extends Controller
 
         $transaction->update($validated);
 
-        return redirect()
-            ->route('dashboard')
+        $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
+        return redirect()->route($redirectRoute)
             ->with('success', 'Transação atualizada com sucesso!');
     }
 
@@ -130,5 +131,15 @@ class TransactionController extends Controller
             : 'Despesa marcada como paga!';
 
         return back()->with('success', $message);
+    }
+
+    public function showIncome()
+    {
+        return view('transactions.income');
+    }
+
+    public function showExpenses()
+    {
+        return view('transactions.expenses');
     }
 } 
