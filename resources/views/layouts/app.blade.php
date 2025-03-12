@@ -134,6 +134,11 @@
                                 <i class="ri-bank-line mr-2"></i>
                                 Contas
                             </a>
+
+                            <a href="{{ route('settings.index') }}" class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                                <i class="ri-settings-3-line mr-2"></i>
+                                Configurações
+                            </a>
                         </div>
                     </div>
 
@@ -194,6 +199,10 @@
                     <a href="{{ route('accounts.index') }}" class="mobile-nav-link {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                         <i class="ri-bank-line mr-2"></i>
                         Contas
+                    </a>
+                    <a href="{{ route('settings.index') }}" class="mobile-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                        <i class="ri-settings-3-line mr-2"></i>
+                        Configurações
                     </a>
                     <a href="{{ route('profile.edit') }}" class="mobile-nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
                         <i class="ri-user-line mr-2"></i>
