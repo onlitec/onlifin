@@ -69,6 +69,16 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])->name('mark-as-paid');
     });
     
+    // Importação de extratos bancários
+    Route::prefix('statements')->name('statements.')->group(function () {
+        Route::get('/import', [App\Http\Controllers\StatementImportController::class, 'index'])->name('import');
+        Route::post('/upload', [App\Http\Controllers\StatementImportController::class, 'upload'])->name('upload');
+        Route::get('/mapping', [App\Http\Controllers\StatementImportController::class, 'showMapping'])->name('mapping');
+        Route::post('/save', [App\Http\Controllers\StatementImportController::class, 'saveTransactions'])->name('save');
+        Route::get('/config', [App\Http\Controllers\StatementImportController::class, 'showConfig'])->name('config');
+        Route::post('/config', [App\Http\Controllers\StatementImportController::class, 'saveConfig'])->name('save-config');
+    });
+    
     // Categorias
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index');
@@ -115,6 +125,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/backup/{filename}', [SettingsController::class, 'downloadBackup'])->name('backup.download');
         Route::delete('/backup/{filename}', [SettingsController::class, 'deleteBackup'])->name('backup.delete');
         Route::post('/backup/restore', [SettingsController::class, 'restoreBackup'])->name('backup.restore');
+        
+        // Configuração de IA para análise de extratos
+        Route::get('/ai-config', [App\Http\Controllers\StatementImportController::class, 'showConfig'])->name('ai-config');
+        Route::post('/ai-config', [App\Http\Controllers\StatementImportController::class, 'saveConfig'])->name('ai-config.save');
     });
 });
 

@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'ai_statement_analyzer' => [
+        'api_key' => env('AI_STATEMENT_API_KEY'),
+        'api_url' => env('AI_STATEMENT_API_URL', 'https://api.exemplo.com/analyze-statement'),
+    ],
+
 ];

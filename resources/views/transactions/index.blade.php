@@ -2,10 +2,16 @@
     <div class="container-app">
         <div class="mb-6 flex items-center justify-between">
             <h1>Transações</h1>
-            <a href="{{ route('transactions.create') }}" class="btn btn-primary">
-                <i class="ri-add-line mr-2"></i>
-                Nova Transação
-            </a>
+            <div class="flex gap-2">
+                <a href="{{ route('statements.import') }}" class="btn btn-secondary">
+                    <i class="ri-file-upload-line mr-2"></i>
+                    Importar Extrato
+                </a>
+                <a href="{{ route('transactions.create') }}" class="btn btn-primary">
+                    <i class="ri-add-line mr-2"></i>
+                    Nova Transação
+                </a>
+            </div>
         </div>
 
         <div class="card">
