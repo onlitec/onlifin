@@ -29,6 +29,21 @@ class Login extends Component
             'remember' => $this->remember
         ]);
 
+        // Verificar se o usuário existe
+        $user = User::where('email', $this->email)->first();
+        
+        if (!$user) {
+            Log::warning('Usuário não encontrado', ['email' => $this->email]);
+            $this->addError('email', 'Usuário não encontrado no sistema.');
+            return;
+        }
+        
+        Log::info('Usuário encontrado', [
+            'user_id' => $user->id,
+            'is_admin' => $user->is_admin,
+            'email' => $user->email
+        ]);
+
         try {
             if (Auth::attempt([
                 'email' => $this->email,
@@ -41,19 +56,22 @@ class Login extends Component
                 Log::info('Login bem-sucedido', [
                     'user_id' => Auth::id(),
                     'remember' => $this->remember,
-                    'remember_token' => Auth::user()->getRememberToken()
+                    'remember_token' => Auth::user()->getRememberToken(),
+                    'is_admin' => Auth::user()->is_admin
                 ]);
                 
                 return redirect()->intended('/dashboard');
+            } else {
+                Log::warning('Falha na autenticação - senha incorreta', ['email' => $this->email]);
+                $this->addError('password', 'A senha fornecida está incorreta.');
             }
         } catch (\Exception $e) {
             Log::error('Erro no login', [
                 'error' => $e->getMessage(),
                 'remember' => $this->remember
             ]);
+            $this->addError('email', 'Erro no processo de login: ' . $e->getMessage());
         }
-
-        $this->addError('email', 'As credenciais fornecidas estão incorretas.');
     }
 
     public function render()

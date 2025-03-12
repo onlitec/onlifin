@@ -23,6 +23,13 @@ class SettingsController extends Controller
     public function index()
     {
         $isAdmin = auth()->user()->is_admin ?? false;
+        \Illuminate\Support\Facades\Log::info('Acessando configurações', [
+            'user_id' => auth()->id(),
+            'is_admin' => $isAdmin,
+            'email' => auth()->user()->email,
+            'request_path' => request()->path(),
+            'request_url' => request()->url()
+        ]);
         return view('settings.index', compact('isAdmin'));
     }
 
@@ -180,7 +187,7 @@ class SettingsController extends Controller
     public function profile()
     {
         $user = auth()->user();
-        return view('settings.profile.edit', compact('user'));
+        return view('profile.edit', compact('user'));
     }
 
     public function updateProfile(Request $request)
@@ -188,24 +195,24 @@ class SettingsController extends Controller
         $user = auth()->user();
         
         $request->validate([
-            'name' => 'required|min:3',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$user->id,
         ]);
-
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
-
-        if ($request->has('password') && !empty($request->password)) {
+        
+        $user->name = $request->name;
+        $user->email = $request->email;
+        
+        if ($request->filled('password')) {
             $request->validate([
-                'password' => 'min:8|confirmed'
+                'password' => 'string|min:8|confirmed',
             ]);
+            
             $user->password = bcrypt($request->password);
-            $user->save();
         }
-
-        return redirect()->route('profile.edit')->with('message', 'Perfil atualizado com sucesso!');
+        
+        $user->save();
+        
+        return redirect()->route('profile.edit')->with('status', 'Perfil atualizado com sucesso!');
     }
 
     public function backup()

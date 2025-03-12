@@ -16,6 +16,8 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SettingsController;
 use App\Livewire\Transactions\Income;
 use App\Livewire\Transactions\Expenses;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReplicateSettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,8 +55,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     
     // Perfil do usuário
-    Route::get('/profile', [SettingsController::class, 'profile'])->name('profile.edit');
-    Route::put('/profile', [SettingsController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {
@@ -131,6 +133,11 @@ Route::middleware(['auth'])->group(function () {
         // Configuração de IA para análise de extratos
         Route::get('/ai-config', [App\Http\Controllers\StatementImportController::class, 'showConfig'])->name('ai-config');
         Route::post('/ai-config', [App\Http\Controllers\StatementImportController::class, 'saveConfig'])->name('ai-config.save');
+        
+        // Rotas do Replicate
+        Route::get('/replicate', [ReplicateSettingController::class, 'index'])->name('replicate.index');
+        Route::post('/replicate', [ReplicateSettingController::class, 'store'])->name('replicate.store');
+        Route::post('/replicate/test', [ReplicateSettingController::class, 'test'])->name('replicate.test');
     });
 });
 
