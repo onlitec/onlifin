@@ -99,9 +99,11 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{account}', [AccountController::class, 'destroy'])->name('destroy');
     });
 
+    // Configurações - página principal acessível a todos os usuários
+    Route::get('/settings', [SettingsController::class, 'index'])->middleware(['auth'])->name('settings.index');
+    
     // Configurações (protegidas por middleware admin)
     Route::prefix('settings')->name('settings.')->middleware(['auth', AdminMiddleware::class])->group(function () {
-        Route::get('/', [SettingsController::class, 'index'])->name('index');
         Route::get('/users', [SettingsController::class, 'users'])->name('users');
         Route::get('/users/new', [SettingsController::class, 'createUser'])->name('users.new');
         Route::post('/users/store', [SettingsController::class, 'storeUser'])->name('users.store');

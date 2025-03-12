@@ -22,7 +22,8 @@ class SettingsController extends Controller
 
     public function index()
     {
-        return view('settings.index');
+        $isAdmin = auth()->user()->is_admin ?? false;
+        return view('settings.index', compact('isAdmin'));
     }
 
     public function users()

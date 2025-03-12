@@ -6,7 +6,28 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Usuários -->
+            <!-- Perfil do Usuário - Visível para todos -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <i class="ri-user-line text-2xl text-blue-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Meu Perfil</h3>
+                                <p class="text-sm text-gray-500">Editar informações pessoais</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('profile.edit') }}" class="btn btn-secondary w-full">
+                        Editar Perfil
+                    </a>
+                </div>
+            </div>
+
+            @if($isAdmin)
+            <!-- Usuários - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -26,7 +47,7 @@
                 </div>
             </div>
 
-            <!-- Perfis -->
+            <!-- Perfis - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -46,7 +67,7 @@
                 </div>
             </div>
 
-            <!-- Relatórios -->
+            <!-- Relatórios - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -66,7 +87,7 @@
                 </div>
             </div>
 
-            <!-- Backup -->
+            <!-- Backup - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -85,6 +106,7 @@
                     </a>
                 </div>
             </div>
+            @endif
         </div>
     </div>
 </x-app-layout> 
