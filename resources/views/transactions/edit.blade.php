@@ -26,7 +26,7 @@
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">
                                 Tipo de Transação
                             </label>
-                            <select name="type" id="type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <select name="type" id="type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="updateCategories(this.value)">
                                 <option value="income" {{ $transaction->type === 'income' ? 'selected' : '' }}>Receita</option>
                                 <option value="expense" {{ $transaction->type === 'expense' ? 'selected' : '' }}>Despesa</option>
                             </select>
@@ -203,5 +203,37 @@ function moneyMask() {
             console.log('Valor enviado:', hiddenInput.value);
         }
     }
+}
+
+// Função para atualizar as categorias com base no tipo selecionado
+function updateCategories(type) {
+    // Armazenar o ID da categoria atualmente selecionada, se houver
+    const categorySelect = document.getElementById('category_id');
+    const currentCategoryId = categorySelect.value;
+    
+    // Buscar categorias via AJAX
+    fetch(`/api/categories?type=${type}`)
+        .then(response => response.json())
+        .then(data => {
+            // Limpar categorias existentes
+            categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
+            
+            // Adicionar novas categorias
+            data.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                
+                // Se esta categoria estava selecionada anteriormente, mantê-la selecionada
+                if (category.id == currentCategoryId) {
+                    option.selected = true;
+                }
+                
+                categorySelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar categorias:', error);
+        });
 }
 </script> 

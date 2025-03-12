@@ -18,12 +18,16 @@ class TransactionController extends Controller
         return view('transactions.index', compact('transactions'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $categories = Category::orderBy('name')->get();
+        // Determina o tipo de transação padrão com base no parâmetro da URL
+        $type = $request->type ?? 'expense';
+        
+        // Filtra as categorias pelo tipo (receita ou despesa)
+        $categories = Category::where('type', $type)->orderBy('name')->get();
         $accounts = Account::where('active', true)->orderBy('name')->get();
         
-        return view('transactions.create', compact('categories', 'accounts'));
+        return view('transactions.create', compact('categories', 'accounts', 'type'));
     }
 
     public function store(Request $request)

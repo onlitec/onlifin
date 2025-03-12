@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\Category;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,4 +17,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Categorias por tipo
+Route::get('/categories', function (Request $request) {
+    $type = $request->type ?? 'expense';
+    return Category::where('type', $type)
+        ->orderBy('name')
+        ->get(['id', 'name']);
 }); 

@@ -25,9 +25,9 @@
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">
                                 Tipo de Transação
                             </label>
-                            <select name="type" id="type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="income" {{ old('type') == 'income' ? 'selected' : '' }}>Receita</option>
-                                <option value="expense" {{ old('type') == 'expense' ? 'selected' : '' }}>Despesa</option>
+                            <select name="type" id="type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="updateCategories(this.value)">
+                                <option value="income" {{ old('type', $type ?? '') == 'income' ? 'selected' : '' }}>Receita</option>
+                                <option value="expense" {{ old('type', $type ?? '') == 'expense' ? 'selected' : '' }}>Despesa</option>
                             </select>
                             @error('type')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -225,4 +225,37 @@ function moneyMask() {
         }
     }
 }
+
+// Função para atualizar as categorias com base no tipo selecionado
+function updateCategories(type) {
+    // Buscar categorias via AJAX
+    fetch(`/api/categories?type=${type}`)
+        .then(response => response.json())
+        .then(data => {
+            // Limpar categorias existentes
+            const categorySelect = document.getElementById('category_id');
+            categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
+            
+            // Adicionar novas categorias
+            data.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar categorias:', error);
+        });
+}
+
+// Executar quando a página for carregada para garantir que as categorias corretas sejam exibidas
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('type');
+    if (typeSelect) {
+        // Chamar a função ao carregar a página para garantir que as categorias
+        // correspondam ao tipo selecionado inicialmente
+        updateCategories(typeSelect.value);
+    }
+});
 </script>
