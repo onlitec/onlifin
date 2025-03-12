@@ -27,6 +27,8 @@ class CategoryController extends Controller
             'color' => 'nullable|string|max:7',
         ]);
 
+        $validated['user_id'] = auth()->id();
+
         $category = Category::create($validated);
 
         return redirect()->route('categories.index')

@@ -32,25 +32,33 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
+        // Log do request para debug
+        \Log::info('Request completo:', $request->all());
+
         $validated = $request->validate([
             'type' => 'required|in:income,expense',
             'status' => 'required|in:pending,paid',
             'date' => 'required|date',
             'description' => 'required|string|max:255',
-            'amount' => 'required|numeric',
+            'amount' => 'required',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
             'notes' => 'nullable|string',
         ]);
 
-        // Garante que o amount não seja vazio
-        if (empty($validated['amount'])) {
-            $validated['amount'] = 0;
-        }
+        // Debug: Verificar o valor recebido
+        \Log::info('Valor amount recebido: ' . $validated['amount']);
 
-        // Converte o valor para centavos
-        $amount = (float) $validated['amount'];
+        // Processamento do valor monetário - removendo formatação
+        $amountStr = str_replace(['R$', '.'], '', $validated['amount']);
+        $amountStr = str_replace(',', '.', $amountStr);
+        $amount = (float) $amountStr;
+        
+        // Convertendo para centavos
         $amount = round($amount * 100);
+
+        // Debug: Verificar o valor final
+        \Log::info('Valor amount convertido para centavos: ' . $amount);
 
         $transaction = Transaction::create([
             'type' => $validated['type'],
@@ -88,9 +96,12 @@ class TransactionController extends Controller
             abort(403);
         }
 
+        // Log do request para debug
+        \Log::info('Request completo de update:', $request->all());
+
         $validated = $request->validate([
             'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'required',
             'date' => 'required|date',
             'type' => 'required|in:income,expense',
             'status' => 'required|in:pending,paid',
@@ -99,18 +110,31 @@ class TransactionController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Garante que o amount não seja vazio
-        if (empty($validated['amount'])) {
-            $validated['amount'] = 0;
-        }
+        // Debug: Verificar o valor recebido
+        \Log::info('Valor amount recebido na atualização: ' . $validated['amount']);
 
-        // Converte o valor para centavos
-        $validated['amount'] = round($validated['amount'] * 100);
+        // Processamento do valor monetário - removendo formatação
+        $amountStr = str_replace(['R$', '.'], '', $validated['amount']);
+        $amountStr = str_replace(',', '.', $amountStr);
+        $amount = (float) $amountStr;
+        
+        // Convertendo para centavos
+        $amount = round($amount * 100);
 
-        // Garante que notes pode ser null
-        $validated['notes'] = $validated['notes'] ?? null;
-
-        $transaction->update($validated);
+        // Debug: Verificar o valor final
+        \Log::info('Valor amount convertido para centavos na atualização: ' . $amount);
+        
+        // Atualizar dados da transação
+        $transaction->update([
+            'type' => $validated['type'],
+            'status' => $validated['status'],
+            'date' => $validated['date'],
+            'description' => $validated['description'],
+            'amount' => $amount,
+            'category_id' => $validated['category_id'],
+            'account_id' => $validated['account_id'],
+            'notes' => $validated['notes'] ?? null,
+        ]);
 
         $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
         return redirect()->route($redirectRoute)

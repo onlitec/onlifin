@@ -61,19 +61,14 @@
                             <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
                                 Valor
                             </label>
-                            <div class="relative" x-data="moneyMask()">
+                            <div class="relative">
                                 <input type="text" 
-                                    name="amount_display" 
-                                    id="amount" 
-                                    x-ref="input"
-                                    x-init="initMask()"
-                                    class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    value="{{ old('amount', number_format($transaction->amount / 100, 2, ',', '.')) }}" 
-                                    placeholder="R$ 0,00">
-                                <input type="hidden" 
                                     name="amount" 
-                                    x-ref="hiddenInput"
-                                    value="{{ old('amount', $transaction->amount / 100) }}">
+                                    id="amount" 
+                                    class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('amount', 'R$ ' . number_format($transaction->amount / 100, 2, ',', '.')) }}" 
+                                    placeholder="R$ 0,00"
+                                    inputmode="decimal">
                             </div>
                         </div>
                     </div>
@@ -146,64 +141,34 @@
 </x-app-layout>
 
 <script>
-function moneyMask() {
-    return {
-        initMask() {
-            const input = this.$refs.input;
-            const hiddenInput = this.$refs.hiddenInput;
-            
-            // Garantir que o hiddenInput tenha um valor padrão se vazio
-            if (!hiddenInput.value) {
-                hiddenInput.value = "0";
-            }
-            
-            const mask = IMask(input, {
-                mask: Number,
-                scale: 2,
-                thousandsSeparator: '.',
-                radix: ',',
-                normalizeZeros: true,
-                padFractional: true,
-                min: 0,
-                max: 999999999.99,
-                transform: (value) => {
-                    return value;
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar máscara monetária
+    const amountInput = document.getElementById('amount');
+    if (amountInput) {
+        const mask = IMask(amountInput, {
+            mask: 'R$ num',
+            blocks: {
+                num: {
+                    mask: Number,
+                    scale: 2,
+                    thousandsSeparator: '.',
+                    radix: ',',
+                    normalizeZeros: true,
+                    padFractional: true,
+                    min: 0,
+                    max: 999999999.99
                 }
-            });
-
-            // Atualiza o valor oculto ao iniciar
-            this.updateHiddenValue(mask);
-
-            mask.on('accept', () => {
-                // Atualiza o valor oculto quando o valor mudar
-                this.updateHiddenValue(mask);
-            });
-            
-            // Adiciona evento blur para garantir que o valor seja atualizado ao sair do campo
-            input.addEventListener('blur', () => {
-                this.updateHiddenValue(mask);
-            });
-        },
-        
-        // Função para atualizar o valor oculto
-        updateHiddenValue(mask) {
-            const hiddenInput = this.$refs.hiddenInput;
-            
-            // Se o campo estiver vazio, use 0 como valor
-            if (!mask.value && mask.value !== 0) {
-                hiddenInput.value = "0";
-            } else {
-                // Remove formatação e converte para formato do backend
-                let value = mask.value.toString().replace(/\./g, '').replace(',', '.');
-                hiddenInput.value = value;
             }
-            
-            // Log para debug
-            console.log('Valor digitado:', mask.value);
-            console.log('Valor enviado:', hiddenInput.value);
-        }
+        });
+
+        // Adicionar o prefixo R$ se o campo estiver vazio ao receber foco
+        amountInput.addEventListener('focus', function() {
+            if (!this.value) {
+                mask.value = "0";
+            }
+        });
     }
-}
+});
 
 // Função para atualizar as categorias com base no tipo selecionado
 function updateCategories(type) {
