@@ -14,85 +14,10 @@
     
     <!-- Remix Icons -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-
-    <!-- Tailwind CSS CDN (temporário) -->
-    <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-    
-    <style>
-        /* Estilos básicos */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        /* Menu principal */
-        .main-menu {
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            width: 100%;
-        }
-        
-        .menu-container {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 24px;
-        }
-        
-        .menu-item {
-            display: inline-flex;
-            align-items: center;
-            padding: 8px 12px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #4B5563;
-            white-space: nowrap;
-            transition: color 0.2s;
-        }
-        
-        .menu-item:hover {
-            color: #2563EB;
-        }
-        
-        .menu-item.active {
-            color: #2563EB;
-            font-weight: 600;
-        }
-        
-        /* Menu mobile */
-        .mobile-nav-link {
-            display: block;
-            width: 100%;
-            padding: 12px 16px;
-            font-size: 16px;
-            font-weight: 500;
-            color: #4B5563;
-            transition: all 0.2s;
-            border-radius: 6px;
-        }
-        
-        .mobile-nav-link:hover {
-            color: #1F2937;
-            background-color: #F3F4F6;
-        }
-        
-        .mobile-nav-link.active {
-            color: #2563EB;
-            background-color: #EFF6FF;
-            font-weight: 600;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 767px) {
-            .main-menu {
-                display: none;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="min-h-screen flex flex-col bg-gray-50">

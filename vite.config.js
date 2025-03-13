@@ -20,5 +20,5 @@ export default defineConfig({
             },
         },
     },
-    base: 'http://onlifin.onlitec.com.br/build/',
+    base: '/build/',
 });
