@@ -14,9 +14,28 @@
 
         <!-- Card do Formulário -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-            <form action="{{ route('transactions.update', $transaction->id) }}" method="POST">
+            <!-- Mensagens de sucesso ou erro -->
+            @if (session('success'))
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 mx-6 mt-6 rounded">
+                    <div class="flex items-center">
+                        <i class="ri-check-line text-xl mr-2"></i>
+                        <p>{{ session('success') }}</p>
+                    </div>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 mx-6 mt-6 rounded">
+                    <div class="flex items-center">
+                        <i class="ri-error-warning-line text-xl mr-2"></i>
+                        <p>{{ session('error') }}</p>
+                    </div>
+                </div>
+            @endif
+            
+            <form id="updateTransactionForm" action="{{ url('/transactions/update-form/'.$transaction->id) }}" method="POST" onsubmit="handleFormSubmit(event)">
                 @csrf
-                @method('PUT')
+                <input type="hidden" name="_method" value="PUT">
                 
                 <div class="p-6 space-y-6">
                     <!-- Tipo e Data -->
@@ -288,14 +307,59 @@
                     </div>
                 </div>
 
-                <!-- Botões -->
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3 rounded-b-xl">
-                    <a href="{{ route('dashboard') }}" class="btn btn-secondary">
-                        Cancelar
+                <!-- Ações do Formulário -->
+                <div class="flex items-center justify-end space-x-3 mt-4 px-6 py-3 bg-gray-50 border-t rounded-b-xl">
+                    <!-- Botão para Excluir (em vermelho) -->
+                    <form action="{{ route('transactions.destroy', $transaction->id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir esta transação?');" class="inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="ri-delete-bin-line mr-2"></i>
+                            Excluir
+                        </button>
+                    </form>
+
+                    <!-- Botão para notificação WhatsApp -->
+                    @if(auth()->user()->notifications_whatsapp && auth()->user()->phone)
+                    <a href="{{ url('/transactions/'.$transaction->id.'/send-whatsapp') }}" class="btn btn-whatsapp">
+                        <i class="ri-whatsapp-line mr-2"></i>
+                        Enviar WhatsApp
                     </a>
+                    @else
+                    <div class="relative inline-block" x-data="{ tooltip: false }" @mouseenter="tooltip = true" @mouseleave="tooltip = false">
+                        <button type="button" class="btn btn-whatsapp opacity-50 cursor-not-allowed">
+                            <i class="ri-whatsapp-line mr-2"></i>
+                            Enviar WhatsApp
+                        </button>
+                        <div x-show="tooltip" class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50 bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                            Configure seu telefone e ative as notificações WhatsApp no seu perfil
+                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-solid border-t-gray-800 border-t-4 border-x-transparent border-x-4 border-b-0"></div>
+                        </div>
+                    </div>
+                    @endif
+                    
+                    <!-- Botão para Marcar como Pago (se estiver pendente) -->
+                    @if($transaction->status === 'pending')
+                    <form action="{{ route('transactions.mark-as-paid', $transaction->id) }}" method="POST" class="inline">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="ri-check-double-line mr-2"></i>
+                            Marcar como Pago
+                        </button>
+                    </form>
+                    @endif
+                    
+                    <!-- Botão para Voltar -->
+                    <a href="{{ route('dashboard') }}" class="btn btn-secondary">
+                        <i class="ri-arrow-left-line mr-2"></i>
+                        Voltar
+                    </a>
+                    
+                    <!-- Botão para Salvar Alterações -->
                     <button type="submit" class="btn btn-primary">
                         <i class="ri-save-line mr-2"></i>
-                        Atualizar Transação
+                        Salvar
                     </button>
                 </div>
             </form>
@@ -304,6 +368,79 @@
 </x-app-layout>
 
 <script>
+    // Handler para o envio do formulário
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        
+        console.log('[DEBUG] Formulário enviado');
+        
+        const form = document.getElementById('updateTransactionForm');
+        const formData = new FormData(form);
+        
+        // Log de dados sendo enviados
+        console.log('[DEBUG] URL do formulário:', form.action);
+        console.log('[DEBUG] Método HTTP:', form.method);
+        
+        // Exibir todos os campos do FormData para debug
+        for (let pair of formData.entries()) {
+            console.log('[DEBUG] Campo do formulário:', pair[0], pair[1]);
+        }
+        
+        // Adicionar CSRF token explicitamente se necessário
+        if (!formData.has('_token')) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            formData.append('_token', csrfToken);
+            console.log('[DEBUG] CSRF Token adicionado manualmente');
+        }
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('[DEBUG] Status da resposta:', response.status);
+            console.log('[DEBUG] Headers da resposta:', [...response.headers].map(h => `${h[0]}: ${h[1]}`).join(', '));
+            
+            if (response.ok) {
+                // Tenta processar como JSON mesmo se não for
+                return response.text().then(text => {
+                    console.log('[DEBUG] Resposta em texto:', text);
+                    
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('[ERRO] Resposta não é JSON válido:', e);
+                        return { success: false, message: 'Resposta não é um JSON válido: ' + text.substring(0, 100) };
+                    }
+                });
+            } else {
+                console.error('[ERRO] Resposta com erro HTTP:', response.status);
+                throw new Error('Erro na resposta do servidor: ' + response.status);
+            }
+        })
+        .then(data => {
+            console.log('[DEBUG] Dados da resposta processados:', data);
+            
+            if (data.success) {
+                console.log('[DEBUG] Redirecionando para:', data.redirect);
+                window.location.href = data.redirect || '/dashboard';
+            } else {
+                console.error('[ERRO] Erro na resposta:', data.message);
+                alert(data.message || 'Erro ao atualizar a transação.');
+            }
+        })
+        .catch(error => {
+            console.error('[ERRO] Erro ao enviar formulário ou processar resposta:', error);
+            alert('Erro ao processar a solicitação: ' + error.message);
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Inicializar máscara monetária
         const amountInput = document.getElementById('amount');

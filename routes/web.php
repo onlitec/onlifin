@@ -69,6 +69,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/{transaction}', [TransactionController::class, 'update'])->name('update');
         Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
         Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])->name('mark-as-paid');
+        Route::post('/{transaction}/send-whatsapp', [TransactionController::class, 'sendWhatsAppNotification'])->name('send-whatsapp');
+        Route::get('/{transaction}/send-whatsapp', [TransactionController::class, 'sendWhatsAppNotification'])->name('send-whatsapp-get');
+        Route::post('/update-form/{transaction}', [TransactionController::class, 'update'])->name('update-form');
     });
     
     // Importação de extratos bancários
@@ -138,7 +141,27 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/replicate', [ReplicateSettingController::class, 'index'])->name('replicate.index');
         Route::post('/replicate', [ReplicateSettingController::class, 'store'])->name('replicate.store');
         Route::post('/replicate/test', [ReplicateSettingController::class, 'test'])->name('replicate.test');
+        
+        // Rotas de Notificações
+        Route::get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
+        Route::post('/notifications/email', [SettingsController::class, 'updateEmailSettings'])->name('notifications.updateEmail');
+        Route::post('/notifications/whatsapp', [SettingsController::class, 'updateWhatsappSettings'])->name('notifications.updateWhatsapp');
+        Route::post('/notifications/test-email', [SettingsController::class, 'testEmail'])->name('notifications.testEmail');
+        Route::post('/notifications/test-whatsapp', [SettingsController::class, 'testWhatsapp'])->name('notifications.testWhatsapp');
     });
+
+    // Rotas de Relatórios
+    Route::post('/settings/reports/transactions', [SettingsController::class, 'generateTransactionsReport'])->name('settings.reports.transactions');
+    Route::post('/settings/reports/expenses-by-category', [SettingsController::class, 'expensesByCategory'])->name('settings.reports.expenses-by-category');
+    Route::post('/settings/reports/income-by-category', [SettingsController::class, 'incomeByCategory'])->name('settings.reports.income-by-category');
+    Route::post('/settings/reports/cash-flow', [SettingsController::class, 'cashFlow'])->name('settings.reports.cash-flow');
+    Route::post('/settings/reports/comparative', [SettingsController::class, 'comparativeAnalysis'])->name('settings.reports.comparative');
+    Route::post('/settings/reports/projection', [SettingsController::class, 'financialProjection'])->name('settings.reports.projection');
+
+    // Rotas de Relatórios Específicos
+    Route::post('/settings/reports/by-account', [SettingsController::class, 'transactionsByAccount'])->name('settings.reports.by-account');
+    Route::post('/settings/reports/pending', [SettingsController::class, 'pendingPayments'])->name('settings.reports.pending');
+    Route::post('/settings/reports/profitability', [SettingsController::class, 'profitability'])->name('settings.reports.profitability');
 });
 
 // Rota de logout

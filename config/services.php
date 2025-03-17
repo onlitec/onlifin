@@ -40,4 +40,13 @@ return [
         'api_url' => env('AI_STATEMENT_API_URL', 'https://api.exemplo.com/analyze-statement'),
     ],
 
+    'twilio' => [
+        'enabled' => env('TWILIO_ENABLED', false),
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        'from' => env('TWILIO_FROM'), // Número de WhatsApp (com código do país +5511999999999)
+        'whatsapp' => env('TWILIO_WHATSAPP', true), // Usar formato de WhatsApp no Twilio (true = whatsapp:+55...)
+        'sandbox' => env('TWILIO_SANDBOX', true), // Usar ambiente de sandbox do WhatsApp
+    ],
+
 ];

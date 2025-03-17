@@ -67,6 +67,26 @@
                 </div>
             </div>
 
+            <!-- Notificações - Apenas para Administradores -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                                <i class="ri-notification-3-line text-2xl text-red-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Notificações</h3>
+                                <p class="text-sm text-gray-500">Configurar e-mail e WhatsApp</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.notifications') }}" class="btn btn-secondary w-full">
+                        Configurar Notificações
+                    </a>
+                </div>
+            </div>
+
             <!-- Relatórios - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">

@@ -35,6 +35,46 @@
                         @enderror
                     </div>
 
+                    <div class="mb-4">
+                        <label for="phone" class="block text-sm font-medium text-gray-700">Telefone (WhatsApp)</label>
+                        <input type="text" name="phone" id="phone" value="{{ old('phone', $user->phone) }}" 
+                            placeholder="Digite com código do país, ex: 5511999999999"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <p class="mt-1 text-xs text-gray-500">Formato internacional com código do país, sem espaços ou caracteres especiais</p>
+                        @error('phone')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="mt-6 border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-medium text-gray-900">Preferências de Notificação</h3>
+                        <p class="text-sm text-gray-600">Escolha como deseja receber notificações do sistema</p>
+                    </div>
+
+                    <div class="mt-4 mb-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="notifications_email" id="notifications_email" value="1" 
+                                {{ old('notifications_email', $user->notifications_email) ? 'checked' : '' }}
+                                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="notifications_email" class="ml-2 block text-sm text-gray-700">
+                                Receber notificações por E-mail
+                            </label>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 ml-6">Notificações sobre transações e lembretes de vencimentos por e-mail</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="notifications_whatsapp" id="notifications_whatsapp" value="1" 
+                                {{ old('notifications_whatsapp', $user->notifications_whatsapp) ? 'checked' : '' }}
+                                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <label for="notifications_whatsapp" class="ml-2 block text-sm text-gray-700">
+                                Receber notificações por WhatsApp
+                            </label>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 ml-6">Notificações sobre transações com vencimento no dia, atrasadas, e com vencimento futuro (1, 3 e 7 dias) via WhatsApp</p>
+                    </div>
+
                     <div class="mt-8 border-t border-gray-200 pt-6">
                         <h3 class="text-lg font-medium text-gray-900">Atualizar Senha</h3>
                         <p class="text-sm text-gray-600">Deixe em branco se não quiser alterar sua senha</p>
