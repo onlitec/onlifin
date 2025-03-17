@@ -69,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/{transaction}', [TransactionController::class, 'update'])->name('update');
         Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
         Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])->name('mark-as-paid');
+        Route::post('/{transaction}/create-next', [TransactionController::class, 'createNext'])->name('create-next');
     });
     
     // Importação de extratos bancários

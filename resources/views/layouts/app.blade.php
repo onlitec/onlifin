@@ -83,6 +83,89 @@
             font-weight: 600;
         }
         
+        /* Botões */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition-property: color, background-color, border-color;
+            transition-duration: 150ms;
+        }
+        
+        .btn-primary {
+            background-color: #2563EB;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1D4ED8;
+        }
+        
+        .btn-secondary {
+            background-color: #E5E7EB;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #D1D5DB;
+        }
+        
+        /* Cards */
+        .card {
+            border-radius: 0.75rem;
+            border: 1px solid #E5E7EB;
+            background-color: white;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        /* Tabelas */
+        .table {
+            min-width: 100%;
+        }
+        
+        .table-header {
+            background-color: #F9FAFB;
+        }
+        
+        .table-header-cell {
+            padding: 0.75rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+        }
+        
+        .table-body {
+            background-color: white;
+        }
+        
+        .table-row:hover {
+            background-color: #F9FAFB;
+        }
+        
+        .table-cell {
+            padding: 1rem 1.5rem;
+            white-space: nowrap;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            color: #6B7280;
+        }
+        
         /* Responsividade */
         @media (max-width: 767px) {
             .main-menu {

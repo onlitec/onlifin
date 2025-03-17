@@ -10,6 +10,10 @@ class Transaction extends Model
     protected $fillable = [
         'type',
         'status',
+        'recurrence_type',
+        'installment_number',
+        'total_installments',
+        'next_date',
         'date',
         'description',
         'amount',
@@ -21,7 +25,10 @@ class Transaction extends Model
 
     protected $casts = [
         'date' => 'datetime',
+        'next_date' => 'datetime',
         'amount' => 'integer',
+        'installment_number' => 'integer',
+        'total_installments' => 'integer',
     ];
 
     public function category(): BelongsTo
@@ -63,5 +70,30 @@ class Transaction extends Model
     public function isPending()
     {
         return $this->status === 'pending';
+    }
+    
+    // Métodos para recorrência
+    public function hasRecurrence()
+    {
+        return $this->recurrence_type && $this->recurrence_type !== 'none';
+    }
+    
+    public function isFixedRecurrence()
+    {
+        return $this->recurrence_type === 'fixed';
+    }
+    
+    public function isInstallmentRecurrence()
+    {
+        return $this->recurrence_type === 'installment';
+    }
+    
+    public function getFormattedInstallmentAttribute()
+    {
+        if (!$this->isInstallmentRecurrence() || !$this->installment_number || !$this->total_installments) {
+            return '';
+        }
+        
+        return "Parcela {$this->installment_number}/{$this->total_installments}";
     }
 }
