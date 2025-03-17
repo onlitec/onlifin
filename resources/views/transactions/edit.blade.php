@@ -123,6 +123,169 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Tipo de Transação -->
+                    <div class="form-group">
+                        <label for="transaction_type" class="block text-sm font-medium text-gray-700 mb-1">
+                            Tipo de Pagamento
+                        </label>
+                        <select name="transaction_type" id="transaction_type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="updateTransactionTypeFields(this.value)" {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                            <option value="regular" {{ $transaction->transaction_type === 'regular' ? 'selected' : '' }}>Normal</option>
+                            <option value="installment" {{ $transaction->transaction_type === 'installment' ? 'selected' : '' }}>Parcelado</option>
+                            <option value="fixed" {{ $transaction->transaction_type === 'fixed' ? 'selected' : '' }}>Fixo</option>
+                            <option value="recurring" {{ $transaction->transaction_type === 'recurring' ? 'selected' : '' }}>Recorrente</option>
+                        </select>
+                        @if($transaction->parent_transaction_id)
+                            <p class="mt-1 text-sm text-yellow-600">Este é um lançamento vinculado e não pode ter seu tipo alterado.</p>
+                            <input type="hidden" name="transaction_type" value="{{ $transaction->transaction_type }}">
+                        @endif
+                        @error('transaction_type')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Campos específicos para cada tipo de transação -->
+                    <div id="installmentFields" class="form-group {{ $transaction->transaction_type !== 'installment' ? 'hidden' : '' }}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="installments" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Número de Parcelas
+                                </label>
+                                <input type="number" name="installments" id="installments" 
+                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('installments', $transaction->installments ?? 1) }}" min="1" 
+                                    {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                                @if($transaction->parent_transaction_id)
+                                    <input type="hidden" name="installments" value="{{ $transaction->installments }}">
+                                @endif
+                                <p class="mt-1 text-sm text-gray-500">
+                                    @if($transaction->installments && $transaction->current_installment)
+                                        Parcela atual: {{ $transaction->current_installment }}/{{ $transaction->installments }}
+                                    @endif
+                                </p>
+                                @error('installments')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="installment_frequency" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Frequência
+                                </label>
+                                <select name="installment_frequency" id="installment_frequency" 
+                                    class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                                    <option value="monthly" {{ $transaction->installment_frequency === 'monthly' ? 'selected' : '' }}>Mensal</option>
+                                    <option value="biweekly" {{ $transaction->installment_frequency === 'biweekly' ? 'selected' : '' }}>Quinzenal</option>
+                                    <option value="weekly" {{ $transaction->installment_frequency === 'weekly' ? 'selected' : '' }}>Semanal</option>
+                                </select>
+                                @if($transaction->parent_transaction_id)
+                                    <input type="hidden" name="installment_frequency" value="{{ $transaction->installment_frequency ?? 'monthly' }}">
+                                @endif
+                                @error('installment_frequency')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="fixedFields" class="form-group {{ $transaction->transaction_type !== 'fixed' ? 'hidden' : '' }}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="fixed_installments" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Repetir por (vezes)
+                                </label>
+                                <input type="number" name="fixed_installments" id="fixed_installments" 
+                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('fixed_installments', $transaction->installments ?? 1) }}" min="1"
+                                    {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                                @if($transaction->parent_transaction_id)
+                                    <input type="hidden" name="fixed_installments" value="{{ $transaction->installments }}">
+                                @endif
+                                <p class="mt-1 text-sm text-gray-500">
+                                    @if($transaction->installments && $transaction->current_installment)
+                                        Repetição atual: {{ $transaction->current_installment }}/{{ $transaction->installments }}
+                                    @endif
+                                </p>
+                                @error('fixed_installments')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="fixed_frequency" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Frequência
+                                </label>
+                                <select name="fixed_frequency" id="fixed_frequency" 
+                                    class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                                    <option value="monthly" {{ $transaction->fixed_frequency === 'monthly' ? 'selected' : '' }}>Mensal</option>
+                                    <option value="biweekly" {{ $transaction->fixed_frequency === 'biweekly' ? 'selected' : '' }}>Quinzenal</option>
+                                    <option value="weekly" {{ $transaction->fixed_frequency === 'weekly' ? 'selected' : '' }}>Semanal</option>
+                                    <option value="yearly" {{ $transaction->fixed_frequency === 'yearly' ? 'selected' : '' }}>Anual</option>
+                                </select>
+                                @if($transaction->parent_transaction_id)
+                                    <input type="hidden" name="fixed_frequency" value="{{ $transaction->fixed_frequency ?? 'monthly' }}">
+                                @endif
+                                @error('fixed_frequency')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="fixed_end_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                Data Final (opcional)
+                            </label>
+                            <input type="date" name="fixed_end_date" id="fixed_end_date" 
+                                class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                value="{{ old('fixed_end_date', $transaction->fixed_end_date ? $transaction->fixed_end_date->format('Y-m-d') : '') }}"
+                                {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                            @if($transaction->parent_transaction_id)
+                                <input type="hidden" name="fixed_end_date" value="{{ $transaction->fixed_end_date ? $transaction->fixed_end_date->format('Y-m-d') : '' }}">
+                            @endif
+                            <p class="mt-1 text-sm text-gray-500">Se não for especificada, será calculada com base no número de repetições</p>
+                            @error('fixed_end_date')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div id="recurringFields" class="form-group {{ $transaction->transaction_type !== 'recurring' ? 'hidden' : '' }}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="recurrence_frequency" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Frequência
+                                </label>
+                                <select name="recurrence_frequency" id="recurrence_frequency" 
+                                    class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                                    <option value="daily" {{ $transaction->recurrence_frequency === 'daily' ? 'selected' : '' }}>Diária</option>
+                                    <option value="weekly" {{ $transaction->recurrence_frequency === 'weekly' ? 'selected' : '' }}>Semanal</option>
+                                    <option value="monthly" {{ $transaction->recurrence_frequency === 'monthly' ? 'selected' : '' }}>Mensal</option>
+                                    <option value="yearly" {{ $transaction->recurrence_frequency === 'yearly' ? 'selected' : '' }}>Anual</option>
+                                </select>
+                                @if($transaction->parent_transaction_id)
+                                    <input type="hidden" name="recurrence_frequency" value="{{ $transaction->recurrence_frequency }}">
+                                @endif
+                                @error('recurrence_frequency')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="recurrence_end_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Data Final de Recorrência
+                                </label>
+                                <input type="date" name="recurrence_end_date" id="recurrence_end_date" 
+                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('recurrence_end_date', $transaction->recurrence_end_date ? $transaction->recurrence_end_date->format('Y-m-d') : date('Y-m-d', strtotime('+1 year'))) }}"
+                                    {{ $transaction->parent_transaction_id ? 'disabled' : '' }}>
+                                @if($transaction->parent_transaction_id)
+                                    <input type="hidden" name="recurrence_end_date" value="{{ $transaction->recurrence_end_date ? $transaction->recurrence_end_date->format('Y-m-d') : '' }}">
+                                @endif
+                                @error('recurrence_end_date')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Botões -->
@@ -141,64 +304,89 @@
 </x-app-layout>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar máscara monetária
-    const amountInput = document.getElementById('amount');
-    if (amountInput) {
-        const mask = IMask(amountInput, {
-            mask: 'R$ num',
-            blocks: {
-                num: {
-                    mask: Number,
-                    scale: 2,
-                    thousandsSeparator: '.',
-                    radix: ',',
-                    normalizeZeros: true,
-                    padFractional: true,
-                    min: 0,
-                    max: 999999999.99
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar máscara monetária
+        const amountInput = document.getElementById('amount');
+        if (amountInput) {
+            const mask = IMask(amountInput, {
+                mask: 'R$ num',
+                blocks: {
+                    num: {
+                        mask: Number,
+                        scale: 2,
+                        thousandsSeparator: '.',
+                        radix: ',',
+                        normalizeZeros: true,
+                        padFractional: true,
+                        min: 0,
+                        max: 999999999.99
+                    }
                 }
-            }
-        });
-
-        // Adicionar o prefixo R$ se o campo estiver vazio ao receber foco
-        amountInput.addEventListener('focus', function() {
-            if (!this.value) {
-                mask.value = "0";
-            }
-        });
-    }
-});
-
-// Função para atualizar as categorias com base no tipo selecionado
-function updateCategories(type) {
-    // Armazenar o ID da categoria atualmente selecionada, se houver
-    const categorySelect = document.getElementById('category_id');
-    const currentCategoryId = categorySelect.value;
-    
-    // Buscar categorias via AJAX
-    fetch(`/api/categories?type=${type}`)
-        .then(response => response.json())
-        .then(data => {
-            // Limpar categorias existentes
-            categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
-            
-            // Adicionar novas categorias
-            data.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = category.name;
-                
-                // Se esta categoria estava selecionada anteriormente, mantê-la selecionada
-                if (category.id == currentCategoryId) {
-                    option.selected = true;
-                }
-                
-                categorySelect.appendChild(option);
             });
-        })
-        .catch(error => {
-            console.error('Erro ao carregar categorias:', error);
+            
+            // Adicionar o prefixo R$ se o campo estiver vazio ao receber foco
+            amountInput.addEventListener('focus', function() {
+                if (!this.value) {
+                    mask.value = "0";
+                }
+            });
+        }
+        
+        // Inicializar os campos de tipo de transação
+        updateTransactionTypeFields(document.getElementById('transaction_type').value);
+        
+        // Adicionar evento de alteração para o tipo de transação
+        document.getElementById('transaction_type').addEventListener('change', function() {
+            updateTransactionTypeFields(this.value);
         });
-}
+    });
+    
+    // Função para atualizar as categorias com base no tipo selecionado
+    function updateCategories(type) {
+        // Armazenar o ID da categoria atualmente selecionada, se houver
+        const categorySelect = document.getElementById('category_id');
+        const currentCategoryId = categorySelect.value;
+        
+        // Buscar categorias via AJAX
+        fetch(`/api/categories?type=${type}`)
+            .then(response => response.json())
+            .then(data => {
+                // Limpar categorias existentes
+                categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
+                
+                // Adicionar novas categorias
+                data.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    
+                    // Se esta categoria estava selecionada anteriormente, mantê-la selecionada
+                    if (category.id == currentCategoryId) {
+                        option.selected = true;
+                    }
+                    
+                    categorySelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Erro ao carregar categorias:', error);
+            });
+    }
+    
+    // Função para atualizar os campos específicos de acordo com o tipo de transação selecionado
+    function updateTransactionTypeFields(type) {
+        // Esconder todos os campos específicos
+        document.getElementById('installmentFields').style.display = 'none';
+        document.getElementById('fixedFields').style.display = 'none';
+        document.getElementById('recurringFields').style.display = 'none';
+        
+        // Mostrar os campos específicos do tipo selecionado
+        if (type === 'installment') {
+            document.getElementById('installmentFields').style.display = 'block';
+        } else if (type === 'fixed') {
+            document.getElementById('fixedFields').style.display = 'block';
+        } else if (type === 'recurring') {
+            document.getElementById('recurringFields').style.display = 'block';
+        }
+    }
 </script> 

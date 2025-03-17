@@ -4,15 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Transaction extends Model
 {
     protected $fillable = [
         'type',
         'status',
+        'transaction_type',
         'date',
         'description',
         'amount',
+        'installments',
+        'current_installment',
+        'installment_frequency',
+        'fixed_frequency',
+        'fixed_end_date',
+        'recurrence_frequency',
+        'recurrence_end_date',
+        'parent_transaction_id',
         'category_id',
         'account_id',
         'user_id',
@@ -22,6 +32,8 @@ class Transaction extends Model
     protected $casts = [
         'date' => 'datetime',
         'amount' => 'integer',
+        'recurrence_end_date' => 'datetime',
+        'fixed_end_date' => 'datetime',
     ];
 
     public function category(): BelongsTo
@@ -39,6 +51,16 @@ class Transaction extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function childTransactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'parent_transaction_id', 'id');
+    }
+
+    public function parentTransaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class, 'parent_transaction_id');
+    }
+
     // Acessor para formatar o valor
     public function getFormattedAmountAttribute()
     {
@@ -54,7 +76,7 @@ class Transaction extends Model
         $this->attributes['amount'] = $value;
     }
 
-    // Adicione estes métodos auxiliares
+    // Métodos auxiliares para status
     public function isPaid()
     {
         return $this->status === 'paid';
@@ -63,5 +85,35 @@ class Transaction extends Model
     public function isPending()
     {
         return $this->status === 'pending';
+    }
+
+    // Métodos auxiliares para tipo de transação
+    public function isRegular()
+    {
+        return $this->transaction_type === 'regular';
+    }
+
+    public function isRecurring()
+    {
+        return $this->transaction_type === 'recurring';
+    }
+
+    public function isFixed()
+    {
+        return $this->transaction_type === 'fixed';
+    }
+
+    public function isInstallment()
+    {
+        return $this->transaction_type === 'installment';
+    }
+
+    // Obter descrição formatada para parcelas
+    public function getInstallmentDescriptionAttribute()
+    {
+        if ($this->isInstallment() && $this->installments && $this->current_installment) {
+            return "{$this->current_installment}/{$this->installments}";
+        }
+        return null;
     }
 }

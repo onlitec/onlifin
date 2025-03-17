@@ -122,6 +122,124 @@
                         </div>
                     </div>
 
+                    <!-- Tipo de Transação -->
+                    <div class="form-group">
+                        <label for="transaction_type" class="block text-sm font-medium text-gray-700 mb-1">
+                            Tipo de Pagamento
+                        </label>
+                        <select name="transaction_type" id="transaction_type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="updateTransactionTypeFields(this.value)">
+                            <option value="regular" {{ old('transaction_type') == 'regular' ? 'selected' : '' }}>Normal</option>
+                            <option value="installment" {{ old('transaction_type') == 'installment' ? 'selected' : '' }}>Parcelado</option>
+                            <option value="fixed" {{ old('transaction_type') == 'fixed' ? 'selected' : '' }}>Fixo</option>
+                            <option value="recurring" {{ old('transaction_type') == 'recurring' ? 'selected' : '' }}>Recorrente</option>
+                        </select>
+                        @error('transaction_type')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Campos específicos para cada tipo de transação -->
+                    <div id="installmentFields" class="form-group hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="installments" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Número de Parcelas
+                                </label>
+                                <input type="number" name="installments" id="installments" 
+                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('installments', 1) }}" min="1">
+                                @error('installments')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="installment_frequency" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Frequência
+                                </label>
+                                <select name="installment_frequency" id="installment_frequency" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="monthly" {{ old('installment_frequency') == 'monthly' ? 'selected' : '' }}>Mensal</option>
+                                    <option value="biweekly" {{ old('installment_frequency') == 'biweekly' ? 'selected' : '' }}>Quinzenal</option>
+                                    <option value="weekly" {{ old('installment_frequency') == 'weekly' ? 'selected' : '' }}>Semanal</option>
+                                </select>
+                                @error('installment_frequency')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="fixedFields" class="form-group hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="fixed_installments" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Repetir por (vezes)
+                                </label>
+                                <input type="number" name="fixed_installments" id="fixed_installments" 
+                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('fixed_installments', 1) }}" min="1">
+                                @error('fixed_installments')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="fixed_frequency" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Frequência
+                                </label>
+                                <select name="fixed_frequency" id="fixed_frequency" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="monthly" {{ old('fixed_frequency') == 'monthly' ? 'selected' : '' }}>Mensal</option>
+                                    <option value="biweekly" {{ old('fixed_frequency') == 'biweekly' ? 'selected' : '' }}>Quinzenal</option>
+                                    <option value="weekly" {{ old('fixed_frequency') == 'weekly' ? 'selected' : '' }}>Semanal</option>
+                                    <option value="yearly" {{ old('fixed_frequency') == 'yearly' ? 'selected' : '' }}>Anual</option>
+                                </select>
+                                @error('fixed_frequency')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="fixed_end_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                Data Final (opcional)
+                            </label>
+                            <input type="date" name="fixed_end_date" id="fixed_end_date" 
+                                class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                value="{{ old('fixed_end_date') }}">
+                            <p class="mt-1 text-sm text-gray-500">Se não for especificada, será calculada com base no número de repetições</p>
+                            @error('fixed_end_date')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div id="recurringFields" class="form-group hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="recurrence_frequency" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Frequência
+                                </label>
+                                <select name="recurrence_frequency" id="recurrence_frequency" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="daily" {{ old('recurrence_frequency') == 'daily' ? 'selected' : '' }}>Diária</option>
+                                    <option value="weekly" {{ old('recurrence_frequency') == 'weekly' ? 'selected' : '' }}>Semanal</option>
+                                    <option value="monthly" {{ old('recurrence_frequency') == 'monthly' ? 'selected' : '' }}>Mensal</option>
+                                    <option value="yearly" {{ old('recurrence_frequency') == 'yearly' ? 'selected' : '' }}>Anual</option>
+                                </select>
+                                @error('recurrence_frequency')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="recurrence_end_date" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Data Final de Recorrência
+                                </label>
+                                <input type="date" name="recurrence_end_date" id="recurrence_end_date" 
+                                    class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('recurrence_end_date', date('Y-m-d', strtotime('+1 year'))) }}">
+                                @error('recurrence_end_date')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Observações -->
                     <div class="form-group">
                         <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">
@@ -196,6 +314,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // correspondam ao tipo selecionado inicialmente
         updateCategories(typeSelect.value);
     }
+
+    // Inicializar os campos quando a página carregar
+    const transactionTypeSelect = document.getElementById('transaction_type');
+    if (transactionTypeSelect) {
+        updateTransactionTypeFields(transactionTypeSelect.value);
+    }
 });
 
 // Função para atualizar as categorias com base no tipo selecionado
@@ -219,5 +343,22 @@ function updateCategories(type) {
         .catch(error => {
             console.error('Erro ao carregar categorias:', error);
         });
+}
+
+// Função para mostrar/ocultar campos específicos de acordo com o tipo de transação
+function updateTransactionTypeFields(type) {
+    // Esconder todos os campos específicos
+    document.getElementById('installmentFields').classList.add('hidden');
+    document.getElementById('fixedFields').classList.add('hidden');
+    document.getElementById('recurringFields').classList.add('hidden');
+    
+    // Mostrar os campos relevantes para o tipo selecionado
+    if (type === 'installment') {
+        document.getElementById('installmentFields').classList.remove('hidden');
+    } else if (type === 'fixed') {
+        document.getElementById('fixedFields').classList.remove('hidden');
+    } else if (type === 'recurring') {
+        document.getElementById('recurringFields').classList.remove('hidden');
+    }
 }
 </script>

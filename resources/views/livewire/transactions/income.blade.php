@@ -62,65 +62,118 @@
 
         <!-- Tabela de Transações -->
         <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="text-left bg-gray-50">
-                        <th wire:click="sortBy('date')" class="px-4 py-3 cursor-pointer">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" wire:click="sortBy('date')">
                             Data
-                            @if ($sortField === 'date')
-                                <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
+                            @if($sortField === 'date')
+                                <span class="ml-1">
+                                    @if($sortDirection === 'asc') ↑ @else ↓ @endif
+                                </span>
                             @endif
                         </th>
-                        <th wire:click="sortBy('description')" class="px-4 py-3 cursor-pointer">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" wire:click="sortBy('description')">
                             Descrição
-                            @if ($sortField === 'description')
-                                <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
+                            @if($sortField === 'description')
+                                <span class="ml-1">
+                                    @if($sortDirection === 'asc') ↑ @else ↓ @endif
+                                </span>
                             @endif
                         </th>
-                        <th class="px-4 py-3">Categoria</th>
-                        <th class="px-4 py-3">Conta</th>
-                        <th wire:click="sortBy('amount')" class="px-4 py-3 cursor-pointer">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Categoria
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Conta
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" wire:click="sortBy('amount')">
                             Valor
-                            @if ($sortField === 'amount')
-                                <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
+                            @if($sortField === 'amount')
+                                <span class="ml-1">
+                                    @if($sortDirection === 'asc') ↑ @else ↓ @endif
+                                </span>
                             @endif
                         </th>
-                        <th class="px-4 py-3">Ações</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Tipo
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Ações
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse ($transactions as $transaction)
-                        <tr class="border-t border-gray-100">
-                            <td class="px-4 py-3">
-                                {{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($transactions as $transaction)
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $transaction->date->format('d/m/Y') }}
                             </td>
-                            <td class="px-4 py-3">{{ $transaction->description }}</td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {{ $transaction->category->name }}
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <div class="font-medium">{{ $transaction->description }}</div>
+                                @if($transaction->transaction_type !== 'regular')
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        @if($transaction->isInstallment())
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                Parcela {{ $transaction->current_installment }}/{{ $transaction->installments }}
+                                            </span>
+                                        @elseif($transaction->isFixed())
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                Fixa {{ $transaction->current_installment }}/{{ $transaction->installments }}
+                                            </span>
+                                        @elseif($transaction->isRecurring())
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                Recorrente ({{ ucfirst($transaction->recurrence_frequency) }})
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $transaction->category->name ?? 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $transaction->account->name ?? 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                                {{ $transaction->formatted_amount }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                    Receita
                                 </span>
                             </td>
-                            <td class="px-4 py-3">{{ $transaction->account->name }}</td>
-                            <td class="px-4 py-3 font-medium text-green-600">
-                                R$ {{ number_format($transaction->amount / 100, 2, ',', '.') }}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                @if($transaction->isPaid())
+                                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                        Recebido
+                                    </span>
+                                @else
+                                    <button 
+                                        wire:click="markAsPaid({{ $transaction->id }})" 
+                                        class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer">
+                                        A Receber
+                                    </button>
+                                @endif
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center space-x-2">
-                                    <a href="{{ route('transactions.edit', $transaction) }}" 
-                                       class="text-gray-600 hover:text-gray-900">
-                                        <i class="ri-pencil-line"></i>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                <div class="flex items-center justify-end space-x-2">
+                                    <a href="{{ route('transactions.edit', $transaction->id) }}" class="text-blue-600 hover:text-blue-900">
+                                        <i class="ri-pencil-line text-lg"></i>
                                     </a>
-                                    <button wire:click="confirmDelete({{ $transaction->id }})" 
-                                            class="text-red-600 hover:text-red-900">
-                                        <i class="ri-delete-bin-line"></i>
+                                    <button wire:click="confirmDelete({{ $transaction->id }})" class="text-red-600 hover:text-red-900">
+                                        <i class="ri-delete-bin-line text-lg"></i>
                                     </button>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                Nenhuma receita encontrada neste período.
+                            <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                Nenhuma receita encontrada para o período.
                             </td>
                         </tr>
                     @endforelse

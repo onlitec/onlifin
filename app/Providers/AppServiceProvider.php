@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Observers\UserObserver;
 use App\Livewire\Transactions\Income;
 use App\Livewire\Transactions\Expenses;
+use App\Livewire\Transactions\FormModal;
 use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
@@ -35,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         // Registrando componentes Livewire
         Livewire::component('transactions.income', Income::class);
         Livewire::component('transactions.expenses', Expenses::class);
+        Livewire::component('transactions.form-modal', FormModal::class);
         Livewire::component('settings.users.list-users', \App\Livewire\Settings\Users\ListUsers::class);
         Livewire::component('settings.users.create', \App\Livewire\Settings\Users\Create::class);
         Livewire::component('settings.users.edit', \App\Livewire\Settings\Users\Edit::class);

@@ -85,31 +85,24 @@ class Income extends Component
 
     public function deleteTransaction()
     {
-        try {
-            DB::beginTransaction();
-
-            $transaction = Transaction::findOrFail($this->transactionToDelete);
-            
-            if ($transaction->user_id !== auth()->id()) {
-                throw new \Exception('Você não tem permissão para excluir esta transação.');
-            }
-
-            if ($transaction->type !== 'income') {
-                throw new \Exception('Esta transação não é uma receita.');
-            }
-
+        $transaction = Transaction::find($this->transactionToDelete);
+        
+        if ($transaction && $transaction->user_id === auth()->id()) {
             $transaction->delete();
-            
-            DB::commit();
-
-            LivewireAlert::success('Sucesso!', 'Receita excluída com sucesso!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            LivewireAlert::error('Erro!', 'Erro ao excluir receita: ' . $e->getMessage());
+            $this->confirmingDeletion = false;
+            $this->transactionToDelete = null;
+            session()->flash('message', 'Receita excluída com sucesso.');
         }
+    }
 
-        $this->confirmingDeletion = false;
-        $this->transactionToDelete = null;
+    public function markAsPaid($transactionId)
+    {
+        $transaction = Transaction::find($transactionId);
+        if ($transaction && $transaction->type === 'income') {
+            $transaction->status = 'paid';
+            $transaction->save();
+            session()->flash('message', 'Receita marcada como recebida com sucesso!');
+        }
     }
 
     public function render()
