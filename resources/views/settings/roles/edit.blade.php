@@ -31,18 +31,109 @@
 
                 <div class="mb-4">
                     <label class="form-label">Permissões</label>
-                    <div class="space-y-2">
-                        @foreach($permissions as $permission)
-                            <div class="flex items-center">
-                                <input type="checkbox" name="permissions[]" id="permission{{ $permission->id }}" value="{{ $permission->id }}" class="form-checkbox" {{ in_array($permission->id, old('permissions', $rolePermissions)) ? 'checked' : '' }}>
-                                <label for="permission{{ $permission->id }}" class="ml-2">{{ $permission->name }}</label>
-                            </div>
+                    
+                    <!-- Agrupamento de permissões por categoria -->
+                    @php
+                        $groupedPermissions = $permissions->groupBy('category');
+                        $categories = [
+                            'users' => 'Usuários',
+                            'roles' => 'Perfis',
+                            'transactions' => 'Transações',
+                            'categories' => 'Categorias',
+                            'accounts' => 'Contas',
+                            'reports' => 'Relatórios',
+                            'system' => 'Sistema'
+                        ];
+                    @endphp
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                        @foreach($categories as $categoryKey => $categoryName)
+                            @if($groupedPermissions->has($categoryKey) && $groupedPermissions[$categoryKey]->count() > 0)
+                                <div class="border rounded-md p-4">
+                                    <h3 class="font-medium text-lg mb-2">{{ $categoryName }}</h3>
+                                    
+                                    <div class="space-y-2">
+                                        @foreach($groupedPermissions[$categoryKey] as $permission)
+                                            <div class="flex items-center">
+                                                <input type="checkbox" 
+                                                    name="permissions[]" 
+                                                    id="permission{{ $permission->id }}" 
+                                                    value="{{ $permission->id }}" 
+                                                    class="form-checkbox h-5 w-5 text-blue-600" 
+                                                    {{ in_array($permission->id, old('permissions', $rolePermissions)) ? 'checked' : '' }}>
+                                                <label for="permission{{ $permission->id }}" class="ml-2 text-sm">
+                                                    <span class="font-medium">{{ $permission->name }}</span>
+                                                    @if($permission->description)
+                                                        <p class="text-xs text-gray-500">{{ $permission->description }}</p>
+                                                    @endif
+                                                </label>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         @endforeach
+
+                        <!-- Outras permissões não categorizadas -->
+                        @php
+                            $otherPermissions = $permissions->filter(function($permission) use ($categories) {
+                                return !array_key_exists($permission->category, $categories);
+                            });
+                        @endphp
+
+                        @if($otherPermissions->count() > 0)
+                            <div class="border rounded-md p-4">
+                                <h3 class="font-medium text-lg mb-2">Outras Permissões</h3>
+                                
+                                <div class="space-y-2">
+                                    @foreach($otherPermissions as $permission)
+                                        <div class="flex items-center">
+                                            <input type="checkbox" 
+                                                name="permissions[]" 
+                                                id="permission{{ $permission->id }}" 
+                                                value="{{ $permission->id }}" 
+                                                class="form-checkbox h-5 w-5 text-blue-600" 
+                                                {{ in_array($permission->id, old('permissions', $rolePermissions)) ? 'checked' : '' }}>
+                                            <label for="permission{{ $permission->id }}" class="ml-2 text-sm">
+                                                <span class="font-medium">{{ $permission->name }}</span>
+                                                @if($permission->description)
+                                                    <p class="text-xs text-gray-500">{{ $permission->description }}</p>
+                                                @endif
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
+
+                    <!-- Opções de seleção rápida -->
+                    <div class="mt-4 flex space-x-4">
+                        <button type="button" id="select-all" class="text-blue-600 hover:text-blue-800 text-sm">Selecionar Todos</button>
+                        <button type="button" id="unselect-all" class="text-blue-600 hover:text-blue-800 text-sm">Desmarcar Todos</button>
+                    </div>
+                    
                     @error('permissions')
                         <div class="text-red-500 mt-1">{{ $message }}</div>
                     @enderror
                 </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Botões de seleção rápida
+                        document.getElementById('select-all').addEventListener('click', function() {
+                            document.querySelectorAll('input[name="permissions[]"]').forEach(checkbox => {
+                                checkbox.checked = true;
+                            });
+                        });
+                        
+                        document.getElementById('unselect-all').addEventListener('click', function() {
+                            document.querySelectorAll('input[name="permissions[]"]').forEach(checkbox => {
+                                checkbox.checked = false;
+                            });
+                        });
+                    });
+                </script>
 
                 <div class="flex justify-end">
                     <button type="submit" class="btn btn-primary">

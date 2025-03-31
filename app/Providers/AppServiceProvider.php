@@ -39,10 +39,17 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('settings.users.create', \App\Livewire\Settings\Users\Create::class);
         Livewire::component('settings.users.edit', \App\Livewire\Settings\Users\Edit::class);
         Livewire::component('settings.users.delete', \App\Livewire\Settings\Users\Delete::class);
+        Livewire::component('settings.users.create-user', \App\Livewire\Settings\Users\CreateUser::class);
+        Livewire::component('settings.users.edit-user', \App\Livewire\Settings\Users\EditUser::class);
         Livewire::component('settings.roles.list-roles', \App\Livewire\Settings\Roles\ListRoles::class);
         Livewire::component('settings.roles.create', \App\Livewire\Settings\Roles\Create::class);
         Livewire::component('settings.roles.edit', \App\Livewire\Settings\Roles\Edit::class);
         Livewire::component('settings.roles.delete', \App\Livewire\Settings\Roles\Delete::class);
         Livewire::component('wire-elements-modal', \LivewireUI\Modal\Modal::class);
+
+        // Registrar canal de WhatsApp
+        \Illuminate\Support\Facades\Notification::extend('whatsapp', function ($app) {
+            return new \App\Channels\WhatsAppChannel();
+        });
     }
 }

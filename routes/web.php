@@ -18,6 +18,7 @@ use App\Livewire\Transactions\Income;
 use App\Livewire\Transactions\Expenses;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReplicateSettingController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -138,6 +139,28 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/replicate', [ReplicateSettingController::class, 'index'])->name('replicate.index');
         Route::post('/replicate', [ReplicateSettingController::class, 'store'])->name('replicate.store');
         Route::post('/replicate/test', [ReplicateSettingController::class, 'test'])->name('replicate.test');
+
+        // Permissões
+        Route::get('/permissions', [SettingsController::class, 'permissions'])->name('permissions');
+        Route::get('/permissions/new', [SettingsController::class, 'createPermission'])->name('permissions.new');
+        Route::post('/permissions/store', [SettingsController::class, 'storePermission'])->name('permissions.store');
+        Route::get('/permissions/edit/{permission}', [SettingsController::class, 'editPermission'])->name('permissions.edit');
+        Route::put('/permissions/update/{permission}', [SettingsController::class, 'updatePermission'])->name('permissions.update');
+        Route::get('/permissions/delete/{permission}', [SettingsController::class, 'deletePermission'])->name('permissions.delete');
+    });
+
+    // Rotas para o novo controlador de usuários (com middleware de permissão)
+    Route::middleware('permission:users.view_all')->get('/users', [App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+    Route::middleware('permission:users.create')->get('/users/create', [App\Http\Controllers\UserController::class, 'create'])->name('users.create');
+    Route::middleware('permission:users.create')->post('/users', [App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+
+    // Rotas de notificações
+    Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index'])->name('index');
+        Route::get('/settings', [App\Http\Controllers\NotificationController::class, 'settings'])->name('settings');
+        Route::post('/settings', [App\Http\Controllers\NotificationController::class, 'updateSettings'])->name('update-settings');
+        Route::post('/test', [App\Http\Controllers\NotificationController::class, 'testNotification'])->name('test');
+        Route::post('/send-to-all', [App\Http\Controllers\NotificationController::class, 'sendToAll'])->name('send-to-all');
     });
 });
 

@@ -12,6 +12,7 @@ class Create extends ModalComponent
 {
     public $name;
     public $email;
+    public $phone;
     public $password;
     public $password_confirmation;
     public $selectedRoles = [];
@@ -20,6 +21,7 @@ class Create extends ModalComponent
     protected $rules = [
         'name' => 'required|min:3',
         'email' => 'required|email|unique:users',
+        'phone' => 'nullable|string|max:15',
         'password' => 'required|min:8|confirmed',
         'selectedRoles' => 'array',
         'is_active' => 'boolean'
@@ -37,6 +39,7 @@ class Create extends ModalComponent
         $user = User::create([
             'name' => $this->name,
             'email' => $this->email,
+            'phone' => $this->phone,
             'password' => Hash::make($this->password),
             'is_active' => $this->is_active
         ]);

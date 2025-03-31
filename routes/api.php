@@ -25,4 +25,11 @@ Route::get('/categories', function (Request $request) {
     return Category::where('type', $type)
         ->orderBy('name')
         ->get(['id', 'name']);
+});
+
+// Rotas de Notificações
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+    Route::get('/unread', [App\Http\Controllers\NotificationController::class, 'getUnreadNotifications']);
+    Route::post('/mark-as-read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::post('/settings', [App\Http\Controllers\NotificationController::class, 'updateSettings']);
 }); 

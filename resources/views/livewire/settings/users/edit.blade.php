@@ -17,6 +17,12 @@
         </div>
 
         <div class="mb-4">
+            <label for="phone" class="block text-sm font-medium text-gray-700">Telefone</label>
+            <input type="text" wire:model="phone" id="phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+            @error('phone') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700">Perfis</label>
             <div class="mt-2 space-y-2">
                 @foreach($this->roles as $role)
@@ -46,6 +52,7 @@
                 >
                 <span class="ml-2 text-sm text-gray-900">Usuário Ativo</span>
             </label>
+            @error('is_active') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
         </div>
 
         <div class="mt-6 flex justify-end space-x-3">

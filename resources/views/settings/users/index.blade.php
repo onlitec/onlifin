@@ -15,29 +15,41 @@
 
     <div class="card">
         <div class="card-body">
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
+            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                            <th>Nome</th>
-                            <th>Email</th>
-                            <th>Perfil</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th scope="col" class="px-6 py-3">Nome</th>
+                            <th scope="col" class="px-6 py-3">Email</th>
+                            <th scope="col" class="px-6 py-3">Perfil</th>
+                            <th scope="col" class="px-6 py-3">Status</th>
+                            <th scope="col" class="px-6 py-3">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($users as $user)
-                        <tr>
-                            <td>{{ $user->name }}</td>
-                            <td>{{ $user->email }}</td>
-                            <td>{{ $user->roles->pluck('name')->implode(', ') }}</td>
-                            <td>
-                                <span class="badge {{ $user->is_active ? 'badge-success' : 'badge-danger' }}">
-                                    {{ $user->is_active ? 'Ativo' : 'Inativo' }}
-                                </span>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="px-6 py-4">{{ $user->name }}</td>
+                            <td class="px-6 py-4">{{ $user->email }}</td>
+                            <td class="px-6 py-4">
+                                @foreach($user->roles as $role)
+                                    <span class="px-2 py-1 text-xs font-semibold text-white bg-blue-600 rounded-full">
+                                        {{ $role->name }}
+                                    </span>
+                                @endforeach
                             </td>
-                            <td>
+                            <td class="px-6 py-4">
+                                @if($user->is_active)
+                                    <span class="px-2 py-1 text-xs font-semibold text-white bg-green-600 rounded-full">
+                                        Ativo
+                                    </span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold text-white bg-red-600 rounded-full">
+                                        Inativo
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
                                 <div class="flex space-x-2">
                                     <a href="{{ route('settings.users.edit', $user->id) }}" class="text-blue-600 hover:text-blue-800">
                                         <i class="ri-pencil-line"></i>

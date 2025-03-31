@@ -176,7 +176,76 @@ class SettingsController extends Controller
     public function permissions()
     {
         $permissions = Permission::paginate(10);
-        return view('settings.permissions.index', compact('permissions'));
+        $categories = $this->getPermissionCategories();
+        return view('settings.permissions.index', compact('permissions', 'categories'));
+    }
+
+    public function createPermission()
+    {
+        $categories = $this->getPermissionCategories();
+        return view('settings.permissions.create', compact('categories'));
+    }
+
+    public function storePermission(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|min:3|unique:permissions,name',
+            'description' => 'nullable|string',
+            'category' => 'required|string'
+        ]);
+
+        $permission = Permission::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'category' => $request->category
+        ]);
+
+        return redirect()->route('settings.permissions')->with('message', 'Permissão criada com sucesso!');
+    }
+
+    public function editPermission(Permission $permission)
+    {
+        $categories = $this->getPermissionCategories();
+        return view('settings.permissions.edit', compact('permission', 'categories'));
+    }
+
+    public function updatePermission(Request $request, Permission $permission)
+    {
+        $request->validate([
+            'name' => 'required|min:3|unique:permissions,name,' . $permission->id,
+            'description' => 'nullable|string',
+            'category' => 'required|string'
+        ]);
+
+        $permission->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'category' => $request->category
+        ]);
+
+        return redirect()->route('settings.permissions')->with('message', 'Permissão atualizada com sucesso!');
+    }
+
+    public function deletePermission(Permission $permission)
+    {
+        $permission->delete();
+        return redirect()->route('settings.permissions')->with('message', 'Permissão excluída com sucesso!');
+    }
+
+    /**
+     * Retorna as categorias de permissões para agrupar na UI
+     */
+    private function getPermissionCategories()
+    {
+        return [
+            'users' => 'Usuários',
+            'roles' => 'Perfis',
+            'transactions' => 'Transações',
+            'categories' => 'Categorias',
+            'accounts' => 'Contas',
+            'reports' => 'Relatórios',
+            'system' => 'Sistema'
+        ];
     }
 
     public function reports()

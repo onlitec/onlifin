@@ -13,6 +13,7 @@ class Edit extends ModalComponent
     public $userId;
     public $name;
     public $email;
+    public $phone;
     public $selectedRoles = [];
     public $is_active;
 
@@ -21,6 +22,7 @@ class Edit extends ModalComponent
         return [
             'name' => 'required|min:3',
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->userId)],
+            'phone' => 'nullable|string|max:15',
             'selectedRoles' => 'array',
             'is_active' => 'boolean'
         ];
@@ -38,6 +40,7 @@ class Edit extends ModalComponent
         if ($user) {
             $this->name = $user->name;
             $this->email = $user->email;
+            $this->phone = $user->phone;
             $this->is_active = $user->is_active;
             $this->selectedRoles = $user->roles->pluck('id')->toArray();
         } else {
@@ -53,6 +56,7 @@ class Edit extends ModalComponent
         if ($user) {
             $user->name = $this->name;
             $user->email = $this->email;
+            $user->phone = $this->phone;
             $user->is_active = $this->is_active;
             $user->save();
 

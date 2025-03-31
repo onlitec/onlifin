@@ -7,72 +7,128 @@
         </a>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <form action="{{ route('settings.users.store') }}" method="POST">
-                @csrf
+    <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+        <div class="max-w-xl">
+            <section>
+                <header>
+                    <h2 class="text-lg font-medium text-gray-900">
+                        {{ __('Novo Usuário') }}
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-600">
+                        {{ __('Crie um novo usuário no sistema.') }}
+                    </p>
+                </header>
 
-                <div class="mb-4">
-                    <label for="name" class="form-label">Nome</label>
-                    <input type="text" name="name" id="name" class="form-input @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
-                    @error('name')
-                        <div class="text-red-500 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="mb-4">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" name="email" id="email" class="form-input @error('email') is-invalid @enderror" value="{{ old('email') }}" required>
-                    @error('email')
-                        <div class="text-red-500 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="mb-4">
-                    <label for="password" class="form-label">Senha</label>
-                    <input type="password" name="password" id="password" class="form-input @error('password') is-invalid @enderror" required>
-                    @error('password')
-                        <div class="text-red-500 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="mb-4">
-                    <label for="password_confirmation" class="form-label">Confirmar Senha</label>
-                    <input type="password" name="password_confirmation" id="password_confirmation" class="form-input" required>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label">Perfis</label>
-                    <div class="space-y-2">
-                        @foreach($roles as $role)
-                            <div class="flex items-center">
-                                <input type="checkbox" name="roles[]" id="role{{ $role->id }}" value="{{ $role->id }}" class="form-checkbox" {{ in_array($role->id, old('roles', [])) ? 'checked' : '' }}>
-                                <label for="role{{ $role->id }}" class="ml-2">{{ $role->name }}</label>
-                            </div>
-                        @endforeach
+                <!-- Exibir erros de validação -->
+                @if ($errors->any())
+                    <div class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <ul class="list-disc pl-5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
                     </div>
-                    @error('roles')
-                        <div class="text-red-500 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
+                @endif
 
-                <div class="mb-4">
-                    <div class="flex items-center">
-                        <input type="checkbox" name="is_active" id="is_active" class="form-checkbox" value="1" {{ old('is_active') ? 'checked' : 'checked' }}>
-                        <label for="is_active" class="ml-2">Ativo</label>
+                <!-- Exibir mensagens de sessão -->
+                @if (session('message'))
+                    <div class="mt-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                        {{ session('message') }}
                     </div>
-                    @error('is_active')
-                        <div class="text-red-500 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
+                @endif
 
-                <div class="flex justify-end">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="ri-save-line mr-2"></i>
-                        Salvar
-                    </button>
-                </div>
-            </form>
+                @if (session('error'))
+                    <div class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('settings.users.store') }}" class="mt-6 space-y-6">
+                    @csrf
+                    <div>
+                        <label for="name" class="block font-medium text-sm text-gray-700">
+                            {{ __('Nome') }}
+                        </label>
+                        <input id="name" name="name" type="text" value="{{ old('name') }}"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required />
+                        @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label for="email" class="block font-medium text-sm text-gray-700">
+                            {{ __('Email') }}
+                        </label>
+                        <input id="email" name="email" type="email" value="{{ old('email') }}"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required />
+                        @error('email') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label for="phone" class="block font-medium text-sm text-gray-700">
+                            {{ __('Telefone') }}
+                        </label>
+                        <input id="phone" name="phone" type="text" value="{{ old('phone') }}"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+                            placeholder="(00) 00000-0000" />
+                        @error('phone') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label for="roles" class="block font-medium text-sm text-gray-700">
+                            {{ __('Perfil') }}
+                        </label>
+                        <select id="roles" name="roles[]" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">Selecione um perfil</option>
+                            @foreach($roles as $role)
+                                <option value="{{ $role->id }}" {{ (old('roles') && in_array($role->id, old('roles'))) ? 'selected' : '' }}>
+                                    {{ $role->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('roles') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="flex items-center mt-4">
+                        <input type="checkbox" name="is_active" id="is_active" value="1" 
+                               {{ old('is_active', true) ? 'checked' : '' }}
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="is_active" class="ml-2 block text-sm text-gray-900">
+                            {{ __('Usuário Ativo') }}
+                        </label>
+                        @error('is_active') <span class="text-red-600 text-sm ml-2">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label for="password" class="block font-medium text-sm text-gray-700">
+                            {{ __('Senha') }}
+                        </label>
+                        <input id="password" name="password" type="password" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required />
+                        @error('password') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label for="password_confirmation" class="block font-medium text-sm text-gray-700">
+                            {{ __('Confirmar Senha') }}
+                        </label>
+                        <input id="password_confirmation" name="password_confirmation" type="password" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required />
+                    </div>
+
+                    <div class="flex items-center gap-4 mt-4">
+                        <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all">
+                            {{ __('Salvar') }}
+                        </button>
+                        
+                        <a href="{{ route('settings.users') }}" 
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all">
+                            {{ __('Cancelar') }}
+                        </a>
+                    </div>
+                </form>
+            </section>
         </div>
     </div>
 </x-app-layout> 
