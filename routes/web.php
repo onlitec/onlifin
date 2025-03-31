@@ -162,6 +162,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/test', [App\Http\Controllers\NotificationController::class, 'testNotification'])->name('test');
         Route::post('/send-to-all', [App\Http\Controllers\NotificationController::class, 'sendToAll'])->name('send-to-all');
     });
+
+    // Rotas de notificações de vencimento
+    Route::middleware(['auth'])->prefix('notifications/due-date')->name('notifications.due-date.')->group(function () {
+        Route::get('/settings', [App\Http\Controllers\DueDateNotificationController::class, 'settings'])->name('settings');
+        Route::post('/settings', [App\Http\Controllers\DueDateNotificationController::class, 'updateSettings'])->name('update-settings');
+        Route::post('/test', [App\Http\Controllers\DueDateNotificationController::class, 'testNotification'])->name('test');
+        Route::post('/preview-template', [App\Http\Controllers\DueDateNotificationController::class, 'previewTemplate'])->name('preview-template');
+        Route::post('/run-check', [App\Http\Controllers\DueDateNotificationController::class, 'runCheck'])->middleware('admin')->name('run-check');
+    });
 });
 
 // Rota de logout

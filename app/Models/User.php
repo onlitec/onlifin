@@ -99,6 +99,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get due date notification settings for the user
+     */
+    public function dueDateNotificationSettings()
+    {
+        return $this->hasOne(DueDateNotificationSetting::class);
+    }
+
+    /**
      * Determine if the user should receive notifications via the given channel.
      */
     public function shouldReceiveNotification($channel)
