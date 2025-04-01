@@ -71,7 +71,7 @@
                             </label>
                         </div>
                         <p class="mt-1 text-sm text-gray-500">
-                            A IA tentará identificar e categorizar automaticamente as transações do seu extrato. As configurações da IA podem ser ajustadas na seção de <a href="{{ route('settings.ai-config') }}" class="text-primary-600 hover:text-primary-700">Configurações > IA</a>.
+                            A IA tentará identificar e categorizar automaticamente as transações do seu extrato. As configurações da IA podem ser ajustadas no <a href="{{ route('settings.index') }}#ia-config" class="text-primary-600 hover:text-primary-700">Painel de Configurações</a>.
                         </p>
                     </div>
 
