@@ -112,7 +112,16 @@
                         <input type="text" name="transactions[${rowCount}][description]" class="form-input w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" required placeholder="Ex: Pagamento de Luz" value="${description}">
                     </td>
                     <td class="px-3 py-3">
-                        <input type="number" name="transactions[${rowCount}][amount]" step="0.01" class="form-input w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" required placeholder="0.00" value="${amount}">
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">R$</span>
+                            <input type="text" 
+                                name="transactions[${rowCount}][amount]" 
+                                class="form-input w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" 
+                                required 
+                                placeholder="0,00" 
+                                value="${formatCurrency(amount)}"
+                                oninput="formatCurrencyInput(this)">
+                        </div>
                     </td>
                     <td class="px-3 py-3">
                         <select name="transactions[${rowCount}][type]" class="type-select form-select w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" required data-row="${rowCount}">
@@ -178,18 +187,52 @@
                 }
             }
             
-            // Adicionar as transações extraídas automaticamente
-            if (extractedTransactions && extractedTransactions.length > 0) {
+            // Função para formatar moeda no formato brasileiro
+            function formatCurrency(value) {
+                if (!value) return '';
+                // Remove qualquer caractere que não seja número
+                const number = parseFloat(value.toString().replace(/[^\d.-]/g, ''));
+                if (isNaN(number)) return '';
+                // Formata o número para o padrão brasileiro
+                return number.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+
+            // Função para formatar input de moeda em tempo real
+            function formatCurrencyInput(input) {
+                // Remove tudo exceto números e ponto
+                let value = input.value.replace(/[^\d]/g, '');
+                
+                // Converte para float (divide por 100 para considerar os centavos)
+                value = parseFloat(value) / 100;
+                
+                // Se não for um número válido, limpa o campo
+                if (isNaN(value)) {
+                    input.value = '';
+                    return;
+                }
+                
+                // Formata o valor no padrão brasileiro
+                input.value = value.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+            
+            // Adiciona as transações extraídas automaticamente
+            if (extractedTransactions.length > 0) {
                 extractedTransactions.forEach(transaction => {
                     addRow(transaction);
                 });
             } else {
-                // Se não houver transações extraídas, adiciona uma linha em branco
+                // Adiciona uma linha em branco se não houver transações
                 addRow();
             }
             
-            // Adicionar linha ao clicar no botão
-            addButton.addEventListener('click', function() {
+            // Evento para adicionar nova linha
+            addButton.addEventListener('click', () => {
                 addRow();
             });
             

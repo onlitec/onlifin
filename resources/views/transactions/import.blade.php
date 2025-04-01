@@ -23,14 +23,12 @@
                 @if(auth()->user()->is_admin)
                 <div class="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                     <div class="flex items-center">
-                        <i class="ri-settings-3-fill text-blue-500 text-xl mr-2"></i>
+                        <i class="ri-information-line text-blue-500 text-xl mr-2"></i>
                         <div>
-                            <h3 class="font-medium text-blue-700">Configurações da IA</h3>
-                            <p class="text-sm text-blue-600 mb-2">Configure as credenciais da API de IA para análise automática de extratos.</p>
-                            <a href="{{ route('statements.config') }}" class="text-blue-700 hover:underline text-sm font-medium flex items-center">
-                                <i class="ri-external-link-line mr-1"></i>
-                                Configurar API de IA
-                            </a>
+                            <h3 class="font-medium text-blue-700">Importação de Extratos</h3>
+                            <p class="text-sm text-blue-600">
+                                Selecione a conta e o arquivo de extrato para importar. Você pode usar a IA para classificar automaticamente as transações.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -73,7 +71,7 @@
                             </label>
                         </div>
                         <p class="mt-1 text-sm text-gray-500">
-                            A IA tentará identificar e categorizar automaticamente as transações do seu extrato.
+                            A IA tentará identificar e categorizar automaticamente as transações do seu extrato. As configurações da IA podem ser ajustadas na seção de <a href="{{ route('settings.ai-config') }}" class="text-primary-600 hover:text-primary-700">Configurações > IA</a>.
                         </p>
                     </div>
 

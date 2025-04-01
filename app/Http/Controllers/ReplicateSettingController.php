@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ReplicateSetting;
-use App\Services\ReplicateService;
+use App\Services\AIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\SystemLog;
 
 class ReplicateSettingController extends Controller
 {
@@ -14,7 +15,10 @@ class ReplicateSettingController extends Controller
      */
     public function index()
     {
-        $settings = ReplicateSetting::getActive() ?? new ReplicateSetting();
+        $settings = ReplicateSetting::getActive() ?? new ReplicateSetting([
+            'provider' => 'openai',
+            'model_version' => 'gpt-3.5-turbo'
+        ]);
         return view('settings.replicate', compact('settings'));
     }
 
@@ -24,26 +28,70 @@ class ReplicateSettingController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'provider' => 'required|string|in:openai,anthropic',
             'api_token' => 'required|string',
             'model_version' => 'required|string',
             'system_prompt' => 'nullable|string',
-            'is_active' => 'boolean'
+            'is_active' => 'nullable|boolean'
         ]);
 
         try {
             // Desativa todas as configurações existentes
             ReplicateSetting::query()->update(['is_active' => false]);
 
+            // Define o modelo padrão baseado no provedor
+            $modelVersion = $request->model_version;
+            if ($request->provider === 'openai' && !in_array($modelVersion, ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'])) {
+                $modelVersion = 'gpt-3.5-turbo';
+            } elseif ($request->provider === 'anthropic' && !in_array($modelVersion, [
+                'claude-3-opus-20240229',
+                'claude-3-sonnet-20240229',
+                'claude-3-haiku-20240307'
+            ])) {
+                $modelVersion = 'claude-3-haiku-20240307';
+            }
+
             // Cria ou atualiza a configuração
             $settings = ReplicateSetting::getActive() ?? new ReplicateSetting();
-            $settings->fill($request->all());
-            $settings->is_active = $request->boolean('is_active', true);
+            $settings->fill([
+                'provider' => $request->provider,
+                'api_token' => $request->api_token,
+                'model_version' => $modelVersion,
+                'system_prompt' => $request->system_prompt,
+                'is_active' => $request->boolean('is_active')
+            ]);
             $settings->save();
 
+            // Registra o log da ação
+            SystemLog::register(
+                'update',
+                'ai_settings',
+                'Configurações de IA atualizadas',
+                [
+                    'provider' => $request->provider,
+                    'model' => $modelVersion,
+                    'is_active' => $request->boolean('is_active'),
+                    'has_system_prompt' => !empty($request->system_prompt)
+                ]
+            );
+
             return redirect()->route('settings.replicate.index')
-                ->with('success', 'Configurações do Replicate salvas com sucesso.');
+                ->with('success', 'Configurações de IA salvas com sucesso.');
         } catch (\Exception $e) {
-            Log::error('Erro ao salvar configurações do Replicate: ' . $e->getMessage());
+            Log::error('Erro ao salvar configurações de IA: ' . $e->getMessage());
+
+            // Registra o log do erro
+            SystemLog::register(
+                'error',
+                'ai_settings',
+                'Erro ao salvar configurações de IA: ' . $e->getMessage(),
+                [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            );
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Erro ao salvar configurações: ' . $e->getMessage());
@@ -51,7 +99,7 @@ class ReplicateSettingController extends Controller
     }
 
     /**
-     * Testa a conexão com o Replicate
+     * Testa a conexão com o provedor de IA
      */
     public function test(Request $request)
     {
@@ -60,7 +108,13 @@ class ReplicateSettingController extends Controller
             $settings = ReplicateSetting::getActive();
             
             if (!$settings) {
-                Log::warning('Teste de conexão Replicate: Nenhuma configuração encontrada');
+                Log::warning('Teste de conexão IA: Nenhuma configuração encontrada');
+
+                SystemLog::register(
+                    'test',
+                    'ai_settings',
+                    'Teste de conexão falhou: Nenhuma configuração encontrada'
+                );
                 
                 if ($request->wantsJson()) {
                     return response()->json([
@@ -74,7 +128,7 @@ class ReplicateSettingController extends Controller
             }
             
             if (empty($settings->api_token) || empty($settings->model_version)) {
-                Log::warning('Teste de conexão Replicate: Campos obrigatórios não preenchidos', [
+                Log::warning('Teste de conexão IA: Campos obrigatórios não preenchidos', [
                     'has_token' => !empty($settings->api_token),
                     'has_model' => !empty($settings->model_version)
                 ]);
@@ -82,46 +136,62 @@ class ReplicateSettingController extends Controller
                 if ($request->wantsJson()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Token da API e Versão do Modelo são obrigatórios. Preencha todos os campos e salve antes de testar.'
+                        'message' => 'Chave da API e Modelo são obrigatórios. Preencha todos os campos e salve antes de testar.'
                     ], 422);
                 }
                 
                 return redirect()->route('settings.replicate.index')
-                    ->with('error', 'Token da API e Versão do Modelo são obrigatórios. Preencha todos os campos e salve antes de testar.');
+                    ->with('error', 'Chave da API e Modelo são obrigatórios. Preencha todos os campos e salve antes de testar.');
             }
             
-            Log::info('Iniciando teste de conexão com Replicate', [
-                'model_version' => $settings->model_version
+            Log::info('Iniciando teste de conexão com IA', [
+                'provider' => $settings->provider,
+                'model' => $settings->model_version
             ]);
             
-            // Testar a conexão
-            if (!class_exists(ReplicateService::class)) {
-                throw new \Exception('Classe ReplicateService não encontrada');
-            }
+            // Testar a conexão usando o serviço apropriado
+            $service = new AIService($settings);
+            $response = $service->test();
             
-            $service = new ReplicateService();
-            $response = $service->analyzeStatement('Teste de conexão com Replicate API');
-            
-            Log::info('Teste de conexão com Replicate bem-sucedido', [
+            Log::info('Teste de conexão com IA bem-sucedido', [
+                'provider' => $settings->provider,
                 'response' => $response
             ]);
+
+            // Registra o log do teste bem-sucedido
+            SystemLog::register(
+                'test',
+                'ai_settings',
+                'Teste de conexão com IA realizado com sucesso',
+                [
+                    'provider' => $settings->provider,
+                    'model' => $settings->model_version
+                ]
+            );
 
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Conexão com Replicate estabelecida com sucesso.'
+                    'message' => 'Conexão com o provedor de IA estabelecida com sucesso.'
                 ]);
             }
             
             return redirect()->route('settings.replicate.index')
-                ->with('success', 'Conexão com Replicate estabelecida com sucesso.');
+                ->with('success', 'Conexão com o provedor de IA estabelecida com sucesso.');
         } catch (\Exception $e) {
-            Log::error('Erro ao testar conexão com Replicate: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Erro ao testar conexão com IA: ' . $e->getMessage());
+
+            // Registra o log do erro no teste
+            SystemLog::register(
+                'error',
+                'ai_settings',
+                'Erro ao testar conexão com IA: ' . $e->getMessage(),
+                [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            );
             
             if ($request->wantsJson()) {
                 return response()->json([

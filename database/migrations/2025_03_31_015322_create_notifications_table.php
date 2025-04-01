@@ -19,17 +19,6 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });
-
-        Schema::create('notification_settings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->boolean('email_enabled')->default(true);
-            $table->boolean('database_enabled')->default(true);
-            $table->boolean('whatsapp_enabled')->default(false);
-            $table->boolean('push_enabled')->default(false);
-            $table->json('muted_categories')->nullable();
-            $table->timestamps();
-        });
     }
 
     /**
@@ -37,7 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('notification_settings');
         Schema::dropIfExists('notifications');
     }
 };

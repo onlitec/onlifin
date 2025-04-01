@@ -16,6 +16,9 @@ class Kernel extends ConsoleKernel
         
         // Verificar diariamente as transações com vencimento próximo e enviar notificações
         $schedule->command('app:send-due-date-notifications')->dailyAt('08:00');
+        
+        // Limpar sessões expiradas diariamente às 3 da manhã
+        $schedule->command('sessions:fix --delete-expired')->dailyAt('03:00');
     }
 
     /**

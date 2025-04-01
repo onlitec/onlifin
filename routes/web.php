@@ -19,6 +19,8 @@ use App\Livewire\Transactions\Expenses;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReplicateSettingController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\NotificationConfigController;
+use App\Http\Controllers\SystemLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,6 +107,10 @@ Route::middleware(['auth'])->group(function () {
     // Configurações - página principal acessível a todos os usuários
     Route::get('/settings', [SettingsController::class, 'index'])->middleware(['auth'])->name('settings.index');
     
+    // Configurações de notificações para todos os usuários
+    Route::get("/settings/notifications", [SettingsController::class, "notifications"])->middleware(["auth"])->name("settings.notifications");
+    Route::post("/settings/notifications", [SettingsController::class, "updateNotifications"])->middleware(["auth"])->name("settings.notifications.update");
+    
     // Configurações (protegidas por middleware admin)
     Route::prefix('settings')->name('settings.')->middleware(['auth', AdminMiddleware::class])->group(function () {
         Route::get('/users', [SettingsController::class, 'users'])->name('users');
@@ -147,6 +153,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/permissions/edit/{permission}', [SettingsController::class, 'editPermission'])->name('permissions.edit');
         Route::put('/permissions/update/{permission}', [SettingsController::class, 'updatePermission'])->name('permissions.update');
         Route::get('/permissions/delete/{permission}', [SettingsController::class, 'deletePermission'])->name('permissions.delete');
+
+        // Rotas de logs do sistema
+        Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
+        Route::get('/logs/{log}', [SystemLogController::class, 'show'])->name('logs.show');
+        Route::get('/logs/export', [SystemLogController::class, 'export'])->name('logs.export');
     });
 
     // Rotas para o novo controlador de usuários (com middleware de permissão)
@@ -170,6 +181,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/test', [App\Http\Controllers\DueDateNotificationController::class, 'testNotification'])->name('test');
         Route::post('/preview-template', [App\Http\Controllers\DueDateNotificationController::class, 'previewTemplate'])->name('preview-template');
         Route::post('/run-check', [App\Http\Controllers\DueDateNotificationController::class, 'runCheck'])->middleware('admin')->name('run-check');
+    });
+    
+    // Rota direta para a página de configurações de notificações
+    Route::get('/settings/notifications', [NotificationConfigController::class, 'index'])->middleware(['auth'])->name('settings.notifications');
+    
+    // Rotas de configuração de notificações
+    Route::middleware(['auth'])->prefix('settings/notifications')->name('settings.notifications.')->group(function () {
+        Route::get('/', [NotificationConfigController::class, 'index'])->name('index');
+        Route::post('/', [NotificationConfigController::class, 'update'])->name('update');
+        Route::get('/whatsapp', [NotificationConfigController::class, 'whatsapp'])->name('whatsapp');
+        Route::get('/email', [NotificationConfigController::class, 'email'])->name('email');
+        Route::get('/push', [NotificationConfigController::class, 'push'])->name('push');
+        Route::get('/templates', [NotificationConfigController::class, 'templates'])->name('templates');
+        Route::post('/test', [NotificationConfigController::class, 'sendTest'])->name('test');
     });
 });
 

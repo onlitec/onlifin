@@ -24,6 +24,13 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- LivewireUI Modal -->
+    @livewireScripts
+    @livewire('livewire-ui-modal')
+    
     <style>
         /* Estilos básicos */
         body {
@@ -227,7 +234,11 @@
         <!-- Page Content -->
         <main class="flex-1">
             <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                {{ $slot }}
+                @hasSection('content')
+                    @yield('content')
+                @else
+                    {{ $slot ?? '' }}
+                @endif
             </div>
         </main>
 
@@ -241,8 +252,6 @@
         </footer>
     </div>
 
-    @livewireScripts
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         window.addEventListener('alert', event => {
@@ -264,6 +273,5 @@
         }
     </script>
     @stack('scripts')
-    @livewire('wire-elements-modal')
 </body>
 </html> 

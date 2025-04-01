@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ReplicateSetting extends Model
 {
     protected $fillable = [
+        'provider',
         'api_token',
         'model_version',
         'system_prompt',

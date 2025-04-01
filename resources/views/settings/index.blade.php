@@ -40,9 +40,9 @@
                             </div>
                         </div>
                     </div>
-                    <button type="button" onclick="Livewire.dispatch('openModal', { component: 'notification-settings' })" class="btn btn-secondary w-full">
+                    <a href="{{ route('settings.notifications.index') }}" class="btn btn-secondary w-full">
                         Configurar Notificações
-                    </button>
+                    </a>
                 </div>
             </div>
 
@@ -127,22 +127,42 @@
                 </div>
             </div>
 
-            <!-- Replicate AI - Apenas para Administradores -->
+            <!-- Inteligência Artificial -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
                             <div class="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
-                                <i class="ri-robot-line text-2xl text-indigo-600"></i>
+                                <i class="ri-brain-line text-2xl text-indigo-600"></i>
                             </div>
                             <div class="ml-4">
-                                <h3 class="text-lg font-medium text-gray-900">Replicate AI</h3>
-                                <p class="text-sm text-gray-500">Configurar análise de extratos com IA</p>
+                                <h3 class="text-lg font-medium text-gray-900">Inteligência Artificial</h3>
+                                <p class="text-sm text-gray-500">Configurar integrações com IAs</p>
                             </div>
                         </div>
                     </div>
                     <a href="{{ route('settings.replicate.index') }}" class="btn btn-secondary w-full">
-                        Configurar IA
+                        Configurar IAs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Logs do Sistema -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <i class="ri-file-list-3-line text-2xl text-purple-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Logs do Sistema</h3>
+                                <p class="text-sm text-gray-500">Visualizar registros de atividades</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.logs.index') }}" class="btn btn-secondary w-full">
+                        Visualizar Logs
                     </a>
                 </div>
             </div>

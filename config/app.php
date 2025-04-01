@@ -163,6 +163,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\MCPServiceProvider::class,
+        App\Providers\SessionServiceProvider::class,
     ],
 
 ];

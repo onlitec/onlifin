@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\NotificationSetting;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Auth;
+use App\Notifications\TestNotification;
 
 class NotificationController extends Controller
 {
@@ -15,7 +17,7 @@ class NotificationController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $notifications = $user->notifications()->paginate(10);
         $unreadCount = $user->unreadNotifications()->count();
         
@@ -27,8 +29,8 @@ class NotificationController extends Controller
      */
     public function settings()
     {
-        $user = auth()->user();
-        $settings = $user->notificationSettings ?? new NotificationSetting();
+        $user = Auth::user();
+        $settings = NotificationSetting::getOrCreate($user->id);
         
         return view('notifications.settings', compact('settings'));
     }
@@ -38,24 +40,27 @@ class NotificationController extends Controller
      */
     public function updateSettings(Request $request)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         
         $validatedData = $request->validate([
             'email_enabled' => 'boolean',
             'database_enabled' => 'boolean',
             'whatsapp_enabled' => 'boolean',
             'push_enabled' => 'boolean',
-            'muted_categories' => 'nullable|array',
+            'notification_preferences' => 'array',
+            'mark_all_read' => 'boolean',
         ]);
         
-        // Criar ou atualizar configurações
-        if ($user->notificationSettings) {
-            $user->notificationSettings->update($validatedData);
-        } else {
-            $user->notificationSettings()->create($validatedData);
+        // Se solicitado, marcar todas as notificações como lidas
+        if ($request->boolean('mark_all_read')) {
+            $user->unreadNotifications->markAsRead();
+            return redirect()->back()->with('success', 'Todas as notificações foram marcadas como lidas.');
         }
         
-        return redirect()->back()->with('success', 'Configurações de notificação atualizadas com sucesso.');
+        $settings = NotificationSetting::getOrCreate($user->id);
+        $settings->update($validatedData);
+        
+        return redirect()->back()->with('success', 'Configurações de notificação atualizadas com sucesso!');
     }
     
     /**
@@ -109,25 +114,12 @@ class NotificationController extends Controller
      */
     public function testNotification(Request $request)
     {
-        if (!auth()->user()->is_admin) {
-            return redirect()->back()->with('error', 'Apenas administradores podem enviar notificações de teste.');
-        }
+        $user = Auth::user();
         
         $channels = $request->input('channels', ['mail', 'database']);
         
-        if (in_array('whatsapp', $channels) && empty(auth()->user()->phone)) {
-            return redirect()->back()->with('error', 'Você precisa ter um número de telefone para testar notificações por WhatsApp.');
-        }
-        
-        $notification = new SystemNotification(
-            'Notificação de Teste',
-            'Esta é uma notificação de teste enviada em ' . now()->format('d/m/Y H:i:s'),
-            $channels,
-            route('notifications.index'),
-            'Ver todas notificações'
-        );
-        
-        auth()->user()->notify($notification);
+        $notification = new TestNotification($channels);
+        $user->notify($notification);
         
         return redirect()->back()->with('success', 'Notificação de teste enviada com sucesso!');
     }
@@ -137,8 +129,8 @@ class NotificationController extends Controller
      */
     public function sendToAll(Request $request)
     {
-        if (!auth()->user()->is_admin) {
-            return redirect()->back()->with('error', 'Apenas administradores podem enviar notificações em massa.');
+        if (!Auth::user()->is_admin) {
+            return redirect()->back()->with('error', 'Permissão negada.');
         }
         
         $validatedData = $request->validate([
@@ -146,22 +138,26 @@ class NotificationController extends Controller
             'message' => 'required|string',
             'action_url' => 'nullable|url',
             'action_text' => 'nullable|string|max:255',
+            'image' => 'nullable|url',
             'channels' => 'required|array',
-            'image' => 'nullable|url'
+            'channels.*' => 'string|in:mail,database,whatsapp',
         ]);
         
-        $notification = new SystemNotification(
-            $validatedData['title'],
-            $validatedData['message'],
-            $validatedData['channels'],
-            $validatedData['action_url'] ?? null,
-            $validatedData['action_text'] ?? null,
-            $validatedData['image'] ?? null
-        );
-        
         $users = User::where('is_active', true)->get();
-        Notification::send($users, $notification);
         
-        return redirect()->back()->with('success', 'Notificação enviada para ' . $users->count() . ' usuários.');
+        foreach ($users as $user) {
+            $notification = new TestNotification(
+                $validatedData['channels'],
+                $validatedData['title'],
+                $validatedData['message'],
+                $validatedData['action_url'] ?? null,
+                $validatedData['action_text'] ?? null,
+                $validatedData['image'] ?? null
+            );
+            
+            $user->notify($notification);
+        }
+        
+        return redirect()->back()->with('success', 'Notificação enviada para todos os usuários com sucesso!');
     }
 } 

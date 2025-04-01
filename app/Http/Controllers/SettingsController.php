@@ -253,6 +253,31 @@ class SettingsController extends Controller
         return view('settings.reports.index');
     }
 
+    public function notifications()
+    {
+        $user = auth()->user();
+        return view('settings.notifications.index', compact('user'));
+    }
+
+    public function updateNotifications(Request $request)
+    {
+        $user = auth()->user();
+        
+        $request->validate([
+            'email_notifications' => 'boolean',
+            'push_notifications' => 'boolean',
+            'due_date_notifications' => 'boolean'
+        ]);
+        
+        $user->update([
+            'email_notifications' => $request->has('email_notifications'),
+            'push_notifications' => $request->has('push_notifications'),
+            'due_date_notifications' => $request->has('due_date_notifications')
+        ]);
+        
+        return redirect()->route('settings.notifications')->with('success', 'Configurações de notificação atualizadas com sucesso!');
+    }
+
     public function profile()
     {
         $user = auth()->user();

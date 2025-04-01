@@ -2,77 +2,158 @@
 
 namespace App\Livewire;
 
-use App\Models\Setting;
 use Livewire\Component;
-use Jantinnerezo\LivewireAlert\LivewireAlert;
-use LivewireUI\Modal\ModalComponent;
+use App\Models\User;
+use App\Models\NotificationSetting;
+use Illuminate\Support\Facades\Auth;
+use App\Notifications\Channels\WhatsApp\WhatsAppProviderFactory;
 
-class NotificationSettings extends ModalComponent
+class NotificationSettings extends Component
 {
-    use LivewireAlert;
-
-    // Configurações de Email
-    public $email_notifications_enabled = true;
-    public $email_notify_new_transactions = true;
-    public $email_notify_due_dates = true;
-    public $email_notify_low_balance = true;
-    public $email_low_balance_threshold;
-
-    // Configurações de WhatsApp
-    public $whatsapp_notifications_enabled = false;
-    public $whatsapp_number;
-    public $whatsapp_notify_new_transactions = true;
-    public $whatsapp_notify_due_dates = true;
-    public $whatsapp_notify_low_balance = true;
-    public $whatsapp_low_balance_threshold;
+    public $user;
+    public $emailNotifications;
+    public $pushNotifications;
+    public $dueDateNotifications;
+    public $whatsappNotifications;
+    public $webNotifications;
+    public $phone;
+    public $testNotificationSent = false;
+    public $whatsappProvider;
+    public $availableWhatsappProviders = [];
+    public $showAdvancedSettings = false;
 
     public function mount()
     {
-        $settings = Setting::where('user_id', auth()->id())->first();
+        $this->user = Auth::user();
+        $this->loadSettings();
+        $this->loadWhatsAppProviders();
+    }
+
+    protected function loadSettings()
+    {
+        // Carregar configurações básicas do usuário
+        $this->emailNotifications = $this->user->email_notifications ?? true;
+        $this->pushNotifications = $this->user->push_notifications ?? false;
+        $this->dueDateNotifications = $this->user->due_date_notifications ?? true;
         
-        if ($settings) {
-            $this->email_notifications_enabled = $settings->email_notifications_enabled;
-            $this->email_notify_new_transactions = $settings->email_notify_new_transactions;
-            $this->email_notify_due_dates = $settings->email_notify_due_dates;
-            $this->email_notify_low_balance = $settings->email_notify_low_balance;
-            $this->email_low_balance_threshold = $settings->email_low_balance_threshold;
-            
-            $this->whatsapp_notifications_enabled = $settings->whatsapp_notifications_enabled;
-            $this->whatsapp_number = $settings->whatsapp_number;
-            $this->whatsapp_notify_new_transactions = $settings->whatsapp_notify_new_transactions;
-            $this->whatsapp_notify_due_dates = $settings->whatsapp_notify_due_dates;
-            $this->whatsapp_notify_low_balance = $settings->whatsapp_notify_low_balance;
-            $this->whatsapp_low_balance_threshold = $settings->whatsapp_low_balance_threshold;
+        // Carregar configurações avançadas
+        $settings = NotificationSetting::getOrCreate($this->user->id);
+        $this->whatsappNotifications = $settings->whatsapp_enabled ?? false;
+        $this->webNotifications = $settings->push_enabled ?? false;
+        $this->phone = $this->user->phone;
+        $this->whatsappProvider = $settings->whatsapp_provider ?? config('notification-channels.whatsapp.default', 'twilio');
+    }
+    
+    protected function loadWhatsAppProviders()
+    {
+        // Carregar provedores disponíveis
+        $this->availableWhatsappProviders = WhatsAppProviderFactory::getAvailableProviders();
+        
+        // Filtrar provedores que não devem ser exibidos para o usuário
+        if (in_array('mock', $this->availableWhatsappProviders) && !app()->environment('local', 'development')) {
+            $this->availableWhatsappProviders = array_filter($this->availableWhatsappProviders, function($provider) {
+                return $provider !== 'mock';
+            });
         }
     }
 
-    public function save()
+    public function closeModal()
     {
-        Setting::updateOrCreate(
-            ['user_id' => auth()->id()],
+        $this->dispatch('closeModal');
+    }
+
+    public function saveSettings()
+    {
+        $this->validate([
+            'emailNotifications' => 'boolean',
+            'pushNotifications' => 'boolean',
+            'dueDateNotifications' => 'boolean',
+            'whatsappNotifications' => 'boolean',
+            'webNotifications' => 'boolean',
+            'phone' => 'nullable|string|max:20',
+            'whatsappProvider' => 'nullable|string|in:' . implode(',', $this->availableWhatsappProviders),
+        ]);
+
+        // Atualizar configurações básicas
+        $this->user->update([
+            'email_notifications' => $this->emailNotifications,
+            'push_notifications' => $this->pushNotifications,
+            'due_date_notifications' => $this->dueDateNotifications,
+            'phone' => $this->phone,
+        ]);
+
+        // Atualizar configurações avançadas
+        NotificationSetting::updateOrCreate(
+            ['user_id' => $this->user->id],
             [
-                'email_notifications_enabled' => $this->email_notifications_enabled,
-                'email_notify_new_transactions' => $this->email_notify_new_transactions,
-                'email_notify_due_dates' => $this->email_notify_due_dates,
-                'email_notify_low_balance' => $this->email_notify_low_balance,
-                'email_low_balance_threshold' => $this->email_low_balance_threshold,
-                
-                'whatsapp_notifications_enabled' => $this->whatsapp_notifications_enabled,
-                'whatsapp_number' => $this->whatsapp_number,
-                'whatsapp_notify_new_transactions' => $this->whatsapp_notify_new_transactions,
-                'whatsapp_notify_due_dates' => $this->whatsapp_notify_due_dates,
-                'whatsapp_notify_low_balance' => $this->whatsapp_notify_low_balance,
-                'whatsapp_low_balance_threshold' => $this->whatsapp_low_balance_threshold,
+                'email_enabled' => $this->emailNotifications,
+                'database_enabled' => true,
+                'whatsapp_enabled' => $this->whatsappNotifications,
+                'push_enabled' => $this->webNotifications,
+                'whatsapp_provider' => $this->whatsappProvider,
             ]
         );
 
-        $this->alert('success', 'Configurações de notificação salvas com sucesso!');
+        // Se as notificações por WhatsApp estão habilitadas mas não há telefone, mostrar aviso
+        if ($this->whatsappNotifications && empty($this->phone)) {
+            $this->dispatch('notify', [
+                'message' => 'Atenção: Você habilitou notificações por WhatsApp, mas não forneceu um número de telefone.',
+                'type' => 'warning'
+            ]);
+        } else {
+            $this->dispatch('notify', [
+                'message' => 'Configurações de notificação salvas com sucesso!',
+                'type' => 'success'
+            ]);
+        }
+        
         $this->closeModal();
     }
 
-    public static function modalMaxWidth(): string
+    public function requestWebNotificationPermission()
     {
-        return '2xl';
+        $this->dispatch('requestNotificationPermission');
+    }
+
+    public function sendTestNotification()
+    {
+        $channels = [];
+        
+        if ($this->emailNotifications) {
+            $channels[] = 'mail';
+        }
+        
+        if ($this->whatsappNotifications && $this->phone) {
+            $channels[] = 'whatsapp';
+        }
+        
+        if ($this->webNotifications) {
+            $channels[] = 'database';
+            $this->dispatch('showWebNotification', [
+                'title' => 'Teste de Notificação',
+                'body' => 'Esta é uma notificação de teste do Onlifin.',
+                'icon' => '/images/logo.png'
+            ]);
+        }
+        
+        if (!empty($channels)) {
+            $this->user->notify(new \App\Notifications\TestNotification(
+                $channels,
+                'Teste de Notificação',
+                'Esta é uma notificação de teste enviada em ' . now()->format('d/m/Y H:i:s')
+            ));
+            
+            $this->testNotificationSent = true;
+            $this->dispatch('notify', [
+                'message' => 'Notificação de teste enviada com sucesso!',
+                'type' => 'success'
+            ]);
+        } else {
+            $this->dispatch('notify', [
+                'message' => 'Ative pelo menos um canal de notificação para enviar o teste.',
+                'type' => 'warning'
+            ]);
+        }
     }
 
     public function render()

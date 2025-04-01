@@ -21,6 +21,10 @@ class User extends Authenticatable
         'phone',
         'is_active',
         'email_verified_at',
+        'email_notifications',
+        'whatsapp_notifications',
+        'push_notifications',
+        'due_date_notifications',
     ];
 
     protected $hidden = [
@@ -129,5 +133,13 @@ class User extends Authenticatable
             default:
                 return true;
         }
+    }
+    
+    /**
+     * Determine if the user should receive WhatsApp notifications.
+     */
+    public function shouldReceiveWhatsApp()
+    {
+        return $this->whatsapp_notifications && !empty($this->phone);
     }
 }

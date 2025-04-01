@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('replicate_settings', function (Blueprint $table) {
             $table->id();
+            $table->string('provider')->default('openai');
             $table->string('api_token')->nullable();
-            $table->string('model_version')->default('claude-3-sonnet-20240229');
+            $table->string('model_version')->default('gpt-4-turbo-preview');
             $table->text('system_prompt')->nullable();
             $table->boolean('is_active')->default(false);
             $table->timestamps();

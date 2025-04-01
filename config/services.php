@@ -39,5 +39,18 @@ return [
         'api_key' => env('AI_STATEMENT_API_KEY'),
         'api_url' => env('AI_STATEMENT_API_URL', 'https://api.exemplo.com/analyze-statement'),
     ],
+    
+    'whatsapp' => [
+        'token' => env('WHATSAPP_API_TOKEN'),
+        'endpoint' => env('WHATSAPP_API_ENDPOINT', 'https://api.whatsapp.com/v1/messages'),
+        'from_phone_number' => env('WHATSAPP_FROM_NUMBER'),
+        'enabled' => env('WHATSAPP_ENABLED', false),
+    ],
+    
+    'push_notifications' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'enabled' => env('PUSH_NOTIFICATIONS_ENABLED', false),
+    ],
 
 ];

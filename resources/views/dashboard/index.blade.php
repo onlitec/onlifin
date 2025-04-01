@@ -1,487 +1,307 @@
 <x-app-layout>
     <div class="container-app">
-        <!-- Totais Gerais -->
+        <!-- Cabeçalho com Resumo do Período -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                    <p class="mt-1 text-sm text-gray-600">Visão geral das suas finanças</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <select id="period-select" name="period" class="form-select rounded-lg border-gray-300 text-sm" onchange="updateDashboard(this.value)">
+                        <option value="current" {{ $period === 'current' ? 'selected' : '' }}>Mês Atual</option>
+                        <option value="last" {{ $period === 'last' ? 'selected' : '' }}>Mês Anterior</option>
+                        <option value="year" {{ $period === 'year' ? 'selected' : '' }}>Este Ano</option>
+                    </select>
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                        <i class="ri-download-line mr-2"></i>
+                        Exportar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Resumo com Gráficos -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="card bg-green-50">
-                <div class="card-body">
-                    <h3 class="text-lg font-semibold text-green-700 mb-2">Total de Receitas</h3>
-                    <p class="text-2xl font-bold text-green-600">
-                        R$ {{ number_format($totalIncome / 100, 2, ',', '.') }}
-                    </p>
+            <!-- Card de Receitas -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                            <i class="ri-arrow-up-circle-line text-2xl text-green-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-600">Total de Receitas</h3>
+                            <p class="text-2xl font-bold text-gray-900">
+                                R$ {{ number_format($totalIncome / 100, 2, ',', '.') }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-sm {{ $incomeVariation >= 0 ? 'text-green-600' : 'text-red-600' }} flex items-center">
+                        <i class="ri-{{ $incomeVariation >= 0 ? 'arrow-up' : 'arrow-down' }}-line mr-1"></i>
+                        <span>{{ number_format(abs($incomeVariation), 1) }}%</span>
+                    </div>
                 </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-green-500 rounded-full" style="width: 75%"></div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">75% da meta {{ $period === 'current' ? 'mensal' : ($period === 'last' ? 'do mês anterior' : 'anual') }}</p>
             </div>
 
-            <div class="card bg-red-50">
-                <div class="card-body">
-                    <h3 class="text-lg font-semibold text-red-700 mb-2">Total de Despesas</h3>
-                    <p class="text-2xl font-bold text-red-600">
-                        R$ {{ number_format($totalExpenses / 100, 2, ',', '.') }}
-                    </p>
+            <!-- Card de Despesas -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                            <i class="ri-arrow-down-circle-line text-2xl text-red-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-600">Total de Despesas</h3>
+                            <p class="text-2xl font-bold text-gray-900">
+                                R$ {{ number_format($totalExpenses / 100, 2, ',', '.') }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-sm {{ $expensesVariation <= 0 ? 'text-green-600' : 'text-red-600' }} flex items-center">
+                        <i class="ri-{{ $expensesVariation <= 0 ? 'arrow-down' : 'arrow-up' }}-line mr-1"></i>
+                        <span>{{ number_format(abs($expensesVariation), 1) }}%</span>
+                    </div>
                 </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-red-500 rounded-full" style="width: 45%"></div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">45% do limite {{ $period === 'current' ? 'mensal' : ($period === 'last' ? 'do mês anterior' : 'anual') }}</p>
             </div>
 
-            <div class="card bg-blue-50">
-                <div class="card-body">
-                    <h3 class="text-lg font-semibold text-blue-700 mb-2">Saldo</h3>
-                    <p class="text-2xl font-bold {{ ($balance >= 0) ? 'text-green-600' : 'text-red-600' }}">
-                        R$ {{ number_format($balance / 100, 2, ',', '.') }}
-                    </p>
+            <!-- Card de Saldo -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="ri-wallet-3-line text-2xl text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-600">Saldo Total</h3>
+                            <p class="text-2xl font-bold {{ ($balance >= 0) ? 'text-green-600' : 'text-red-600' }}">
+                                R$ {{ number_format($balance / 100, 2, ',', '.') }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-sm {{ $balanceVariation >= 0 ? 'text-green-600' : 'text-red-600' }} flex items-center">
+                        <i class="ri-{{ $balanceVariation >= 0 ? 'arrow-up' : 'arrow-down' }}-line mr-1"></i>
+                        <span>{{ number_format(abs($balanceVariation), 1) }}%</span>
+                    </div>
                 </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500 rounded-full" style="width: 65%"></div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">
+                    {{ $balanceVariation >= 0 ? 'Acima' : 'Abaixo' }} do período anterior
+                </p>
             </div>
         </div>
 
-        <!-- Totais do Dia e Próximo Dia -->
+        <!-- Seção de Análise Diária -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <!-- Totais de Receitas -->
-            <div class="space-y-4">
-                <!-- Receitas Hoje -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="card bg-green-50">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-semibold text-green-700">Receitas Hoje</h3>
-                                <span class="text-xs text-gray-600">{{ now()->format('d/m/Y') }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <p class="text-xl font-bold text-green-600">
-                                    R$ {{ number_format($todayIncomes->where('status', 'pending')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">A Receber</span>
-                            </div>
-                            <div class="flex items-center justify-between mt-2">
-                                <p class="text-xl font-bold text-green-600">
-                                    R$ {{ number_format($todayIncomes->where('status', 'paid')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Recebido</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Receitas Amanhã -->
-                    <div class="card bg-green-50/50">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-semibold text-green-700">Receitas Amanhã</h3>
-                                <span class="text-xs text-gray-600">{{ now()->addDay()->format('d/m/Y') }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <p class="text-xl font-bold text-green-600">
-                                    R$ {{ number_format($tomorrowIncomes->where('status', 'pending')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">A Receber</span>
-                            </div>
-                            <div class="flex items-center justify-between mt-2">
-                                <p class="text-xl font-bold text-green-600">
-                                    R$ {{ number_format($tomorrowIncomes->where('status', 'paid')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Recebido</span>
-                            </div>
-                        </div>
+            <!-- Bloco de Hoje -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Hoje</h3>
+                        <span class="text-sm text-gray-600">{{ now()->format('d/m/Y') }}</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Totais de Despesas -->
-            <div class="space-y-4">
-                <!-- Despesas Hoje -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="card bg-red-50">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-semibold text-red-700">Despesas Hoje</h3>
-                                <span class="text-xs text-gray-600">{{ now()->format('d/m/Y') }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <p class="text-xl font-bold text-red-600">
-                                    R$ {{ number_format($todayExpenses->where('status', 'pending')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">A Pagar</span>
-                            </div>
-                            <div class="flex items-center justify-between mt-2">
-                                <p class="text-xl font-bold text-red-600">
-                                    R$ {{ number_format($todayExpenses->where('status', 'paid')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Pago</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Despesas Amanhã -->
-                    <div class="card bg-red-50/50">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-semibold text-red-700">Despesas Amanhã</h3>
-                                <span class="text-xs text-gray-600">{{ now()->addDay()->format('d/m/Y') }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <p class="text-xl font-bold text-red-600">
-                                    R$ {{ number_format($tomorrowExpenses->where('status', 'pending')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">A Pagar</span>
-                            </div>
-                            <div class="flex items-center justify-between mt-2">
-                                <p class="text-xl font-bold text-red-600">
-                                    R$ {{ number_format($tomorrowExpenses->where('status', 'paid')->sum('amount') / 100, 2, ',', '.') }}
-                                </p>
-                                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Pago</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Transações do Dia -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Bloco de Receitas -->
-            <div class="space-y-6">
-                <h2 class="text-xl font-bold text-gray-900">Receitas</h2>
                 
-                <!-- Receitas de Hoje -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="border-b border-gray-200 bg-green-50 px-6 py-4">
-                        <h3 class="text-lg font-semibold text-green-700">
-                            Receitas de Hoje
-                            <span class="text-sm font-normal text-gray-600 ml-2">
-                                ({{ now()->format('d/m/Y') }})
+                <div class="p-6">
+                    <!-- Receitas de Hoje -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-sm font-medium text-gray-600">Receitas</h4>
+                            <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                                {{ $todayIncomes->count() }} transações
                             </span>
-                        </h3>
-                    </div>
-                    
-                    <div class="p-6">
-                        @if($todayIncomes->count() > 0)
-                            <div class="space-y-4">
+                        </div>
+                        
+                        @if($todayIncomes->isNotEmpty())
+                            <div class="space-y-3">
                                 @foreach($todayIncomes as $income)
-                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200
-                                                {{ $income->isPending() ? 'border-l-4 border-yellow-400' : 'border-l-4 border-green-400' }}">
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors
+                                                {{ $income->status === 'pending' ? 'border-l-4 border-yellow-400' : 'border-l-4 border-green-400' }}">
                                         <div class="flex-1">
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-lg font-medium text-gray-900">
-                                                    {{ $income->description }}
-                                                </span>
-                                                <span class="px-2 py-1 text-xs rounded-full {{ $income->isPaid() ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                                    {{ $income->isPaid() ? 'Pago' : 'Pendente' }}
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium text-gray-900">{{ $income->description }}</span>
+                                                <span class="px-2 py-0.5 text-xs rounded-full {{ $income->status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                                    {{ $income->status === 'paid' ? 'Recebido' : 'Pendente' }}
                                                 </span>
                                             </div>
-                                            <div class="mt-1 text-sm text-gray-600">
-                                                <span class="inline-flex items-center">
+                                            <div class="mt-1 text-xs text-gray-600 flex items-center gap-3">
+                                                <span class="flex items-center">
                                                     <i class="ri-price-tag-3-line mr-1"></i>
                                                     {{ $income->category->name }}
                                                 </span>
-                                                <span class="mx-2">•</span>
-                                                <span class="inline-flex items-center">
+                                                <span class="flex items-center">
                                                     <i class="ri-bank-line mr-1"></i>
                                                     {{ $income->account->name }}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-4">
-                                            <span class="text-lg font-bold {{ $income->isPending() ? 'text-gray-600' : 'text-green-600' }}">
+                                        <div class="text-right">
+                                            <span class="text-sm font-semibold text-green-600">
                                                 R$ {{ number_format($income->amount / 100, 2, ',', '.') }}
                                             </span>
-                                            <div class="flex gap-2">
-                                                @if($income->isPending())
-                                                    <form action="{{ route('transactions.mark-as-paid', $income->id) }}" method="POST" class="inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" 
-                                                                class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200 flex items-center gap-1"
-                                                                title="Marcar como Recebido">
-                                                            <i class="ri-checkbox-circle-line text-xl"></i>
-                                                            <span class="text-sm">Receber</span>
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                                <a href="{{ route('transactions.edit', $income->id) }}" 
-                                                   class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                                                   title="Editar receita">
-                                                    <i class="ri-edit-line text-xl"></i>
-                                                </a>
-                                                <form action="{{ route('transactions.destroy', $income->id) }}" 
-                                                      method="POST" 
-                                                      class="inline"
-                                                      onsubmit="return confirm('Tem certeza que deseja excluir esta transação?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" 
-                                                            class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                                                            title="Excluir">
-                                                        <i class="ri-delete-bin-line text-xl"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="text-center py-8 text-gray-500">
-                                <i class="ri-inbox-line text-4xl mb-3"></i>
-                                <p>Nenhuma receita para hoje</p>
-                            </div>
+                            <p class="text-sm text-gray-500 text-center py-4">Nenhuma receita para hoje</p>
                         @endif
                     </div>
-                </div>
 
-                <!-- Receitas de Amanhã -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="border-b border-gray-200 bg-green-50 px-6 py-4">
-                        <h3 class="text-lg font-semibold text-green-700">
-                            Receitas de Amanhã
-                            <span class="text-sm font-normal text-gray-600 ml-2">
-                                ({{ now()->addDay()->format('d/m/Y') }})
+                    <!-- Despesas de Hoje -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-sm font-medium text-gray-600">Despesas</h4>
+                            <span class="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full">
+                                {{ $todayExpenses->count() }} transações
                             </span>
-                        </h3>
-                    </div>
-                    
-                    <div class="p-6">
-                        @if($tomorrowIncomes->count() > 0)
-                            <div class="space-y-4">
-                                @foreach($tomorrowIncomes as $income)
-                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200
-                                                {{ $income->isPending() ? 'border-l-4 border-yellow-400' : 'border-l-4 border-green-400' }}">
+                        </div>
+                        
+                        @if($todayExpenses->isNotEmpty())
+                            <div class="space-y-3">
+                                @foreach($todayExpenses as $expense)
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors
+                                                {{ $expense->status === 'pending' ? 'border-l-4 border-yellow-400' : 'border-l-4 border-red-400' }}">
                                         <div class="flex-1">
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-lg font-medium text-gray-900">
-                                                    {{ $income->description }}
-                                                </span>
-                                                <span class="px-2 py-1 text-xs rounded-full {{ $income->isPaid() ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                                    {{ $income->isPaid() ? 'Pago' : 'Pendente' }}
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium text-gray-900">{{ $expense->description }}</span>
+                                                <span class="px-2 py-0.5 text-xs rounded-full {{ $expense->status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                                    {{ $expense->status === 'paid' ? 'Pago' : 'Pendente' }}
                                                 </span>
                                             </div>
-                                            <div class="mt-1 text-sm text-gray-600">
-                                                <span class="inline-flex items-center">
+                                            <div class="mt-1 text-xs text-gray-600 flex items-center gap-3">
+                                                <span class="flex items-center">
                                                     <i class="ri-price-tag-3-line mr-1"></i>
-                                                    {{ $income->category->name }}
+                                                    {{ $expense->category->name }}
                                                 </span>
-                                                <span class="mx-2">•</span>
-                                                <span class="inline-flex items-center">
+                                                <span class="flex items-center">
                                                     <i class="ri-bank-line mr-1"></i>
-                                                    {{ $income->account->name }}
+                                                    {{ $expense->account->name }}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-4">
-                                            <span class="text-lg font-bold {{ $income->isPending() ? 'text-gray-600' : 'text-green-600' }}">
-                                                R$ {{ number_format($income->amount / 100, 2, ',', '.') }}
+                                        <div class="text-right">
+                                            <span class="text-sm font-semibold text-red-600">
+                                                R$ {{ number_format($expense->amount / 100, 2, ',', '.') }}
                                             </span>
-                                            <div class="flex gap-2">
-                                                @if($income->isPending())
-                                                    <form action="{{ route('transactions.mark-as-paid', $income->id) }}" method="POST" class="inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" 
-                                                                class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200 flex items-center gap-1"
-                                                                title="Marcar como Recebido">
-                                                            <i class="ri-checkbox-circle-line text-xl"></i>
-                                                            <span class="text-sm">Receber</span>
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                                <a href="{{ route('transactions.edit', $income->id) }}" 
-                                                   class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                                                   title="Editar receita">
-                                                    <i class="ri-edit-line text-xl"></i>
-                                                </a>
-                                                <form action="{{ route('transactions.destroy', $income->id) }}" 
-                                                      method="POST" 
-                                                      class="inline"
-                                                      onsubmit="return confirm('Tem certeza que deseja excluir esta transação?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" 
-                                                            class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                                                            title="Excluir">
-                                                        <i class="ri-delete-bin-line text-xl"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="text-center py-8 text-gray-500">
-                                <i class="ri-inbox-line text-4xl mb-3"></i>
-                                <p>Nenhuma receita para amanhã</p>
-                            </div>
+                            <p class="text-sm text-gray-500 text-center py-4">Nenhuma despesa para hoje</p>
                         @endif
                     </div>
                 </div>
             </div>
 
-            <!-- Bloco de Despesas -->
-            <div class="space-y-6">
-                <h2 class="text-xl font-bold text-gray-900">Despesas</h2>
-                
-                <!-- Despesas de Hoje -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="border-b border-gray-200 bg-red-50 px-6 py-4">
-                        <h3 class="text-lg font-semibold text-red-700">
-                            Despesas de Hoje
-                            <span class="text-sm font-normal text-gray-600 ml-2">
-                                ({{ now()->format('d/m/Y') }})
-                            </span>
-                        </h3>
-                    </div>
-                    
-                    <div class="p-6">
-                        @if($todayExpenses->count() > 0)
-                            <div class="space-y-4">
-                                @foreach($todayExpenses as $expense)
-                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200
-                                                {{ $expense->isPending() ? 'border-l-4 border-yellow-400' : 'border-l-4 border-red-400' }}">
-                                        <div class="flex-1">
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-lg font-medium text-gray-900">
-                                                    {{ $expense->description }}
-                                                </span>
-                                                <span class="px-2 py-1 text-xs rounded-full {{ $expense->isPaid() ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                                    {{ $expense->isPaid() ? 'Pago' : 'Pendente' }}
-                                                </span>
-                                            </div>
-                                            <div class="mt-1 text-sm text-gray-600">
-                                                <span class="inline-flex items-center">
-                                                    <i class="ri-price-tag-3-line mr-1"></i>
-                                                    {{ $expense->category->name }}
-                                                </span>
-                                                <span class="mx-2">•</span>
-                                                <span class="inline-flex items-center">
-                                                    <i class="ri-bank-line mr-1"></i>
-                                                    {{ $expense->account->name }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center gap-4">
-                                            <span class="text-lg font-bold {{ $expense->isPending() ? 'text-gray-600' : 'text-red-600' }}">
-                                                R$ {{ number_format($expense->amount / 100, 2, ',', '.') }}
-                                            </span>
-                                            <div class="flex gap-2">
-                                                @if($expense->isPending())
-                                                    <form action="{{ route('transactions.mark-as-paid', $expense->id) }}" method="POST" class="inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" 
-                                                                class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200 flex items-center gap-1"
-                                                                title="Marcar como Pago">
-                                                            <i class="ri-checkbox-circle-line text-xl"></i>
-                                                            <span class="text-sm">Pagar</span>
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                                <a href="{{ route('transactions.edit', $expense->id) }}" 
-                                                   class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                                                   title="Editar despesa">
-                                                    <i class="ri-edit-line text-xl"></i>
-                                                </a>
-                                                <form action="{{ route('transactions.destroy', $expense->id) }}" 
-                                                      method="POST" 
-                                                      class="inline"
-                                                      onsubmit="return confirm('Tem certeza que deseja excluir esta transação?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" 
-                                                            class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                                                            title="Excluir">
-                                                        <i class="ri-delete-bin-line text-xl"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @else
-                            <div class="text-center py-8 text-gray-500">
-                                <i class="ri-inbox-line text-4xl mb-3"></i>
-                                <p>Nenhuma despesa para hoje</p>
-                            </div>
-                        @endif
+            <!-- Bloco de Amanhã -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Amanhã</h3>
+                        <span class="text-sm text-gray-600">{{ now()->addDay()->format('d/m/Y') }}</span>
                     </div>
                 </div>
-
-                <!-- Despesas de Amanhã -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="border-b border-gray-200 bg-red-50 px-6 py-4">
-                        <h3 class="text-lg font-semibold text-red-700">
-                            Despesas de Amanhã
-                            <span class="text-sm font-normal text-gray-600 ml-2">
-                                ({{ now()->addDay()->format('d/m/Y') }})
+                
+                <div class="p-6">
+                    <!-- Receitas de Amanhã -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-sm font-medium text-gray-600">Receitas</h4>
+                            <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                                {{ $tomorrowIncomes->count() }} transações
                             </span>
-                        </h3>
-                    </div>
-                    
-                    <div class="p-6">
-                        @if($tomorrowExpenses->count() > 0)
-                            <div class="space-y-4">
-                                @foreach($tomorrowExpenses as $expense)
-                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200
-                                                {{ $expense->isPending() ? 'border-l-4 border-yellow-400' : 'border-l-4 border-red-400' }}">
+                        </div>
+                        
+                        @if($tomorrowIncomes->isNotEmpty())
+                            <div class="space-y-3">
+                                @foreach($tomorrowIncomes as $income)
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors
+                                                {{ $income->status === 'pending' ? 'border-l-4 border-yellow-400' : 'border-l-4 border-green-400' }}">
                                         <div class="flex-1">
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-lg font-medium text-gray-900">
-                                                    {{ $expense->description }}
-                                                </span>
-                                                <span class="px-2 py-1 text-xs rounded-full {{ $expense->isPaid() ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                                    {{ $expense->isPaid() ? 'Pago' : 'Pendente' }}
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium text-gray-900">{{ $income->description }}</span>
+                                                <span class="px-2 py-0.5 text-xs rounded-full {{ $income->status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                                    {{ $income->status === 'paid' ? 'Recebido' : 'Pendente' }}
                                                 </span>
                                             </div>
-                                            <div class="mt-1 text-sm text-gray-600">
-                                                <span class="inline-flex items-center">
+                                            <div class="mt-1 text-xs text-gray-600 flex items-center gap-3">
+                                                <span class="flex items-center">
                                                     <i class="ri-price-tag-3-line mr-1"></i>
-                                                    {{ $expense->category->name }}
+                                                    {{ $income->category->name }}
                                                 </span>
-                                                <span class="mx-2">•</span>
-                                                <span class="inline-flex items-center">
+                                                <span class="flex items-center">
                                                     <i class="ri-bank-line mr-1"></i>
-                                                    {{ $expense->account->name }}
+                                                    {{ $income->account->name }}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-4">
-                                            <span class="text-lg font-bold {{ $expense->isPending() ? 'text-gray-600' : 'text-red-600' }}">
-                                                R$ {{ number_format($expense->amount / 100, 2, ',', '.') }}
+                                        <div class="text-right">
+                                            <span class="text-sm font-semibold text-green-600">
+                                                R$ {{ number_format($income->amount / 100, 2, ',', '.') }}
                                             </span>
-                                            <div class="flex gap-2">
-                                                @if($expense->isPending())
-                                                    <form action="{{ route('transactions.mark-as-paid', $expense->id) }}" method="POST" class="inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" 
-                                                                class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200 flex items-center gap-1"
-                                                                title="Marcar como Pago">
-                                                            <i class="ri-checkbox-circle-line text-xl"></i>
-                                                            <span class="text-sm">Pagar</span>
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                                <a href="{{ route('transactions.edit', $expense->id) }}" 
-                                                   class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                                                   title="Editar despesa">
-                                                    <i class="ri-edit-line text-xl"></i>
-                                                </a>
-                                                <form action="{{ route('transactions.destroy', $expense->id) }}" 
-                                                      method="POST" 
-                                                      class="inline"
-                                                      onsubmit="return confirm('Tem certeza que deseja excluir esta transação?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" 
-                                                            class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                                                            title="Excluir">
-                                                        <i class="ri-delete-bin-line text-xl"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="text-center py-8 text-gray-500">
-                                <i class="ri-inbox-line text-4xl mb-3"></i>
-                                <p>Nenhuma despesa para amanhã</p>
+                            <p class="text-sm text-gray-500 text-center py-4">Nenhuma receita para amanhã</p>
+                        @endif
+                    </div>
+
+                    <!-- Despesas de Amanhã -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-sm font-medium text-gray-600">Despesas</h4>
+                            <span class="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full">
+                                {{ $tomorrowExpenses->count() }} transações
+                            </span>
+                        </div>
+                        
+                        @if($tomorrowExpenses->isNotEmpty())
+                            <div class="space-y-3">
+                                @foreach($tomorrowExpenses as $expense)
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors
+                                                {{ $expense->status === 'pending' ? 'border-l-4 border-yellow-400' : 'border-l-4 border-red-400' }}">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium text-gray-900">{{ $expense->description }}</span>
+                                                <span class="px-2 py-0.5 text-xs rounded-full {{ $expense->status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                                    {{ $expense->status === 'paid' ? 'Pago' : 'Pendente' }}
+                                                </span>
+                                            </div>
+                                            <div class="mt-1 text-xs text-gray-600 flex items-center gap-3">
+                                                <span class="flex items-center">
+                                                    <i class="ri-price-tag-3-line mr-1"></i>
+                                                    {{ $expense->category->name }}
+                                                </span>
+                                                <span class="flex items-center">
+                                                    <i class="ri-bank-line mr-1"></i>
+                                                    {{ $expense->account->name }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-sm font-semibold text-red-600">
+                                                R$ {{ number_format($expense->amount / 100, 2, ',', '.') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                @endforeach
                             </div>
+                        @else
+                            <p class="text-sm text-gray-500 text-center py-4">Nenhuma despesa para amanhã</p>
                         @endif
                     </div>
                 </div>
@@ -633,4 +453,12 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+</x-app-layout>
+
+@push('scripts')
+<script>
+    function updateDashboard(period) {
+        window.location.href = `{{ route('dashboard') }}?period=${period}`;
+    }
+</script>
+@endpush 

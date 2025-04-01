@@ -18,6 +18,8 @@
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+
+    <script src="//unpkg.com/imask"></script>
 </head>
 <body>
     <div class="min-h-screen flex flex-col bg-gray-50">
@@ -181,6 +183,7 @@
     </div>
 
     @livewireScripts
+    @stack('scripts')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>

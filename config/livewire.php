@@ -24,6 +24,7 @@ return [
     'render_on_redirect' => false,
 
     'components' => [
+        'notification-settings' => App\Livewire\NotificationSettings::class,
         'settings.users.list-users' => App\Livewire\Settings\Users\ListUsers::class,
         'settings.users.create' => App\Livewire\Settings\Users\Create::class,
         'settings.users.edit' => App\Livewire\Settings\Users\Edit::class,
