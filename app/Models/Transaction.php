@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Validator;
 
 class Transaction extends Model
 {
@@ -24,6 +25,17 @@ class Transaction extends Model
         'amount' => 'integer',
     ];
 
+    protected $rules = [
+        'type' => 'required|in:income,expense',
+        'status' => 'required|in:paid,pending',
+        'date' => 'required|date',
+        'description' => 'required|string|max:255',
+        'amount' => 'required|numeric|min:0',
+        'category_id' => 'required|exists:categories,id',
+        'account_id' => 'required|exists:accounts,id',
+        'user_id' => 'required|exists:users,id',
+    ];
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -39,6 +51,11 @@ class Transaction extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function validate(array $data)
+    {
+        return Validator::make($data, $this->rules);
+    }
+
     // Acessor para formatar o valor
     public function getFormattedAmountAttribute()
     {
@@ -48,9 +65,26 @@ class Transaction extends Model
     // Mutator para garantir que o valor seja armazenado corretamente
     public function setAmountAttribute($value)
     {
-        if (is_string($value)) {
-            $value = (float) str_replace(',', '.', str_replace('.', '', $value));
+        if (is_null($value)) {
+            $this->attributes['amount'] = 0;
+            return;
         }
+
+        if (is_string($value)) {
+            // Remove qualquer caractere que não seja número ou ponto/vírgula
+            $value = preg_replace('/[^\d.,-]/', '', $value);
+            // Substitui vírgula por ponto
+            $value = str_replace(',', '.', $value);
+            // Remove pontos de milhar
+            $value = str_replace('.', '', $value);
+        }
+
+        // Converte para float e multiplica por 100 para armazenar em centavos
+        $value = (float) $value * 100;
+        
+        // Arredonda para evitar problemas com ponto flutuante
+        $value = round($value);
+
         $this->attributes['amount'] = $value;
     }
 

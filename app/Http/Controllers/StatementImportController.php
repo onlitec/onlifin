@@ -323,40 +323,89 @@ class StatementImportController extends Controller
      */
     public function saveTransactions(Request $request)
     {
-        $request->validate([
-            'transactions' => 'required|array',
-            'transactions.*.date' => 'required|date',
-            'transactions.*.description' => 'required|string',
-            'transactions.*.amount' => 'required|numeric',
-            'transactions.*.type' => 'required|in:income,expense',
-            'transactions.*.category_id' => 'required|exists:categories,id',
-            'account_id' => 'required|exists:accounts,id'
-        ]);
-        
-        $account = Account::findOrFail($request->account_id);
-        if ($account->user_id !== auth()->id()) {
-            abort(403);
-        }
-        
-        foreach ($request->transactions as $transactionData) {
-            Transaction::create([
-                'date' => $transactionData['date'],
-                'description' => $transactionData['description'],
-                'amount' => $transactionData['amount'] * 100, // Converte para centavos
-                'type' => $transactionData['type'],
-                'status' => 'paid', // Assume que as transações do extrato já foram pagas
-                'category_id' => $transactionData['category_id'],
-                'account_id' => $account->id,
-                'user_id' => auth()->id()
+        try {
+            Log::info('Iniciando salvamento de transações', [
+                'user_id' => auth()->id(),
+                'account_id' => $request->account_id,
+                'transactions_count' => count($request->transactions)
             ]);
+
+            // Valida a estrutura do request
+            $request->validate([
+                'transactions' => 'required|array',
+                'transactions.*.date' => 'required|date',
+                'transactions.*.description' => 'required|string',
+                'transactions.*.amount' => 'required|numeric|min:0',
+                'transactions.*.type' => 'required|in:income,expense',
+                'transactions.*.category_id' => 'required|exists:categories,id',
+                'account_id' => 'required|exists:accounts,id'
+            ]);
+
+            $account = Account::findOrFail($request->account_id);
+            if ($account->user_id !== auth()->id()) {
+                abort(403, 'Você não tem permissão para acessar esta conta.');
+            }
+
+            $transactions = [];
+            foreach ($request->transactions as $transactionData) {
+                Log::info('Processando transação', [
+                    'date' => $transactionData['date'],
+                    'description' => $transactionData['description'],
+                    'amount' => $transactionData['amount'],
+                    'type' => $transactionData['type'],
+                    'category_id' => $transactionData['category_id']
+                ]);
+
+                // Valida os dados da transação usando o modelo
+                $validator = Transaction::validate($transactionData);
+                if ($validator->fails()) {
+                    throw new \Exception('Dados inválidos para a transação: ' . implode(', ', $validator->errors()->all()));
+                }
+
+                // Prepara os dados para criação
+                $transactions[] = [
+                    'date' => $transactionData['date'],
+                    'description' => $transactionData['description'],
+                    'amount' => $transactionData['amount'],
+                    'type' => $transactionData['type'],
+                    'status' => 'paid',
+                    'category_id' => $transactionData['category_id'],
+                    'account_id' => $account->id,
+                    'user_id' => auth()->id()
+                ];
+            }
+
+            Log::info('Tentando salvar transações', [
+                'transactions_count' => count($transactions)
+            ]);
+
+            // Salva todas as transações de uma vez usando createMany
+            $account->transactions()->createMany($transactions);
+
+            Log::info('Transações salvas com sucesso', [
+                'transactions_count' => count($transactions)
+            ]);
+
+            // Deleta o arquivo após processamento
+            if (isset($request->file_path) && Storage::exists($request->file_path)) {
+                Storage::delete($request->file_path);
+            }
+
+            return redirect()->route('transactions.index')
+                ->with('success', count($transactions) . ' transações importadas com sucesso!');
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao salvar transações', [
+                'message' => $e->getMessage(),
+                'stack' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+                'account_id' => $request->account_id,
+                'transactions_count' => isset($request->transactions) ? count($request->transactions) : 0
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erro ao salvar as transações: ' . $e->getMessage());
         }
-        
-        // Deleta o arquivo após processamento
-        if (isset($request->file_path) && Storage::exists($request->file_path)) {
-            Storage::delete($request->file_path);
-        }
-        
-        return redirect()->route('transactions.index')
-            ->with('success', count($request->transactions) . ' transações importadas com sucesso!');
     }
 }
