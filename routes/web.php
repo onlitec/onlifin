@@ -137,10 +137,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/backup/{filename}', [SettingsController::class, 'deleteBackup'])->name('backup.delete');
         Route::post('/backup/restore', [SettingsController::class, 'restoreBackup'])->name('backup.restore');
         
-        // Configuração de IA para análise de extratos
-        Route::get('/ai-config', [App\Http\Controllers\StatementImportController::class, 'showConfig'])->name('ai-config');
-        Route::post('/ai-config', [App\Http\Controllers\StatementImportController::class, 'saveConfig'])->name('ai-config.save');
-        
         // Rotas do Replicate
         Route::get('/replicate', [ReplicateSettingController::class, 'index'])->name('replicate.index');
         Route::post('/replicate', [ReplicateSettingController::class, 'store'])->name('replicate.store');
