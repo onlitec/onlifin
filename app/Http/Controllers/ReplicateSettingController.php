@@ -19,7 +19,41 @@ class ReplicateSettingController extends Controller
             'provider' => 'openai',
             'model_version' => 'gpt-3.5-turbo'
         ]);
-        return view('settings.replicate', compact('settings'));
+        
+        // Lista de provedores e seus modelos disponíveis
+        $providers = [
+            'openai' => [
+                'name' => 'OpenAI',
+                'models' => ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'],
+                'api_token' => env('OPENAI_API_KEY')
+            ],
+            'anthropic' => [
+                'name' => 'Anthropic',
+                'models' => [
+                    'claude-3-opus-20240229',
+                    'claude-3-sonnet-20240229',
+                    'claude-3-haiku-20240307'
+                ],
+                'api_token' => env('ANTHROPIC_API_KEY')
+            ],
+            'gemini' => [
+                'name' => 'Gemini',
+                'models' => ['gemini-pro', 'gemini-pro-vision'],
+                'api_token' => env('GOOGLE_API_KEY')
+            ],
+            'grok' => [
+                'name' => 'Grok',
+                'models' => ['mixtral-8x7b-instruct', 'mixtral-8x7b'],
+                'api_token' => env('GROK_API_KEY')
+            ],
+            'copilot' => [
+                'name' => 'Copilot',
+                'models' => ['copilot'],
+                'api_token' => env('COPILOT_API_KEY')
+            ]
+        ];
+
+        return view('settings.replicate', compact('settings', 'providers'));
     }
 
     /**
@@ -28,7 +62,7 @@ class ReplicateSettingController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'provider' => 'required|string|in:openai,anthropic',
+            'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot',
             'api_token' => 'required|string',
             'model_version' => 'required|string',
             'system_prompt' => 'nullable|string',
@@ -36,23 +70,30 @@ class ReplicateSettingController extends Controller
         ]);
 
         try {
-            // Desativa todas as configurações existentes
-            ReplicateSetting::query()->update(['is_active' => false]);
-
             // Define o modelo padrão baseado no provedor
             $modelVersion = $request->model_version;
-            if ($request->provider === 'openai' && !in_array($modelVersion, ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'])) {
-                $modelVersion = 'gpt-3.5-turbo';
-            } elseif ($request->provider === 'anthropic' && !in_array($modelVersion, [
-                'claude-3-opus-20240229',
-                'claude-3-sonnet-20240229',
-                'claude-3-haiku-20240307'
-            ])) {
-                $modelVersion = 'claude-3-haiku-20240307';
+            $provider = $request->provider;
+
+            // Validação específica por provedor
+            $validModels = [
+                'openai' => ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'],
+                'anthropic' => [
+                    'claude-3-opus-20240229',
+                    'claude-3-sonnet-20240229',
+                    'claude-3-haiku-20240307'
+                ],
+                'gemini' => ['gemini-pro', 'gemini-pro-vision'],
+                'grok' => ['mixtral-8x7b-instruct', 'mixtral-8x7b'],
+                'copilot' => ['copilot']
+            ];
+
+            if (!in_array($modelVersion, $validModels[$provider] ?? [])) {
+                $modelVersion = $validModels[$provider][0] ?? 'gpt-3.5-turbo';
             }
 
             // Cria ou atualiza a configuração
-            $settings = ReplicateSetting::getActive() ?? new ReplicateSetting();
+            $settings = ReplicateSetting::where('provider', $request->provider)
+                ->first() ?? new ReplicateSetting();
             $settings->fill([
                 'provider' => $request->provider,
                 'api_token' => $request->api_token,

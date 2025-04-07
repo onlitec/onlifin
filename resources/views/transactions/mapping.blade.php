@@ -101,7 +101,10 @@
                 // Valores padrão ou da transação
                 const date = transaction ? transaction.date : new Date().toISOString().substr(0, 10);
                 const description = transaction ? transaction.description : '';
-                const amount = transaction ? transaction.amount : '';
+                const amount = transaction ? parseFloat(transaction.amount).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) : '';
                 const type = transaction ? transaction.type : '';
                 
                 row.innerHTML = `
@@ -119,7 +122,7 @@
                                 class="form-input w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" 
                                 required 
                                 placeholder="0,00" 
-                                value="${formatCurrency(amount)}"
+                                value="${amount}"
                                 oninput="formatCurrencyInput(this)">
                         </div>
                     </td>
