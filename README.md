@@ -105,6 +105,32 @@ Sistema web moderno e completo para gestão financeira pessoal, desenvolvido com
 - Testes de feature com Laravel Dusk
 - Testes de API com Pest
 
+## CI/CD
+
+O projeto utiliza GitHub Actions para CI/CD:
+
+### Testes Automatizados
+
+- Testes PHP com PHPUnit
+- Análise estática com PHPStan
+- Formatação de código com PHP CS Fixer
+- Testes JavaScript com ESLint
+- Formatação JavaScript com Prettier
+- Verificações de segurança
+
+### Deploy Automatizado
+
+O deploy é automatizado para a branch `Beta1`:
+
+1. Testes automatizados
+2. Build dos assets frontend
+3. Deploy para ambiente de produção
+
+### Status do Build
+
+[![CI Status](https://github.com/onlitec/onlifin/workflows/CI/badge.svg)](https://github.com/onlitec/onlifin/actions)
+[![Deploy Status](https://github.com/onlitec/onlifin/workflows/Deploy/badge.svg)](https://github.com/onlitec/onlifin/actions)
+
 ## Documentação
 
 - Documentação completa em [/docs](docs)
