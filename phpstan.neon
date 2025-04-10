@@ -1,0 +1,24 @@
+parameters:
+    level: 8
+    paths:
+        - app
+        - tests
+    excludes_analyse:
+        - app/Http/Middleware/EncryptCookies.php
+        - app/Http/Middleware/RedirectIfAuthenticated.php
+        - app/Http/Middleware/TrimStrings.php
+        - app/Http/Middleware/TrustProxies.php
+        - app/Http/Middleware/VerifyCsrfToken.php
+        - app/Providers/AppServiceProvider.php
+        - app/Providers/AuthServiceProvider.php
+        - app/Providers/EventServiceProvider.php
+        - app/Providers/RouteServiceProvider.php
+    ignoreErrors:
+        - "Call to an undefined method App\\Models\\Transaction::isPaid()"
+        - "Call to an undefined method App\\Models\\Transaction::isPending()"
+
+includes:
+    - vendor/laravel/framework/phpstan-baseline.neon
+    - vendor/laravel/laravel/phpstan-baseline.neon
+    - vendor/laravel/livewire/phpstan-baseline.neon
+    - vendor/laravel/sanctum/phpstan-baseline.neon
