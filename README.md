@@ -138,6 +138,44 @@ O deploy é automatizado para a branch `Beta1`:
 - Guia de contribuição em [CONTRIBUTING.md](CONTRIBUTING.md)
 - Código de conduta em [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
+## Documentação da API
+
+A API do Onlifin está documentada usando Swagger/OpenAPI. Você pode acessar a documentação em:
+
+- [Documentação da API](https://onlifin.com/api/docs)
+
+### Endpoints Principais
+
+- `GET /api/transactions` - Listar transações
+- `POST /api/transactions` - Criar transação
+- `GET /api/transactions/{id}` - Obter transação
+- `PUT /api/transactions/{id}` - Atualizar transação
+- `DELETE /api/transactions/{id}` - Excluir transação
+- `GET /api/categories` - Listar categorias
+- `POST /api/categories` - Criar categoria
+- `GET /api/accounts` - Listar contas
+- `POST /api/accounts` - Criar conta
+
+### Autenticação
+
+A API usa autenticação via token JWT. Para fazer requisições, inclua o token no header:
+
+```
+Authorization: Bearer seu-token-aqui
+```
+
+### Respostas
+
+Todos os endpoints retornam respostas no formato JSON. Os códigos de status HTTP são:
+
+- 200: Sucesso
+- 201: Criado
+- 204: Sem conteúdo (ex: DELETE)
+- 400: Requisição inválida
+- 401: Não autorizado
+- 404: Não encontrado
+- 422: Validação falhou
+
 ## Licença
 
 Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.

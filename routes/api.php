@@ -33,3 +33,7 @@ Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
     Route::post('/mark-as-read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
     Route::post('/settings', [App\Http\Controllers\NotificationController::class, 'updateSettings']);
 }); 
+
+// Documentação da API
+Route::get('/docs', [App\Http\Controllers\Api\DocumentationController::class, 'index']);
+Route::get('/docs/openapi', [App\Http\Controllers\Api\DocumentationController::class, 'openapi']);
