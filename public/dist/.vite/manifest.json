@@ -1,15 +1,11 @@
 {
   "resources/css/app.css": {
-<<<<<<< HEAD
-    "file": "assets/style-Sfp8ba7i.css",
-=======
-    "file": "assets/style-Bu9AbAid.css",
->>>>>>> remotes/ONLITEC/fix/campo-valor
+    "file": "assets/style-h-Dt9Evg.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-c8QeIAjf.js",
+    "file": "assets/app-CnQFB6pd.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

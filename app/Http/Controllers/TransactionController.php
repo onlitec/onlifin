@@ -99,7 +99,6 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
-        // Verifica se o usuário tem permissão para editar esta transação
         if ($transaction->user_id !== auth()->id()) {
             abort(403);
         }
@@ -116,6 +115,7 @@ class TransactionController extends Controller
             abort(403);
         }
 
+<<<<<<< HEAD
         // Log do request para debug
         \Log::info('Request completo de update:', $request->all());
 
@@ -123,10 +123,16 @@ class TransactionController extends Controller
             'description' => 'required|string|max:255',
             'amount' => 'required',
             'date' => 'required|date',
+=======
+        $validatedData = $request->validate([
+>>>>>>> remotes/ONLITEC/fix/campo-valor
             'type' => 'required|in:income,expense',
-            'status' => 'required|in:pending,paid',
+            'date' => 'required|date',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|string',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
+<<<<<<< HEAD
             'notes' => 'nullable|string',
             'recurrence_type' => 'nullable|in:none,fixed,installment',
             'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
@@ -186,6 +192,19 @@ class TransactionController extends Controller
 
         $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
         return redirect()->route($redirectRoute)
+=======
+            'status' => 'required|in:pending,paid',
+            'notes' => 'nullable|string',
+        ]);
+
+        // O valor já vem em centavos do frontend
+        $validatedData['amount'] = (int) $validatedData['amount'];
+
+        $transaction->update($validatedData);
+
+        // Corrigido o redirecionamento para usar a rota correta de transações
+        return redirect('/transactions')
+>>>>>>> remotes/ONLITEC/fix/campo-valor
             ->with('success', 'Transação atualizada com sucesso!');
     }
 
