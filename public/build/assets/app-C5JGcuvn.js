@@ -20,4 +20,4 @@ focus-trap/dist/focus-trap.esm.js:
   * focus-trap 6.9.4
   * @license MIT, https://github.com/focus-trap/focus-trap/blob/master/LICENSE
   *)
-*/ht.plugin($u);ht.plugin(ac);window.Alpine=ht;ht.start();
+*/ht.plugin($u);ht.plugin(ac);window.Alpine=ht;ht.start();window.toggleMobileMenu=function(){const e=document.getElementById("mobileMenu");e&&e.classList.toggle("hidden")};

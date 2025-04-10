@@ -12,8 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('accounts', function (Blueprint $table) {
-            $table->text('description')->nullable()->after('active');
-            $table->string('color', 7)->nullable()->after('description');
+            if (!Schema::hasColumn('accounts', 'description')) {
+                $table->text('description')->nullable()->after('active');
+            }
+            
+            if (!Schema::hasColumn('accounts', 'color')) {
+                $table->string('color', 7)->nullable()->after('description');
+            }
         });
     }
 
@@ -23,7 +28,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('accounts', function (Blueprint $table) {
-            $table->dropColumn(['description', 'color']);
+            if (Schema::hasColumn('accounts', 'color')) {
+                $table->dropColumn('color');
+            }
+            
+            if (Schema::hasColumn('accounts', 'description')) {
+                $table->dropColumn('description');
+            }
         });
     }
 };

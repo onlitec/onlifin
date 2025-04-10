@@ -27,6 +27,7 @@
                                 <th class="table-header-cell">Valor</th>
                                 <th class="table-header-cell">Tipo</th>
                                 <th class="table-header-cell">Status</th>
+                                <th class="table-header-cell">Recorrência</th>
                                 <th class="table-header-cell">Ações</th>
                             </tr>
                         </thead>
@@ -54,6 +55,21 @@
                                         </span>
                                     </td>
                                     <td class="table-cell">
+                                        @if($transaction->hasRecurrence())
+                                            @if($transaction->isFixedRecurrence())
+                                                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" title="Próxima data: {{ $transaction->next_date ? $transaction->next_date->format('d/m/Y') : 'N/A' }}">
+                                                    Fixa
+                                                </span>
+                                            @elseif($transaction->isInstallmentRecurrence())
+                                                <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800" title="Próxima data: {{ $transaction->next_date ? $transaction->next_date->format('d/m/Y') : 'N/A' }}">
+                                                    {{ $transaction->formatted_installment }}
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span class="text-gray-400">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="table-cell">
                                         <div class="flex gap-2">
                                             @if($transaction->isPending())
                                                 <form action="{{ route('transactions.mark-as-paid', $transaction->id) }}" method="POST" class="inline">
@@ -63,6 +79,17 @@
                                                             class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors duration-200"
                                                             title="{{ $transaction->type === 'income' ? 'Marcar como Recebido' : 'Marcar como Pago' }}">
                                                         <i class="ri-checkbox-circle-line text-xl"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            @if($transaction->hasRecurrence() && $transaction->next_date)
+                                                <form action="{{ route('transactions.create-next', $transaction->id) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button type="submit" 
+                                                            class="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors duration-200"
+                                                            title="Criar próxima transação recorrente">
+                                                        <i class="ri-repeat-line text-xl"></i>
                                                     </button>
                                                 </form>
                                             @endif
@@ -90,7 +117,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="table-cell text-center">
+                                    <td colspan="9" class="table-cell text-center">
                                         Nenhuma transação encontrada.
                                     </td>
                                 </tr>

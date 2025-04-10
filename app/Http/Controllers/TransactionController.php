@@ -44,6 +44,10 @@ class TransactionController extends Controller
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
             'notes' => 'nullable|string',
+            'recurrence_type' => 'nullable|in:none,fixed,installment',
+            'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
+            'total_installments' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
+            'next_date' => 'nullable|required_unless:recurrence_type,none|date',
         ]);
 
         // Debug: Verificar o valor recebido
@@ -60,7 +64,8 @@ class TransactionController extends Controller
         // Debug: Verificar o valor final
         \Log::info('Valor amount convertido para centavos: ' . $amount);
 
-        $transaction = Transaction::create([
+        // Preparar dados da transação
+        $transactionData = [
             'type' => $validated['type'],
             'status' => $validated['status'],
             'date' => $validated['date'],
@@ -70,7 +75,22 @@ class TransactionController extends Controller
             'account_id' => $validated['account_id'],
             'notes' => $validated['notes'] ?? null,
             'user_id' => auth()->id(),
-        ]);
+        ];
+
+        // Adicionar campos de recorrência se aplicável
+        if (isset($validated['recurrence_type']) && $validated['recurrence_type'] !== 'none') {
+            $transactionData['recurrence_type'] = $validated['recurrence_type'];
+            $transactionData['next_date'] = $validated['next_date'];
+            
+            if ($validated['recurrence_type'] === 'installment') {
+                $transactionData['installment_number'] = $validated['installment_number'];
+                $transactionData['total_installments'] = $validated['total_installments'];
+            }
+        } else {
+            $transactionData['recurrence_type'] = 'none';
+        }
+
+        $transaction = Transaction::create($transactionData);
 
         $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
         return redirect()->route($redirectRoute)
@@ -108,6 +128,10 @@ class TransactionController extends Controller
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
             'notes' => 'nullable|string',
+            'recurrence_type' => 'nullable|in:none,fixed,installment',
+            'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
+            'total_installments' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
+            'next_date' => 'nullable|required_unless:recurrence_type,none|date',
         ]);
 
         // Debug: Verificar o valor recebido
@@ -124,8 +148,8 @@ class TransactionController extends Controller
         // Debug: Verificar o valor final
         \Log::info('Valor amount convertido para centavos na atualização: ' . $amount);
         
-        // Atualizar dados da transação
-        $transaction->update([
+        // Preparar dados da transação
+        $transactionData = [
             'type' => $validated['type'],
             'status' => $validated['status'],
             'date' => $validated['date'],
@@ -134,7 +158,31 @@ class TransactionController extends Controller
             'category_id' => $validated['category_id'],
             'account_id' => $validated['account_id'],
             'notes' => $validated['notes'] ?? null,
-        ]);
+        ];
+
+        // Adicionar campos de recorrência se aplicável
+        if (isset($validated['recurrence_type']) && $validated['recurrence_type'] !== 'none') {
+            $transactionData['recurrence_type'] = $validated['recurrence_type'];
+            $transactionData['next_date'] = $validated['next_date'];
+            
+            if ($validated['recurrence_type'] === 'installment') {
+                $transactionData['installment_number'] = $validated['installment_number'];
+                $transactionData['total_installments'] = $validated['total_installments'];
+            } else {
+                // Se mudou de parcelado para fixo, limpar os campos de parcelamento
+                $transactionData['installment_number'] = null;
+                $transactionData['total_installments'] = null;
+            }
+        } else {
+            // Se mudou para sem recorrência, limpar todos os campos de recorrência
+            $transactionData['recurrence_type'] = 'none';
+            $transactionData['next_date'] = null;
+            $transactionData['installment_number'] = null;
+            $transactionData['total_installments'] = null;
+        }
+        
+        // Atualizar dados da transação
+        $transaction->update($transactionData);
 
         $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
         return redirect()->route($redirectRoute)
@@ -183,5 +231,66 @@ class TransactionController extends Controller
     public function showExpenses()
     {
         return view('transactions.expenses');
+    }
+
+    public function createNext(Transaction $transaction)
+    {
+        // Verificar se o usuário tem permissão para criar a próxima transação
+        if ($transaction->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Verificar se a transação tem recorrência
+        if (!$transaction->hasRecurrence() || !$transaction->next_date) {
+            return back()->with('error', 'Esta transação não possui configuração de recorrência válida.');
+        }
+
+        // Criar a próxima transação com base na atual
+        $newTransaction = $transaction->replicate();
+        
+        // Definir a data da nova transação como a próxima data da transação atual
+        $newTransaction->date = $transaction->next_date;
+        
+        // Calcular a próxima data para a transação atual (um mês após a próxima data atual)
+        $nextDate = (clone $transaction->next_date)->addMonth();
+        
+        // Se for uma transação parcelada, incrementar o número da parcela
+        if ($transaction->isInstallmentRecurrence()) {
+            // Verificar se já atingiu o número máximo de parcelas
+            if ($transaction->installment_number >= $transaction->total_installments) {
+                return back()->with('error', 'Todas as parcelas desta transação já foram criadas.');
+            }
+            
+            $newTransaction->installment_number = $transaction->installment_number + 1;
+            
+            // Se for a última parcela, remover a recorrência
+            if ($newTransaction->installment_number >= $newTransaction->total_installments) {
+                $newTransaction->recurrence_type = 'none';
+                $newTransaction->next_date = null;
+            } else {
+                $newTransaction->next_date = $nextDate;
+            }
+        } else {
+            // Para recorrência fixa, apenas atualizar a próxima data
+            $newTransaction->next_date = $nextDate;
+        }
+        
+        // Definir o status como pendente para a nova transação
+        $newTransaction->status = 'pending';
+        
+        // Salvar a nova transação
+        $newTransaction->save();
+        
+        // Atualizar a próxima data da transação original
+        $transaction->next_date = null;
+        
+        // Se for uma transação parcelada e já atingiu o número máximo de parcelas, remover a recorrência
+        if ($transaction->isInstallmentRecurrence() && $newTransaction->installment_number >= $transaction->total_installments) {
+            $transaction->recurrence_type = 'none';
+        }
+        
+        $transaction->save();
+        
+        return back()->with('success', 'Próxima transação recorrente criada com sucesso!');
     }
 } 
