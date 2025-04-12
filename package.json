@@ -3,7 +3,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build && cp public/build/.vite/manifest.json public/build/manifest.json",
+        "build": "vite build",
         "lint": "eslint . --ext .js,.vue --fix",
         "format": "prettier --write ."
     },
@@ -29,6 +29,8 @@
     "dependencies": {
         "@alpinejs/mask": "^3.14.8",
         "alpinejs": "^3.14.8",
+        "chart.js": "^4.4.8",
+        "flowbite": "^3.1.2",
         "imask": "^7.6.1",
         "v-money": "^0.8.1"
     }

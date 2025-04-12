@@ -23,16 +23,12 @@
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-<<<<<<< HEAD
-    <script src="https://unpkg.com/imask@7.6.1/dist/imask.min.js"></script>
-=======
+    @livewireScripts
+    @livewire('livewire-ui-modal')
     
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
-    <!-- LivewireUI Modal -->
-    @livewireScripts
-    @livewire('livewire-ui-modal')
+    <script src="https://unpkg.com/imask@7.6.1/dist/imask.min.js"></script>
     
     <style>
         /* Estilos básicos */
@@ -188,7 +184,6 @@
             }
         }
     </style>
->>>>>>> Beta1
 </head>
 <body class="font-sans antialiased bg-gray-50">
     <div class="min-h-screen flex flex-col">

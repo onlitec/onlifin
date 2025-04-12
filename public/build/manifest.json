@@ -1,17 +1,20 @@
 {
+  "_vendor-BArBhHwf.js": {
+    "file": "assets/vendor-BArBhHwf.js",
+    "name": "vendor"
+  },
   "resources/css/app.css": {
-<<<<<<< HEAD
-    "file": "assets/style-Sfp8ba7i.css",
-=======
-    "file": "assets/style-Bu9AbAid.css",
->>>>>>> remotes/ONLITEC/fix/campo-valor
+    "file": "assets/style-Cq5yhRgx.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-c8QeIAjf.js",
+    "file": "assets/app-nUsDeD4w.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_vendor-BArBhHwf.js"
+    ]
   }
 }
