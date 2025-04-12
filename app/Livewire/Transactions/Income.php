@@ -137,7 +137,7 @@ class Income extends Component
             ->where('user_id', auth()->id())
             ->whereMonth('date', $this->month)
             ->whereYear('date', $this->year)
-            ->sum('amount');
+            ->sum('value');
 
         return view('livewire.transactions.income', [
             'transactions' => $transactions,

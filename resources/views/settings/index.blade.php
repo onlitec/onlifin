@@ -166,7 +166,27 @@
                     </a>
                 </div>
             </div>
+            
+            <!-- Atualização do Sistema - Apenas para Administradores -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
+                                <i class="ri-refresh-line text-2xl text-orange-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Atualização do Sistema</h3>
+                                <p class="text-sm text-gray-500">Verificar e instalar atualizações do sistema</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.system-update') }}" class="btn btn-secondary w-full">
+                        Verificar Atualizações
+                    </a>
+                </div>
+            </div>
             @endif
         </div>
     </div>
-</x-app-layout> 
+</x-app-layout>

@@ -32,12 +32,12 @@ class DashboardController extends Controller
         $totalIncome = Transaction::where('type', 'income')
             ->where('status', 'paid')
             ->whereBetween('date', [$startDate, $endDate])
-            ->sum('amount');
+            ->sum('value');
         
         $totalExpenses = Transaction::where('type', 'expense')
             ->where('status', 'paid')
             ->whereBetween('date', [$startDate, $endDate])
-            ->sum('amount');
+            ->sum('value');
         
         $balance = $totalIncome - $totalExpenses;
 
@@ -48,12 +48,12 @@ class DashboardController extends Controller
         $previousIncome = Transaction::where('type', 'income')
             ->where('status', 'paid')
             ->whereBetween('date', [$previousStartDate, $previousEndDate])
-            ->sum('amount');
+            ->sum('value');
 
         $previousExpenses = Transaction::where('type', 'expense')
             ->where('status', 'paid')
             ->whereBetween('date', [$previousStartDate, $previousEndDate])
-            ->sum('amount');
+            ->sum('value');
 
         // Calcula as variações percentuais
         $incomeVariation = $previousIncome > 0 ? (($totalIncome - $previousIncome) / $previousIncome) * 100 : 0;

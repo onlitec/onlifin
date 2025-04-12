@@ -24,8 +24,8 @@ class Dashboard extends Component
             ->orderBy('date', 'desc')
             ->get();
             
-        $totalExpenses = $expenses->sum('amount');
-        $totalIncomes = $incomes->sum('amount');
+        $totalExpenses = $expenses->sum('value');
+        $totalIncomes = $incomes->sum('value');
         $balance = $totalIncomes - $totalExpenses;
         
         return view('livewire.dashboard', [

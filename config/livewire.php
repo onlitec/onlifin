@@ -3,7 +3,7 @@
 return [
     'class_namespace' => 'App\\Livewire',
     'view_path' => resource_path('views/livewire'),
-    'layout' => 'layouts.app',
+    'layout' => 'layouts.guest',
     'asset_url' => null,
     'app_url' => null,
     'middleware_group' => 'web',

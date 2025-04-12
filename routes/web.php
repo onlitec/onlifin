@@ -21,6 +21,7 @@ use App\Http\Controllers\ReplicateSettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NotificationConfigController;
 use App\Http\Controllers\SystemLogController;
+use App\Http\Controllers\SystemUpdateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,14 +106,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{account}', [AccountController::class, 'destroy'])->name('destroy');
     });
 
-    // Categories
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
-    Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
-
     // Configurações - página principal acessível a todos os usuários
     Route::get('/settings', [SettingsController::class, 'index'])->middleware(['auth'])->name('settings.index');
     
@@ -122,6 +115,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Configurações (protegidas por middleware admin)
     Route::prefix('settings')->name('settings.')->middleware(['auth', AdminMiddleware::class])->group(function () {
+        Route::get('/system-update', [SystemUpdateController::class, 'index'])->name('system-update');
+        Route::post('/system-update/do', [SystemUpdateController::class, 'doUpdate'])->name('system-update.do');
+        
         Route::get('/users', [SettingsController::class, 'users'])->name('users');
         Route::get('/users/new', [SettingsController::class, 'createUser'])->name('users.new');
         Route::post('/users/store', [SettingsController::class, 'storeUser'])->name('users.store');

@@ -10,20 +10,43 @@ return new class extends Migration
     {
         Schema::table('accounts', function (Blueprint $table) {
             // Remove a coluna balance existente
-            $table->dropColumn('balance');
+            if (Schema::hasColumn('accounts', 'balance')) {
+                $table->dropColumn('balance');
+            }
             
             // Adiciona as novas colunas
-            $table->decimal('initial_balance', 10, 2)->default(0);
-            $table->decimal('current_balance', 10, 2)->default(0);
-            $table->text('description')->nullable();
+            if (!Schema::hasColumn('accounts', 'initial_balance')) {
+                $table->decimal('initial_balance', 10, 2)->default(0);
+            }
+            
+            if (!Schema::hasColumn('accounts', 'current_balance')) {
+                $table->decimal('current_balance', 10, 2)->default(0);
+            }
+            
+            if (!Schema::hasColumn('accounts', 'description')) {
+                $table->text('description')->nullable();
+            }
         });
     }
 
     public function down()
     {
         Schema::table('accounts', function (Blueprint $table) {
-            $table->decimal('balance', 10, 2)->default(0);
-            $table->dropColumn(['initial_balance', 'current_balance', 'description']);
+            if (Schema::hasColumn('accounts', 'balance')) {
+                $table->decimal('balance', 10, 2)->default(0);
+            }
+            
+            if (Schema::hasColumn('accounts', 'initial_balance')) {
+                $table->dropColumn('initial_balance');
+            }
+            
+            if (Schema::hasColumn('accounts', 'current_balance')) {
+                $table->dropColumn('current_balance');
+            }
+            
+            if (Schema::hasColumn('accounts', 'description')) {
+                $table->dropColumn('description');
+            }
         });
     }
 }; 
