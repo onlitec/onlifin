@@ -8,7 +8,11 @@ class Category extends Model
 {
     protected $fillable = [
         'name',
-        'type' // 'expense' ou 'income'
+        'type', // 'expense' ou 'income'
+        'color',
+        'description',
+        'icon',
+        'user_id'
     ];
 
     public function expenses()

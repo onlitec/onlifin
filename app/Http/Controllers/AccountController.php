@@ -20,7 +20,23 @@ class AccountController extends Controller
 
     public function store(Request $request)
     {
-        // Implementar lógica de criação
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string',
+            'initial_balance' => 'required|numeric',
+            'description' => 'nullable|string',
+            'color' => 'nullable|string|max:7',
+        ]);
+
+        $validated['user_id'] = auth()->id();
+        
+        $validated['balance'] = $validated['initial_balance'];
+        unset($validated['initial_balance']);
+
+        $account = Account::create($validated);
+
+        return redirect()->route('accounts.index')
+            ->with('success', 'Conta criada com sucesso!');
     }
 
     public function edit(Account $account)
@@ -30,11 +46,32 @@ class AccountController extends Controller
 
     public function update(Request $request, Account $account)
     {
-        // Implementar lógica de atualização
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string',
+            'initial_balance' => 'required|numeric',
+            'description' => 'nullable|string',
+            'color' => 'nullable|string|max:7',
+        ]);
+
+        $validated['balance'] = $validated['initial_balance'];
+        unset($validated['initial_balance']);
+
+        $account->update($validated);
+
+        return redirect()->route('accounts.index')
+            ->with('success', 'Conta atualizada com sucesso!');
     }
 
     public function destroy(Account $account)
     {
-        // Implementar lógica de exclusão
+        try {
+            $account->delete();
+            return redirect()->route('accounts.index')
+                ->with('success', 'Conta excluída com sucesso!');
+        } catch (\Exception $e) {
+            return redirect()->route('accounts.index')
+                ->with('error', 'Não foi possível excluir esta conta. Ela pode estar em uso em transações.');
+        }
     }
 } 

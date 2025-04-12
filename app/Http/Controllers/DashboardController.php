@@ -4,28 +4,69 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Totais apenas de transações pagas
+        $period = $request->get('period', 'current');
+        
+        // Define o período baseado na seleção
+        switch ($period) {
+            case 'last':
+                $startDate = now()->subMonth()->startOfMonth();
+                $endDate = now()->subMonth()->endOfMonth();
+                break;
+            case 'year':
+                $startDate = now()->startOfYear();
+                $endDate = now()->endOfYear();
+                break;
+            default: // current
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
+                break;
+        }
+
+        // Totais apenas de transações pagas no período selecionado
         $totalIncome = Transaction::where('type', 'income')
             ->where('status', 'paid')
+            ->whereBetween('date', [$startDate, $endDate])
             ->sum('amount');
         
         $totalExpenses = Transaction::where('type', 'expense')
             ->where('status', 'paid')
+            ->whereBetween('date', [$startDate, $endDate])
             ->sum('amount');
         
         $balance = $totalIncome - $totalExpenses;
+
+        // Cálculo da variação em relação ao período anterior
+        $previousStartDate = $startDate->copy()->subMonth();
+        $previousEndDate = $endDate->copy()->subMonth();
+
+        $previousIncome = Transaction::where('type', 'income')
+            ->where('status', 'paid')
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->sum('amount');
+
+        $previousExpenses = Transaction::where('type', 'expense')
+            ->where('status', 'paid')
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->sum('amount');
+
+        // Calcula as variações percentuais
+        $incomeVariation = $previousIncome > 0 ? (($totalIncome - $previousIncome) / $previousIncome) * 100 : 0;
+        $expensesVariation = $previousExpenses > 0 ? (($totalExpenses - $previousExpenses) / $previousExpenses) * 100 : 0;
+        $balanceVariation = $previousIncome - $previousExpenses != 0 ? 
+            ((($totalIncome - $totalExpenses) - ($previousIncome - $previousExpenses)) / abs($previousIncome - $previousExpenses)) * 100 : 0;
 
         // Transações de hoje
         $today = now()->format('Y-m-d');
         $todayIncomes = Transaction::with(['category', 'account'])
             ->where('type', 'income')
             ->whereDate('date', $today)
-            ->orderBy('status', 'asc') // Pendentes primeiro
+            ->orderBy('status', 'asc')
             ->orderBy('date')
             ->get();
 
@@ -57,21 +98,25 @@ class DashboardController extends Controller
         $pendingIncomes = Transaction::with(['category', 'account'])
             ->where('type', 'income')
             ->where('status', 'pending')
-            ->whereBetween('date', [now()->addDays(2)->format('Y-m-d'), $nextWeek])
+            ->whereBetween('date', [now()->format('Y-m-d'), $nextWeek])
             ->orderBy('date')
             ->get();
 
         $pendingExpenses = Transaction::with(['category', 'account'])
             ->where('type', 'expense')
             ->where('status', 'pending')
-            ->whereBetween('date', [now()->addDays(2)->format('Y-m-d'), $nextWeek])
+            ->whereBetween('date', [now()->format('Y-m-d'), $nextWeek])
             ->orderBy('date')
             ->get();
 
         return view('dashboard.index', compact(
+            'period',
             'totalIncome',
             'totalExpenses',
             'balance',
+            'incomeVariation',
+            'expensesVariation',
+            'balanceVariation',
             'todayIncomes',
             'todayExpenses',
             'tomorrowIncomes',

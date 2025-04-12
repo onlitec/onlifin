@@ -4,12 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Validator;
 
 class Transaction extends Model
 {
     protected $fillable = [
         'type',
         'status',
+        'recurrence_type',
+        'installment_number',
+        'total_installments',
+        'next_date',
         'date',
         'description',
         'amount',
@@ -20,11 +25,9 @@ class Transaction extends Model
     ];
 
     protected $casts = [
-        'amount' => 'integer',
         'date' => 'date',
-        'category_id' => 'integer',
-        'account_id' => 'integer',
-        'user_id' => 'integer'
+        'amount' => 'integer',
+        'status' => 'string',
     ];
 
     public function category(): BelongsTo
@@ -42,9 +45,14 @@ class Transaction extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function validate(array $data)
+    {
+        return Validator::make($data, $this->rules);
+    }
+
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return number_format($this->amount / 100, 2, ',', '.');
     }
 
     public function isPaid(): bool
@@ -65,5 +73,37 @@ class Transaction extends Model
     public function getFormattedAmountAttribute(): string
     {
         return 'R$ ' . number_format($this->amount / 100, 2, ',', '.');
+    }
+
+    public function setAmountAttribute($value)
+    {
+        // Remove formatação e converte para centavos
+        $amount = str_replace(['R$', '.', ','], ['', '', '.'], $value);
+        $this->attributes['amount'] = round((float) $amount * 100);
+    }
+
+    // Métodos para recorrência
+    public function hasRecurrence()
+    {
+        return $this->recurrence_type && $this->recurrence_type !== 'none';
+    }
+
+    public function isFixedRecurrence()
+    {
+        return $this->recurrence_type === 'fixed';
+    }
+
+    public function isInstallmentRecurrence()
+    {
+        return $this->recurrence_type === 'installment';
+    }
+
+    public function getFormattedInstallmentAttribute()
+    {
+        if (!$this->isInstallmentRecurrence() || !$this->installment_number || !$this->total_installments) {
+            return '';
+        }
+
+        return "Parcela {$this->installment_number}/{$this->total_installments}";
     }
 }

@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app max-w-4xl mx-auto">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
@@ -26,7 +26,7 @@
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">
                                 Tipo de Transação
                             </label>
-                            <select name="type" id="type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <select name="type" id="type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="updateCategories(this.value)">
                                 <option value="income" {{ $transaction->type === 'income' ? 'selected' : '' }}>Receita</option>
                                 <option value="expense" {{ $transaction->type === 'expense' ? 'selected' : '' }}>Despesa</option>
                             </select>
@@ -61,6 +61,7 @@
                             <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
                                 Valor
                             </label>
+<<<<<<< HEAD
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <span class="text-gray-500 sm:text-sm">R$</span>
@@ -88,6 +89,31 @@
                                     placeholder="0,00"
                                     value="{{ number_format($transaction->amount / 100, 2, ',', '.') }}"
                                 >
+=======
+<<<<<<< HEAD
+                            <div class="relative">
+                                <input type="text" 
+                                    name="amount" 
+                                    id="amount" 
+                                    class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    value="{{ old('amount', 'R$ ' . number_format($transaction->amount / 100, 2, ',', '.')) }}" 
+                                    placeholder="R$ 0,00"
+                                    inputmode="decimal">
+=======
+                            <div class="relative" x-data="moneyInput">
+                                <div class="flex items-center">
+                                    <span class="text-gray-700 mr-2">R$</span>
+                                    <input type="text" 
+                                           name="amount" 
+                                           id="amount" 
+                                           x-model="amount"
+                                           class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                           value="{{ $transaction->amount }}"
+                                           placeholder="0,00"
+                                           required>
+                                </div>
+>>>>>>> remotes/ONLITEC/fix/campo-valor
+>>>>>>> Beta1
                             </div>
                             @error('amount') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -143,6 +169,49 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Recorrência -->
+                    <div class="form-group">
+                        <label for="recurrence_type" class="block text-sm font-medium text-gray-700 mb-1">
+                            Tipo de Recorrência
+                        </label>
+                        <select name="recurrence_type" id="recurrence_type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="toggleRecurrenceFields()">
+                            <option value="none" {{ $transaction->recurrence_type === 'none' || !$transaction->recurrence_type ? 'selected' : '' }}>Nenhuma</option>
+                            <option value="fixed" {{ $transaction->recurrence_type === 'fixed' ? 'selected' : '' }}>Fixa</option>
+                            <option value="installment" {{ $transaction->recurrence_type === 'installment' ? 'selected' : '' }}>Parcelada</option>
+                        </select>
+                    </div>
+
+                    <!-- Campos para parcelamento (visíveis apenas quando recurrence_type = "installment") -->
+                    <div id="installment-fields" class="grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
+                        <div class="form-group">
+                            <label for="installment_number" class="block text-sm font-medium text-gray-700 mb-1">
+                                Número da Parcela
+                            </label>
+                            <input type="number" name="installment_number" id="installment_number" 
+                                class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                value="{{ old('installment_number', $transaction->installment_number ?? 1) }}" min="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="total_installments" class="block text-sm font-medium text-gray-700 mb-1">
+                                Total de Parcelas
+                            </label>
+                            <input type="number" name="total_installments" id="total_installments" 
+                                class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                value="{{ old('total_installments', $transaction->total_installments ?? 12) }}" min="1">
+                        </div>
+                    </div>
+
+                    <!-- Campo para data da próxima cobrança (visível apenas quando recurrence_type ≠ "none") -->
+                    <div id="next-date-field" class="form-group" style="display: none;">
+                        <label for="next_date" class="block text-sm font-medium text-gray-700 mb-1">
+                            Data da Próxima Cobrança
+                        </label>
+                        <input type="date" name="next_date" id="next_date" 
+                            class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            value="{{ old('next_date', $transaction->next_date ? $transaction->next_date->format('Y-m-d') : date('Y-m-d', strtotime('+1 month'))) }}">
+                    </div>
                 </div>
 
                 <!-- Botões -->
@@ -158,25 +227,96 @@
             </form>
         </div>
     </div>
-</x-layouts.app>
+</x-app-layout>
 
 <script>
-function moneyMask() {
-    return {
-        initMask() {
-            const input = this.$refs.input;
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar máscara monetária
+    const amountInput = document.getElementById('amount');
+    if (amountInput) {
+        const mask = IMask(amountInput, {
+            mask: 'R$ num',
+            blocks: {
+                num: {
+                    mask: Number,
+                    scale: 2,
+                    thousandsSeparator: '.',
+                    radix: ',',
+                    normalizeZeros: true,
+                    padFractional: true,
+                    min: 0,
+                    max: 999999999.99
+                }
+            }
+        });
+
+        // Adicionar o prefixo R$ se o campo estiver vazio ao receber foco
+        amountInput.addEventListener('focus', function() {
+            if (!this.value) {
+                mask.value = "0";
+            }
+        });
+    }
+
+    // Inicializar filtro de categorias
+    const typeSelect = document.getElementById('type');
+    if (typeSelect) {
+        // Chamar a função ao carregar a página para garantir que as categorias
+        // correspondam ao tipo selecionado inicialmente
+        updateCategories(typeSelect.value);
+    }
+    
+    // Inicializar campos de recorrência
+    toggleRecurrenceFields();
+});
+
+// Função para atualizar as categorias com base no tipo selecionado
+function updateCategories(type) {
+    // Armazenar o ID da categoria atualmente selecionada
+    const currentCategoryId = document.getElementById('category_id').value;
+    
+    // Buscar categorias via AJAX
+    fetch(`/api/categories?type=${type}`)
+        .then(response => response.json())
+        .then(data => {
+            // Limpar categorias existentes
+            const categorySelect = document.getElementById('category_id');
+            categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
             
-            const mask = IMask(input, {
-                mask: Number,
-                scale: 2,
-                thousandsSeparator: '.',
-                radix: ',',
-                normalizeZeros: true,
-                padFractional: true,
-                min: 0,
-                max: 999999999.99
+            // Adicionar novas categorias
+            data.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                
+                // Selecionar a categoria atual, se estiver na lista
+                if (category.id == currentCategoryId) {
+                    option.selected = true;
+                }
+                
+                categorySelect.appendChild(option);
             });
-        }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar categorias:', error);
+        });
+}
+
+// Função para mostrar/ocultar campos de recorrência
+function toggleRecurrenceFields() {
+    const recurrenceType = document.getElementById('recurrence_type').value;
+    const installmentFields = document.getElementById('installment-fields');
+    const nextDateField = document.getElementById('next-date-field');
+    
+    if (recurrenceType === 'installment') {
+        installmentFields.style.display = 'grid';
+        nextDateField.style.display = 'block';
+    } else if (recurrenceType === 'fixed') {
+        installmentFields.style.display = 'none';
+        nextDateField.style.display = 'block';
+    } else {
+        installmentFields.style.display = 'none';
+        nextDateField.style.display = 'none';
     }
 }
 </script> 

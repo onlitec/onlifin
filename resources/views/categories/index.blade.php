@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app">
         <div class="mb-6 flex items-center justify-between">
             <h1>Categorias</h1>
@@ -35,9 +35,14 @@
                                             <a href="{{ route('categories.edit', $category) }}" class="text-blue-600 hover:text-blue-800">
                                                 <i class="ri-pencil-line"></i>
                                             </a>
-                                            <button type="button" class="text-red-600 hover:text-red-800">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
+                                            
+                                            <form action="{{ route('categories.destroy', $category) }}" method="POST" class="inline-block">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-800" onclick="return confirm('Tem certeza que deseja excluir esta categoria?')">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -54,4 +59,4 @@
             </div>
         </div>
     </div>
-</x-layouts.app> 
+</x-app-layout> 
