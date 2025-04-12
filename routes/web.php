@@ -52,28 +52,10 @@ Route::middleware('guest')->group(function () {
 });
 
 // Rotas protegidas
-<<<<<<< HEAD
-Route::middleware(['web', 'auth'])->group(function () {
-    // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index']);
-    
-    // Transactions - Agrupe todas as rotas de transações aqui
-    Route::prefix('transactions')->group(function () {
-        Route::get('/', [TransactionController::class, 'index'])->name('transactions');
-        Route::get('/create', [TransactionController::class, 'create'])->name('transactions.create');
-        Route::post('/', [TransactionController::class, 'store'])->name('transactions.store');
-        Route::get('/{transaction}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
-        Route::put('/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
-        Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
-        Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])->name('transactions.mark-as-paid');
-    });
-=======
 Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index']);
->>>>>>> Beta1
     
     // Perfil do usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -123,7 +105,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{account}', [AccountController::class, 'destroy'])->name('destroy');
     });
 
-<<<<<<< HEAD
     // Categories
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories');
     Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
@@ -131,14 +112,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
     Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
-=======
+
     // Configurações - página principal acessível a todos os usuários
     Route::get('/settings', [SettingsController::class, 'index'])->middleware(['auth'])->name('settings.index');
     
     // Configurações de notificações para todos os usuários
     Route::get("/settings/notifications", [SettingsController::class, "notifications"])->middleware(["auth"])->name("settings.notifications");
     Route::post("/settings/notifications", [SettingsController::class, "updateNotifications"])->middleware(["auth"])->name("settings.notifications.update");
->>>>>>> Beta1
     
     // Configurações (protegidas por middleware admin)
     Route::prefix('settings')->name('settings.')->middleware(['auth', AdminMiddleware::class])->group(function () {
