@@ -6,7 +6,9 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
 use App\Models\User;
+use App\Models\Transaction;
 use App\Observers\UserObserver;
+use App\Observers\TransactionObserver;
 use App\Livewire\Transactions\Income;
 use App\Livewire\Transactions\Expenses;
 use Carbon\Carbon;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Blade::component('components.application-logo', 'application-logo');
         User::observe(UserObserver::class);
+        Transaction::observe(TransactionObserver::class);
 
         // Configurando o Carbon para português
         Carbon::setLocale('pt_BR');
@@ -35,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         // Registrando componentes Livewire
         Livewire::component('transactions.income', Income::class);
         Livewire::component('transactions.expenses', Expenses::class);
+        Livewire::component('partials.delete-transaction-button', \App\Livewire\Partials\DeleteTransactionButton::class);
         Livewire::component('settings.users.list-users', \App\Livewire\Settings\Users\ListUsers::class);
         Livewire::component('settings.users.create', \App\Livewire\Settings\Users\Create::class);
         Livewire::component('settings.users.edit', \App\Livewire\Settings\Users\Edit::class);
@@ -48,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('notification-settings-modal', \App\Livewire\NotificationSettingsModal::class);
         Livewire::component('wire-elements-modal', \LivewireUI\Modal\Modal::class);
         Livewire::component('settings.whatsapp-config', \App\Livewire\Settings\WhatsAppConfig::class);
+        Livewire::component('settings.logs', \App\Livewire\Settings\Logs::class);
 
         // Registrar canal de WhatsApp
         \Illuminate\Support\Facades\Notification::extend('whatsapp', function ($app) {

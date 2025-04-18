@@ -110,10 +110,7 @@
                                        class="text-gray-600 hover:text-gray-900">
                                         <i class="ri-pencil-line"></i>
                                     </a>
-                                    <button wire:click="confirmDelete({{ $transaction->id }})" 
-                                            class="text-red-600 hover:text-red-900">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </button>
+                                    <livewire:transactions.delete-button :transaction-id="$transaction->id" />
                                 </div>
                             </td>
                         </tr>
@@ -134,8 +131,8 @@
         </div>
     </div>
 
-    <!-- Modal de Confirmação de Exclusão -->
-    @if($confirmingDeletion)
+    <!-- Modal de confirmação de exclusão -->
+    @if ($confirmingDeletion)
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">

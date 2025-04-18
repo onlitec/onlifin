@@ -20,9 +20,7 @@ export default defineConfig({
                 style: 'resources/css/app.css',
             },
             external: [
-                'flowbite',
-                'sweetalert2',
-                'axios'
+                'flowbite'
             ],
             output: {
                 manualChunks: {

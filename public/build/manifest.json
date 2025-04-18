@@ -4,20 +4,17 @@
     "name": "vendor"
   },
   "resources/css/app.css": {
-    "file": "assets/style-DuUPcsaa.css",
+    "file": "assets/style-BCGkYzUR.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BgUxwFih.js",
+    "file": "assets/app-CtgnPSK7.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "imports": [
       "_vendor-Bb-BfKkS.js"
-    ],
-    "css": [
-      "assets/app-Bpc1NDFN.css"
     ]
   }
 }

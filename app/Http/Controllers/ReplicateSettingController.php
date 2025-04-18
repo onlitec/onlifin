@@ -6,6 +6,9 @@ use App\Models\ReplicateSetting;
 use App\Services\AIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use App\Models\SystemLog;
 
 class ReplicateSettingController extends Controller
@@ -25,44 +28,79 @@ class ReplicateSettingController extends Controller
             'openai' => [
                 'name' => 'OpenAI',
                 'models' => ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'],
-                'api_token' => env('OPENAI_API_KEY')
+                'api_token' => env('OPENAI_API_KEY'),
+                'api_url' => 'https://platform.openai.com/api-keys'
             ],
             'anthropic' => [
                 'name' => 'Anthropic',
                 'models' => [
-                    'claude-3-opus-20240229',
-                    'claude-3-sonnet-20240229',
-                    'claude-3-haiku-20240307'
+                    'claude-3-opus',
+                    'claude-3-sonnet',
+                    'claude-3-haiku'
                 ],
-                'api_token' => env('ANTHROPIC_API_KEY')
+                'api_token' => env('ANTHROPIC_API_KEY'),
+                'api_url' => 'https://console.anthropic.com/account/keys'
             ],
             'gemini' => [
-                'name' => 'Gemini',
-                'models' => ['gemini-pro', 'gemini-pro-vision'],
-                'api_token' => env('GOOGLE_API_KEY')
+                'name' => 'Google Gemini',
+                'models' => [
+                    'gemini-2.0-flash',
+                    'gemini-2.0-pro',
+                    'gemini-pro',
+                    'gemini-pro-vision',
+                    'gemini-pro-vision-2'
+                ],
+                'api_token' => env('GOOGLE_API_KEY'),
+                'api_url' => 'https://makersuite.google.com/app/apikey'
             ],
             'grok' => [
                 'name' => 'Grok',
-                'models' => ['mixtral-8x7b-instruct', 'mixtral-8x7b'],
-                'api_token' => env('GROK_API_KEY')
+                'models' => [
+                    'mixtral-8x7b-instruct',
+                    'mixtral-8x7b',
+                    'mixtral-32b-instruct'
+                ],
+                'api_token' => env('GROK_API_KEY'),
+                'api_url' => 'https://grokai.com/api-keys'
             ],
             'copilot' => [
                 'name' => 'Copilot',
                 'models' => ['copilot'],
-                'api_token' => env('COPILOT_API_KEY')
+                'api_token' => env('COPILOT_API_KEY'),
+                'api_url' => 'https://github.com/features/copilot'
+            ],
+            'tongyi' => [
+                'name' => 'Tongyi Qianwen',
+                'models' => [
+                    'qwen-7b',
+                    'qwen-14b',
+                    'qwen-70b'
+                ],
+                'api_token' => env('TONGYI_API_KEY'),
+                'api_url' => 'https://dashscope.console.aliyun.com/apikey'
+            ],
+            'deepseek' => [
+                'name' => 'Deepseek',
+                'models' => [
+                    'deepseek-r1',
+                    'deepseek-r1-13b',
+                    'deepseek-r2',
+                    'deepseek-r2-70b'
+                ],
+                'api_token' => env('DEEPSEEK_API_KEY'),
+                'api_url' => 'https://deepseek.ai/developer'
             ]
         ];
 
         return view('settings.replicate', compact('settings', 'providers'));
     }
 
-    /**
-     * Salva as configurações
-     */
+
+
     public function store(Request $request)
     {
         $request->validate([
-            'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot',
+            'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot,tongyi,deepseek',
             'api_token' => 'required|string',
             'model_version' => 'required|string',
             'system_prompt' => 'nullable|string',
@@ -78,13 +116,32 @@ class ReplicateSettingController extends Controller
             $validModels = [
                 'openai' => ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'],
                 'anthropic' => [
-                    'claude-3-opus-20240229',
-                    'claude-3-sonnet-20240229',
-                    'claude-3-haiku-20240307'
+                    'claude-3-opus',
+                    'claude-3-sonnet',
+                    'claude-3-haiku'
                 ],
-                'gemini' => ['gemini-pro', 'gemini-pro-vision'],
-                'grok' => ['mixtral-8x7b-instruct', 'mixtral-8x7b'],
-                'copilot' => ['copilot']
+                'gemini' => [
+                    'gemini-pro',
+                    'gemini-pro-vision',
+                    'gemini-pro-vision-2'
+                ],
+                'grok' => [
+                    'mixtral-8x7b-instruct',
+                    'mixtral-8x7b',
+                    'mixtral-32b-instruct'
+                ],
+                'copilot' => ['copilot'],
+                'tongyi' => [
+                    'qwen-7b',
+                    'qwen-14b',
+                    'qwen-70b'
+                ],
+                'deepseek' => [
+                    'deepseek-r1',
+                    'deepseek-r1-13b',
+                    'deepseek-r2',
+                    'deepseek-r2-70b'
+                ]
             ];
 
             if (!in_array($modelVersion, $validModels[$provider] ?? [])) {
@@ -145,61 +202,47 @@ class ReplicateSettingController extends Controller
     public function test(Request $request)
     {
         try {
-            // Verificar se há configurações salvas
-            $settings = ReplicateSetting::getActive();
+            // Verificar se a requisição é JSON e processar adequadamente
+            $data = $request->isJson() ? $request->json()->all() : $request->all();
             
-            if (!$settings) {
-                Log::warning('Teste de conexão IA: Nenhuma configuração encontrada');
-
-                SystemLog::register(
-                    'test',
-                    'ai_settings',
-                    'Teste de conexão falhou: Nenhuma configuração encontrada'
-                );
-                
-                if ($request->wantsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Nenhuma configuração encontrada. Salve as configurações antes de testar.'
-                    ], 422);
-                }
-                
-                return redirect()->route('settings.replicate.index')
-                    ->with('error', 'Nenhuma configuração encontrada. Salve as configurações antes de testar.');
-            }
-            
-            if (empty($settings->api_token) || empty($settings->model_version)) {
-                Log::warning('Teste de conexão IA: Campos obrigatórios não preenchidos', [
-                    'has_token' => !empty($settings->api_token),
-                    'has_model' => !empty($settings->model_version)
-                ]);
-                
-                if ($request->wantsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Chave da API e Modelo são obrigatórios. Preencha todos os campos e salve antes de testar.'
-                    ], 422);
-                }
-                
-                return redirect()->route('settings.replicate.index')
-                    ->with('error', 'Chave da API e Modelo são obrigatórios. Preencha todos os campos e salve antes de testar.');
-            }
-            
-            Log::info('Iniciando teste de conexão com IA', [
-                'provider' => $settings->provider,
-                'model' => $settings->model_version
+            // Validar os dados da requisição
+            $validated = Validator::make($data, [
+                'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot,tongyi,deepseek',
+                'api_token' => 'required|string',
+                'model_version' => 'required|string'
             ]);
+            
+            if ($validated->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dados inválidos: ' . $validated->errors()->first()
+                ], 422);
+            }
+            
+            // Log dos dados recebidos para debug
+            Log::info('Dados recebidos para teste de conexão:', [
+                'provider' => $data['provider'],
+                'has_token' => !empty($data['api_token']),
+                'model' => $data['model_version'],
+                'is_json' => $request->isJson()
+            ]);
+
+            // Criar um objeto temporário de configurações para teste
+            $settings = new ReplicateSetting();
+            $settings->provider = $data['provider'];
+            $settings->api_token = $data['api_token'];
+            $settings->model_version = $data['model_version'];
             
             // Testar a conexão usando o serviço apropriado
             $service = new AIService($settings);
-            $response = $service->test();
+            $service->test();
             
+            // Registrar o log do teste bem-sucedido
             Log::info('Teste de conexão com IA bem-sucedido', [
                 'provider' => $settings->provider,
-                'response' => $response
+                'model' => $settings->model_version
             ]);
 
-            // Registra o log do teste bem-sucedido
             SystemLog::register(
                 'test',
                 'ai_settings',
@@ -210,39 +253,92 @@ class ReplicateSettingController extends Controller
                 ]
             );
 
-            if ($request->wantsJson()) {
+            // Se for uma requisição AJAX ou se explicitamente diz que quer JSON, retorne JSON
+            if ($request->ajax() || $request->wantsJson() || $request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
                 return response()->json([
                     'success' => true,
                     'message' => 'Conexão com o provedor de IA estabelecida com sucesso.'
                 ]);
             }
             
+            // Caso contrário, redirecione com uma mensagem de sucesso
             return redirect()->route('settings.replicate.index')
                 ->with('success', 'Conexão com o provedor de IA estabelecida com sucesso.');
         } catch (\Exception $e) {
-            Log::error('Erro ao testar conexão com IA: ' . $e->getMessage());
+            // Registrar o log do erro
+            Log::error('Erro ao testar conexão com IA: ' . $e->getMessage(), [
+                'provider' => $request->provider ?? 'desconhecido',
+                'model' => $request->model_version ?? 'desconhecido',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
 
-            // Registra o log do erro no teste
             SystemLog::register(
                 'error',
                 'ai_settings',
                 'Erro ao testar conexão com IA: ' . $e->getMessage(),
                 [
-                    'error' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine()
+                    'provider' => $request->provider ?? 'desconhecido',
+                    'model' => $request->model_version ?? 'desconhecido',
+                    'error' => $e->getMessage()
                 ]
             );
             
-            if ($request->wantsJson()) {
+            // Se for uma requisição AJAX ou se explicitamente diz que quer JSON, retorne JSON
+            if ($request->ajax() || $request->wantsJson() || $request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao testar conexão: ' . $e->getMessage()
                 ], 422);
             }
             
+            // Caso contrário, redirecione com uma mensagem de erro
             return redirect()->route('settings.replicate.index')
                 ->with('error', 'Erro ao testar conexão: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Busca as configurações salvas de um provedor específico
+     */
+    public function getSettings($provider)
+    {
+        try {
+            // Validar o provedor
+            if (!in_array($provider, ['openai', 'anthropic', 'gemini', 'grok', 'copilot', 'tongyi', 'deepseek'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Provedor inválido'
+                ], 422);
+            }
+            
+            // Buscar as configurações salvas
+            $settings = ReplicateSetting::where('provider', $provider)->first();
+            
+            if (!$settings) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nenhuma configuração encontrada para este provedor'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'settings' => [
+                    'provider' => $settings->provider,
+                    'api_token' => $settings->api_token,
+                    'model_version' => $settings->model_version,
+                    'system_prompt' => $settings->system_prompt
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao buscar configurações: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar configurações: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

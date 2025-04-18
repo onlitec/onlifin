@@ -59,6 +59,7 @@
     <div class="transactions-list">
         @forelse($transactions as $transaction)
             <div class="transaction-item">
+                <livewire:transactions.delete-button :transaction-id="$transaction->id" />
                 <div class="transaction-date">
                     {{ $transaction->date->format('d') }}
                     <span class="month">{{ $transaction->date->format('M') }}</span>

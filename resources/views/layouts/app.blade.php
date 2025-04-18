@@ -13,19 +13,29 @@
     <title>{{ config('app.name', 'Onlifin') }}</title>
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 400;
+            src: url('{{ asset('assets/fonts/inter/inter-regular.ttf') }}') format('truetype');
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
     
-    <!-- Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Icons (Local) -->
+    <link href="{{ asset('assets/css/remixicon.css') }}" rel="stylesheet">
     
     <!-- IMask para campos de formulário -->
-    <script src="https://unpkg.com/imask"></script>
+
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     
     <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     
     <!-- LivewireUI Modal -->
     @livewireScripts
@@ -244,6 +254,11 @@
                         </button>
                     </div>
 
+                    <!-- AI Status -->
+                    <div class="hidden sm:flex items-center mr-4">
+                        <x-ai-status />
+                    </div>
+
                     <!-- User Dropdown -->
                     <div class="hidden sm:flex items-center">
                         <div class="relative" x-data="{ open: false }" @click.away="open = false">
@@ -270,6 +285,10 @@
 
             <!-- Mobile Navigation -->
             <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-200 py-2 px-4">
+                <!-- AI Status (Mobile) -->
+                <div class="py-2 px-1 mb-2 border-b border-gray-100">
+                    <x-ai-status />
+                </div>
                 <div class="space-y-1">
                     <a href="{{ route('dashboard') }}" class="mobile-nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                         <i class="ri-dashboard-line mr-2"></i>
@@ -335,7 +354,7 @@
         </footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('assets/js/sweetalert2.all.min.js') }}"></script>
     <script>
         window.addEventListener('alert', event => {
             Swal.fire({

@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Transactions;
 
-use Livewire\Component;
 use App\Models\Transaction;
 use App\Models\Category;
 use App\Models\Account;
@@ -22,7 +21,7 @@ class Expenses extends TransactionBase
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $confirmingDeletion = false;
-    public $transactionToDelete;
+    public $transactionToDelete = null;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -32,7 +31,10 @@ class Expenses extends TransactionBase
         'sortDirection' => ['except' => 'desc'],
     ];
 
-    protected $listeners = ['delete' => 'deleteTransaction'];
+    protected $listeners = [
+        'transactionDeleted' => 'onTransactionDeleted',
+        'refresh' => '$refresh'
+    ];
 
     public function mount()
     {
@@ -61,20 +63,30 @@ class Expenses extends TransactionBase
         $this->resetPage();
     }
 
-    public function confirmDelete($transactionId)
-    {
-        $this->transactionToDelete = $transactionId;
-        
-        $this->dispatch('swal:confirm', [
-            'transactionId' => $transactionId,
-            'type' => 'despesa'
-        ]);
-    }
 
-    public function deleteTransaction($transactionId)
+
+    public function onTransactionDeleted()
+    {
+        $this->resetPage();
+    }
+    
+    public function deleteTransaction($transactionId = null)
     {
         try {
+            // Se o ID não foi fornecido como parâmetro, usa o ID armazenado na propriedade
+            if ($transactionId === null) {
+                $transactionId = $this->transactionToDelete;
+            }
+            
+            // Verifica se temos um ID de transação para excluir
+            if (!$transactionId) {
+                throw new \Exception('Nenhuma transação selecionada para exclusão.');
+            }
+            
             DB::beginTransaction();
+            
+            // Registra no log para depuração
+            \Log::info('Excluindo transação com ID: ' . $transactionId);
             
             $transaction = Transaction::findOrFail($transactionId);
             
@@ -95,7 +107,7 @@ class Expenses extends TransactionBase
                 'showConfirmButton' => false
             ]);
             
-            $this->loadTransactions();
+            $this->confirmingDeletion = false;
             $this->transactionToDelete = null;
         } catch (\Exception $e) {
             DB::rollback();
@@ -109,6 +121,21 @@ class Expenses extends TransactionBase
                 'showConfirmButton' => false
             ]);
         }
+    }
+    
+    public function confirmDelete($transactionId = null)
+    {
+        // Registra no log para depuração
+        \Log::info('Método confirmDelete chamado com ID: ' . ($transactionId ?? 'null'));
+        
+        $this->confirmingDeletion = true;
+        $this->transactionToDelete = $transactionId;
+    }
+    
+    public function cancelDelete()
+    {
+        $this->confirmingDeletion = false;
+        $this->transactionToDelete = null;
     }
 
     public function canDelete(Transaction $transaction)
@@ -137,10 +164,7 @@ class Expenses extends TransactionBase
             ->paginate(10);
     }
 
-    public function cancelDelete()
-    {
-        $this->transactionToDelete = null;
-    }
+
 
     public function render()
     {

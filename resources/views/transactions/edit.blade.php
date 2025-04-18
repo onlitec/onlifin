@@ -76,6 +76,8 @@
                                     name="amount" 
                                     id="amount" 
                                     value="{{ $transaction->amount }}">
+                                <!-- Campo para debug -->
+                                <input type="hidden" id="debug_original_amount" value="{{ $transaction->amount }}">
                             </div>
                             @error('amount')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -212,6 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupMoneyInput() {
     const amountDisplay = document.getElementById('amount_display');
     const amountHidden = document.getElementById('amount');
+    const debugOriginalAmount = document.getElementById('debug_original_amount');
     
     if (amountDisplay) {
         // Adiciona o evento de input para formatar o valor
@@ -237,7 +240,7 @@ function setupMoneyInput() {
             const cents = convertToCents(formattedValue);
             amountHidden.value = cents;
             
-            console.log('Valor formatado:', formattedValue, 'Centavos:', cents);
+            console.log('Valor formatado:', formattedValue, 'Centavos:', cents, 'Original:', debugOriginalAmount.value);
         });
     }
 }
@@ -299,7 +302,14 @@ function formatBrazilianCurrency(value) {
     return parts.join(',');
 }
 
-// Converte um valor no formato brasileiro (1.234,56) para centavos (123456)
+/*
+***************************************************************
+* IMPORTANTE: CONFIGURAÇÃO FIXA - NÃO ALTERAR                 *
+* Esta função trata valores de forma diferente em páginas     *
+* de edição e criação para evitar multiplicação dupla.      *
+* Data da última alteração: 18/04/2025                         *
+***************************************************************
+*/
 function convertToCents(value) {
     // Remove todos os pontos (separadores de milhar)
     value = value.replace(/\./g, '');
@@ -307,10 +317,16 @@ function convertToCents(value) {
     // Substitui a vírgula por ponto para cálculo
     value = value.replace(',', '.');
     
-    // Multiplica por 100 e arredonda para obter os centavos
-    const cents = Math.round(parseFloat(value) * 100);
+    // Verifica se estamos em uma página de edição (URL contém /edit)
+    const isEditPage = window.location.href.includes('/edit');
     
-    return cents;
+    // Se for página de edição, não multiplicamos por 100 novamente
+    if (isEditPage) {
+        return Math.round(parseFloat(value));
+    } else {
+        // Para novas transações, multiplicamos por 100 para converter para centavos
+        return Math.round(parseFloat(value) * 100);
+    }
 }
 
 // Função para atualizar as categorias com base no tipo selecionado

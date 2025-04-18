@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentação da API - Onlifin</title>
-    <link href="https://unpkg.com/swagger-ui-dist@4.19.0/swagger-ui.css" rel="stylesheet">
+    <link href="{{ asset('assets/swagger-ui/swagger-ui.css') }}" rel="stylesheet">
 </head>
 <body>
     <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@4.19.0/swagger-ui-bundle.js"></script>
+    <script src="{{ asset('assets/swagger-ui/swagger-ui-bundle.js') }}"></script>
     <script>
         const ui = SwaggerUIBundle({
             url: '/api/docs/openapi',

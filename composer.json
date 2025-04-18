@@ -8,6 +8,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "google/cloud": "^0.213.0",
         "guzzlehttp/guzzle": "^7.2",
         "jantinnerezo/livewire-alert": "^4.0",
         "laravel/framework": "^11.0",

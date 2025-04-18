@@ -119,10 +119,7 @@
                                        class="text-gray-600 hover:text-gray-900">
                                         <i class="ri-pencil-line"></i>
                                     </a>
-                                    <button wire:click="confirmDelete({{ $transaction->id }})" 
-                                            class="text-red-600 hover:text-red-900">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </button>
+                                    <livewire:transactions.delete-button :transaction-id="$transaction->id" />
                                 </div>
                             </td>
                         </tr>

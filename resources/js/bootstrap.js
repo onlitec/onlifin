@@ -4,7 +4,7 @@
  * CSRF token as a header based on the value of the "XSRF" token cookie.
  */
 
-import axios from 'axios';
+// Axios e IMask já estão disponíveis globalmente via app.js
 
 window.addEventListener('DOMContentLoaded', () => {
     // Configuração do Axios
@@ -17,6 +17,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // Configuração do Livewire
     window.Livewire = window.Livewire || {};
     window.Livewire.on('swal:confirm', function (data) {
-        window.confirmDelete(data.transactionId, data.type);
+        // Garantir que os dados estejam no formato esperado pela função confirmDelete
+        window.confirmDelete({
+            transactionId: data.transactionId,
+            type: data.type || 'transação'
+        });
     });
 });

@@ -28,6 +28,42 @@
                             </p>
                         @endif
                     </div>
+                    
+                    @if(isset($useAI) && $useAI)
+                        <div class="bg-purple-50 border-l-4 border-purple-500 text-purple-700 p-4 mb-4">
+                            <div class="flex items-center">
+                                <i class="ri-brain-line text-purple-600 text-xl mr-2"></i>
+                                <h3 class="font-medium">Análise por Inteligência Artificial</h3>
+                            </div>
+                            @if(isset($aiAnalysisResult) && $aiAnalysisResult)
+                                <p class="mt-2">
+                                    A IA analisou seu extrato e categorizou <strong>{{ count($aiAnalysisResult['transactions'] ?? []) }}</strong> transações automaticamente.
+                                </p>
+                                <p class="text-sm mt-1">
+                                    As categorias sugeridas pela IA foram aplicadas às transações abaixo. Você pode revisar e modificar conforme necessário.
+                                </p>
+                                <div class="mt-3">
+                                    <a href="{{ route('statements.mapping', ['path' => $path, 'account_id' => $account->id, 'extension' => pathinfo($path, PATHINFO_EXTENSION), 'use_ai' => 1, 'auto_save' => 1]) }}" 
+                                       class="btn btn-primary-outline text-purple-700 border-purple-500 hover:bg-purple-50">
+                                        <i class="ri-save-line mr-1"></i> Salvar automaticamente com as categorias sugeridas
+                                    </a>
+                                </div>
+                            @else
+                                <p class="mt-2">
+                                    A IA foi acionada para analisar suas transações, mas não foi possível completar a análise automaticamente. 
+                                    As possíveis causas são:
+                                </p>
+                                <ul class="list-disc list-inside text-sm mt-1 ml-4">
+                                    <li>API de IA não configurada corretamente</li>
+                                    <li>Chave de API inválida ou expirada</li>
+                                    <li>Erro na resposta da API de IA</li>
+                                </ul>
+                                <p class="text-sm mt-2">
+                                    Você pode verificar as configurações de IA em <a href="{{ route('settings.model-keys.index') }}" class="underline hover:text-purple-800">Configurações > IA</a>.
+                                </p>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <form action="{{ route('statements.save') }}" method="POST" id="mapping-form">
@@ -170,6 +206,10 @@
                 const type = typeSelect.value;
                 const categorySelect = document.querySelector(`select[name="transactions[${rowIndex}][category_id]"]`);
                 
+                // Obter a transação atual e sua categoria (se disponível)
+                const currentTransaction = extractedTransactions[rowIndex];
+                const selectedCategoryId = currentTransaction?.category_id;
+                
                 // Limpar opções atuais
                 categorySelect.innerHTML = '';
                 
@@ -185,6 +225,12 @@
                         const option = document.createElement('option');
                         option.value = category.id;
                         option.textContent = category.name;
+                        
+                        // Pré-selecionar a categoria se corresponder
+                        if (selectedCategoryId && parseInt(category.id) === parseInt(selectedCategoryId)) {
+                            option.selected = true;
+                        }
+                        
                         categorySelect.appendChild(option);
                     });
                 }

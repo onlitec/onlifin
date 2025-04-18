@@ -1,10 +1,18 @@
-import './bootstrap';
+// Importações principais
 import Alpine from 'alpinejs';
 import mask from '@alpinejs/mask';
 import focus from '@alpinejs/focus';
-import 'sweetalert2/dist/sweetalert2.min.css';
-import Swal from 'sweetalert2';
+import axios from 'axios';
+import IMask from 'imask';
+
+// Disponibiliza globalmente antes de qualquer uso
+window.axios = axios;
+window.IMask = IMask;
+// SweetAlert2 já está disponível globalmente via CDN
+
+// Importa outros scripts
 import './notification';
+import './bootstrap';
 
 // Configuração do Alpine
 window.Alpine = window.Alpine || Alpine;
@@ -97,11 +105,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Inicializando Flowbite
-window.addEventListener('DOMContentLoaded', () => {
-    window.flowbite = window.flowbite || {};
-    window.flowbite.initializeComponents();
-});
+// Flowbite não está sendo usado neste projeto
+// Código de inicialização removido para evitar erros
 
 // Ouvinte para eventos de confirmação do SweetAlert2
 Livewire.on('swal:confirm', (data) => {

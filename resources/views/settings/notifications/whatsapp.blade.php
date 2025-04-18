@@ -3,9 +3,7 @@
         <div class="mb-6">
             <div class="flex items-center gap-2 mb-2">
                 <a href="{{ route('settings.notifications.index') }}" class="text-gray-500 hover:text-gray-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-                    </svg>
+                    <img src="{{ asset('assets/svg/svg_3c6df798c44e341e683237a04714ca6e.svg') }}" alt="" class=""/>
                 </a>
                 <h1 class="text-2xl font-bold text-gray-900">Configurações de WhatsApp</h1>
             </div>

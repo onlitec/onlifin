@@ -55,9 +55,7 @@
                     <img src="{{ $notification->data['image'] }}" alt="Notification" class="h-10 w-10 rounded-full">
                     @else
                     <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
+                        <img src="{{ asset('assets/svg/svg_a45f434f6da79642fdfa857f25ad002f.svg') }}" alt="" class=""/>
                     </div>
                     @endif
                 </div>
@@ -94,9 +92,7 @@
                 <h3 class="text-lg font-medium text-gray-900">Enviar Notificação</h3>
                 <button type="button" class="text-gray-400 hover:text-gray-500" onclick="document.getElementById('modal-new-notification').classList.add('hidden')">
                     <span class="sr-only">Fechar</span>
-                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <img src="{{ asset('assets/svg/svg_08cfe846ef861157f4bf3dbab99cc3b9.svg') }}" alt="" class=""/>
                 </button>
             </div>
 
@@ -183,9 +179,7 @@
                 <h3 class="text-lg font-medium text-gray-900">Enviar Notificação de Teste</h3>
                 <button type="button" class="text-gray-400 hover:text-gray-500" onclick="document.getElementById('modal-test-notification').classList.add('hidden')">
                     <span class="sr-only">Fechar</span>
-                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <img src="{{ asset('assets/svg/svg_08cfe846ef861157f4bf3dbab99cc3b9.svg') }}" alt="" class=""/>
                 </button>
             </div>
 
@@ -238,9 +232,7 @@
     <!-- Botão para ativar notificações do navegador (aparece apenas se ainda não ativado) -->
     <div id="enable-notifications" class="fixed bottom-4 right-4 bg-blue-600 text-white rounded-lg p-4 shadow-lg cursor-pointer hidden">
         <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
+            <img src="{{ asset('assets/svg/svg_36cbd8d2f98d6a06787fd18983bef493.svg') }}" alt="" class=""/>
             <span>Ativar notificações do navegador</span>
         </div>
     </div>

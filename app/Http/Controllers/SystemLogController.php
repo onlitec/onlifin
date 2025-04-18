@@ -4,10 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\SystemLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 class SystemLogController extends Controller
 {
+
     public function index(Request $request)
+    {
+        // Exibir diretamente os logs da API
+        return $this->apiLogs($request);
+    }
+    
+    /**
+     * Exibe os logs do sistema
+     */
+    protected function systemLogs(Request $request)
     {
         $query = SystemLog::with('user')->latest();
 
@@ -37,13 +48,136 @@ class SystemLogController extends Controller
         $modules = SystemLog::distinct()->pluck('module');
         $actions = SystemLog::distinct()->pluck('action');
 
-        return view('settings.logs.index', compact('logs', 'modules', 'actions'));
+        return view('settings.logs.index', [
+            'activeTab' => 'system',
+            'logs' => $logs,
+            'modules' => $modules,
+            'actions' => $actions,
+            'route' => route('settings.logs.index'),
+            'exportRoute' => route('settings.logs.export')
+        ]);
+    }
+    
+    /**
+     * Exibe os logs de monitoramento da API
+     */
+    protected function apiLogs(Request $request)
+    {
+        // Diretório de logs de API
+        $logDir = storage_path('logs/api_monitor');
+        
+        // Verifica se o diretório existe
+        if (!File::exists($logDir)) {
+            File::makeDirectory($logDir, 0755, true);
+        }
+        
+        // Lista todos os arquivos de log
+        $logFiles = File::files($logDir);
+        $logFiles = array_map(function($file) {
+            return [
+                'name' => $file->getFilename(),
+                'size' => $file->getSize(),
+                'modified' => date('Y-m-d H:i:s', $file->getMTime()),
+                'path' => $file->getPathname(),
+                'type' => 'api'
+            ];
+        }, $logFiles);
+        
+        // Organiza por data de modificação (mais recentes primeiro)
+        usort($logFiles, function($a, $b) {
+            return strtotime($b['modified']) - strtotime($a['modified']);
+        });
+        
+        return view('settings.logs.api', [
+            'activeTab' => 'api',
+            'logFiles' => $logFiles,
+            'provider' => $request->get('provider', '')
+        ]);
+    }
+    
+    /**
+     * Exibe os logs do Laravel
+     */
+    protected function laravelLogs(Request $request)
+    {
+        // Lista logs do Laravel
+        $logFiles = File::files(storage_path('logs'));
+        $logFiles = array_map(function($file) {
+            return [
+                'name' => $file->getFilename(),
+                'size' => $file->getSize(),
+                'modified' => date('Y-m-d H:i:s', $file->getMTime()),
+                'path' => $file->getPathname(),
+                'type' => 'laravel'
+            ];
+        }, $logFiles);
+        
+        usort($logFiles, function($a, $b) {
+            return strtotime($b['modified']) - strtotime($a['modified']);
+        });
+        
+        return view('settings.logs.laravel', [
+            'activeTab' => 'laravel',
+            'logFiles' => $logFiles
+        ]);
     }
 
+    /**
+     * Mostrar o conteúdo de um arquivo de log
+     */
+    public function view(Request $request, $type, $filename)
+    {
+        $filePath = '';
+        $content = '';
+        $entries = [];
+        
+        if ($type === 'api') {
+            $filePath = storage_path('logs/api_monitor/' . $filename);
+            
+            if (File::exists($filePath)) {
+                $content = File::get($filePath);
+                
+                // Processar entradas de log de API
+                $rawEntries = explode("---END-CALL---\n", $content);
+                foreach ($rawEntries as $entry) {
+                    $entry = trim($entry);
+                    if (empty($entry)) continue;
+                    
+                    try {
+                        $data = json_decode($entry, true);
+                        if ($data) {
+                            $entries[] = $data;
+                        }
+                    } catch (\Exception $e) {
+                        // Ignora entradas com formato inválido
+                    }
+                }
+            }
+        } elseif ($type === 'laravel') {
+            $filePath = storage_path('logs/' . $filename);
+            if (File::exists($filePath)) {
+                $content = File::get($filePath);
+            }
+        }
+        
+        if (empty($filePath) || !File::exists($filePath)) {
+            return redirect()->route('settings.logs.index', ['tab' => $type])
+                ->with('error', 'Arquivo de log não encontrado');
+        }
+        
+        return view('settings.logs.view', [
+            'type' => $type,
+            'filename' => $filename,
+            'content' => $content,
+            'entries' => $entries
+        ]);
+    }
+    
     public function show(SystemLog $log)
     {
         return view('settings.logs.show', compact('log'));
     }
+
 
     public function export(Request $request)
     {

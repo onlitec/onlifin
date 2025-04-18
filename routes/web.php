@@ -21,6 +21,8 @@ use App\Http\Controllers\ReplicateSettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NotificationConfigController;
 use App\Http\Controllers\SystemLogController;
+use App\Http\Controllers\TransactionExportController;
+use App\Http\Controllers\ModelApiKeyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,6 +58,16 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    
+    // Logs do sistema
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::middleware(['auth'])->group(function () {
+            Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
+            Route::get('/logs/export', [SystemLogController::class, 'export'])->name('logs.export');
+            Route::get('/logs/view/{type}/{filename}', [SystemLogController::class, 'view'])->name('logs.view');
+            Route::get('/logs/{log}', [SystemLogController::class, 'show'])->name('logs.show');
+        });
+    });
     
     // Perfil do usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -142,6 +154,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/replicate', [ReplicateSettingController::class, 'index'])->name('replicate.index');
         Route::post('/replicate', [ReplicateSettingController::class, 'store'])->name('replicate.store');
         Route::post('/replicate/test', [ReplicateSettingController::class, 'test'])->name('replicate.test');
+        Route::get('/replicate/get-settings/{provider}', [ReplicateSettingController::class, 'getSettings'])->name('replicate.get-settings');
+        
+        // Rotas para configuração de chaves API específicas por modelo
+        Route::get('/model-keys', [ModelApiKeyController::class, 'index'])->name('model-keys.index');
+        Route::post('/model-keys', [ModelApiKeyController::class, 'store'])->name('model-keys.store');
+        Route::post('/model-keys/test', [ModelApiKeyController::class, 'testConnection'])->name('model-keys.test');
+        Route::get('/model-keys/edit/{modelKey}', [ModelApiKeyController::class, 'edit'])->name('model-keys.edit');
+        Route::put('/model-keys/{modelKey}', [ModelApiKeyController::class, 'update'])->name('model-keys.update');
+        Route::delete('/model-keys/{modelKey}', [ModelApiKeyController::class, 'destroy'])->name('model-keys.destroy');
 
         // Permissões
         Route::get('/permissions', [SettingsController::class, 'permissions'])->name('permissions');
@@ -152,9 +173,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/permissions/delete/{permission}', [SettingsController::class, 'deletePermission'])->name('permissions.delete');
 
         // Rotas de logs do sistema
-        Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
-        Route::get('/logs/{log}', [SystemLogController::class, 'show'])->name('logs.show');
-        Route::get('/logs/export', [SystemLogController::class, 'export'])->name('logs.export');
+        Route::get('/settings/logs', [SystemLogController::class, 'index'])->name('settings.logs.index');
+        Route::get('/settings/logs/export', [SystemLogController::class, 'export'])->name('settings.logs.export');
+        Route::get('/transactions/export', [TransactionExportController::class, 'export'])->name('transactions.export');
     });
 
     // Rotas para o novo controlador de usuários (com middleware de permissão)

@@ -63,7 +63,8 @@ class StatementImportController extends Controller
         return redirect()->route('statements.mapping', [
             'path' => $path, 
             'account_id' => $account->id,
-            'extension' => $extension
+            'extension' => $extension,
+            'use_ai' => $request->has('use_ai') ? true : false
         ])->with('success', 'Arquivo carregado com sucesso. Por favor, faça o mapeamento das transações.');
     }
 
@@ -75,6 +76,7 @@ class StatementImportController extends Controller
         $path = $request->path;
         $accountId = $request->account_id;
         $extension = $request->extension;
+        $useAI = $request->use_ai;
         
         if (!Storage::exists($path)) {
             return redirect()->route('statements.import')
@@ -100,12 +102,46 @@ class StatementImportController extends Controller
             // Continua com array vazio se houver erro
         }
         
+        // Se a opção de análise por IA estiver habilitada e houver transações extraídas
+        $aiAnalysisResult = null;
+        $autoSave = $request->auto_save ?? false;
+        $transactionsSaved = false;
+        $savedCount = 0;
+        
+        if ($useAI && !empty($extractedTransactions)) {
+            // Analisar transações com IA
+            $aiAnalysisResult = $this->analyzeTransactionsWithAI($extractedTransactions);
+            
+            // Aplicar categorização da IA às transações
+            $extractedTransactions = $this->applyAICategorization($extractedTransactions, $aiAnalysisResult);
+            
+            // Se a opção de salvamento automático estiver habilitada, salvar as transações
+            if ($autoSave && !empty($extractedTransactions)) {
+                $transactionsSaved = $this->saveTransactionsWithAICategories($extractedTransactions, $accountId);
+                if ($transactionsSaved) {
+                    $savedCount = count($extractedTransactions);
+                    
+                    // Deleta o arquivo após processamento bem-sucedido
+                    if (Storage::exists($path)) {
+                        Storage::delete($path);
+                    }
+                    
+                    return redirect()->route('transactions.index')
+                        ->with('success', $savedCount . ' transações foram analisadas pela IA e importadas com sucesso!');
+                }
+            }
+        }
+        
         $categories = Category::where('user_id', auth()->id())
             ->orderBy('name')
             ->get()
             ->groupBy('type');
-            
-        return view('transactions.mapping', compact('path', 'account', 'categories', 'extractedTransactions'));
+        
+        // Adiciona a opção de auto-save aos dados da view
+        return view('transactions.mapping', compact(
+            'path', 'account', 'categories', 'extractedTransactions', 
+            'aiAnalysisResult', 'useAI', 'autoSave', 'transactionsSaved'
+        ));
     }
     
     /**
@@ -318,6 +354,919 @@ class StatementImportController extends Controller
         return (float) $amount;
     }
     
+    /**
+     * Analisa as transações usando IA
+     * 
+     * @param array $transactions Transações extraídas do extrato
+     * @return array Resultado da análise por IA
+     */
+    /**
+     * Monitora e registra chamadas de API para diagnóstico
+     */
+    private function monitorApiCall($provider, $endpoint, $requestData, $responseData, $success, $errorDetails = null)
+    {
+        $logData = [
+            'timestamp' => now()->format('Y-m-d H:i:s'),
+            'provider' => $provider,
+            'endpoint' => $endpoint,
+            'request' => $requestData,
+            'response' => $responseData,
+            'success' => $success
+        ];
+        
+        if (!$success && $errorDetails) {
+            $logData['error'] = $errorDetails;
+        }
+        
+        // Registrar no log geral
+        Log::channel('daily')->info('API Monitor: ' . $provider, [
+            'success' => $success,
+            'endpoint' => $endpoint
+        ]);
+        
+        // Registrar detalhes completos em um arquivo separado para diagnóstico
+        $logDir = storage_path('logs/api_monitor');
+        if (!file_exists($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $filename = $logDir . '/' . date('Y-m-d') . '-' . $provider . '.json';
+        file_put_contents(
+            $filename,
+            json_encode($logData, JSON_PRETTY_PRINT) . "\n---END-CALL---\n",
+            FILE_APPEND
+        );
+    }
+
+    /**
+     * Método específico para análise com Gemini
+     */
+    private function analyzeTransactionsWithGemini($transactions, $apiConfig)
+    {
+        $startTime = microtime(true);
+        
+        try {
+            // Preparar as transações para análise
+            $transactionDescriptions = [];
+            foreach ($transactions as $index => $transaction) {
+                $transactionDescriptions[] = [
+                    'id' => $index,
+                    'date' => $transaction['date'] ?? '',
+                    'description' => $transaction['description'] ?? '',
+                    'amount' => $transaction['amount'] ?? 0
+                ];
+            }
+            
+            // Obter categories do usuário para treinamento da IA
+            $categories = Category::where('user_id', auth()->id())
+                ->orderBy('name')
+                ->get()
+                ->groupBy('type')
+                ->toArray();
+            
+            // Verificar se temos as configurações necessárias
+            $apiKey = $apiConfig->api_token ?? null;
+            $model = $apiConfig->model ?? 'gemini-2.0-flash';
+            
+            if (empty($apiKey)) {
+                Log::error('Chave API para Gemini está vazia');
+                return null;
+            }
+            
+            // Preparar o prompt
+            $systemPrompt = "Você é um assistente financeiro especializado em análise e categorização de transações bancárias. ";
+            $systemPrompt .= "Sua tarefa é identificar a categoria mais adequada para cada transação, respeitando o tipo (receita ou despesa). ";
+            $systemPrompt .= "Se uma transação não se encaixar adequadamente em nenhuma categoria existente, sugira uma nova categoria.";
+            
+            $userPrompt = "Por favor, analise e categorize as seguintes transações bancárias:\n\n";
+            $userPrompt .= "Transações:\n" . json_encode($transactionDescriptions, JSON_PRETTY_PRINT) . "\n\n";
+            $userPrompt .= "Categorias disponíveis:\n" . json_encode($categories, JSON_PRETTY_PRINT) . "\n\n";
+            $userPrompt .= "Instruções:\n"; 
+            $userPrompt .= "1. Para cada transação, determine se é uma RECEITA ou DESPESA com base no contexto da descrição\n";
+            $userPrompt .= "2. Atribua cada transação a uma categoria existente usando o ID da categoria, quando apropriado\n";
+            $userPrompt .= "3. Se uma transação não se encaixar bem em nenhuma categoria existente, sugira uma nova categoria\n";
+            $userPrompt .= "4. Ao sugerir novas categorias, mantenha consistência com as categorias existentes e o contexto financeiro\n\n";
+            $userPrompt .= "Formato esperado da resposta (apenas JSON):\n";
+            $userPrompt .= "{\n  \"transactions\": [\n    {\n      \"id\": 0,\n      \"type\": \"income\" ou \"expense\",\n      \"category_id\": ID da categoria existente ou null,\n      \"suggested_category\": \"Nome da categoria sugerida\" (apenas se category_id for null)\n    }\n  ]\n}";
+            
+            
+            // Configurar endpoint da API
+            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            
+            // Preparar dados para envio
+            $data = [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $userPrompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'maxOutputTokens' => 4096
+                ]
+            ];
+            
+            // Executar a chamada à API
+            $options = [
+                'http' => [
+                    'method' => 'POST',
+                    'header' => 'Content-Type: application/json',
+                    'content' => json_encode($data),
+                    'timeout' => 30
+                ]
+            ];
+            
+            Log::info('Analisando transações com Gemini', [
+                'model' => $model,
+                'transactions_count' => count($transactions)
+            ]);
+            
+            $context = stream_context_create($options);
+            $result = @file_get_contents($endpoint, false, $context);
+            
+            // Verificar erro na chamada
+            if ($result === false) {
+                $error = error_get_last();
+                $errorMsg = $error ? $error['message'] : 'Erro desconhecido';
+                
+                // Registrar a chamada para diagnóstico
+                $this->monitorApiCall('gemini', $endpoint, $data, null, false, [
+                    'message' => $errorMsg,
+                    'type' => 'connection_error'
+                ]);
+                
+                Log::error('Falha ao conectar com API Gemini', ['error' => $errorMsg]);
+                return null;
+            }
+            
+            // Processar resposta
+            $responseData = json_decode($result, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // Registrar a chamada para diagnóstico
+                $this->monitorApiCall('gemini', $endpoint, $data, $result, false, [
+                    'message' => json_last_error_msg(),
+                    'type' => 'json_decode_error'
+                ]);
+                
+                Log::error('Erro ao decodificar resposta JSON do Gemini', [
+                    'error' => json_last_error_msg(),
+                    'result_preview' => substr($result, 0, 500)
+                ]);
+                return null;
+            }
+            
+            // Extrair texto da resposta
+            if (!empty($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                $aiResponse = $responseData['candidates'][0]['content']['parts'][0]['text'];
+                
+                // Registrar a chamada bem-sucedida para diagnóstico
+                $this->monitorApiCall('gemini', $endpoint, $data, $responseData, true);
+                
+                // Processar a resposta da IA
+                $processedResponse = $this->processAIResponse($aiResponse);
+                
+                $endTime = microtime(true);
+                $duration = round($endTime - $startTime, 2);
+                
+                if ($processedResponse && isset($processedResponse['transactions'])) {
+                    $suggestedCategories = 0;
+                    $existingCategories = 0;
+                    
+                    // Verificar quantas sugestões de novas categorias existem
+                    foreach ($processedResponse['transactions'] as $transaction) {
+                        if (!empty($transaction['suggested_category']) && empty($transaction['category_id'])) {
+                            $suggestedCategories++;
+                        } elseif (!empty($transaction['category_id'])) {
+                            $existingCategories++;
+                        }
+                    }
+                    
+                    Log::info('Análise Gemini concluída com sucesso', [
+                        'duration' => $duration . 's',
+                        'total_transactions' => count($processedResponse['transactions']),
+                        'suggested_categories' => $suggestedCategories,
+                        'existing_categories' => $existingCategories
+                    ]);
+                } else {
+                    Log::warning('Análise Gemini concluída, mas nenhuma transação processada', [
+                        'duration' => $duration . 's'
+                    ]);
+                }
+                
+                return $processedResponse;
+            } else {
+                // Registrar a chamada para diagnóstico
+                $this->monitorApiCall('gemini', $endpoint, $data, $responseData, false, [
+                    'message' => 'Formato de resposta inesperado',
+                    'type' => 'unexpected_response_format'
+                ]);
+                
+                Log::error('Formato de resposta Gemini inesperado', [
+                    'response_data' => $responseData
+                ]);
+                return null;
+            }
+        } catch (\Exception $e) {
+            // Registrar exceção para diagnóstico
+            $this->monitorApiCall('gemini', $endpoint ?? 'unknown', $data ?? [], null, false, [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'type' => 'exception'
+            ]);
+            
+            Log::error('Exceção ao processar Gemini', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return null;
+        }
+    }
+
+    private function analyzeTransactionsWithAI($transactions)
+    {
+        try {
+            Log::info('Iniciando análise de transações por IA', [
+                'transaction_count' => count($transactions)
+            ]);
+            
+            // Prepara os dados para enviar para a API de IA
+            $transactionDescriptions = [];
+            foreach ($transactions as $index => $transaction) {
+                $transactionDescriptions[] = [
+                    'id' => $index,
+                    'date' => $transaction['date'] ?? '',
+                    'description' => $transaction['description'] ?? '',
+                    'amount' => $transaction['amount'] ?? 0
+                ];
+            }
+            
+            // Obter categories do usuário para treinamento da IA
+            $categories = Category::where('user_id', auth()->id())
+                ->orderBy('name')
+                ->get()
+                ->groupBy('type')
+                ->toArray();
+            
+            // Obtem as configurações da IA
+            $apiKey = null;
+            $model = null;
+            $provider = null;
+            
+            // ESTRATÉGIA: Priorizar Gemini em todas as fontes de configuração
+            
+            // Fonte 1: Procurar especificamente por Gemini em ModelApiKey
+            if (class_exists('\App\Models\ModelApiKey')) {
+                $geminiConfig = \App\Models\ModelApiKey::where('is_active', true)
+                    ->where('provider', 'gemini')
+                    ->first();
+                
+                if ($geminiConfig && !empty($geminiConfig->api_token)) {
+                    Log::info('PRIORIDADE: Usando Gemini de ModelApiKey', [
+                        'model' => $geminiConfig->model
+                    ]);
+                    
+                    // Usar diretamente o método específico para Gemini
+                    return $this->analyzeTransactionsWithGemini($transactions, $geminiConfig);
+                }
+            }
+            
+            // Fonte 2: Buscar Gemini especificamente no config/ai.php
+            if (config('ai.enabled') && !empty(config('ai.gemini.api_key'))) {
+                $apiKey = config('ai.gemini.api_key');
+                $model = config('ai.gemini.model', 'gemini-2.0-flash'); 
+                $provider = 'gemini';
+                
+                Log::info('PRIORIDADE: Usando Gemini de config/ai.php', [
+                    'model' => $model
+                ]);
+                
+                $tempConfig = new \stdClass();
+                $tempConfig->api_token = $apiKey;
+                $tempConfig->model = $model;
+                $tempConfig->provider = 'gemini';
+                
+                return $this->analyzeTransactionsWithGemini($transactions, $tempConfig);
+            }
+            
+            // Se não encontrou Gemini, buscar outras opções
+            
+            // Buscar qualquer API ativa no ModelApiKey
+            if (class_exists('\App\Models\ModelApiKey')) {
+                $apiConfig = \App\Models\ModelApiKey::where('is_active', true)
+                    ->first();
+                
+                if ($apiConfig && !empty($apiConfig->api_token)) {
+                    $apiKey = $apiConfig->api_token;
+                    $model = $apiConfig->model;
+                    $provider = $apiConfig->provider;
+                    
+                    Log::info('Gemini indisponível. Usando alternativa de ModelApiKey', [
+                        'provider' => $provider,
+                        'model' => $model
+                    ]);
+                }
+            }
+            
+            // Verificar ReplicateSetting (para compatibilidade)
+            if (!$apiKey && class_exists('\App\Models\ReplicateSetting')) {
+                $settings = \App\Models\ReplicateSetting::getActive();
+                if ($settings && !empty($settings->api_key)) {
+                    $apiKey = $settings->api_key;
+                    $model = $settings->model_version;
+                    $provider = $settings->provider;
+                    
+                    Log::info('Gemini indisponível. Usando ReplicateSetting como alternativa', [
+                        'provider' => $provider,
+                        'model' => $model
+                    ]);
+                }
+            }
+            
+            // Último recurso: usar config/ai.php para outros provedores
+            if (!$apiKey && config('ai.enabled')) {
+                $provider = config('ai.provider');
+                $providerId = strtolower($provider);
+                
+                if ($providerId === 'openai' && !empty(config('ai.openai.api_key'))) {
+                    $apiKey = config('ai.openai.api_key');
+                    $model = config('ai.openai.model');
+                } elseif ($providerId === 'anthropic' && !empty(config('ai.anthropic.api_key'))) {
+                    $apiKey = config('ai.anthropic.api_key');
+                    $model = config('ai.anthropic.model');
+                }
+                
+                if ($apiKey) {
+                    Log::info('Gemini indisponível. Usando config/ai.php como alternativa', [
+                        'provider' => $provider,
+                        'model' => $model
+                    ]);
+                }
+            }
+            
+            // Último recurso absoluto: .env OPENAI_API_KEY
+            if (!$apiKey) {
+                $apiKey = env('OPENAI_API_KEY');
+                $model = 'gpt-3.5-turbo';
+                $provider = 'openai';
+                
+                if ($apiKey) {
+                    Log::warning('Gemini indisponível. Usando OpenAI do .env como fallback final');
+                }
+            }
+            
+            if (!$apiKey) {
+                Log::error('Nenhuma chave da API de IA configurada');
+                // Registrando informações adicionais para diagnóstico
+                Log::debug('Estado das configurações de IA', [
+                    'model_api_key_exists' => class_exists('\App\Models\ModelApiKey'),
+                    'replicate_setting_exists' => class_exists('\App\Models\ReplicateSetting'),
+                    'env_openai_key' => !empty(env('OPENAI_API_KEY')) ? 'Configurada' : 'Não configurada',
+                    'config_ai' => config('ai')
+                ]);
+                return null;
+            }
+            
+            // Verificar se a chave não está vazia (apenas para garantir)
+            if (trim($apiKey) === '') {
+                Log::error('Chave da API de IA está vazia');
+                return null;
+            }
+            
+            // Prepara o prompt para a IA
+            $systemPrompt = "Você é um assistente especializado em análise financeira. ".
+                           "Sua tarefa é classificar transações bancárias nas categorias corretas. ".
+                           "Para cada transação, você deve identificar:\n".
+                           "1. Se é uma receita ou uma despesa\n".
+                           "2. A categoria mais adequada, baseada nas opções disponíveis\n".
+                           "3. Se não houver uma categoria apropriada, sugira um nome para uma nova categoria\n".
+                           "Analise cada transação com base na descrição, valor e data.";
+
+            // Prepara a lista de categorias disponíveis
+            $categoryOptions = "\nCategorias disponíveis para RECEITA:\n";
+            if (isset($categories['income'])) {
+                foreach ($categories['income'] as $category) {
+                    $categoryOptions .= "- {$category['name']} (ID: {$category['id']})\n";
+                }
+            }
+            
+            $categoryOptions .= "\nCategorias disponíveis para DESPESA:\n";
+            if (isset($categories['expense'])) {
+                foreach ($categories['expense'] as $category) {
+                    $categoryOptions .= "- {$category['name']} (ID: {$category['id']})\n";
+                }
+            }
+            
+            $userPrompt = "Aqui está uma lista de transações bancárias que precisam ser classificadas. Para cada transação, determine se é uma receita ou despesa e sugira a categoria mais apropriada com base nas opções fornecidas. Responda em formato JSON estruturado, usando os IDs das categorias quando possível. Se nenhuma categoria existente for adequada, sugira uma nova usando o campo 'suggested_category'.\n\n";
+            $userPrompt .= $categoryOptions;
+            $userPrompt .= "\nTransações para análise:\n";
+            
+            foreach ($transactionDescriptions as $t) {
+                $amount = $t['amount'];
+                $amountFormatted = number_format($amount, 2, ',', '.');
+                $userPrompt .= "- ID {$t['id']}: {$t['description']} (Valor: R$ {$amountFormatted}, Data: {$t['date']})\n";
+            }
+            
+            $userPrompt .= "\nFormato de resposta esperado (JSON):\n";
+            $userPrompt .= "{\n  \"transactions\": [\n    { \n      \"id\": 0, \n      \"type\": \"income\" ou \"expense\", \n      \"category_id\": 123 ou null, \n      \"suggested_category\": \"nome da categoria sugerida\" (apenas se não houver categoria existente adequada)\n    },\n    ...\n  ]\n}";
+            $userPrompt .= "\n\nINSTRUÇÕES IMPORTANTES:\n";
+            $userPrompt .= "1. Se uma transação não se encaixar em nenhuma categoria existente, defina category_id como null e forneça um nome para suggested_category\n";
+            $userPrompt .= "2. Respeite sempre o tipo da transação (receita ou despesa) ao atribuir ou sugerir categorias\n";
+            $userPrompt .= "3. Ao sugerir novas categorias, use nomes curtos e claros que reflitam a natureza da transação";
+            
+            Log::info('Prompt de usuário preparado para IA', [
+                'prompt_length' => strlen($userPrompt)
+            ]);
+            
+            // Inicializa o cliente de IA baseado no provedor
+            if ($provider === 'openai' || !$provider) {
+                $aiClient = new \OpenAI\Client($apiKey);
+                $response = $aiClient->chat()->create([
+                    'model' => $model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $userPrompt]
+                    ],
+                    'temperature' => 0.2,
+                    'max_tokens' => 4096,
+                    'response_format' => ['type' => 'json_object']
+                ]);
+            } elseif ($provider === 'anthropic') {
+                // Implementação para Anthropic
+                $aiClient = new \Anthropic\Client($apiKey);
+                $response = $aiClient->messages()->create([
+                    'model' => $model,
+                    'system' => $systemPrompt,
+                    'messages' => [
+                        ['role' => 'user', 'content' => $userPrompt]
+                    ],
+                    'max_tokens' => 4096
+                ]);
+            } elseif ($provider === 'gemini') {
+                // Se chegar aqui, chamamos o método específico com uma configuração temporária
+                $tempConfig = new \stdClass();
+                $tempConfig->api_token = $apiKey;
+                $tempConfig->model = $model;
+                $tempConfig->provider = 'gemini';
+                
+                return $this->analyzeTransactionsWithGemini($transactions, $tempConfig);
+            } else {
+                Log::error('Provedor de IA não suportado', ['provider' => $provider]);
+                return null;
+            }
+            
+            // Processa a resposta da IA
+            if ($response) {
+                $aiResponseText = $response->choices[0]->message->content ?? '';
+                
+                Log::info('Resposta da IA recebida', [
+                    'response_length' => strlen($aiResponseText)
+                ]);
+                
+                // Tenta parsear a resposta como JSON
+                $aiResponse = json_decode($aiResponseText, true);
+                
+                if (json_last_error() === JSON_ERROR_NONE 
+                    && isset($aiResponse['transactions']) 
+                    && is_array($aiResponse['transactions'])) {
+                    return $aiResponse;
+                } else {
+                    Log::error('Resposta da IA não está no formato JSON esperado', [
+                        'json_error' => json_last_error_msg(),
+                        'response_text' => substr($aiResponseText, 0, 500)
+                    ]);
+                    return null;
+                }
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Erro ao analisar transações com IA: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Processa a resposta da IA para extrair as categorizações
+     * 
+     * @param string $aiResponse Resposta raw da IA
+     * @return array|null Array processado com as categorizações ou null em caso de erro
+     */
+    private function processAIResponse($aiResponse)
+    {
+        try {
+            Log::info('Processando resposta da IA', [
+                'response_length' => strlen($aiResponse)
+            ]);
+            
+            // Tenta extrair conteúdo JSON da resposta da IA
+            $cleaned = $aiResponse;
+            
+            // Remove formatação Markdown para código JSON
+            if (preg_match('/```(?:json)?\s*({[\s\S]*?})\s*```/s', $cleaned, $matches)) {
+                // Encontrou código JSON dentro de bloco Markdown
+                $cleaned = $matches[1];
+                Log::info('JSON extraído de bloco Markdown', [
+                    'json_length' => strlen($cleaned)
+                ]);
+            } else {
+                // Tenta remover qualquer marcador Markdown
+                $cleaned = preg_replace('/```json\s*|```/', '', $cleaned);
+                $cleaned = trim($cleaned);
+            }
+            
+            // Se ainda assim não for um JSON válido, tenta extrair qualquer parte que pareça JSON
+            if (json_decode($cleaned, true) === null && preg_match('/{[\s\S]*}/s', $cleaned, $matches)) {
+                $cleaned = $matches[0];
+                Log::info('Tentando extrair parte JSON válida do texto', [
+                    'extracted_json_length' => strlen($cleaned)
+                ]);
+            }
+            
+            // Tenta parsear a resposta como JSON
+            $data = json_decode($cleaned, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // Tenta uma abordagem mais robusta de reconstrução manual do JSON
+                if (preg_match_all('/"id":\s*(\d+)[^}]*"type":\s*"([^"]+)"[^}]*"category_id":\s*([\d\w]+|null)[^}]*"suggested_category":\s*(?:"([^"]*)"|null)/s', $cleaned, $matches, PREG_SET_ORDER)) {
+                    
+                    $reconstructedData = ['transactions' => []];
+                    foreach ($matches as $match) {
+                        $id = (int)$match[1];
+                        $type = $match[2];
+                        $category_id = ($match[3] === 'null') ? null : (int)$match[3];
+                        $suggested_category = isset($match[4]) ? $match[4] : null;
+                        
+                        $reconstructedData['transactions'][] = [
+                            'id' => $id,
+                            'type' => $type,
+                            'category_id' => $category_id,
+                            'suggested_category' => $suggested_category
+                        ];
+                    }
+                    
+                    if (!empty($reconstructedData['transactions'])) {
+                        Log::info('Resposta JSON reconstruída manualmente', [
+                            'transactions_count' => count($reconstructedData['transactions'])
+                        ]);
+                        return $reconstructedData;
+                    }
+                }
+                
+                Log::error('Erro ao parsear resposta JSON da IA', [
+                    'json_error' => json_last_error_msg(),
+                    'response_text' => substr($aiResponse, 0, 1000),
+                    'cleaned_text' => substr($cleaned, 0, 1000)
+                ]);
+                return null;
+            }
+            
+            if (!isset($data['transactions']) || !is_array($data['transactions'])) {
+                Log::error('Estrutura de resposta da IA inválida - faltando campo transactions', [
+                    'keys' => array_keys($data)
+                ]);
+                return null;
+            }
+            
+            Log::info('Resposta da IA processada com sucesso', [
+                'transaction_count' => count($data['transactions'])
+            ]);
+            
+            return $data;
+        } catch (\Exception $e) {
+            Log::error('Exceção ao processar resposta da IA', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Aplica a categorização da IA às transações
+     * 
+     * @param array $transactions Transações originais
+     * @param array $aiAnalysis Resultado da análise por IA
+     * @return array Transações com categorias atribuídas pela IA
+     */
+    private function applyAICategorization($transactions, $aiAnalysis)
+    {
+        if (!$aiAnalysis || !isset($aiAnalysis['transactions']) || empty($aiAnalysis['transactions'])) {
+            Log::warning('Nenhuma análise de IA disponível para aplicar');
+            return $transactions;
+        }
+        
+        Log::info('Aplicando categorização por IA', [
+            'transaction_count' => count($transactions),
+            'ai_categories_count' => count($aiAnalysis['transactions'])
+        ]);
+        
+        // Mapeamento das análises da IA por ID da transação
+        $aiCategorization = [];
+        $newCategories = [];
+        
+        // Log detalhado das transações da análise da IA
+        Log::debug('Detalhes de análise de IA recebida', [
+            'analysis' => json_encode($aiAnalysis, JSON_PRETTY_PRINT)
+        ]);
+        
+        // Primeiro passo: coletar todas as sugestões de categorias novas
+        foreach ($aiAnalysis['transactions'] as $analysis) {
+            if (isset($analysis['id'])) {
+                // Armazena informações básicas da transação
+                $aiCategorization[$analysis['id']] = [
+                    'type' => $analysis['type'] ?? null,
+                    'category_id' => $analysis['category_id'] ?? null,
+                    'suggested_category' => $analysis['suggested_category'] ?? null
+                ];
+                
+                // Se temos uma sugestão de nova categoria e não temos ID de categoria existente
+                if (!empty($analysis['suggested_category']) && empty($analysis['category_id'])) {
+                    $type = $analysis['type'] ?? 'expense';
+                    $categoryName = $analysis['suggested_category'];
+                    
+                    // Agrupa as sugestões de categorias por nome e tipo
+                    $key = $type . '_' . strtolower($categoryName);
+                    if (!isset($newCategories[$key])) {
+                        $newCategories[$key] = [
+                            'name' => $categoryName,
+                            'type' => $type,
+                            'transactions' => []
+                        ];
+                    }
+                    
+                    // Adiciona esta transação à lista de transações para esta categoria
+                    $newCategories[$key]['transactions'][] = $analysis['id'];
+                }
+            }
+        }
+        
+        Log::info('Categorias a serem criadas', [
+            'count' => count($newCategories),
+            'categories' => array_keys($newCategories)
+        ]);
+        
+        // Segundo passo: criar novas categorias conforme necessário
+        $createdCategories = $this->createNewCategories($newCategories);
+        
+        // Log detalhado das categorias criadas
+        Log::info('Categorias criadas/reutilizadas', [
+            'count' => count($createdCategories),
+            'details' => $createdCategories
+        ]);
+        
+        // Terceiro passo: atualizar as transações com as categorias criadas
+        $categorizedCount = 0;
+        foreach ($createdCategories as $type_name => $categoryData) {
+            if (isset($categoryData['category_id']) && !empty($categoryData['transactions'])) {
+                foreach ($categoryData['transactions'] as $transactionIndex) {
+                    if (isset($aiCategorization[$transactionIndex])) {
+                        $aiCategorization[$transactionIndex]['category_id'] = $categoryData['category_id'];
+                        $categorizedCount++;
+                    }
+                }
+            }
+        }
+        
+        Log::info('Atualização das transações com categorias', [
+            'transacoes_categorizadas' => $categorizedCount
+        ]);
+        
+        // Aplica as categorizações às transações originais
+        $updated = 0;
+        foreach ($transactions as $index => $transaction) {
+            if (isset($aiCategorization[$index])) {
+                $categorization = $aiCategorization[$index];
+                $wasUpdated = false;
+                
+                // Define o tipo (receita/despesa)
+                if (!empty($categorization['type'])) {
+                    $transactions[$index]['type'] = $categorization['type'];
+                    $wasUpdated = true;
+                }
+                
+                // Define a categoria (existente ou recém-criada)
+                if (!empty($categorization['category_id'])) {
+                    $transactions[$index]['category_id'] = $categorization['category_id'];
+                    $wasUpdated = true;
+                }
+                
+                if ($wasUpdated) {
+                    $updated++;
+                }
+            }
+        }
+        
+        Log::info('Categorização concluída', [
+            'total_transacoes' => count($transactions),
+            'transacoes_atualizadas' => $updated
+        ]);
+        
+        return $transactions;
+    }
+    
+    /**
+     * Salva automaticamente as transações com as categorias sugeridas pela IA
+     * 
+     * @param array $transactions Transações processadas pela IA
+     * @param int $accountId ID da conta para a qual as transações serão salvas
+     * @return bool True se as transações foram salvas com sucesso, False caso contrário
+     */
+    public function saveTransactionsWithAICategories($transactions, $accountId)
+    {
+        try {
+            Log::info('Iniciando salvamento automático de transações categorizadas pela IA', [
+                'user_id' => auth()->id(),
+                'account_id' => $accountId,
+                'transactions_count' => count($transactions)
+            ]);
+            
+            // Verificar se o usuário tem permissão para acessar a conta
+            $account = Account::findOrFail($accountId);
+            if ($account->user_id !== auth()->id()) {
+                Log::error('Tentativa de salvar transações em conta não autorizada', [
+                    'user_id' => auth()->id(),
+                    'account_id' => $accountId
+                ]);
+                return false;
+            }
+            
+            $transactionsToSave = [];
+            $savedCount = 0;
+            $errorCount = 0;
+            
+            foreach ($transactions as $index => $transaction) {
+                // Verifica se tem todas as informações necessárias
+                if (!isset($transaction['date']) || 
+                    !isset($transaction['description']) || 
+                    !isset($transaction['amount']) || 
+                    !isset($transaction['type']) || 
+                    !isset($transaction['category_id'])) {
+                    
+                    Log::warning('Transação ignorada por falta de informações', [
+                        'transaction_index' => $index,
+                        'transaction_data' => $transaction
+                    ]);
+                    $errorCount++;
+                    continue;
+                }
+                
+                // Prepara os dados para criação
+                
+                // Garante que o amount seja um valor numérico
+                $amount = $transaction['amount'];
+                if (is_string($amount)) {
+                    // Remove pontos de separador de milhar e substitui vírgula por ponto
+                    $amount = str_replace('.', '', $amount);
+                    $amount = str_replace(',', '.', $amount);
+                    // Converte para float
+                    $amount = (float) $amount;
+                }
+                
+                // Se o valor já estiver em centavos, usar direto, senão multiplicar por 100
+                // No contexto de importação, assumimos que os valores não estão em centavos
+                if ($amount < 100 && $transaction['amount'] > 1) {
+                    $amount = $amount * 100;
+                }
+                
+                $transactionsToSave[] = [
+                    'date' => $transaction['date'],
+                    'description' => $transaction['description'],
+                    'amount' => $amount,
+                    'type' => $transaction['type'],
+                    'status' => 'paid',
+                    'category_id' => $transaction['category_id'],
+                    'account_id' => $account->id,
+                    'user_id' => auth()->id()
+                ];
+                
+                Log::info('Transação preparada para salvar', [
+                    'original_amount' => $transaction['amount'],
+                    'processed_amount' => $amount,
+                    'description' => $transaction['description']
+                ]);
+                
+                $savedCount++;
+            }
+            
+            if (empty($transactionsToSave)) {
+                Log::warning('Nenhuma transação válida para salvar automaticamente');
+                return false;
+            }
+            
+            Log::info('Tentando salvar transações automaticamente', [
+                'transactions_count' => count($transactionsToSave)
+            ]);
+            
+            // Salva todas as transações de uma vez usando createMany
+            $account->transactions()->createMany($transactionsToSave);
+            
+            Log::info('Transações salvas automaticamente com sucesso', [
+                'saved_count' => $savedCount,
+                'error_count' => $errorCount,
+                'account_id' => $account->id
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Erro ao salvar transações automaticamente', [
+                'message' => $e->getMessage(),
+                'stack' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+                'account_id' => $accountId
+            ]);
+            return false;
+        }
+    }
+    
+    /**
+     * Cria novas categorias com base nas sugestões da IA
+     * 
+     * @param array $newCategories Array de categorias sugeridas pela IA
+     * @return array Array com os IDs das categorias criadas
+     */
+    private function createNewCategories($newCategories)
+    {
+        if (empty($newCategories)) {
+            return [];
+        }
+        
+        Log::info('Criando novas categorias sugeridas pela IA', [
+            'suggested_categories_count' => count($newCategories)
+        ]);
+        
+        $result = [];
+        $userId = auth()->id();
+        
+        foreach ($newCategories as $key => $categoryData) {
+            try {
+                // Verifica se já existe uma categoria com o mesmo nome e tipo
+                $existingCategory = \App\Models\Category::where('name', 'like', $categoryData['name'])
+                    ->where('type', $categoryData['type'])
+                    ->where('user_id', $userId)
+                    ->first();
+                
+                if ($existingCategory) {
+                    // Se já existe, usa esta categoria
+                    Log::info('Categoria similar já existe, utilizando-a', [
+                        'category_id' => $existingCategory->id,
+                        'category_name' => $existingCategory->name,
+                        'type' => $existingCategory->type
+                    ]);
+                    
+                    $result[$key] = [
+                        'category_id' => $existingCategory->id,
+                        'name' => $existingCategory->name,
+                        'is_new' => false,
+                        'transactions' => $categoryData['transactions']
+                    ];
+                } else {
+                    // Se não existe, cria uma nova categoria
+                    // Gerar cor aleatória em formato hexadecimal
+                    $color = '#' . str_pad(dechex(mt_rand(0, 0xFFFFFF)), 6, '0', STR_PAD_LEFT);
+                    
+                    $newCategory = new \App\Models\Category([
+                        'name' => $categoryData['name'],
+                        'type' => $categoryData['type'],
+                        'color' => $color,
+                        'icon' => 'fa-solid fa-tag', // Ícone padrão
+                        'description' => 'Categoria criada automaticamente pela IA',
+                        'user_id' => $userId
+                    ]);
+                    
+                    $newCategory->save();
+                    
+                    Log::info('Nova categoria criada com sucesso', [
+                        'category_id' => $newCategory->id,
+                        'category_name' => $newCategory->name,
+                        'type' => $newCategory->type
+                    ]);
+                    
+                    $result[$key] = [
+                        'category_id' => $newCategory->id,
+                        'name' => $newCategory->name,
+                        'is_new' => true,
+                        'transactions' => $categoryData['transactions']
+                    ];
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao criar nova categoria', [
+                    'category_name' => $categoryData['name'],
+                    'type' => $categoryData['type'],
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        return $result;
+    }
+
     /**
      * Salva as transações mapeadas
      */

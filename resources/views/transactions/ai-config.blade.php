@@ -51,7 +51,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="bg-white p-4 rounded-lg border border-gray-200">
                                     <div class="flex items-center mb-2">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" alt="OpenAI" class="h-6 mr-2">
+                                        <img src="{{ asset('assets/images/providers/openai-logo.svg') }}" alt="OpenAI" class="h-6 mr-2">
                                         <h4 class="font-medium">OpenAI</h4>
                                     </div>
                                     <p class="text-sm text-gray-600">
@@ -64,7 +64,7 @@
                                 
                                 <div class="bg-white p-4 rounded-lg border border-gray-200">
                                     <div class="flex items-center mb-2">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/240px-Google_%22G%22_logo.svg.png" alt="Google Cloud" class="h-6 mr-2">
+                                        <img src="{{ asset('assets/images/providers/google-cloud-logo.png') }}" alt="Google Cloud" class="h-6 mr-2">
                                         <h4 class="font-medium">Google Cloud AI</h4>
                                     </div>
                                     <p class="text-sm text-gray-600">
