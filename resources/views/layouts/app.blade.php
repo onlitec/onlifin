@@ -29,7 +29,7 @@
     
     <!-- LivewireUI Modal -->
     @livewireScripts
-    @livewire('livewire-ui-modal')
+    @livewire('components.modal')
     
     <style>
         /* Estilos básicos */

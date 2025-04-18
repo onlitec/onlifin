@@ -53,16 +53,11 @@ class TransactionController extends Controller
         // Debug: Verificar o valor recebido
         \Log::info('Valor amount recebido: ' . $validated['amount']);
 
-        // Processamento do valor monetário - removendo formatação
-        $amountStr = str_replace(['R$', '.'], '', $validated['amount']);
-        $amountStr = str_replace(',', '.', $amountStr);
-        $amount = (float) $amountStr;
+        // O valor já está corretamente formatado do frontend
+        $amount = $validated['amount'];
         
-        // Convertendo para centavos
-        $amount = round($amount * 100);
-
         // Debug: Verificar o valor final
-        \Log::info('Valor amount convertido para centavos: ' . $amount);
+        \Log::info('Valor amount a ser salvo: ' . $amount);
 
         // Preparar dados da transação
         $transactionData = [
@@ -115,116 +110,37 @@ class TransactionController extends Controller
             abort(403);
         }
 
-<<<<<<< HEAD
-        // Log do request para debug
-        \Log::info('Request completo de update:', $request->all());
-
-        $validated = $request->validate([
-            'description' => 'required|string|max:255',
-            'amount' => 'required',
-            'date' => 'required|date',
-=======
         $validatedData = $request->validate([
->>>>>>> remotes/ONLITEC/fix/campo-valor
             'type' => 'required|in:income,expense',
+            'status' => 'required|in:pending,paid',
             'date' => 'required|date',
             'description' => 'required|string|max:255',
-            'amount' => 'required|string',
+            'amount' => 'required|numeric|min:0.01',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
-<<<<<<< HEAD
-            'notes' => 'nullable|string',
-            'recurrence_type' => 'nullable|in:none,fixed,installment',
-            'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
-            'total_installments' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
-            'next_date' => 'nullable|required_unless:recurrence_type,none|date',
-        ]);
-
-        // Debug: Verificar o valor recebido
-        \Log::info('Valor amount recebido na atualização: ' . $validated['amount']);
-
-        // Processamento do valor monetário - removendo formatação
-        $amountStr = str_replace(['R$', '.'], '', $validated['amount']);
-        $amountStr = str_replace(',', '.', $amountStr);
-        $amount = (float) $amountStr;
-        
-        // Convertendo para centavos
-        $amount = round($amount * 100);
-
-        // Debug: Verificar o valor final
-        \Log::info('Valor amount convertido para centavos na atualização: ' . $amount);
-        
-        // Preparar dados da transação
-        $transactionData = [
-            'type' => $validated['type'],
-            'status' => $validated['status'],
-            'date' => $validated['date'],
-            'description' => $validated['description'],
-            'amount' => $amount,
-            'category_id' => $validated['category_id'],
-            'account_id' => $validated['account_id'],
-            'notes' => $validated['notes'] ?? null,
-        ];
-
-        // Adicionar campos de recorrência se aplicável
-        if (isset($validated['recurrence_type']) && $validated['recurrence_type'] !== 'none') {
-            $transactionData['recurrence_type'] = $validated['recurrence_type'];
-            $transactionData['next_date'] = $validated['next_date'];
-            
-            if ($validated['recurrence_type'] === 'installment') {
-                $transactionData['installment_number'] = $validated['installment_number'];
-                $transactionData['total_installments'] = $validated['total_installments'];
-            } else {
-                // Se mudou de parcelado para fixo, limpar os campos de parcelamento
-                $transactionData['installment_number'] = null;
-                $transactionData['total_installments'] = null;
-            }
-        } else {
-            // Se mudou para sem recorrência, limpar todos os campos de recorrência
-            $transactionData['recurrence_type'] = 'none';
-            $transactionData['next_date'] = null;
-            $transactionData['installment_number'] = null;
-            $transactionData['total_installments'] = null;
-        }
-        
-        // Atualizar dados da transação
-        $transaction->update($transactionData);
-
-        $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
-        return redirect()->route($redirectRoute)
-=======
-            'status' => 'required|in:pending,paid',
             'notes' => 'nullable|string',
         ]);
 
         // O valor já vem em centavos do frontend
         $validatedData['amount'] = (int) $validatedData['amount'];
 
+        // Atualizar dados da transação
         $transaction->update($validatedData);
 
-        // Corrigido o redirecionamento para usar a rota correta de transações
-        return redirect('/transactions')
->>>>>>> remotes/ONLITEC/fix/campo-valor
+        $redirectRoute = $validatedData['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
+        return redirect()->route($redirectRoute)
             ->with('success', 'Transação atualizada com sucesso!');
     }
 
     public function destroy(Transaction $transaction)
     {
-        // Verifica se o usuário tem permissão para excluir esta transação
         if ($transaction->user_id !== auth()->id()) {
             abort(403);
         }
 
-        try {
-            $transaction->delete();
-            return redirect()
-                ->back()
-                ->with('success', 'Transação excluída com sucesso!');
-        } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->with('error', 'Erro ao excluir transação: ' . $e->getMessage());
-        }
+        $transaction->delete();
+        return redirect('/transactions')
+            ->with('success', 'Transação excluída com sucesso!');
     }
 
     public function markAsPaid(Transaction $transaction)

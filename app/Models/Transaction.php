@@ -66,7 +66,6 @@ class Transaction extends Model
     // Acessor para formatar o valor
     public function getFormattedAmountAttribute()
     {
-<<<<<<< HEAD
         return 'R$ ' . number_format($this->amount / 100, 2, ',', '.');
     }
 
@@ -94,9 +93,6 @@ class Transaction extends Model
         $value = round($value);
 
         $this->attributes['amount'] = $value;
-=======
-        return number_format($this->amount / 100, 2, ',', '.');
->>>>>>> remotes/ONLITEC/fix/campo-valor
     }
 
     // Adicione estes métodos auxiliares

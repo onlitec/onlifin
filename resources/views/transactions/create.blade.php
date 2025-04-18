@@ -69,13 +69,18 @@
                                 Valor
                             </label>
                             <div class="relative">
-                                <input type="text" 
-                                    name="amount" 
-                                    id="amount" 
-                                    class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    value="{{ old('amount') ? 'R$ ' . number_format(old('amount'), 2, ',', '.') : '' }}" 
-                                    placeholder="R$ 0,00"
-                                    inputmode="decimal">
+                                <div class="relative">
+                                    <input type="text" 
+                                        name="amount_display" 
+                                        id="amount_display" 
+                                        class="form-input block w-full pl-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        placeholder="R$ 0,00"
+                                        inputmode="decimal">
+                                    <input type="hidden" 
+                                        name="amount" 
+                                        id="amount"
+                                        value="{{ old('amount') }}">
+                                </div>
                             </div>
                             @error('amount')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -198,9 +203,166 @@
                         Salvar Transação
                     </button>
                 </div>
-            </form>
-        </div>
-    </div>
+                </div>
+</div>
+
+<script>
+    function formatCurrency(input) {
+        // Remove o prefixo R$ se existir
+        let value = input.value.replace('R$ ', '');
+        
+        // Remove todos os caracteres não numéricos e vírgula
+        value = value.replace(/[^0-9,]/g, '');
+        
+        // Se não houver valor, limpa os campos
+        if (!value) {
+            input.value = '';
+            document.getElementById('amount').value = '';
+            return;
+        }
+
+        // Remove a vírgula e converte para número
+        let number = parseFloat(value.replace(',', '.'));
+        
+        // Converte para centavos
+        let amount = Math.round(number * 100);
+        
+        // Atualiza o campo hidden com o valor em centavos
+        document.getElementById('amount').value = amount;
+
+        // Formata para moeda brasileira
+        input.value = 'R$ ' + new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(number);
+    }
+
+    // Inicializa o campo com o valor correto se houver um valor antigo
+    document.addEventListener('DOMContentLoaded', function() {
+        let amountDisplay = document.getElementById('amount_display');
+        let amount = document.getElementById('amount');
+        
+        if (amountDisplay && amount) {
+            let amountValue = amount.value;
+            if (amountValue) {
+                // Converte de centavos para real
+                let realValue = parseFloat(amountValue) / 100;
+                formatCurrency(amountDisplay, realValue);
+            }
+        }
+    });
+
+    // Função auxiliar para inicialização
+    // Inicializa os campos quando o DOM é carregado
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configura a máscara de moeda para o campo de valor
+        let amountDisplayEl = document.getElementById('amount_display');
+        let amountEl = document.getElementById('amount');
+        
+        if (amountDisplayEl && amountEl) {
+            // Define o valor inicial se houver
+            if (amountEl.value) {
+                // Converte de centavos para real para exibição
+                let realValue = parseInt(amountEl.value) / 100;
+                amountDisplayEl.value = realValue.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                });
+            }
+            
+            // Função para formatar valor monetário brasileiro
+            function formatCurrency(value) {
+                if (!value) return '';
+                return value.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    minimumFractionDigits: 2
+                });
+            }
+
+            // Função para converter string formatada em número
+            function parseFormattedNumber(formattedValue) {
+                if (!formattedValue) return 0;
+                
+                // Remove tudo exceto dígitos, ponto e vírgula
+                const cleanValue = formattedValue.replace(/[^0-9,.]/g, '');
+                
+                // Substitui vírgula por ponto para poder fazer o parse
+                const valueWithDot = cleanValue.replace(',', '.');
+                
+                return parseFloat(valueWithDot) || 0;
+            }
+
+            // Manipulador de input para campo de valor
+            amountDisplayEl.addEventListener('input', function(e) {
+                // Guarda a posição do cursor
+                const cursorPosition = e.target.selectionStart;
+                const inputLength = e.target.value.length;
+                
+                // Remove qualquer caractere não numérico para processamento
+                let rawValue = e.target.value.replace(/[^0-9]/g, '');
+                
+                // Se não houver valor, limpa os campos
+                if (!rawValue) {
+                    e.target.value = '';
+                    amountEl.value = '';
+                    return;
+                }
+                
+                // Consideramos que o valor digitado está em reais
+                // Por exemplo, se o usuário digita 300, queremos R$ 300,00
+                let reais = parseFloat(rawValue) / 100;
+                
+                // Formata o valor para moeda brasileira
+                e.target.value = formatCurrency(reais);
+                
+                // Atualiza o campo hidden com o valor em reais (sem conversão)
+                amountEl.value = reais;
+                
+                // Calcula nova posição do cursor após formatação
+                const newLength = e.target.value.length;
+                const newPosition = cursorPosition + (newLength - inputLength);
+                
+                // Posiciona o cursor mantendo a posição relativa
+                if (newPosition > 0) {
+                    e.target.setSelectionRange(newPosition, newPosition);
+                } else {
+                    e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+                }
+            });
+            
+            // Adiciona evento de blur para garantir formato correto ao perder foco
+            amountDisplayEl.addEventListener('blur', function(e) {
+                // Se o campo estiver vazio, não faz nada
+                if (!e.target.value) return;
+                
+                // Extrai o valor numérico do campo formatado
+                const numericValue = parseFormattedNumber(e.target.value);
+                
+                // Reformata para garantir apresentação correta
+                e.target.value = formatCurrency(numericValue);
+                
+                // Atualiza o campo hidden com centavos
+                amountEl.value = Math.round(numericValue);
+            });
+            
+            // Adiciona validação no envio do formulário
+            let form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Impede o envio se não houver valor
+                    if (!amountEl.value || amountEl.value <= 0) {
+                        e.preventDefault();
+                        alert('Por favor, insira um valor válido para a transação.');
+                        return false;
+                    }
+                });
+            }
+        }
+    });
+</script>
 </x-app-layout>
 
 <script>

@@ -243,64 +243,22 @@
         .then(data => {
             if (data.success) {
                 alert(`Conexão com ${providerName} estabelecida com sucesso!`);
-            } else {
-                alert(`Erro ao conectar com ${providerName}: ${data.message}`);
-            }
-        })
-        .catch(error => {
-            alert('Erro ao testar conexão. Verifique os logs do servidor para mais detalhes.');
-        })
-        .finally(() => {
-            button.textContent = originalText;
-            button.disabled = false;
-        });
     }
 
-    // Atualiza os campos quando um provedor é selecionado
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('input[type="radio"][name="provider"]').forEach(radio => {
-            radio.addEventListener('change', function(event) {
-                const provider = event.target.value;
-                
-                // Ativa/desativa os campos do formulário
-                document.querySelectorAll('select[name="model_version"]').forEach(select => {
-                    select.disabled = select.value !== provider;
-                });
-                
-                document.querySelectorAll('input[name="api_token"]').forEach(input => {
-                    input.disabled = input.value !== provider;
-                });
-                
-                document.querySelectorAll('textarea[name="system_prompt"]').forEach(textarea => {
-                    textarea.disabled = textarea.value !== provider;
-                });
-                
-                // Atualiza o botão de teste
-                const testButtons = document.querySelectorAll('button[onclick*="testConnection"]');
-                testButtons.forEach(button => {
-                    const buttonProvider = button.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    button.disabled = buttonProvider !== provider;
-                });
+    // Inicializa os selects de modelos
+    document.addEventListener('DOMContentLoaded', () => {
+        const providerSelect = document.querySelector('select[name="provider"]');
+        if (!providerSelect) return;
 
-                // Atualiza o select de modelos
-                const modelSelect = document.querySelector('select[name="model_version"]');
-                if (modelSelect) {
-                    // Limpa as opções existentes
-                    while (modelSelect.firstChild) {
-                        modelSelect.removeChild(modelSelect.firstChild);
-                    }
-
-                    // Adiciona as novas opções
-                    const providerModels = @json($providers[provider]['models']);
-                    providerModels.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model;
-                        option.textContent = model.replace(/-/g, ' ');
-                        modelSelect.appendChild(option);
-                    });
-
-                    // Seleciona o modelo padrão
-                    modelSelect.value = providerModels[0];
+        // Atualiza o select de modelos quando o provider muda
+        providerSelect.addEventListener('change', () => {
+            const selectedProvider = providerSelect.value;
+            
+            // Atualiza os botões de teste
+            const buttons = document.querySelectorAll('[onclick^="testConnection"];');
+            buttons.forEach(button => {
+                const buttonProvider = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+                button.disabled = buttonProvider !== selectedProvider;
                 }
             });
         });
