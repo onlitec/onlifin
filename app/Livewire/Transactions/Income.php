@@ -6,12 +6,13 @@ use Livewire\Component;
 use App\Models\Transaction;
 use App\Models\Category;
 use App\Models\Account;
+use Livewire\Component;
 use Livewire\WithPagination;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 
-class Income extends Component
+class Income extends TransactionBase
 {
     use WithPagination;
 
@@ -74,41 +75,81 @@ class Income extends Component
     public function confirmDelete($transactionId)
     {
         $this->transactionToDelete = $transactionId;
-        $this->confirmingDeletion = true;
+        
+        $this->dispatch('swal:confirm', [
+            'transactionId' => $transactionId,
+            'type' => 'receita'
+        ]);
     }
 
-    public function cancelDelete()
-    {
-        $this->confirmingDeletion = false;
-        $this->transactionToDelete = null;
-    }
-
-    public function deleteTransaction()
+    public function deleteTransaction($transactionId)
     {
         try {
             DB::beginTransaction();
-
-            $transaction = Transaction::findOrFail($this->transactionToDelete);
             
-            if ($transaction->user_id !== auth()->id()) {
+            $transaction = Transaction::findOrFail($transactionId);
+            
+            if (!$this->canDelete($transaction)) {
                 throw new \Exception('Você não tem permissão para excluir esta transação.');
-            }
-
-            if ($transaction->type !== 'income') {
-                throw new \Exception('Esta transação não é uma receita.');
             }
 
             $transaction->delete();
             
             DB::commit();
-
-            LivewireAlert::success('Sucesso!', 'Receita excluída com sucesso!');
+            
+            $this->dispatch('swal:success', [
+                'title' => 'Receita excluída com sucesso!',
+                'text' => 'A receita foi removida do sistema.',
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
+            
+            $this->loadTransactions();
+            $this->transactionToDelete = null;
         } catch (\Exception $e) {
-            DB::rollBack();
-            LivewireAlert::error('Erro!', 'Erro ao excluir receita: ' . $e->getMessage());
+            DB::rollback();
+            
+            $this->dispatch('swal:error', [
+                'title' => 'Erro ao excluir receita',
+                'text' => $e->getMessage(),
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
+        }
+    }
+
+    public function canDelete(Transaction $transaction)
+    {
+        // Verifica se o usuário tem permissão para excluir
+        if (!auth()->user()->can('delete', $transaction)) {
+            return false;
         }
 
-        $this->confirmingDeletion = false;
+        // Verifica se a transação já foi recebida
+        if ($transaction->isPaid()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function loadTransactions()
+    {
+        $this->transactions = Transaction::where('user_id', auth()->id())
+            ->where('type', 'income')
+            ->whereYear('date', $this->year)
+            ->whereMonth('date', $this->month)
+            ->with(['category', 'account'])
+            ->orderBy($this->sortField, $this->sortDirection)
+            ->paginate(10);
+    }
+
+    public function cancelDelete()
+    {
         $this->transactionToDelete = null;
     }
 

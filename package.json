@@ -15,7 +15,6 @@
         "@vue/eslint-config-prettier": "^8.0.0",
         "@vue/eslint-config-typescript": "^12.0.0",
         "autoprefixer": "^10.4.17",
-        "axios": "^1.6.4",
         "eslint": "^8.55.0",
         "eslint-plugin-prettier": "^5.1.2",
         "eslint-plugin-vue": "^9.20.0",
@@ -30,6 +29,7 @@
         "@alpinejs/mask": "^3.14.8",
         "alpinejs": "^3.14.8",
         "imask": "^7.6.1",
+        "sweetalert2": "^11.7.33",
         "v-money": "^0.8.1"
     }
 }

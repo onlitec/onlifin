@@ -36,9 +36,10 @@
                                     <input 
                                         type="text" 
                                         wire:model.live="amount" 
-                                        x-mask:dynamic="$money($input)"
                                         class="mt-1 block w-full pl-10 pr-12 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="0,00"
+                                        inputmode="numeric"
+                                        wire:change="formatAmount"
                                     >
                                 </div>
                                 @error('amount') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror

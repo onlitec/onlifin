@@ -60,10 +60,15 @@ class FormModal extends Component
     public function save()
     {
         $this->validate();
+        
+        // Converte para centavos apenas uma vez
+        $amountInCents = $this->convertToCents($this->amount);
+        
+        \Log::info('Salvando transação com valor: ' . $this->amount . ' => ' . $amountInCents . ' centavos');
 
         Transaction::create([
             'description' => $this->description,
-            'amount' => $this->amount,
+            'amount' => $amountInCents,
             'date' => $this->date,
             'account_id' => $this->account_id,
             'category_id' => $this->category_id,
@@ -76,6 +81,21 @@ class FormModal extends Component
         $this->dispatch('transactionSaved');
         $this->closeModal();
     }
+    
+    /**
+     * Converte um valor no formato brasileiro (1.234,56) para centavos (123456)
+     */
+    private function convertToCents($value)
+    {
+        // Remove todos os pontos (separadores de milhar)
+        $value = str_replace('.', '', $value);
+        
+        // Substitui vírgula por ponto para cálculo
+        $value = str_replace(',', '.', $value);
+        
+        // Multiplica por 100 e arredonda para obter os centavos
+        return round((float)$value * 100);
+    }
 
     public function closeModal()
     {
@@ -87,10 +107,23 @@ class FormModal extends Component
         if (!empty($value)) {
             // Remove R$ e espaços
             $value = str_replace(['R$', ' '], '', $value);
-            // Substitui pontos por nada e vírgula por ponto
-            $value = str_replace('.', '', $value);
+            
+            // Mantém o valor como string
+            $this->amount = $value;
+        }
+    }
+
+    public function formatAmount()
+    {
+        if (!empty($this->amount)) {
+            // Remove todos os pontos (separadores de milhar)
+            $value = str_replace('.', '', $this->amount);
+            
+            // Substitui vírgula por ponto para formatação
             $value = str_replace(',', '.', $value);
-            $this->amount = (float) $value;
+            
+            // Formata para moeda brasileira
+            $this->amount = number_format((float)$value, 2, ',', '.');
         }
     }
 

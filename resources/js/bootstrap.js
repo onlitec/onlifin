@@ -5,6 +5,18 @@
  */
 
 import axios from 'axios';
-window.axios = axios;
 
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+window.addEventListener('DOMContentLoaded', () => {
+    // Configuração do Axios
+    window.axios = window.axios || {};
+    window.axios.defaults = window.axios.defaults || {};
+    window.axios.defaults.headers = window.axios.defaults.headers || {};
+    window.axios.defaults.headers.common = window.axios.defaults.headers.common || {};
+    window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+    // Configuração do Livewire
+    window.Livewire = window.Livewire || {};
+    window.Livewire.on('swal:confirm', function (data) {
+        window.confirmDelete(data.transactionId, data.type);
+    });
+});

@@ -78,21 +78,18 @@ class Transaction extends Model
         }
 
         if (is_string($value)) {
-            // Remove qualquer caractere que não seja número ou ponto/vírgula
-            $value = preg_replace('/[^\d.,-]/', '', $value);
-            // Substitui vírgula por ponto
+            // Remove todos os caracteres não numéricos, exceto vírgula e ponto
+            $value = preg_replace('/[^0-9.,]/', '', $value);
+            
+            // Converte vírgula para ponto
             $value = str_replace(',', '.', $value);
-            // Remove pontos de milhar
-            $value = str_replace('.', '', $value);
+            
+            // Converte para float e multiplica por 100 para obter centavos
+            $value = (float)$value * 100;
         }
 
-        // Converte para float e multiplica por 100 para armazenar em centavos
-        $value = (float) $value * 100;
-        
-        // Arredonda para evitar problemas com ponto flutuante
-        $value = round($value);
-
-        $this->attributes['amount'] = $value;
+        // Arredonda para o inteiro mais próximo
+        $this->attributes['amount'] = round($value);
     }
 
     // Adicione estes métodos auxiliares

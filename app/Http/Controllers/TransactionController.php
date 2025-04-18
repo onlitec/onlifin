@@ -115,14 +115,14 @@ class TransactionController extends Controller
             'status' => 'required|in:pending,paid',
             'date' => 'required|date',
             'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0.01',
+            'amount' => 'required|string|min:0.01',
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
             'notes' => 'nullable|string',
         ]);
 
-        // O valor já vem em centavos do frontend
-        $validatedData['amount'] = (int) $validatedData['amount'];
+        // O modelo já fará a conversão para centavos, então apenas passamos o valor como está
+        // Isso evita a multiplicação dupla por 100
 
         // Atualizar dados da transação
         $transaction->update($validatedData);
