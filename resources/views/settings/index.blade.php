@@ -147,6 +147,26 @@
                 </div>
             </div>
 
+            <!-- Análise de Extratos -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                                <i class="ri-file-chart-2-line text-2xl text-green-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Análise de Extratos</h3>
+                                <p class="text-sm text-gray-500">Ferramenta para análise de extratos bancários</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/treinaIA/analyze-ofx-web.php" target="_blank" class="btn btn-secondary w-full">
+                        Analisar Extratos
+                    </a>
+                </div>
+            </div>
+
             <!-- Logs do Sistema -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">

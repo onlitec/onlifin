@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 
 class Transaction extends Model
 {
+    use \Illuminate\Database\Eloquent\Factories\HasFactory;
     protected $fillable = [
         'type',
         'status',

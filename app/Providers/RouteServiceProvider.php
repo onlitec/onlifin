@@ -35,6 +35,10 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
+                
+            // Carregar rotas do Gemini AI
+            Route::middleware('web')
+                ->group(base_path('routes/gemini_routes.php'));
         });
     }
 } 

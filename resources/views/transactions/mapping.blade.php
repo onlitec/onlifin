@@ -1,10 +1,10 @@
 <x-app-layout>
     <div class="container-app">
         <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900">Mapeamento de Transações</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Revisão e Confirmação</h1>
             <a href="{{ route('statements.import') }}" class="btn btn-secondary">
                 <i class="ri-arrow-left-line mr-2"></i>
-                Voltar
+                Voltar para Importação
             </a>
         </div>
 
@@ -16,15 +16,15 @@
                         <h2 class="text-lg font-medium text-gray-700">Instruções</h2>
                     </div>
                     <p class="text-gray-600 mb-2">
-                        Identifique e classifique as transações do seu extrato. Você pode adicionar quantas linhas forem necessárias.
+                       Revise as transações extraídas e categorizadas abaixo. Se tudo estiver correto, clique em "Cadastrar Todas as Transações".
                     </p>
                     <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
                         <p>
                             <strong>Conta selecionada:</strong> {{ $account->name }}
                         </p>
-                        @if(count($extractedTransactions) > 0)
+                        @if(isset($extractedTransactions) && is_array($extractedTransactions) && count($extractedTransactions) > 0)
                             <p class="mt-2">
-                                <strong>{{ count($extractedTransactions) }} transações</strong> foram identificadas no seu extrato. Verifique os dados e atribua categorias.
+                                <strong>{{ count($extractedTransactions) }} transações</strong> prontas para serem cadastradas.
                             </p>
                         @endif
                     </div>
@@ -37,27 +37,13 @@
                             </div>
                             @if(isset($aiAnalysisResult) && $aiAnalysisResult)
                                 <p class="mt-2">
-                                    A IA analisou seu extrato e categorizou <strong>{{ count($aiAnalysisResult['transactions'] ?? []) }}</strong> transações automaticamente.
+                                    A IA analisou e sugeriu categorias para as transações.
                                 </p>
-                                <p class="text-sm mt-1">
-                                    As categorias sugeridas pela IA foram aplicadas às transações abaixo. Você pode revisar e modificar conforme necessário.
-                                </p>
-                                <div class="mt-3">
-                                    <a href="{{ route('statements.mapping', ['path' => $path, 'account_id' => $account->id, 'extension' => pathinfo($path, PATHINFO_EXTENSION), 'use_ai' => 1, 'auto_save' => 1]) }}" 
-                                       class="btn btn-primary-outline text-purple-700 border-purple-500 hover:bg-purple-50">
-                                        <i class="ri-save-line mr-1"></i> Salvar automaticamente com as categorias sugeridas
-                                    </a>
-                                </div>
+                                <!-- Remover botão de auto-save antigo -->
                             @else
                                 <p class="mt-2">
-                                    A IA foi acionada para analisar suas transações, mas não foi possível completar a análise automaticamente. 
-                                    As possíveis causas são:
+                                    Não foi possível obter sugestões da IA. As transações podem estar sem categoria ou com uma categoria padrão.
                                 </p>
-                                <ul class="list-disc list-inside text-sm mt-1 ml-4">
-                                    <li>API de IA não configurada corretamente</li>
-                                    <li>Chave de API inválida ou expirada</li>
-                                    <li>Erro na resposta da API de IA</li>
-                                </ul>
                                 <p class="text-sm mt-2">
                                     Você pode verificar as configurações de IA em <a href="{{ route('settings.model-keys.index') }}" class="underline hover:text-purple-800">Configurações > IA</a>.
                                 </p>
@@ -66,43 +52,51 @@
                     @endif
                 </div>
 
-                <form action="{{ route('statements.save') }}" method="POST" id="mapping-form">
-                    @csrf
-                    <input type="hidden" name="account_id" value="{{ $account->id }}">
-                    <input type="hidden" name="file_path" value="{{ $path }}">
+                <!-- Remover form antigo -->
+                
+                 <!-- Inputs hidden para guardar dados essenciais para o botão de salvar -->
+                 <input type="hidden" id="account_id" value="{{ $account->id }}">
+                 <input type="hidden" id="file_path" value="{{ $path }}">
                     
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-gray-200 text-left text-sm">
-                                    <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Data</th>
-                                    <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Descrição</th>
-                                    <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Valor</th>
-                                    <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Tipo</th>
-                                    <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Categoria</th>
-                                    <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transactions-container">
-                                <!-- As transações extraídas serão carregadas aqui pelo JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="mt-4 flex justify-center">
-                        <button type="button" id="add-row" class="btn btn-secondary">
-                            <i class="ri-add-line mr-2"></i>
-                            Adicionar Transação
-                        </button>
-                    </div>
-                    
-                    <div class="flex justify-end mt-6">
-                        <button type="submit" class="btn btn-primary">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200 text-left text-sm">
+                                <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Data</th>
+                                <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Descrição</th>
+                                <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Valor</th>
+                                <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Tipo</th>
+                                <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Categoria</th>
+                                <!-- Remover coluna Ações -->
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-container">
+                            <!-- As transações serão carregadas aqui pelo JavaScript como texto -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Remover botão Add-row -->
+                
+                <div class="flex justify-end mt-6">
+                    <button type="button" id="confirm-save-all" class="btn btn-primary">
+                         <span class="button-text">
                             <i class="ri-save-line mr-2"></i>
-                            Salvar Transações
-                        </button>
-                    </div>
-                </form>
+                            Cadastrar Todas as Transações
+                         </span>
+                         <span class="loading-spinner hidden animate-spin mr-2">
+                            <i class="ri-loader-4-line"></i>
+                         </span>
+                         <span class="loading-text hidden">Cadastrando...</span>
+                    </button>
+                </div>
+                
+                 <!-- Mensagem de erro geral AJAX -->
+                 <div id="ajax-error-message" class="mt-4 hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">Erro!</strong>
+                    <span class="block sm:inline">Ocorreu um erro ao processar a solicitação.</span>
+                 </div>
+                 
             </div>
         </div>
     </div>
@@ -110,189 +104,166 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('transactions-container');
-            const addButton = document.getElementById('add-row');
-            let rowCount = 0;
+            const confirmSaveButton = document.getElementById('confirm-save-all');
+            const accountIdInput = document.getElementById('account_id');
+            const filePathInput = document.getElementById('file_path');
+            const ajaxErrorMessage = document.getElementById('ajax-error-message');
             
-            // Categorias agrupadas por tipo para select dinâmico
-            const categories = {
-                income: [
-                    @foreach($categories['income'] ?? [] as $category)
-                        { id: {{ $category->id }}, name: "{{ $category->name }}" },
-                    @endforeach
-                ],
-                expense: [
-                    @foreach($categories['expense'] ?? [] as $category)
-                        { id: {{ $category->id }}, name: "{{ $category->name }}" },
-                    @endforeach
-                ]
-            };
-            
-            // Transações extraídas automaticamente
-            const extractedTransactions = @json($extractedTransactions);
-            
-            function addRow(transaction = null) {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-50';
-                
-                // Valores padrão ou da transação
-                const date = transaction ? transaction.date : new Date().toISOString().substr(0, 10);
-                const description = transaction ? transaction.description : '';
-                const amount = transaction ? parseFloat(transaction.amount).toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }) : '';
-                const type = transaction ? transaction.type : '';
-                
-                row.innerHTML = `
-                    <td class="px-3 py-3">
-                        <input type="date" name="transactions[${rowCount}][date]" class="form-input w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" required value="${date}">
-                    </td>
-                    <td class="px-3 py-3">
-                        <input type="text" name="transactions[${rowCount}][description]" class="form-input w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" required placeholder="Ex: Pagamento de Luz" value="${description}">
-                    </td>
-                    <td class="px-3 py-3">
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">R$</span>
-                            <input type="text" 
-                                name="transactions[${rowCount}][amount]" 
-                                class="form-input w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" 
-                                required 
-                                placeholder="0,00" 
-                                value="${amount}"
-                                oninput="formatCurrencyInput(this)">
-                        </div>
-                    </td>
-                    <td class="px-3 py-3">
-                        <select name="transactions[${rowCount}][type]" class="type-select form-select w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" required data-row="${rowCount}">
-                            <option value="">Selecione</option>
-                            <option value="income" ${type === 'income' ? 'selected' : ''}>Receita</option>
-                            <option value="expense" ${type === 'expense' ? 'selected' : ''}>Despesa</option>
-                        </select>
-                    </td>
-                    <td class="px-3 py-3">
-                        <select name="transactions[${rowCount}][category_id]" class="category-select form-select w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50" required>
-                            <option value="">Selecione o tipo primeiro</option>
-                        </select>
-                    </td>
-                    <td class="px-3 py-3">
-                        <button type="button" class="delete-row text-red-500 hover:text-red-700">
-                            <i class="ri-delete-bin-line text-xl"></i>
-                        </button>
-                    </td>
-                `;
-                container.appendChild(row);
-                
-                // Adicionar listeners para os eventos
-                const typeSelect = row.querySelector('.type-select');
-                typeSelect.addEventListener('change', function() {
-                    updateCategoryOptions(this);
-                });
-                
-                const deleteButton = row.querySelector('.delete-row');
-                deleteButton.addEventListener('click', function() {
-                    row.remove();
-                });
-                
-                // Atualiza as categorias se o tipo já estiver selecionado
-                if (type) {
-                    updateCategoryOptions(typeSelect);
-                }
-                
-                rowCount++;
+            // Dados passados pelo PHP
+            const transactions = @json($extractedTransactions ?? []);
+            const categories = @json($categories ?? []); // Estrutura: { income: [...], expense: [...] }
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // --- Funções Auxiliares ---
+            function showLoading(button) {
+                button.disabled = true;
+                button.querySelector('.button-text').classList.add('hidden');
+                button.querySelector('.loading-spinner').classList.remove('hidden');
+                button.querySelector('.loading-text').classList.remove('hidden');
+            }
+
+            function hideLoading(button) {
+                button.disabled = false;
+                button.querySelector('.button-text').classList.remove('hidden');
+                button.querySelector('.loading-spinner').classList.add('hidden');
+                button.querySelector('.loading-text').classList.add('hidden');
             }
             
-            function updateCategoryOptions(typeSelect) {
-                const rowIndex = typeSelect.dataset.row;
-                const type = typeSelect.value;
-                const categorySelect = document.querySelector(`select[name="transactions[${rowIndex}][category_id]"]`);
+            function showAjaxError(message = 'Ocorreu um erro ao processar a solicitação.') {
+                 ajaxErrorMessage.querySelector('span').textContent = message;
+                 ajaxErrorMessage.classList.remove('hidden');
+            }
+            
+            function hideAjaxError() {
+                 ajaxErrorMessage.classList.add('hidden');
+            }
+            
+            function getCategoryName(categoryId, suggestedName, type) {
+                if (categoryId) {
+                    const categoryList = (type === 'income' ? categories.income : categories.expense) || [];
+                    const category = categoryList.find(c => c.id == categoryId); // Comparação frouxa por precaução
+                    return category ? category.name : `ID Categoria: ${categoryId}`; // Retorna nome ou ID se não encontrar
+                } else if (suggestedName) {
+                    return `${suggestedName} (Nova)`;
+                }
+                return 'Sem Categoria';
+            }
+
+            // --- Renderizar Tabela Estática ---
+            function renderTransactions() {
+                container.innerHTML = ''; // Limpar container
+                if (!transactions || transactions.length === 0) {
+                     container.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Nenhuma transação para exibir.</td></tr>';
+                     confirmSaveButton.disabled = true; // Desabilitar botão se não houver transações
+                     return;
+                 }
                 
-                // Obter a transação atual e sua categoria (se disponível)
-                const currentTransaction = extractedTransactions[rowIndex];
-                const selectedCategoryId = currentTransaction?.category_id;
-                
-                // Limpar opções atuais
-                categorySelect.innerHTML = '';
-                
-                // Adicionar opção padrão
-                const defaultOption = document.createElement('option');
-                defaultOption.value = '';
-                defaultOption.textContent = 'Selecione uma categoria';
-                categorySelect.appendChild(defaultOption);
-                
-                // Adicionar categorias correspondentes ao tipo
-                if (type && categories[type]) {
-                    categories[type].forEach(category => {
-                        const option = document.createElement('option');
-                        option.value = category.id;
-                        option.textContent = category.name;
-                        
-                        // Pré-selecionar a categoria se corresponder
-                        if (selectedCategoryId && parseInt(category.id) === parseInt(selectedCategoryId)) {
-                            option.selected = true;
-                        }
-                        
-                        categorySelect.appendChild(option);
+                transactions.forEach((transaction, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-200';
+                    
+                    const formattedAmount = parseFloat(transaction.amount || 0).toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
                     });
-                }
-            }
-            
-            // Função para formatar moeda no formato brasileiro
-            function formatCurrency(value) {
-                if (!value) return '';
-                // Remove qualquer caractere que não seja número
-                const number = parseFloat(value.toString().replace(/[^\d.-]/g, ''));
-                if (isNaN(number)) return '';
-                // Formata o número para o padrão brasileiro
-                return number.toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    
+                    const typeText = transaction.type === 'income' ? 'Receita' : 'Despesa';
+                    const typeColor = transaction.type === 'income' ? 'text-green-600' : 'text-red-600';
+                    
+                    // Usar category_id e suggested_category conforme aplicados pelo controller
+                    const categoryName = getCategoryName(transaction.category_id, transaction.suggested_category, transaction.type);
+
+                    row.innerHTML = `
+                        <td class="px-3 py-3 text-sm">${transaction.date || 'N/A'}</td>
+                        <td class="px-3 py-3 text-sm">${transaction.description || 'N/A'}</td>
+                        <td class="px-3 py-3 text-sm text-right">${formattedAmount}</td>
+                        <td class="px-3 py-3 text-sm"><span class="${typeColor} font-medium">${typeText}</span></td>
+                        <td class="px-3 py-3 text-sm">${categoryName}</td>
+                    `;
+                    container.appendChild(row);
                 });
             }
 
-            // Função para formatar input de moeda em tempo real
-            function formatCurrencyInput(input) {
-                // Remove tudo exceto números e ponto
-                let value = input.value.replace(/[^\d]/g, '');
-                
-                // Converte para float (divide por 100 para considerar os centavos)
-                value = parseFloat(value) / 100;
-                
-                // Se não for um número válido, limpa o campo
-                if (isNaN(value)) {
-                    input.value = '';
-                    return;
-                }
-                
-                // Formata o valor no padrão brasileiro
-                input.value = value.toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+            // --- Event Listener para o Botão de Salvar ---
+            confirmSaveButton.addEventListener('click', function() {
+                showLoading(this);
+                hideAjaxError();
+
+                const accountId = accountIdInput.value;
+                const filePath = filePathInput.value;
+
+                // Preparar os dados das transações para envio
+                // O controller saveTransactions espera amount como string ou numérico, 
+                // e category_id como ID numérico ou string 'new_...' se for nova.
+                // A função applyCategorization no controller já deve ter preparado os dados.
+                // Verificar se precisamos ajustar algo aqui baseado na validação do saveTransactions
+                const transactionsToSave = transactions.map(t => ({
+                    date: t.date,
+                    description: t.description,
+                    amount: t.amount, // Enviar o valor numérico
+                    type: t.type,
+                    category_id: t.category_id, // Enviar ID ou null
+                    suggested_category: t.suggested_category // Enviar nome sugerido se category_id for null
+                    // O controller saveTransactions decidirá se cria a categoria
+                }));
+
+                const payload = {
+                    account_id: accountId,
+                    file_path: filePath,
+                    transactions: transactionsToSave,
+                    _token: csrfToken
+                };
+
+                fetch('{{ route("statements.save") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errData => {
+                             throw { status: response.status, data: errData };
+                        }).catch(() => {
+                            throw new Error(`Erro HTTP: ${response.status}`); 
+                        });
+                    }
+                    return response.json(); // Espera uma resposta JSON do controller (mesmo que seja só redirect info)
+                })
+                .then(data => {
+                    // Assumindo que o controller retorna sucesso ou redireciona em caso de sucesso.
+                    // Se o saveTransactions retornar JSON com uma URL de redirecionamento:
+                    if (data.redirect_url) {
+                         window.location.href = data.redirect_url; // Idealmente, o controller redireciona via HTTP 302
+                    } else {
+                         // Se não houver URL de redirect, assumir sucesso e redirecionar para o índice
+                         window.location.href = '{{ route("transactions.index") }}'; 
+                         // Nota: Mensagens flash (withSuccess) não funcionarão com redirect JS.
+                         // Seria melhor o controller retornar um redirect HTTP real.
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao salvar transações:', error);
+                    let errorMessage = 'Ocorreu um erro ao salvar as transações.';
+                    if (error.data && error.data.message) {
+                        errorMessage = error.data.message;
+                        // Se houver erros de validação específicos por campo (improvável aqui, mais no form original)
+                        // if(error.data.errors) { ... } 
+                    } else if (error.message) {
+                         errorMessage = error.message;
+                    }
+                    showAjaxError(errorMessage);
+                    hideLoading(confirmSaveButton);
                 });
-            }
-            
-            // Adiciona as transações extraídas automaticamente
-            if (extractedTransactions.length > 0) {
-                extractedTransactions.forEach(transaction => {
-                    addRow(transaction);
-                });
-            } else {
-                // Adiciona uma linha em branco se não houver transações
-                addRow();
-            }
-            
-            // Evento para adicionar nova linha
-            addButton.addEventListener('click', () => {
-                addRow();
             });
-            
-            // Validação do formulário antes de enviar
-            document.getElementById('mapping-form').addEventListener('submit', function(e) {
-                const rows = container.querySelectorAll('tr');
-                if (rows.length === 0) {
-                    e.preventDefault();
-                    alert('Adicione pelo menos uma transação para importar.');
-                }
-            });
+
+            // --- Inicialização ---
+            renderTransactions();
+
         });
     </script>
 </x-app-layout> 

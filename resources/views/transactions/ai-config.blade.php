@@ -49,6 +49,13 @@
                         <div>
                             <h3 class="text-md font-medium text-gray-700 mb-2">Serviços de IA Recomendados</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-2">Ferramenta de Análise de Extratos</h4>
+                                    <p class="text-sm text-gray-600 mb-2">Teste a análise de extratos OFX com nossa ferramenta interativa.</p>
+                                    <a href="/treinaIA/analyze-ofx-web.php" target="_blank" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                        Analisar Extratos
+                                    </a>
+                                </div>
                                 <div class="bg-white p-4 rounded-lg border border-gray-200">
                                     <div class="flex items-center mb-2">
                                         <img src="{{ asset('assets/images/providers/openai-logo.svg') }}" alt="OpenAI" class="h-6 mr-2">

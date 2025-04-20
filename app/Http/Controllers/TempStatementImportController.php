@@ -1,0 +1,1368 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Category;
+use App\Models\Account;
+use App\Models\Transaction;
+use App\Services\AIConfigService;
+use DateTime;
+use Endeken\OFX;
+
+class TempStatementImportController extends Controller
+{
+    /**
+     * Mostra o formulário de upload de extratos
+     */
+    public function index()
+    {
+        $accounts = Account::where('active', true)
+            ->where('user_id', auth()->id())
+            ->orderBy('name')
+            ->get();
+            
+        // Verifica se a IA está configurada no banco de dados
+        $aiConfigService = new AIConfigService();
+        $aiConfig = $aiConfigService->getAIConfig();
+        $aiConfigured = $aiConfig['is_configured'];
+            
+        return view('transactions.import', compact('accounts', 'aiConfig', 'aiConfigured'));
+    }
+
+    /**
+     * Processa o upload do extrato
+     */
+    public function upload(Request $request)
+    {
+        // Ajuste: Log mais descritivo
+        Log::info('Recebida requisição em /statements/upload', ['ajax' => $request->ajax(), 'method' => $request->method(), 'input' => $request->except('statement_file')]);
+
+        // Apenas requisições AJAX POST são esperadas para o novo fluxo
+        if ($request->ajax() && $request->isMethod('post')) {
+            Log::info('Processando requisição AJAX POST para salvar extrato');
+            
+            $validator = Validator::make($request->all(), [
+                'statement_file' => 'required|file|mimes:pdf,csv,ofx,qif,qfx,xls,xlsx,txt|max:10240',
+                'account_id' => 'required|exists:accounts,id',
+            ]);
+
+            if ($validator->fails()) {
+                Log::error('Validação falhou para salvar extrato AJAX', ['errors' => $validator->errors()->all()]);
+                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+            }
+
+            try {
+                $file = $request->file('statement_file');
+                $extension = strtolower($file->getClientOriginalExtension());
+                $accountId = $request->input('account_id');
+
+                // Salvar em uma pasta que indica que está pronto para análise
+                $path = $file->store('temp_uploads'); 
+                Log::info('Extrato armazenado para análise posterior', ['path' => $path, 'account_id' => $accountId, 'extension' => $extension]);
+
+                if (!Storage::exists($path)) {
+                    Log::error('Arquivo não encontrado após armazenamento para análise');
+                    return response()->json(['success' => false, 'message' => 'Erro ao armazenar o extrato.'], 500);
+                }
+
+                // Retorna sucesso e os dados necessários para o botão "Analisar com IA"
+                return response()->json([
+                    'success' => true, 
+                    'message' => 'Extrato enviado com sucesso! Clique em Analisar para continuar.',
+                    'filePath' => $path,       // Caminho do arquivo salvo
+                    'accountId' => $accountId, // ID da conta selecionada
+                    'extension' => $extension  // Extensão do arquivo
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Erro durante o salvamento do extrato AJAX', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return response()->json(['success' => false, 'message' => 'Erro interno ao salvar o extrato.'], 500);
+            }
+        }
+
+        // Se não for AJAX POST, pode ser um acesso direto ou um erro de fluxo
+        Log::warning('Acesso inesperado ao método upload', ['method' => $request->method(), 'ajax' => $request->ajax()]);
+        return response()->json(['success' => false, 'message' => 'Requisição inválida.'], 400);
+        
+        // O antigo fluxo de fallback (não-AJAX) foi removido, pois o novo design depende do JS.
+        // Se precisar de um fallback sem JS, teria que ser reimplementado de outra forma.
+    }
+
+    /**
+     * Analisa o extrato após o upload
+     */
+    public function analyze()
+    {
+        // Recupera os dados do upload da sessão
+        $uploadData = session('upload_data');
+        if (!$uploadData) {
+            Log::error('Dados de upload não encontrados na sessão');
+            return redirect()->route('statements.upload')
+                ->withErrors(['error' => 'Dados do upload não encontrados. Por favor, tente novamente.']);
+        }
+
+        $path = $uploadData['file_path'];
+        $extension = $uploadData['extension'];
+        $account_id = $uploadData['account_id'];
+        $use_ai = $uploadData['use_ai'];
+
+        Log::info('Iniciando análise do arquivo', $uploadData);
+
+        try {
+            // Extrai transações do arquivo
+            $transactions = $this->extractTransactions($path, $extension);
+            
+            if (empty($transactions)) {
+                Log::warning('Nenhuma transação extraída do arquivo', ['path' => $path, 'extensão' => $extension]);
+                
+                // Mesmo sem transações, salva os dados do upload na sessão
+                session(['import_data' => [
+                    'file_path' => $path,
+                    'account_id' => $account_id,
+                    'use_ai' => $use_ai,
+                    'transactions' => [],
+                    'analysis' => []
+                ]]);
+                
+                // Redireciona para a página de mapeamento com aviso
+                return redirect()->route('statements.mapping', [
+                    'path' => $path,
+                    'account_id' => $account_id,
+                    'extension' => $extension,
+                    'use_ai' => $use_ai
+                ])->with('warning', 'Não foi possível extrair transações do arquivo. Verifique se o arquivo está no formato correto ou tente com outro arquivo.');
+            }
+
+            Log::info('Transações extraídas com sucesso', ['total' => count($transactions)]);
+
+            // Análise das transações
+            $analysis = $this->analyzeTransactions($transactions);
+
+            // Armazena dados na sessão para uso na próxima página
+            session(['import_data' => [
+                'file_path' => $path,
+                'account_id' => $account_id,
+                'use_ai' => $use_ai,
+                'transactions' => $transactions,
+                'analysis' => $analysis
+            ]]);
+
+            // Redireciona para a página de mapeamento com os parâmetros necessários
+            return redirect()->route('statements.mapping', [
+                'path' => $path,
+                'account_id' => $account_id,
+                'extension' => $extension,
+                'use_ai' => $use_ai
+            ])->with('success', 'Arquivo carregado e analisado com sucesso.');
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao analisar arquivo', [
+                'path' => $path, 
+                'extensão' => $extension,
+                'erro' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('statements.upload')
+                ->withErrors(['statement_file' => 'Erro ao analisar o arquivo: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Mostra a tela de mapeamento de transações
+     */
+    public function showMapping(Request $request)
+    {
+        // Validar parâmetros essenciais da URL
+        $validator = Validator::make($request->all(), [
+            'path' => 'required|string',
+            'account_id' => 'required|exists:accounts,id',
+            'extension' => 'required|string|in:pdf,csv,ofx,qif,qfx,xls,xlsx,txt',
+            'use_ai' => 'required|in:0,1',
+        ]);
+
+        if ($validator->fails()) {
+            Log::error('Parâmetros inválidos para showMapping', ['errors' => $validator->errors()->all(), 'request' => $request->all()]);
+            return redirect()->route('transactions.import') // Redirecionar para import, não statements.upload
+                ->with('error', 'Link de mapeamento inválido ou expirado. Por favor, tente a importação novamente. Erro: ' . $validator->errors()->first());
+        }
+
+        $path = $request->path;
+        $accountId = $request->account_id;
+        $extension = $request->extension;
+        $useAI = $request->use_ai === '1'; // Converter para boolean
+        $autoSave = $request->boolean('auto_save') ?? false; // Manter auto_save se usado
+
+        Log::info('Iniciando showMapping', [
+            'path' => $path, 'account_id' => $accountId, 'extension' => $extension, 'use_ai' => $useAI
+        ]);
+
+        // Verificar se o arquivo existe no storage (na pasta de previews)
+        if (!Storage::exists($path)) {
+             Log::error('Arquivo temporário não encontrado em showMapping', ['path' => $path]);
+            return redirect()->route('transactions.import')
+                ->with('error', 'Arquivo temporário não encontrado. Por favor, faça o upload novamente.');
+        }
+        
+        $account = Account::findOrFail($accountId);
+        // Verificar permissão do usuário
+        if ($account->user_id !== auth()->id()) {
+             Log::warning('Tentativa de acesso não autorizado ao mapeamento', ['user_id' => auth()->id(), 'account_id' => $accountId]);
+            abort(403, 'Acesso não autorizado a esta conta.');
+        }
+        
+        // Extrair transações do arquivo baseado no formato
+        $extractedTransactions = [];
+        try {
+            // Usar os métodos de extração agora presentes neste controller
+            if (in_array($extension, ['ofx', 'qfx'])) {
+                 Log::info('Extraindo de OFX/QFX', ['path' => $path]);
+                $extractedTransactions = $this->extractTransactionsFromOFX($path);
+            } elseif ($extension === 'csv') {
+                 Log::info('Extraindo de CSV', ['path' => $path]);
+                $extractedTransactions = $this->extractTransactionsFromCSV($path);
+            } else {
+                 Log::warning('Extração não implementada para extensão', ['extension' => $extension]);
+                 // Poderia tentar extrair de PDF/XLS aqui se os métodos existissem
+            }
+            Log::info('Transações extraídas', ['count' => count($extractedTransactions)]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao extrair transações no mapeamento', [
+                'message' => $e->getMessage(), 'path' => $path, 'trace' => $e->getTraceAsString()
+            ]);
+            // Usar transações de exemplo em caso de erro? Ou mostrar erro?
+            // Vamos mostrar erro por enquanto
+             return redirect()->route('transactions.import')
+                ->with('error', 'Erro ao ler o arquivo do extrato: ' . $e->getMessage());
+        }
+        
+        // Se não há transações, redirecionar com aviso
+        if (empty($extractedTransactions)) {
+            Log::warning('Nenhuma transação extraída do arquivo no mapeamento', ['path' => $path]);
+             // Limpar arquivo temporário?
+            Storage::delete($path);
+            return redirect()->route('transactions.import')
+                ->with('warning', 'Não foi possível extrair nenhuma transação do arquivo. Verifique o formato ou tente outro arquivo.');
+        }
+        
+        // ---- ANÁLISE COM IA (Usando a lógica deste Controller) ----
+        $aiAnalysisResult = null;
+        if ($useAI) {
+            Log::info('Tentando análise com IA configurada neste controller');
+            try {
+                // Chama o método analyzeTransactionsWithAI deste controller
+                $aiAnalysisResult = $this->analyzeTransactionsWithAI($extractedTransactions); 
+
+                if (empty($aiAnalysisResult)) {
+                    Log::warning('Análise com IA não retornou resultados válidos.');
+                    // Opcional: Poderia tentar uma categorização local aqui como fallback
+                } else {
+                     Log::info('Análise com IA concluída', ['results_count' => count($aiAnalysisResult['transactions'] ?? [])]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro durante analyzeTransactionsWithAI em showMapping', [
+                    'message' => $e->getMessage(), 'trace' => $e->getTraceAsString()
+                ]);
+                // Continua sem análise IA em caso de erro
+            }
+        } else {
+             Log::info('Análise com IA não solicitada (use_ai=0)');
+        }
+        // ----------------------------------------------------------
+
+        // Aplicar categorização às transações (se a análise IA retornou algo)
+        // Usar o método applyCategorizationToTransactions deste controller
+        $extractedTransactions = $this->applyCategorizationToTransactions($extractedTransactions, $aiAnalysisResult);
+        
+        // Carregar categorias do usuário
+        $categories = Category::where('user_id', auth()->id())
+            ->orderBy('name')
+            ->get()
+            ->groupBy('type');
+            
+        // Log detalhado antes de passar para a view
+        Log::debug('Dados sendo passados para a view transactions.mapping', [
+            'path' => $path,
+            'account_id' => $account->id,
+            'extension' => $extension,
+            'useAI' => $useAI,
+            'autoSave' => $autoSave,
+            'extractedTransactions_count' => is_array($extractedTransactions) ? count($extractedTransactions) : 'N/A',
+            'extractedTransactions_type' => gettype($extractedTransactions),
+            // Logar apenas as duas primeiras transações como amostra JSON para evitar logs muito grandes
+            'extractedTransactions_sample' => is_array($extractedTransactions) ? json_encode(array_slice($extractedTransactions, 0, 2), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : 'N/A',
+            'aiAnalysisResult_exists' => !empty($aiAnalysisResult),
+            'aiAnalysisResult_sample' => (is_array($aiAnalysisResult) && isset($aiAnalysisResult['transactions'])) ? json_encode(array_slice($aiAnalysisResult['transactions'], 0, 2), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : 'N/A',
+            'categories_income_count' => count($categories['income'] ?? []),
+            'categories_expense_count' => count($categories['expense'] ?? [])
+        ]);
+            
+        Log::info('Renderizando view transactions.mapping');
+        
+        // Renderizar a view
+        return view('transactions.mapping', compact(
+            'path', // Passar o path para a view poder incluir no form de salvar
+            'account', 
+            'categories', 
+            'extractedTransactions', 
+            'aiAnalysisResult', // Passar o resultado completo da IA se necessário na view
+            'useAI', // Passar useAI para a view, se necessário
+            'autoSave' // Manter autoSave
+        ));
+    }
+
+    /**
+     * Analisa as transações usando IA com a configuração do banco de dados
+     */
+    private function analyzeTransactionsWithAI($transactions)
+    {
+        // Tempo de início da operação para medir performance
+        $startTime = microtime(true);
+        
+        // Se não houver transações, retornar nulo imediatamente
+        if (empty($transactions)) {
+            Log::info('🚧 Nenhuma transação para analisar com IA');
+            return null;
+        }
+        
+        Log::info('🤖 INICIANDO ANÁLISE COM IA', [
+            'total_transacoes' => count($transactions),
+            'usuario_id' => auth()->id(),
+            'exemplo_transacao' => isset($transactions[0]) ? json_encode($transactions[0]) : null
+        ]);
+        
+        // Verificar se a IA está configurada no banco de dados
+        $aiConfigService = new AIConfigService();
+        if (!$aiConfigService->isAIConfigured()) {
+            Log::warning('⚠️ Nenhuma IA configurada no banco de dados - usando resposta simulada');
+            return $this->getMockAIResponse($transactions);
+        }
+        
+        try {
+            // Obter configurações da IA do banco de dados
+            $aiConfig = $aiConfigService->getAIConfig();
+            $aiProvider = $aiConfig['provider'];
+            Log::info('🔍 Usando provedor IA: ' . $aiProvider);
+            
+            // Obter a chave da API e o modelo do banco de dados
+            $apiKey = $aiConfig['api_key'] ?? '';
+            $modelName = $aiConfig['model_name'] ?? '';
+            
+            // Verificar se a chave da API existe
+            if (empty($apiKey)) {
+                Log::error('❗ Erro: Chave da API não encontrada no banco de dados');
+                return $this->getMockAIResponse($transactions);
+            }
+            
+            // Criar a configuração para a IA
+            $config = new \stdClass();
+            $config->api_token = $apiKey;
+            $config->model = $modelName;
+            $config->provider = $aiProvider;
+            
+            // Executar a análise com a IA configurada
+            Log::info('💬 Iniciando análise de transações com ' . $aiProvider);
+            
+            try {
+                $resultado = $this->analyzeTransactionsWithGemini($transactions, $config);
+                
+                // Verificar se o resultado é válido
+                if ($resultado && isset($resultado['transactions']) && !empty($resultado['transactions'])) {
+                    $duration = round(microtime(true) - $startTime, 2);
+                    Log::info('🎉 Análise com Gemini concluída com sucesso', [
+                        'tempo_execucao' => $duration . 's',
+                        'total_transacoes_analisadas' => count($resultado['transactions']),
+                        'exemplo_resultado' => isset($resultado['transactions'][0]) ? json_encode($resultado['transactions'][0]) : null
+                    ]);
+                    return $resultado;
+                } else {
+                    Log::warning('⚠️ Resposta vazia ou inválida da API Gemini, usando resposta simulada');
+                    return $this->getMockAIResponse($transactions);
+                }
+            } catch (\Exception $e) {
+                Log::error('❌ Erro no método analyzeTransactionsWithGemini', [
+                    'mensagem' => $e->getMessage(),
+                    'arquivo' => $e->getFile(),
+                    'linha' => $e->getLine()
+                ]);
+                return $this->getMockAIResponse($transactions);
+            }
+        } catch (\Exception $e) {
+            Log::error('❌ Erro geral ao analisar transações com IA', [
+                'mensagem' => $e->getMessage(),
+                'arquivo' => $e->getFile(),
+                'linha' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Se falhar, usar resposta simulada
+            return $this->getMockAIResponse($transactions);
+        }
+    }
+    
+    /**
+     * Método específico para análise com Gemini
+     */
+    private function analyzeTransactionsWithGemini($transactions, $apiConfig)
+    {
+        $startTime = microtime(true);
+        
+        try {
+            // Preparar as transações para análise
+            $transactionDescriptions = [];
+            foreach ($transactions as $index => $transaction) {
+                $transactionDescriptions[] = [
+                    'id' => $index,
+                    'date' => $transaction['date'] ?? '',
+                    'description' => $transaction['description'] ?? '',
+                    'amount' => $transaction['amount'] ?? 0,
+                    'type' => $transaction['type'] ?? ''
+                ];
+            }
+            
+            // Obter categories do usuário para treinamento da IA
+            $categories = Category::where('user_id', auth()->id())
+                ->orderBy('name')
+                ->get();
+                
+            // Formatar categorias para o prompt
+            $categoriesFormatted = [];
+            foreach ($categories as $category) {
+                $categoriesFormatted[] = [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'type' => $category->type, // income ou expense
+                    'icon' => $category->icon ?? ''
+                ];
+            }
+            
+            // Agrupar categorias por tipo para melhor formato no prompt
+            $categoriesByType = [
+                'income' => [],
+                'expense' => []
+            ];
+            
+            foreach ($categoriesFormatted as $category) {
+                $type = $category['type'] == 'income' ? 'income' : 'expense';
+                $categoriesByType[$type][] = $category;
+            }
+            
+            Log::info('🔎 Usando categorias para prompt Gemini', [
+                'total_categorias' => count($categoriesFormatted),
+                'receitas' => count($categoriesByType['income']),
+                'despesas' => count($categoriesByType['expense'])
+            ]);
+            
+            // Verificar se temos as configurações necessárias
+            $apiKey = $apiConfig->api_token ?? env('GEMINI_API_KEY');
+            $model = $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro');
+            
+            // Validar chave API
+            if (empty($apiKey)) {
+                Log::error('❌ Chave API para Gemini está vazia');
+                return null;
+            }
+            
+            // Configurar endpoint da API
+            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            
+            Log::info('📣 INICIANDO CHAMADA GEMINI PARA CATEGORIZAÇÃO', [
+                'model' => $model,
+                'api_key_preview' => substr($apiKey, 0, 5) . '...' . substr($apiKey, -3),
+                'total_transacoes' => count($transactions),
+                'endpoint' => $endpoint
+            ]);
+            
+            // Preparar o prompt - versão melhorada com instruções mais claras
+            $userPrompt = "Você é um assistente especializado em finanças pessoais. Sua tarefa é categorizar as seguintes transações bancárias:\n\n";
+            $userPrompt .= "TRANSAÇÕES A CATEGORIZAR:\n" . json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
+            $userPrompt .= "CATEGORIAS DISPONÍVEIS:\n" . json_encode($categoriesByType, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
+            $userPrompt .= "INSTRUÇÕES DE CATEGORIZAÇÃO:\n"; 
+            $userPrompt .= "1. Para cada transação, analise a descrição e o valor para determinar a que categoria ela pertence\n";
+            $userPrompt .= "2. Se a transação já indica um tipo (income/expense), respeite esta informação\n";
+            $userPrompt .= "3. Atribua a categoria existente mais adequada usando seu ID\n";
+            $userPrompt .= "4. Se nenhuma categoria existente for adequada, sugira uma nova categoria com nome apropriado\n";
+            $userPrompt .= "5. Transações com valores positivos geralmente são receitas (income)\n";
+            $userPrompt .= "6. Transações com valores negativos geralmente são despesas (expense)\n\n";
+            $userPrompt .= "RESPONDA APENAS NO SEGUINTE FORMATO JSON (sem explicações adicionais):\n";
+            $userPrompt .= "```json\n{\n  \"transactions\": [\n    {\n      \"id\": 0,\n      \"type\": \"income\",\n      \"category_id\": 1,\n      \"suggested_category\": null\n    },\n    {\n      \"id\": 1,\n      \"type\": \"expense\",\n      \"category_id\": null,\n      \"suggested_category\": \"Nome da nova categoria\"\n    }\n  ]\n}\n```";
+            
+            // Imprimir parte do prompt para debugging
+            Log::debug('Preview do prompt para Gemini', [
+                'prompt_preview' => substr($userPrompt, 0, 500) . '... (truncado)'
+            ]);
+            
+            // Preparar o payload para a API Gemini
+            $data = [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $userPrompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'maxOutputTokens' => 4096
+                ]
+            ];
+            
+            // Usar a classe Http do Laravel para fazer a requisição
+            Log::info('▶️ Enviando requisição para API Gemini: ' . $endpoint);
+            
+            try {
+                // Configurar a requisição com timeout adequado e headers corretos
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ])
+                ->timeout(60)
+                ->post($endpoint, $data);
+                
+                // Verificar se a requisição foi bem-sucedida
+                if ($response->successful()) {
+                    Log::info('✅ Requisição HTTP bem-sucedida', [
+                        'status' => $response->status(),
+                        'size' => strlen($response->body())
+                    ]);
+                    
+                    $result = $response->body();
+                } else {
+                    Log::error('❗ Erro na requisição HTTP', [
+                        'status' => $response->status(),
+                        'body' => $response->body()
+                    ]);
+                    return null;
+                }
+                
+                // Status já foi verificado na chamada HTTP
+                
+                if (!$result) {
+                    Log::error('Nenhum resultado retornado da API Gemini');
+                    return null;
+                }
+                
+                Log::info('✅ Resposta recebida da API Gemini', [
+                    'tamanho_resposta' => strlen($result),
+                    'tempo_resposta' => round(microtime(true) - $startTime, 2) . 's'
+                ]);
+                
+            } catch (\Exception $e) {
+                Log::error('❌ ERRO AO CHAMAR API GEMINI', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]);
+                return null;
+            }
+            
+            // Processar a resposta
+            if ($result) {
+                $duration = round(microtime(true) - $startTime, 2);
+                $responseData = json_decode($result, true);
+                
+                // Verificar se a resposta contém o texto esperado
+                if ($responseData && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                    // Extrair o texto da resposta
+                    $text = $responseData['candidates'][0]['content']['parts'][0]['text'];
+                    Log::debug('Resposta bruta da API Gemini', ['text_preview' => substr($text, 0, 500) . '... (truncado)']);
+                    
+                    try {
+                        // Extrair JSON da resposta (pode estar dentro de bloco markdown)
+                        if (preg_match('/```json\s*({[\s\S]*?})\s*```/m', $text, $matches)) {
+                            $jsonContent = $matches[1];
+                            Log::debug('JSON extraído de bloco markdown');
+                        } elseif (preg_match('/```\s*({[\s\S]*?})\s*```/m', $text, $matches)) {
+                            $jsonContent = $matches[1];
+                            Log::debug('JSON extraído de bloco genérico');
+                        } elseif (preg_match('/({\s*"transactions"[\s\S]*?})/m', $text, $matches)) {
+                            $jsonContent = $matches[1];
+                            Log::debug('JSON extraído por padrão de transactions');
+                        } else {
+                            // Tenta usar o texto completo como JSON
+                            $jsonContent = $text;
+                            Log::debug('Usando texto completo como JSON');
+                        }
+                        
+                        // Decodificar o JSON
+                        $processedResponse = json_decode($jsonContent, true);
+                        
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            Log::error('Erro ao decodificar JSON da resposta', [
+                                'json_error' => json_last_error_msg(),
+                                'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                            ]);
+                            return null;
+                        }
+                        
+                        // Verificar se o processamento foi bem-sucedido e se há transações
+                        if ($processedResponse && isset($processedResponse['transactions']) && !empty($processedResponse['transactions'])) {
+                            // Contar categorias sugeridas e existentes
+                            $suggestedCategories = 0;
+                            $existingCategories = 0;
+                            
+                            foreach ($processedResponse['transactions'] as $transaction) {
+                                if (!empty($transaction['suggested_category']) && empty($transaction['category_id'])) {
+                                    $suggestedCategories++;
+                                } elseif (!empty($transaction['category_id'])) {
+                                    $existingCategories++;
+                                }
+                            }
+                            
+                            Log::info('🎉 Análise de transações com Gemini concluída com sucesso', [
+                                'duration' => $duration . 's',
+                                'total_transacoes' => count($processedResponse['transactions']),
+                                'sugestoes_categoria' => $suggestedCategories,
+                                'categorias_existentes' => $existingCategories,
+                                'primeira_transacao' => isset($processedResponse['transactions'][0]) ? json_encode($processedResponse['transactions'][0]) : 'n/a'
+                            ]);
+                            
+                            return $processedResponse;
+                        } else {
+                            // Resposta processada, mas sem transações válidas
+                            Log::warning('⚠️ Resposta Gemini processada, mas sem transações válidas', [
+                                'duration' => $duration . 's',
+                                'response_preview' => substr($text, 0, 200) . '... (truncado)'
+                            ]);
+                            
+                            return null;
+                        }
+                    } catch (\Exception $e) {
+                        // Erro ao processar o JSON da resposta
+                        Log::error('❌ Erro ao processar JSON da resposta Gemini', [
+                            'message' => $e->getMessage(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'text_preview' => substr($text, 0, 200) . '... (truncado)'
+                        ]);
+                        
+                        return null;
+                    }
+                } else {
+                    // Resposta em formato inesperado
+                    Log::error('❌ Formato de resposta Gemini inesperado', [
+                        'response_keys' => isset($responseData) ? array_keys($responseData) : 'null',
+                        'response_preview' => substr($result, 0, 200) . '... (truncado)'
+                    ]);
+                    
+                    return null;
+                }
+            } else {
+                // Falha na chamada à API
+                Log::error('❌ Falha na chamada à API Gemini - resultado vazio');
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('❌ Exceção ao processar requisição Gemini', [
+                'mensagem' => $e->getMessage(),
+                'arquivo' => $e->getFile(),
+                'linha' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Gera uma resposta simulada de IA para testes
+     */
+    private function getMockAIResponse($transactions)
+    {
+        // Implementação do método para gerar respostas simuladas de IA
+        // Este é um placeholder - a implementação real dependeria do formato esperado
+        
+        $response = ['transactions' => []];
+        
+        foreach ($transactions as $index => $transaction) {
+            $amount = $transaction['amount'] ?? 0;
+            $type = $transaction['type'] ?? 'expense';
+            
+            $response['transactions'][] = [
+                'id' => $index,
+                'type' => $type,
+                'category_id' => null,
+                'suggested_category' => $type == 'income' ? 'Receita Diversa' : 'Despesa Diversa'
+            ];
+        }
+        
+        return $response;
+    }
+
+    /**
+     * Extrai transações do arquivo
+     */
+    public function extractTransactions($path, $extension)
+    {
+        switch (strtolower($extension)) {
+            case 'ofx':
+            case 'qfx':
+                return $this->extractTransactionsFromOFX($path);
+            case 'csv':
+                return $this->extractTransactionsFromCSV($path);
+            case 'pdf':
+                // Se tiver um método para extrair de PDF
+                if (method_exists($this, 'extractTransactionsFromPDF')) {
+                    return $this->extractTransactionsFromPDF($path);
+                }
+                break;
+            default:
+                // Tenta identificar o tipo pelo conteúdo
+                $content = Storage::get($path);
+                if (stripos($content, '<OFX>') !== false) {
+                    return $this->extractTransactionsFromOFX($path);
+                } elseif (stripos($content, ',') !== false || stripos($content, ';') !== false) {
+                    return $this->extractTransactionsFromCSV($path);
+                }
+                break;
+        }
+        
+        return [];
+    }
+
+    /**
+     * Extrai transações de arquivos OFX
+     */
+    protected function extractTransactionsFromOFX($filePath)
+    {
+        $transactions = [];
+        try {
+            $fullPath = storage_path('app/' . $filePath);
+            if (!Storage::disk('local')->exists($filePath)) { // Usar Storage facade corretamente
+                Log::error('Arquivo OFX não encontrado no storage', ['path' => $filePath, 'fullPath' => $fullPath]);
+                throw new \Exception("Arquivo OFX não encontrado: " . $filePath);
+            }
+            
+            // Ler conteúdo do arquivo usando Storage
+            $content = Storage::disk('local')->get($filePath);
+            if (empty($content)) {
+                Log::error('Arquivo OFX vazio', ['path' => $filePath]);
+                return [];
+            }
+
+            // Tentar usar a biblioteca Endeken\OFX se disponível (melhor que regex)
+            if (class_exists(OFX::class)) {
+                 Log::info('Usando biblioteca Endeken\\OFX para parse', ['path' => $filePath]);
+                try {
+                    $ofx = new OFX($content); // Pode precisar do path completo: new OFX($fullPath) ou file_get_contents($fullPath)
+                    
+                    // Iterar sobre as contas no arquivo OFX
+                    foreach ($ofx->bankAccounts as $bankAccount) {
+                        $statement = $bankAccount->statement;
+                        Log::info('Processando conta OFX', ['bankId' => $bankAccount->routingNumber, 'accountId' => $bankAccount->accountNumber, 'transacoes' => count($statement->transactions)]);
+
+                        foreach ($statement->transactions as $ofxTransaction) {
+                            $transaction = [];
+                            $transaction['date'] = $ofxTransaction->date->format('Y-m-d');
+                            $transaction['amount'] = (float) $ofxTransaction->amount; // Valor já vem como float
+                            $transaction['description'] = trim($ofxTransaction->memo ?: $ofxTransaction->name ?: 'Sem descrição');
+                            $transaction['type'] = $transaction['amount'] >= 0 ? 'income' : 'expense';
+                             // A biblioteca já deve retornar o valor com sinal correto
+                             // Se type for income, amount deve ser positivo. Se expense, negativo.
+                             // Ajustar para guardar valor absoluto e type correto?
+                            $transaction['amount'] = abs($transaction['amount']); // Guardar sempre positivo? Verificar saveTransactions
+
+                            // Outros campos úteis se disponíveis:
+                            // $transaction['uniqueId'] = $ofxTransaction->uniqueId; 
+                            // $transaction['checkNumber'] = $ofxTransaction->checkNumber;
+                            
+                            $transactions[] = $transaction;
+                        }
+                    }
+                    Log::info('Parse OFX com biblioteca concluído', ['total_transacoes' => count($transactions)]);
+                    return $transactions;
+
+                } catch (\Exception $e) {
+                     Log::error('Erro ao parsear OFX com biblioteca Endeken\\OFX', [
+                        'path' => $filePath, 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString()
+                    ]);
+                    // Fallback para regex se a biblioteca falhar? Ou retornar erro?
+                    // Por segurança, retornar array vazio em caso de erro no parse.
+                    return []; 
+                }
+            } else {
+                 Log::warning('Biblioteca Endeken\\OFX não encontrada, usando fallback regex (menos confiável)');
+                // Fallback para Regex (lógica original, menos robusta)
+                $content = preg_replace('/[\r\n\t]+/', ' ', $content);
+                $content = preg_replace('/\s+/', ' ', $content);
+
+                if (preg_match_all('/<STMTTRN>(.*?)<\/STMTTRN>/si', $content, $matches)) {
+                    foreach ($matches[1] as $transactionContent) {
+                        $transaction = [];
+                        if (preg_match('/<DTPOSTED>(\d{8})/', $transactionContent, $dateMatch)) {
+                            $transaction['date'] = substr($dateMatch[1], 0, 4) . '-' . substr($dateMatch[1], 4, 2) . '-' . substr($dateMatch[1], 6, 2);
+                        }
+                        if (preg_match('/<TRNAMT>([-\d\.]+)/', $transactionContent, $amountMatch)) {
+                            $transaction['amount'] = (float) str_replace(',', '.', $amountMatch[1]);
+                        }
+                        if (preg_match('/<MEMO>(.*?)<\//si', $transactionContent, $memoMatch)) {
+                            $transaction['description'] = trim($memoMatch[1]);
+                        } elseif (preg_match('/<NAME>(.*?)<\//si', $transactionContent, $nameMatch)) { // Adicionar fallback NAME
+                            $transaction['description'] = trim($nameMatch[1]);
+                        } else {
+                             $transaction['description'] = 'Sem descrição';
+                        }
+
+                        if (isset($transaction['date']) && isset($transaction['amount'])) {
+                             $transaction['type'] = $transaction['amount'] >= 0 ? 'income' : 'expense';
+                             $transaction['amount'] = abs($transaction['amount']); // Guardar absoluto?
+                            $transactions[] = $transaction;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+             Log::error("Erro GERAL ao extrair de OFX", [
+                'path' => $filePath ?? 'N/A', 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString()
+            ]);
+        }
+        return $transactions;
+    }
+
+    /**
+     * Analisa as transações e sugere categorias
+     */
+    private function analyzeTransactions($transactions)
+    {
+        $analysis = [
+            'income' => [],
+            'expense' => [],
+            'total' => count($transactions)
+        ];
+
+        foreach ($transactions as $transaction) {
+            $analysis[$transaction['type']][] = $transaction;
+        }
+
+        // Contagem de categorias
+        $categoryCounts = [
+            'income' => count($analysis['income']),
+            'expense' => count($analysis['expense'])
+        ];
+
+        return [
+            'income' => $analysis['income'],
+            'expense' => $analysis['expense'],
+            'total' => $analysis['total'],
+            'category_counts' => $categoryCounts
+        ];
+    }
+
+    /**
+     * Extrai transações de um arquivo CSV
+     */
+    private function extractTransactionsFromCSV($path)
+    {
+        $transactions = [];
+        try {
+            if (!Storage::disk('local')->exists($path)) {
+                 Log::error('Arquivo CSV não encontrado no storage', ['path' => $path]);
+                throw new \Exception("Arquivo CSV não encontrado: " . $path);
+            }
+            $content = Storage::disk('local')->get($path);
+            
+            // Detectar encoding (simples)
+            $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+            if ($encoding && $encoding !== 'UTF-8') {
+                $content = mb_convert_encoding($content, 'UTF-8', $encoding);
+                 Log::info('Convertido encoding de CSV para UTF-8', ['original' => $encoding]);
+            }
+
+            // Normalizar quebras de linha
+            $content = str_replace(["\r\n", "\r"], "\n", $content);
+            $lines = explode("\n", trim($content));
+
+            if (empty($lines)) return [];
+
+            // Heurística para detectar delimitador e cabeçalho
+            $delimiters = [';', ',', '\t', '|'];
+            $bestDelimiter = ',';
+            $maxCols = 0;
+
+            // Tentar detectar delimitador na primeira linha (ou segunda se a primeira for cabeçalho)
+            $sampleLine = count($lines) > 1 ? $lines[1] : $lines[0]; // Usa segunda linha se existir
+            foreach ($delimiters as $d) {
+                $cols = substr_count($sampleLine, $d);
+                if ($cols > $maxCols) {
+                    $maxCols = $cols;
+                    $bestDelimiter = $d;
+                }
+            }
+             Log::info('Delimitador CSV detectado', ['delimiter' => $bestDelimiter == '\t' ? 'TAB' : $bestDelimiter]);
+
+            // Remover cabeçalho se parecer um (não contém números formatados como moeda)
+             $firstLineData = str_getcsv($lines[0], $bestDelimiter);
+            $isHeader = true;
+            foreach($firstLineData as $field) {
+                if(preg_match('/^\s*-?[\d,.]+\s*$/', trim($field))) { // Verifica se campo contém apenas número/moeda
+                    $isHeader = false; 
+                    break;
+                }
+            }
+            if ($isHeader && count($lines) > 1) {
+                 Log::info('Cabeçalho CSV detectado e removido', ['header' => $lines[0]]);
+                array_shift($lines);
+            } else {
+                 Log::info('Não foi detectado cabeçalho CSV ou arquivo tem apenas uma linha');
+            }
+            
+            // Mapeamento de colunas (tentativa automática)
+            $dateCol = -1; $descCol = -1; $amountCol = -1; $typeCol = -1;
+            if ($isHeader) {
+                 $headerFields = array_map('trim', array_map('strtolower', $firstLineData));
+                 // Procurar por nomes comuns
+                $dateKeywords = ['data', 'date'];
+                $descKeywords = ['descricao', 'descrição', 'description', 'historico', 'histórico', 'memo'];
+                $amountKeywords = ['valor', 'montante', 'amount', 'value', 'crédito', 'débito']; // Pode ser ambíguo
+                $creditKeywords = ['credito', 'crédito', 'credit'];
+                $debitKeywords = ['debito', 'débito', 'debit'];
+
+                 foreach($headerFields as $index => $field) {
+                     if ($dateCol == -1 && in_array($field, $dateKeywords)) $dateCol = $index;
+                     if ($descCol == -1 && in_array($field, $descKeywords)) $descCol = $index;
+                     // Se houver colunas separadas para crédito/débito
+                     if ($amountCol == -1 && in_array($field, $creditKeywords)) { $amountCol = $index; $typeCol = 'credit'; }
+                     if ($amountCol == -1 && in_array($field, $debitKeywords)) { $amountCol = $index; $typeCol = 'debit'; }
+                     // Se houver coluna única de valor
+                     if ($amountCol == -1 && in_array($field, $amountKeywords)) $amountCol = $index;
+                 }
+            }
+
+            // Se não conseguiu mapear pelo header, tenta por posição (suposição)
+            if ($dateCol == -1) $dateCol = 0;
+            if ($descCol == -1) $descCol = 1;
+            if ($amountCol == -1) $amountCol = $maxCols; // Última coluna
+            
+            Log::info('Mapeamento de colunas CSV', ['date' => $dateCol, 'desc' => $descCol, 'amount' => $amountCol, 'typeLogic' => $typeCol]);
+
+            foreach ($lines as $index => $line) {
+                if (empty(trim($line))) continue;
+                
+                $fields = str_getcsv($line, $bestDelimiter);
+                if (count($fields) <= max($dateCol, $descCol, $amountCol)) continue; // Pular linhas mal formatadas
+
+                try {
+                    $dateStr = $fields[$dateCol] ?? '';
+                    $description = trim($fields[$descCol] ?? 'Sem descrição');
+                    $amountStr = $fields[$amountCol] ?? '0';
+
+                    // Limpar e converter valor
+                    $amountStr = preg_replace('/[^\d,\.\-]/', '', $amountStr); // Permitir sinal negativo
+                    $amountStr = str_replace('.', '', $amountStr); // Remover separador de milhar (ponto)
+                    $amountStr = str_replace(',', '.', $amountStr); // Trocar vírgula decimal por ponto
+                    $amount = (float) $amountStr;
+
+                    // Formatar data
+                    $date = $this->formatDate($dateStr); // Usa o método formatDate já existente
+
+                    // Determinar tipo
+                    $type = 'expense'; // Padrão
+                     if ($typeCol == 'credit' && $amount > 0) { // Coluna de crédito específica
+                         $type = 'income';
+                     } elseif ($typeCol == 'debit' && $amount > 0) { // Coluna de débito específica (valor absoluto)
+                         $type = 'expense';
+                         // $amount = -$amount; // Guardar negativo? Não, usar 'type'
+                     } elseif ($typeCol == -1) { // Coluna única de valor
+                         $type = ($amount >= 0) ? 'income' : 'expense';
+                         // $amount = abs($amount); // Guardar absoluto? Sim, se usar type
+                     }
+                     $amount = abs($amount); // Guardar sempre valor absoluto
+
+                    $transactions[] = [
+                        'date' => $date,
+                        'description' => $description ?: 'Sem descrição',
+                        'amount' => $amount, // Valor absoluto
+                        'type' => $type
+                    ];
+                } catch(\Exception $e) {
+                    Log::warning('Erro ao processar linha CSV', ['linha_num' => $index + ($isHeader ? 2 : 1), 'linha' => $line, 'erro' => $e->getMessage()]);
+                }
+            }
+            
+             Log::info('Extração CSV concluída', ['total_transacoes' => count($transactions)]);
+            return $transactions;
+
+        } catch (\Exception $e) {
+            Log::error('Erro GERAL ao extrair transações do arquivo CSV', ['path' => $path, 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return [];
+        }
+    }
+    
+    /**
+     * Formata diferentes formatos de data para o padrão ISO (Y-m-d)
+     */
+    private function formatDate($dateStr)
+    {
+        // Formatos comuns no Brasil: dd/mm/yyyy ou dd-mm-yyyy
+        if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/', $dateStr, $matches)) {
+            $day = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+            $month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
+            $year = $matches[3];
+            
+            // Se ano com 2 dígitos, assumir 2000+
+            if (strlen($year) == 2) {
+                $year = '20' . $year;
+            }
+            
+            return "$year-$month-$day";
+        }
+        
+        // Formato ISO: yyyy-mm-dd
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dateStr)) {
+            return $dateStr;
+        }
+        
+        // Outros formatos: tenta converter com DateTime
+        try {
+            $date = new DateTime($dateStr);
+            return $date->format('Y-m-d');
+        } catch (\Exception $e) {
+            // Se falhar, retorna a data atual
+            return date('Y-m-d');
+        }
+    }
+    
+    /**
+     * Detecta o tipo de transação (receita/despesa) com base no valor e na descrição
+     * 
+     * @param float $amount Valor da transação
+     * @param string $description Descrição da transação
+     * @return string 'income' ou 'expense'
+     */
+    private function detectTransactionType($amount, $description)
+    {
+        // Normaliza a descrição (remove acentos, converte para minúsculas)
+        $normalizedDesc = mb_strtolower($description, 'UTF-8');
+        
+        // Palavras-chave comuns em despesas
+        $expenseKeywords = [
+            'compra', 'pagamento', 'debito', 'débito', 'saque', 'tarifa', 'taxa',
+            'fatura', 'boleto', 'conta', 'supermercado', 'mercado', 'farmacia', 'farmácia',
+            'restaurante', 'uber', '99', 'ifood', 'netflix', 'spotify', 'amazon',
+            'combustivel', 'combustível', 'posto', 'estacionamento', 'pedágio', 'pedagio',
+            'pix enviado', 'pix para', 'transferencia para', 'transferência para'
+        ];
+        
+        // Palavras-chave comuns em receitas
+        $incomeKeywords = [
+            'salario', 'salário', 'pagto', 'pgto', 'deposito', 'depósito', 'credito', 'crédito',
+            'reembolso', 'rendimento', 'juros', 'dividendo', 'lucro', 'prêmio', 'premio',
+            'pix recebido', 'pix de', 'transferencia de', 'transferência de', 'ted de', 'doc de'
+        ];
+        
+        // Verifica se a descrição contém alguma palavra-chave de despesa
+        foreach ($expenseKeywords as $keyword) {
+            if (strpos($normalizedDesc, $keyword) !== false) {
+                return 'expense';
+            }
+        }
+        
+        // Verifica se a descrição contém alguma palavra-chave de receita
+        foreach ($incomeKeywords as $keyword) {
+            if (strpos($normalizedDesc, $keyword) !== false) {
+                return 'income';
+            }
+        }
+        
+        // Se não encontrou palavras-chave, usa o valor como critério
+        // Valores negativos são despesas, positivos são receitas
+        return ($amount < 0) ? 'expense' : 'income';
+    }
+    
+    /**
+     * Retorna transações de exemplo para teste
+     */
+    private function getExampleTransactions()
+    {
+        // Dados de exemplo para teste
+        return [
+            [
+                'date' => date('Y-m-d', strtotime('-3 days')),
+                'description' => 'Exemplo: Salário',
+                'amount' => 3500.00,
+                'type' => 'income'
+            ],
+            [
+                'date' => date('Y-m-d', strtotime('-2 days')),
+                'description' => 'Exemplo: Supermercado',
+                'amount' => 250.75,
+                'type' => 'expense'
+            ],
+            [
+                'date' => date('Y-m-d', strtotime('-1 day')),
+                'description' => 'Exemplo: Assinatura Streaming',
+                'amount' => 39.90,
+                'type' => 'expense'
+            ],
+            [
+                'date' => date('Y-m-d'),
+                'description' => 'Exemplo: PIX Recebido',
+                'amount' => 100.00,
+                'type' => 'income'
+            ]
+        ];
+    }
+    
+    /**
+     * Salva as transações importadas no banco de dados
+     */
+    public function saveTransactions(Request $request)
+    {
+        // Validar os dados enviados
+         $validator = Validator::make($request->all(), [
+            'account_id' => 'required|exists:accounts,id',
+            'file_path' => 'required|string', // Path do arquivo temporário
+            'transactions' => 'required|array',
+            'transactions.*.date' => 'required|date_format:Y-m-d', // Garantir formato
+            'transactions.*.description' => 'required|string|max:255',
+            'transactions.*.amount' => 'required|numeric', // Validar como numérico
+            'transactions.*.type' => 'required|in:income,expense',
+            'transactions.*.category_id' => ['nullable', function ($attribute, $value, $fail) {
+                if ($value === null || $value === '') {
+                    return; // Null é permitido
+                }
+                if (is_string($value) && strpos($value, 'new_') === 0) {
+                    return; // Nova categoria é permitida
+                }
+                if (!is_numeric($value) || !Category::where('id', $value)->where('user_id', auth()->id())->exists()) {
+                    $fail("A categoria selecionada ($value) é inválida para o campo $attribute.");
+                }
+            }],
+            'transactions.*.suggested_category' => 'nullable|string|max:100' // Nome da nova categoria sugerida
+        ]);
+
+        if ($validator->fails()) {
+             Log::error('Validação falhou ao salvar transações', ['errors' => $validator->errors()->all()]);
+             // Retornar JSON para requisição AJAX
+             if ($request->wantsJson()) {
+                 return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+             }
+            // Fallback para requisição não-AJAX (manter redirect?)
+            return redirect()->back() 
+                    ->withErrors($validator)
+                    ->withInput(); 
+        }
+        
+        $account = Account::findOrFail($request->account_id);
+        if ($account->user_id !== auth()->id()) {
+             Log::warning('Tentativa de salvar transações em conta não autorizada', ['user_id' => auth()->id(), 'account_id' => $request->account_id]);
+             if ($request->wantsJson()) {
+                 return response()->json(['success' => false, 'message' => 'Acesso não autorizado.'], 403);
+             }
+            abort(403, 'Você não tem permissão para salvar transações nesta conta.');
+        }
+        
+        Log::info('💾 Iniciando salvamento de transações importadas', [
+            'conta' => $account->name,
+            'total_transacoes_recebidas' => count($request->transactions),
+            'file_path' => $request->file_path,
+            'is_ajax' => $request->wantsJson()
+        ]);
+        
+        DB::beginTransaction();
+        
+        try {
+            $savedCount = 0;
+            $failedCount = 0;
+            $createdCategoryIds = []; // Rastrear novas categorias criadas
+            
+            foreach ($request->transactions as $index => $transactionData) {
+                try {
+                    $transactionData = array_merge([
+                        'date' => null, 'description' => null, 'amount' => 0, 
+                        'type' => null, 'category_id' => null, 'suggested_category' => null
+                    ], $transactionData);
+
+                    $amount = (float) $transactionData['amount'];
+                    $amountCents = (int) round($amount * 100);
+                    $amountCents = abs($amountCents); // Assumindo que o banco guarda valor absoluto
+
+                    $transaction = new Transaction();
+                    $transaction->user_id = auth()->id();
+                    $transaction->account_id = $account->id;
+                    $transaction->date = $transactionData['date'];
+                    $transaction->description = $transactionData['description'];
+                    $transaction->amount = $amountCents; 
+                    $transaction->type = $transactionData['type'];
+                    $transaction->status = 'paid'; // Definir status como pago
+                    
+                    $categoryId = $transactionData['category_id'];
+                    $newCategoryCreated = false;
+                    if ($categoryId !== null && $categoryId !== '') {
+                        if (is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
+                            $categoryName = $transactionData['suggested_category'] ?? null;
+                            if (empty($categoryName)) {
+                                 $categoryName = str_replace('_', ' ', substr($categoryId, 4));
+                            }
+                            $categoryName = trim(ucfirst($categoryName));
+
+                            if (!empty($categoryName)) {
+                                $existingCategory = Category::firstOrCreate(
+                                    [
+                                        'user_id' => auth()->id(),
+                                        'name' => $categoryName,
+                                        'type' => $transactionData['type']
+                                    ],
+                                    [
+                                        'system' => false 
+                                    ]
+                                );
+                                $transaction->category_id = $existingCategory->id;
+                                if($existingCategory->wasRecentlyCreated) {
+                                     $newCategoryCreated = true;
+                                     $createdCategoryIds[] = $existingCategory->id;
+                                }
+                                Log::info('Usando/Criando categoria', [
+                                    'id' => $existingCategory->id, 'nome' => $categoryName, 'tipo' => $transactionData['type'], 'nova' => $newCategoryCreated
+                                ]);
+                            } else {
+                                 Log::warning('Nome de categoria sugerida vazio', ['index' => $index]);
+                                $transaction->category_id = null;
+                            }
+                        } else {
+                            $transaction->category_id = $categoryId;
+                        }
+                    } else {
+                         $transaction->category_id = null;
+                    }
+                    
+                    $transaction->save();
+                    $savedCount++;
+                    
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    Log::error('Erro ao salvar transação individual', [
+                        'index' => $index,
+                        'message' => $e->getMessage(),
+                        'trace_preview' => substr($e->getTraceAsString(), 0, 500), // Limitar trace no log
+                        'transaction_data' => $transactionData 
+                    ]);
+                }
+            }
+            
+            $filePathToDelete = $request->file_path;
+            if (Storage::exists($filePathToDelete)) {
+                Storage::delete($filePathToDelete);
+                 Log::info('Arquivo temporário deletado', ['path' => $filePathToDelete]);
+            } else {
+                 Log::warning('Arquivo temporário não encontrado para deletar', ['path' => $filePathToDelete]);
+            }
+            
+            DB::commit();
+            
+            Log::info('✅ Importação concluída com sucesso', [
+                'transacoes_salvas' => $savedCount,
+                'transacoes_falhas' => $failedCount,
+                'novas_categorias' => count($createdCategoryIds)
+            ]);
+            
+            $message = "Importação concluída! {$savedCount} transações foram importadas.";
+            if ($failedCount > 0) {
+                 $message .= " {$failedCount} transações apresentaram erro.";
+                 $status = 'warning';
+            } else {
+                 $status = 'success';
+            }
+            
+            // Retornar JSON para AJAX ou Redirect para requisição normal
+            if ($request->wantsJson()) {
+                 return response()->json([
+                     'success' => true,
+                     'message' => $message,
+                     'status' => $status, // 'success' ou 'warning'
+                     'redirect_url' => route('transactions.index') // Informar URL para JS
+                 ]);
+            }
+
+            return redirect()->route('transactions.index')->with($status, $message);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Erro GERAL ao processar importação (rollback)', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            $errorMessage = 'Erro geral ao salvar as transações: ' . $e->getMessage();
+             if ($request->wantsJson()) {
+                 return response()->json(['success' => false, 'message' => $errorMessage], 500);
+             }
+             
+            return redirect()->back()
+                ->with('error', $errorMessage)
+                ->withInput();
+        }
+    }
+
+    /**
+     * Aplica a categorização da IA às transações extraídas
+     * @param array $transactions Transações extraídas do arquivo
+     * @param array|null $aiAnalysisResult Resultado da análise da IA
+     * @return array Transações com categorias aplicadas
+     */
+    private function applyCategorizationToTransactions(array $transactions, ?array $aiAnalysisResult): array
+    {
+        if (empty($aiAnalysisResult) || !isset($aiAnalysisResult['transactions']) || !is_array($aiAnalysisResult['transactions'])) {
+            Log::info('Nenhum resultado de análise IA para aplicar.');
+            // Retorna as transações originais sem modificação de categoria
+            return $transactions;
+        }
+
+        Log::info('Aplicando categorização da IA', [
+            'transacoes_originais' => count($transactions),
+            'resultados_ia' => count($aiAnalysisResult['transactions'])
+        ]);
+
+        // Mapear resultados da IA por ID para acesso rápido
+        $aiMap = [];
+        foreach ($aiAnalysisResult['transactions'] as $analyzed) {
+             if (isset($analyzed['id'])) { // Usa o ID que a IA retornou (deve ser o índice original)
+                 $aiMap[$analyzed['id']] = $analyzed;
+             }
+        }
+
+        // Iterar sobre as transações extraídas e aplicar dados da IA
+        foreach ($transactions as $index => &$transaction) { // Usar referência (&) para modificar diretamente
+            if (isset($aiMap[$index])) {
+                $aiData = $aiMap[$index];
+                
+                // Aplicar tipo sugerido pela IA se diferente e válido
+                if (isset($aiData['type']) && in_array($aiData['type'], ['income', 'expense']) && $aiData['type'] !== $transaction['type']) {
+                     Log::debug('Atualizando tipo da transação via IA', ['index' => $index, 'original' => $transaction['type'], 'novo' => $aiData['type']]);
+                    $transaction['type'] = $aiData['type'];
+                }
+                
+                // Aplicar category_id sugerido pela IA (pode ser null)
+                 $transaction['category_id'] = $aiData['category_id'] ?? null;
+                 
+                 // Aplicar suggested_category (nome para nova categoria)
+                 $transaction['suggested_category'] = $aiData['suggested_category'] ?? null;
+
+                 // Logar aplicação
+                 if ($transaction['category_id'] || $transaction['suggested_category']) {
+                     Log::debug('Categoria IA aplicada', [
+                         'index' => $index, 
+                         'category_id' => $transaction['category_id'], 
+                         'suggested' => $transaction['suggested_category']
+                     ]);
+                 }
+            } else {
+                 Log::warning('Resultado da IA não encontrado para transação', ['index' => $index]);
+                 // Manter transação sem categoria ou com tipo original
+                 $transaction['category_id'] = null;
+                 $transaction['suggested_category'] = null;
+            }
+        }
+        unset($transaction); // Quebrar referência do loop
+
+        return $transactions;
+    }
+}

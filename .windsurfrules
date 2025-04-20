@@ -119,4 +119,8 @@ Falhas de autenticação
 
 Vazamento de dados sensíveis
 
+Sempre crie, rotas, tabelas no banco de dados, metodos e demais requisitos da aplicação
+
+Sempre teste e monitore o teste em tempo real
+
 Lembre-se: o sucesso será medido pelo visual e pela experiência de uso da aplicação, não pela qualidade do código. Mas você ainda deve aplicar as melhores práticas por trás dos panos para garantir que tudo seja seguro, confiável e fácil de manter.

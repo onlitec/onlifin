@@ -87,15 +87,16 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{transaction}/create-next', [TransactionController::class, 'createNext'])->name('create-next');
     });
     
-    // Importação de extratos bancários
-    Route::prefix('statements')->name('statements.')->group(function () {
-        Route::get('/import', [App\Http\Controllers\StatementImportController::class, 'index'])->name('import');
-        Route::post('/upload', [App\Http\Controllers\StatementImportController::class, 'upload'])->name('upload');
-        Route::get('/mapping', [App\Http\Controllers\StatementImportController::class, 'showMapping'])->name('mapping');
-        Route::post('/save', [App\Http\Controllers\StatementImportController::class, 'saveTransactions'])->name('save');
-        Route::get('/config', [App\Http\Controllers\StatementImportController::class, 'showConfig'])->name('config');
-        Route::post('/config', [App\Http\Controllers\StatementImportController::class, 'saveConfig'])->name('save-config');
-    });
+    // Importação Temporária (com Ajax e IA)
+    Route::get('/statements/import', [App\Http\Controllers\TempStatementImportController::class, 'index'])->name('statements.import');
+    Route::post('/statements/upload', [App\Http\Controllers\TempStatementImportController::class, 'upload'])->name('statements.upload'); // Rota do Ajax e fallback
+    // Rota de Mapeamento agora usa TempStatementImportController
+    Route::get('/mapping', [App\Http\Controllers\TempStatementImportController::class, 'showMapping'])->name('mapping'); 
+    // Rota para salvar as transações mapeadas (precisa ser POST)
+    Route::post('/mapping/save', [App\Http\Controllers\TempStatementImportController::class, 'saveTransactions'])->name('statements.save'); // Nome da rota para salvar
+
+    // Rota antiga (comentada ou removida se não for mais usada)
+    // Route::get('/mapping', [App\Http\Controllers\FixedStatementImportController::class, 'showMapping'])->name('mapping'); 
     
     // Categorias
     Route::prefix('categories')->name('categories.')->group(function () {

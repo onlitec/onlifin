@@ -1,14 +1,47 @@
 <x-app-layout>
+    {{-- Incluir CDN do Chart.js --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
     <div class="container-app">
-        <!-- Cabeçalho do Dashboard -->
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p class="mt-1 text-sm text-gray-600">Visão geral das suas finanças</p>
+        <!-- Cabeçalho e Filtro de Período -->
+        <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-start gap-4 md:gap-6">
+            {{-- Bloco do Título --}}
+            <div class="flex-grow">
+                <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <p class="mt-1 text-sm text-gray-600">Visão geral das suas finanças.</p>
+            </div>
+            {{-- Bloco do Seletor de Período --}}
+            <div class="flex-shrink-0">
+                <form method="GET" action="{{ route('dashboard') }}" class="flex items-center">
+                    <label for="period" class="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap">Período:</label>
+                    <select name="period" id="period" class="form-select rounded-md shadow-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 text-sm" onchange="this.form.submit()">
+                        <option value="current_month" {{ $period == 'current_month' ? 'selected' : '' }}>Este Mês</option>
+                        <option value="last_month" {{ $period == 'last_month' ? 'selected' : '' }}>Mês Passado</option>
+                        <option value="current_year" {{ $period == 'current_year' ? 'selected' : '' }}>Este Ano</option>
+                        <option value="last_year" {{ $period == 'last_year' ? 'selected' : '' }}>Ano Passado</option>
+                        <option value="all_time" {{ $period == 'all_time' ? 'selected' : '' }}>Todo Período</option>
+                    </select>
+                </form>
+            </div>
         </div>
 
         <!-- Cards de Resumo -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Receitas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Saldo Atual -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <i class="ri-scales-3-line text-2xl text-indigo-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-600">Saldo Atual Total</h3>
+                        <p class="text-2xl font-bold text-gray-900">R$ {{ number_format($currentBalance / 100, 2, ',', '.') }}</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500">Soma de todas as contas</p>
+            </div>
+
+            <!-- Receitas (Período) -->
             <div class="bg-white rounded-xl shadow-sm border border-green-100 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center">
@@ -17,20 +50,20 @@
                         </div>
                         <div class="ml-4">
                             <h3 class="text-sm font-medium text-gray-600">Receitas</h3>
-                            <p class="text-2xl font-bold text-gray-900">R$ {{ number_format($totalIncome ?? 0, 2, ',', '.') }}</p>
+                            <p class="text-2xl font-bold text-gray-900">R$ {{ number_format($totalIncomePeriod / 100, 2, ',', '.') }}</p>
                         </div>
                     </div>
-                    <div class="text-sm text-green-600 flex items-center">
-                        <i class="ri-arrow-up-line mr-1"></i>
-                        <span>12%</span>
+                    @if($period !== 'all_time')
+                    <div class="text-sm {{ $incomeVariation >= 0 ? 'text-green-600' : 'text-red-600' }} flex items-center">
+                        <i class="ri-{{ $incomeVariation >= 0 ? 'arrow-up' : 'arrow-down' }}-line mr-1"></i>
+                        <span>{{ number_format(abs($incomeVariation), 1, ',', '.') }}%</span>
                     </div>
+                    @endif
                 </div>
-                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-green-500 rounded-full" style="width: 65%"></div>
-                </div>
+                <p class="text-xs text-gray-500">{{ str_replace('_', ' ', $period) == 'current month' ? 'Este mês' : ($period == 'last_month' ? 'Mês passado' : ($period == 'current_year' ? 'Este ano' : ($period == 'last_year' ? 'Ano passado' : 'No período'))) }} vs anterior</p>
             </div>
 
-            <!-- Despesas -->
+            <!-- Despesas (Período) -->
             <div class="bg-white rounded-xl shadow-sm border border-red-100 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center">
@@ -39,20 +72,21 @@
                         </div>
                         <div class="ml-4">
                             <h3 class="text-sm font-medium text-gray-600">Despesas</h3>
-                            <p class="text-2xl font-bold text-gray-900">R$ {{ number_format($totalExpenses ?? 0, 2, ',', '.') }}</p>
+                            <p class="text-2xl font-bold text-gray-900">R$ {{ number_format($totalExpensesPeriod / 100, 2, ',', '.') }}</p>
                         </div>
                     </div>
-                    <div class="text-sm text-red-600 flex items-center">
-                        <i class="ri-arrow-down-line mr-1"></i>
-                        <span>8%</span>
+                     @if($period !== 'all_time')
+                    <div class="text-sm {{ $expensesVariation >= 0 ? 'text-red-600' : 'text-green-600' }} flex items-center">
+                         {{-- Variação de despesa: Seta pra cima se gastou mais (ruim), pra baixo se gastou menos (bom) --}}
+                        <i class="ri-{{ $expensesVariation >= 0 ? 'arrow-up' : 'arrow-down' }}-line mr-1"></i>
+                        <span>{{ number_format(abs($expensesVariation), 1, ',', '.') }}%</span>
                     </div>
+                     @endif
                 </div>
-                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-red-500 rounded-full" style="width: 45%"></div>
-                </div>
+                 <p class="text-xs text-gray-500">{{ str_replace('_', ' ', $period) == 'current month' ? 'Este mês' : ($period == 'last_month' ? 'Mês passado' : ($period == 'current_year' ? 'Este ano' : ($period == 'last_year' ? 'Ano passado' : 'No período'))) }} vs anterior</p>
             </div>
 
-            <!-- Saldo -->
+            <!-- Saldo (Período) -->
             <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center">
@@ -60,65 +94,241 @@
                             <i class="ri-wallet-3-line text-2xl text-blue-600"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-sm font-medium text-gray-600">Saldo</h3>
-                            <p class="text-2xl font-bold text-gray-900">R$ {{ number_format($balance ?? 0, 2, ',', '.') }}</p>
+                            <h3 class="text-sm font-medium text-gray-600">Saldo Período</h3>
+                            <p class="text-2xl font-bold text-gray-900">R$ {{ number_format($balancePeriod / 100, 2, ',', '.') }}</p>
                         </div>
                     </div>
-                    <div class="text-sm text-blue-600">
-                        Este mês
+                      @if($period !== 'all_time')
+                    <div class="text-sm {{ $balanceVariation >= 0 ? 'text-green-600' : 'text-red-600' }} flex items-center">
+                        <i class="ri-{{ $balanceVariation >= 0 ? 'arrow-up' : 'arrow-down' }}-line mr-1"></i>
+                        <span>{{ number_format(abs($balanceVariation), 1, ',', '.') }}%</span>
                     </div>
+                      @endif
                 </div>
-                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-blue-500 rounded-full" style="width: 75%"></div>
-                </div>
+                 <p class="text-xs text-gray-500">{{ str_replace('_', ' ', $period) == 'current month' ? 'Este mês' : ($period == 'last_month' ? 'Mês passado' : ($period == 'current_year' ? 'Este ano' : ($period == 'last_year' ? 'Ano passado' : 'No período'))) }} vs anterior</p>
             </div>
         </div>
 
-        <!-- Últimas Transações -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900">Últimas Transações</h2>
-                <a href="{{ route('transactions.index') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                    Ver todas
-                    <i class="ri-arrow-right-line ml-1"></i>
-                </a>
-            </div>
-            <div class="p-6">
-                @if(isset($recentTransactions) && $recentTransactions->count() > 0)
-                    <div class="space-y-4">
-                        @foreach($recentTransactions as $transaction)
-                            <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 rounded-full {{ $transaction->type === 'income' ? 'bg-green-100' : 'bg-red-100' }} flex items-center justify-center">
-                                        <i class="ri-{{ $transaction->type === 'income' ? 'arrow-up' : 'arrow-down' }}-line text-lg {{ $transaction->type === 'income' ? 'text-green-600' : 'text-red-600' }}"></i>
-                                    </div>
-                                    <div class="ml-4">
-                                        <p class="text-sm font-medium text-gray-900">{{ $transaction->description }}</p>
-                                        <p class="text-xs text-gray-500">{{ $transaction->category->name }}</p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-medium {{ $transaction->type === 'income' ? 'text-green-600' : 'text-red-600' }}">
-                                        {{ $transaction->type === 'income' ? '+' : '-' }} R$ {{ number_format($transaction->amount, 2, ',', '.') }}
-                                    </p>
-                                    <p class="text-xs text-gray-500">{{ $transaction->date->format('d/m/Y') }}</p>
-                                </div>
-                            </div>
-                        @endforeach
+        <!-- Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Gráfico de Despesas por Categoria -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Despesas por Categoria ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
+                @if($expenseChartData->isNotEmpty())
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="expenseCategoryChart"></canvas>
                     </div>
                 @else
-                    <div class="text-center py-8">
-                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="ri-inbox-line text-2xl text-gray-400"></i>
-                        </div>
-                        <h3 class="text-gray-500 text-sm">Nenhuma transação encontrada para este mês.</h3>
-                        <a href="{{ route('transactions.create') }}" class="mt-4 inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
-                            <i class="ri-add-line mr-1"></i>
-                            Criar nova transação
-                        </a>
+                    <p class="text-center text-gray-500 py-8">Nenhuma despesa encontrada no período.</p>
+                @endif
+            </div>
+
+            <!-- Gráfico de Receitas por Categoria -->
+             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Receitas por Categoria ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
+                 @if($incomeChartData->isNotEmpty())
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="incomeCategoryChart"></canvas>
                     </div>
+                @else
+                    <p class="text-center text-gray-500 py-8">Nenhuma receita encontrada no período.</p>
                 @endif
             </div>
         </div>
+        
+         <!-- Gráfico de Saldo ao Longo do Tempo -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+             <h3 class="text-lg font-semibold text-gray-800 mb-4">Saldo no Mês Atual</h3>
+              @if(!empty($balanceOverTimeData))
+                <div class="relative h-64 md:h-80">
+                    <canvas id="balanceOverTimeChart"></canvas>
+                </div>
+             @else
+                 <p class="text-center text-gray-500 py-8">Nenhuma transação encontrada no mês atual para gerar o gráfico.</p>
+             @endif
+         </div>
+
+        <!-- Listas de Transações (Hoje, Pendentes) - Opcional, pode simplificar -->
+         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             <!-- Transações de Hoje -->
+             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                 <div class="px-6 py-4 border-b border-gray-200">
+                     <h2 class="text-lg font-semibold text-gray-900">Transações de Hoje</h2>
+                 </div>
+                 <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
+                     @forelse ($todayIncomes->merge($todayExpenses)->sortBy('created_at') as $transaction)
+                         <x-transactions.list-item :transaction="$transaction" />
+                     @empty
+                         <p class="text-center text-gray-500 py-4">Nenhuma transação hoje.</p>
+                     @endforelse
+                 </div>
+             </div>
+             
+              <!-- Transações Pendentes Próximos 7 Dias -->
+             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                 <div class="px-6 py-4 border-b border-gray-200">
+                     <h2 class="text-lg font-semibold text-gray-900">Pendentes (Próximos 7 Dias)</h2>
+                 </div>
+                 <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
+                      @forelse ($pendingIncomes->merge($pendingExpenses)->sortBy('date') as $transaction)
+                         <x-transactions.list-item :transaction="$transaction" />
+                     @empty
+                         <p class="text-center text-gray-500 py-4">Nenhuma transação pendente.</p>
+                     @endforelse
+                 </div>
+             </div>
+         </div>
+         
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Configurações comuns de cores (pode ajustar)
+            const chartColors = [
+                '#4f46e5', '#10b981', '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', 
+                '#ec4899', '#6b7280', '#14b8a6', '#f97316', '#0ea5e9', '#d946ef'
+            ];
+
+            // 1. Gráfico de Despesas por Categoria (Donut)
+            const expenseCtx = document.getElementById('expenseCategoryChart');
+            if (expenseCtx) {
+                const expenseLabels = @json($expenseChartLabels);
+                const expenseData = @json($expenseChartData);
+                
+                if (expenseData && expenseData.length > 0) {
+                    new Chart(expenseCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: expenseLabels,
+                            datasets: [{
+                                label: 'Despesas por Categoria',
+                                data: expenseData,
+                                backgroundColor: chartColors,
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed !== null) {
+                                                 label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+             // 2. Gráfico de Receitas por Categoria (Donut)
+            const incomeCtx = document.getElementById('incomeCategoryChart');
+            if (incomeCtx) {
+                const incomeLabels = @json($incomeChartLabels);
+                const incomeData = @json($incomeChartData);
+                
+                if (incomeData && incomeData.length > 0) {
+                    new Chart(incomeCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: incomeLabels,
+                            datasets: [{
+                                label: 'Receitas por Categoria',
+                                data: incomeData,
+                                backgroundColor: chartColors.slice().reverse(), // Usar cores diferentes
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed !== null) {
+                                                 label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 3. Gráfico de Saldo ao Longo do Tempo (Linha)
+            const balanceCtx = document.getElementById('balanceOverTimeChart');
+             if (balanceCtx) {
+                 const balanceLabels = @json($balanceOverTimeLabels);
+                 const balanceData = @json($balanceOverTimeData);
+
+                if (balanceData && balanceData.length > 0) {
+                     new Chart(balanceCtx, {
+                         type: 'line',
+                         data: {
+                             labels: balanceLabels,
+                             datasets: [{
+                                 label: 'Saldo no Dia',
+                                 data: balanceData,
+                                 fill: true,
+                                 borderColor: 'rgb(75, 192, 192)',
+                                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                 tension: 0.1
+                             }]
+                         },
+                         options: {
+                             responsive: true,
+                             maintainAspectRatio: false,
+                             scales: {
+                                 y: {
+                                     beginAtZero: false, // Pode começar abaixo de zero
+                                      ticks: { callback: value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) }
+                                 }
+                             },
+                              plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                     callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                 label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            } 
+                         }
+                     });
+                }
+             }
+        });
+    </script>
 </x-app-layout>

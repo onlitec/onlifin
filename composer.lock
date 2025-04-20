@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8aab5e158a07ba652e8bb745eba949a9",
+    "content-hash": "0a05af95929af3f048c7e3d87a68ec5d",
     "packages": [
         {
             "name": "brick/math",
@@ -590,6 +590,57 @@
                 }
             ],
             "time": "2025-03-06T22:45:56+00:00"
+        },
+        {
+            "name": "endeken/ofx-php-parser",
+            "version": "0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/endeken-com/ofx-php-parser.git",
+                "reference": "851222ba19f17764841cf78ace6e048a94fdc168"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/endeken-com/ofx-php-parser/zipball/851222ba19f17764841cf78ace6e048a94fdc168",
+                "reference": "851222ba19f17764841cf78ace6e048a94fdc168",
+                "shasum": ""
+            },
+            "require": {
+                "ext-libxml": "*",
+                "ext-mbstring": "*",
+                "ext-simplexml": "*"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Endeken\\OFX\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Wes Guirra",
+                    "email": "wes.guirra@endeken.com"
+                }
+            ],
+            "description": "OFX PHP parser library",
+            "keywords": [
+                "finance",
+                "ofx",
+                "open financial exchange",
+                "parser"
+            ],
+            "support": {
+                "issues": "https://github.com/endeken-com/ofx-php-parser/issues",
+                "source": "https://github.com/endeken-com/ofx-php-parser/tree/0.1.1"
+            },
+            "time": "2024-02-25T21:06:47+00:00"
         },
         {
             "name": "firebase/php-jwt",
