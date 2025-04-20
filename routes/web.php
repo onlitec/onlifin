@@ -177,6 +177,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/logs', [SystemLogController::class, 'index'])->name('settings.logs.index');
         Route::get('/settings/logs/export', [SystemLogController::class, 'export'])->name('settings.logs.export');
         Route::get('/transactions/export', [TransactionExportController::class, 'export'])->name('transactions.export');
+        
+        // ****** Mover a rota para cá ******
+        Route::delete('/users/delete-data', [SettingsController::class, 'deleteUserData'])->name('deleteUserData'); 
+        // *************************************
     });
 
     // Rotas para o novo controlador de usuários (com middleware de permissão)

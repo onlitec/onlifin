@@ -42,11 +42,14 @@ class DeleteButton extends Component
             }
             
             // Notifica todos os componentes
-            $this->dispatch('transactionDeleted');
-            $this->dispatch('$refresh');
+            // $this->dispatch('transactionDeleted'); // Comentado
+            // $this->dispatch('$refresh');         // Comentado
             
             // Fecha o modal
-            $this->confirming = false;
+            // $this->confirming = false; // Comentado - o redirecionamento cuidará disso
+
+            // Força um recarregamento da página atual
+            return redirect(request()->header('Referer')); // Descomentado
             
         } catch (\Exception $e) {
             DB::rollBack();

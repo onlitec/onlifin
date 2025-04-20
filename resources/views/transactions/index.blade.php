@@ -16,7 +16,7 @@
 
         <div class="card">
             <div class="card-body">
-                <div class="table-container">
+                <div class="table-container overflow-x-auto">
                     <table class="table">
                         <thead class="table-header">
                             <tr>
@@ -35,7 +35,9 @@
                             @forelse($transactions ?? [] as $transaction)
                                 <tr class="table-row">
                                     <td class="table-cell">{{ $transaction->date->format('d/m/Y') }}</td>
-                                    <td class="table-cell">{{ $transaction->description }}</td>
+                                    <td class="table-cell max-w-xs truncate" title="{{ $transaction->description }}">
+                                        {{ $transaction->description }}
+                                    </td>
                                     <td class="table-cell">{{ $transaction->category->name }}</td>
                                     <td class="table-cell">{{ $transaction->account->name }}</td>
                                     <td class="table-cell">{{ $transaction->formatted_amount }}</td>

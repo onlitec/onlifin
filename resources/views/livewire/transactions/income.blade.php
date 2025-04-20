@@ -61,68 +61,74 @@
         </div>
 
         <!-- Tabela de Transações -->
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="text-left bg-gray-50">
-                        <th wire:click="sortBy('date')" class="px-4 py-3 cursor-pointer">
-                            Data
-                            @if ($sortField === 'date')
-                                <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
-                            @endif
-                        </th>
-                        <th wire:click="sortBy('description')" class="px-4 py-3 cursor-pointer">
-                            Descrição
-                            @if ($sortField === 'description')
-                                <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
-                            @endif
-                        </th>
-                        <th class="px-4 py-3">Categoria</th>
-                        <th class="px-4 py-3">Conta</th>
-                        <th wire:click="sortBy('amount')" class="px-4 py-3 cursor-pointer">
-                            Valor
-                            @if ($sortField === 'amount')
-                                <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
-                            @endif
-                        </th>
-                        <th class="px-4 py-3">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($transactions as $transaction)
-                        <tr class="border-t border-gray-100">
-                            <td class="px-4 py-3">
-                                {{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}
-                            </td>
-                            <td class="px-4 py-3">{{ $transaction->description }}</td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {{ $transaction->category->name }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3">{{ $transaction->account->name }}</td>
-                            <td class="px-4 py-3 font-medium text-green-600">
-                                R$ {{ number_format($transaction->amount / 100, 2, ',', '.') }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center space-x-2">
-                                    <a href="{{ route('transactions.edit', $transaction) }}" 
-                                       class="text-gray-600 hover:text-gray-900">
-                                        <i class="ri-pencil-line"></i>
-                                    </a>
-                                    <livewire:transactions.delete-button :transaction-id="$transaction->id" />
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                                Nenhuma receita encontrada neste período.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="card">
+            <div class="card-body">
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead class="table-header">
+                            <tr class="text-left bg-gray-50">
+                                <th wire:click="sortBy('date')" class="px-4 py-3 cursor-pointer">
+                                    Data
+                                    @if ($sortField === 'date')
+                                        <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
+                                    @endif
+                                </th>
+                                <th wire:click="sortBy('description')" class="px-4 py-3 cursor-pointer">
+                                    Descrição
+                                    @if ($sortField === 'description')
+                                        <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
+                                    @endif
+                                </th>
+                                <th class="px-4 py-3">Categoria</th>
+                                <th class="px-4 py-3">Conta</th>
+                                <th wire:click="sortBy('amount')" class="px-4 py-3 cursor-pointer">
+                                    Valor
+                                    @if ($sortField === 'amount')
+                                        <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
+                                    @endif
+                                </th>
+                                <th class="px-4 py-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($transactions as $transaction)
+                                <tr class="border-t border-gray-100">
+                                    <td class="px-4 py-3">
+                                        {{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}
+                                    </td>
+                                    <td class="px-4 py-3 max-w-xs truncate" title="{{ $transaction->description }}">{{ $transaction->description }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            {{ $transaction->category->name }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">{{ $transaction->account->name }}</td>
+                                    <td class="px-4 py-3 font-medium text-green-600">
+                                        R$ {{ number_format($transaction->amount / 100, 2, ',', '.') }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center space-x-2">
+                                            <a href="{{ route('transactions.edit', $transaction) }}" 
+                                               class="text-gray-600 hover:text-gray-900">
+                                                <i class="ri-pencil-line"></i>
+                                            </a>
+                                            <livewire:transactions.delete-button 
+                                                wire:key="delete-button-income-{{ $transaction->id }}" 
+                                                :transaction-id="$transaction->id" />
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                        Nenhuma receita encontrada neste período.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Paginação -->

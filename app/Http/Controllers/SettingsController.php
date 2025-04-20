@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
 use ZipArchive;
 use Livewire\WithPagination;
+use App\Models\Account;
+use App\Models\Category;
 
 class SettingsController extends Controller
 {
@@ -30,7 +32,11 @@ class SettingsController extends Controller
             'request_path' => request()->path(),
             'request_url' => request()->url()
         ]);
-        return view('settings.index', compact('isAdmin'));
+        
+        // Passa a lista de usuários para a view, se for admin
+        $usersForDeletion = $isAdmin ? $this->usersForDeletion() : collect(); 
+        
+        return view('settings.index', compact('isAdmin', 'usersForDeletion'));
     }
 
     public function users()
@@ -723,5 +729,74 @@ class SettingsController extends Controller
         };
 
         return Response::stream($callback, 200, $headers);
+    }
+
+    /**
+     * Retorna a lista de usuários para a funcionalidade de exclusão de dados (Admin).
+     * Exclui o próprio usuário logado.
+     */
+    private function usersForDeletion()
+    {
+        return User::where('id', '!=', auth()->id())->orderBy('name')->get(['id', 'name']);
+    }
+
+    /**
+     * Exclui todos os dados financeiros de um usuário selecionado (Admin).
+     */
+    public function deleteUserData(Request $request)
+    {
+        // 1. Verificação de Admin (Dupla checagem)
+        if (!auth()->user()->is_admin) {
+            return back()->with('error', 'Acesso negado. Apenas administradores podem executar esta ação.');
+        }
+
+        // 2. Validação
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'confirmation_text' => 'required|in:APAGAR DADOS', // Texto de confirmação exato
+        ]);
+
+        $userIdToDelete = $request->input('user_id');
+        $targetUser = User::find($userIdToDelete);
+
+        // 3. Prevenir auto-exclusão por esta interface
+        if ($userIdToDelete == auth()->id()) {
+             return back()->with('error', 'Não é possível apagar os próprios dados por esta interface.');
+        }
+        
+        if (!$targetUser) {
+             return back()->with('error', 'Usuário não encontrado.');
+        }
+
+        // 4. Lógica de Exclusão com Transação
+        try {
+            DB::transaction(function () use ($userIdToDelete) {
+                // Excluir Transações
+                Transaction::where('user_id', $userIdToDelete)->delete();
+                
+                // Excluir Contas
+                Account::where('user_id', $userIdToDelete)->delete();
+                
+                // Excluir Categorias
+                Category::where('user_id', $userIdToDelete)->delete();
+
+                // Adicionar aqui outros modelos se necessário (ex: orçamentos, metas, etc.)
+                // Ex: Budget::where('user_id', $userIdToDelete)->delete();
+
+            });
+
+            // 5. Feedback
+            return back()->with('success', 'Todos os dados financeiros do usuário ' . $targetUser->name . ' foram excluídos com sucesso.');
+
+        } catch (\Exception $e) {
+            // Logar o erro real para debug
+             \Log::error('Erro ao excluir dados financeiros do usuário: ' . $e->getMessage(), [
+                'user_id_to_delete' => $userIdToDelete,
+                'admin_user_id' => auth()->id()
+             ]);
+             
+            // 6. Feedback de Erro
+             return back()->with('error', 'Ocorreu um erro ao tentar excluir os dados do usuário. Verifique os logs.');
+        }
     }
 } 

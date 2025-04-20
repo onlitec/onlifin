@@ -37,9 +37,13 @@
                                             <a href="{{ route('accounts.edit', $account) }}" class="text-blue-600 hover:text-blue-800">
                                                 <i class="ri-pencil-line"></i>
                                             </a>
-                                            <button type="button" class="text-red-600 hover:text-red-800">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
+                                            <form action="{{ route('accounts.destroy', $account) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir esta conta?');" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-800">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
