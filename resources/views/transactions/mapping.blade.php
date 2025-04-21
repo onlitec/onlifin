@@ -197,15 +197,25 @@
                 // e category_id como ID numérico ou string 'new_...' se for nova.
                 // A função applyCategorization no controller já deve ter preparado os dados.
                 // Verificar se precisamos ajustar algo aqui baseado na validação do saveTransactions
-                const transactionsToSave = transactions.map(t => ({
-                    date: t.date,
-                    description: t.description,
-                    amount: t.amount, // Enviar o valor numérico
-                    type: t.type,
-                    category_id: t.category_id, // Enviar ID ou null
-                    suggested_category: t.suggested_category // Enviar nome sugerido se category_id for null
-                    // O controller saveTransactions decidirá se cria a categoria
-                }));
+                const transactionsToSave = transactions.map(t => {
+                    let finalCategoryId = t.category_id;
+                    // *** INÍCIO DA CORREÇÃO ***
+                    // Se a categoria ID é nula E existe um nome sugerido,
+                    // alteramos o ID para o backend saber que deve criar a categoria.
+                    if (finalCategoryId === null && t.suggested_category && t.suggested_category.trim() !== '') {
+                        finalCategoryId = 'new_suggestion'; // Sinalizador para o backend
+                    }
+                    // *** FIM DA CORREÇÃO ***
+                    
+                    return {
+                        date: t.date,
+                        description: t.description,
+                        amount: t.amount, // Enviar o valor numérico
+                        type: t.type,
+                        category_id: finalCategoryId, // Enviar ID numérico, null, ou 'new_suggestion'
+                        suggested_category: t.suggested_category // Enviar nome sugerido (será usado se category_id for 'new_suggestion')
+                    };
+                });
 
                 const payload = {
                     account_id: accountId,

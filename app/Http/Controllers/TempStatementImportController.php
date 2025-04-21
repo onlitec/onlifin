@@ -191,7 +191,7 @@ class TempStatementImportController extends Controller
 
         if ($validator->fails()) {
             Log::error('Parâmetros inválidos para showMapping', ['errors' => $validator->errors()->all(), 'request' => $request->all()]);
-            return redirect()->route('transactions.import') // Redirecionar para import, não statements.upload
+            return redirect()->route('statements.import')
                 ->with('error', 'Link de mapeamento inválido ou expirado. Por favor, tente a importação novamente. Erro: ' . $validator->errors()->first());
         }
 
@@ -208,7 +208,7 @@ class TempStatementImportController extends Controller
         // Verificar se o arquivo existe no storage (na pasta de previews)
         if (!Storage::exists($path)) {
              Log::error('Arquivo temporário não encontrado em showMapping', ['path' => $path]);
-            return redirect()->route('transactions.import')
+            return redirect()->route('statements.import')
                 ->with('error', 'Arquivo temporário não encontrado. Por favor, faça o upload novamente.');
         }
         
@@ -240,7 +240,7 @@ class TempStatementImportController extends Controller
             ]);
             // Usar transações de exemplo em caso de erro? Ou mostrar erro?
             // Vamos mostrar erro por enquanto
-             return redirect()->route('transactions.import')
+             return redirect()->route('statements.import')
                 ->with('error', 'Erro ao ler o arquivo do extrato: ' . $e->getMessage());
         }
         
@@ -249,7 +249,7 @@ class TempStatementImportController extends Controller
             Log::warning('Nenhuma transação extraída do arquivo no mapeamento', ['path' => $path]);
              // Limpar arquivo temporário?
             Storage::delete($path);
-            return redirect()->route('transactions.import')
+            return redirect()->route('statements.import')
                 ->with('warning', 'Não foi possível extrair nenhuma transação do arquivo. Verifique o formato ou tente outro arquivo.');
         }
         
@@ -351,29 +351,30 @@ class TempStatementImportController extends Controller
             $aiConfig = $aiConfigService->getAIConfig();
             $aiProvider = $aiConfig['provider'];
             Log::info('🔍 Usando provedor IA: ' . $aiProvider);
-            
+
             // Obter a chave da API e o modelo do banco de dados
-            $apiKey = $aiConfig['api_key'] ?? '';
-            $modelName = $aiConfig['model_name'] ?? '';
-            
-            // Verificar se a chave da API existe
+            $apiKey = $aiConfig['api_key'] ?? ''; // Restaurado
+            $modelName = $aiConfig['model_name'] ?? ''; // Restaurado
+
+            // Verificar se a chave da API existe - Verificação agora dentro de analyzeTransactionsWithGemini
             if (empty($apiKey)) {
                 Log::error('❗ Erro: Chave da API não encontrada no banco de dados');
                 return $this->getMockAIResponse($transactions);
             }
-            
-            // Criar a configuração para a IA
+
+            // Criar a configuração para a IA - Restaurado: Usar $config simplificado
             $config = new \stdClass();
             $config->api_token = $apiKey;
             $config->model = $modelName;
             $config->provider = $aiProvider;
-            
+
             // Executar a análise com a IA configurada
             Log::info('💬 Iniciando análise de transações com ' . $aiProvider);
-            
+
             try {
+                // Passar o objeto $config simplificado
                 $resultado = $this->analyzeTransactionsWithGemini($transactions, $config);
-                
+
                 // Verificar se o resultado é válido
                 if ($resultado && isset($resultado['transactions']) && !empty($resultado['transactions'])) {
                     $duration = round(microtime(true) - $startTime, 2);
@@ -411,28 +412,29 @@ class TempStatementImportController extends Controller
     /**
      * Método específico para análise com Gemini
      */
-    private function analyzeTransactionsWithGemini($transactions, $apiConfig)
+    private function analyzeTransactionsWithGemini($transactions, $apiConfig) // Parâmetro revertido para $apiConfig
     {
         $startTime = microtime(true);
-        
+
         try {
-            // Preparar as transações para análise
+            // Preparar as transações para análise (formato JSON)
             $transactionDescriptions = [];
             foreach ($transactions as $index => $transaction) {
                 $transactionDescriptions[] = [
-                    'id' => $index,
+                    'id' => $index, // Manter o índice original como ID
                     'date' => $transaction['date'] ?? '',
                     'description' => $transaction['description'] ?? '',
-                    'amount' => $transaction['amount'] ?? 0,
-                    'type' => $transaction['type'] ?? ''
+                    'amount' => $transaction['amount'] ?? 0, // Valor absoluto
+                    'type' => $transaction['type'] ?? '' // income ou expense
                 ];
             }
-            
+            // $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE); // Removido
+
             // Obter categories do usuário para treinamento da IA
             $categories = Category::where('user_id', auth()->id())
                 ->orderBy('name')
                 ->get();
-                
+
             // Formatar categorias para o prompt
             $categoriesFormatted = [];
             foreach ($categories as $category) {
@@ -443,63 +445,93 @@ class TempStatementImportController extends Controller
                     'icon' => $category->icon ?? ''
                 ];
             }
-            
+
             // Agrupar categorias por tipo para melhor formato no prompt
             $categoriesByType = [
                 'income' => [],
                 'expense' => []
             ];
-            
             foreach ($categoriesFormatted as $category) {
                 $type = $category['type'] == 'income' ? 'income' : 'expense';
                 $categoriesByType[$type][] = $category;
             }
-            
+            // $categoriesJson = json_encode($categoriesByType, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE); // Removido
+
             Log::info('🔎 Usando categorias para prompt Gemini', [
                 'total_categorias' => count($categoriesFormatted),
                 'receitas' => count($categoriesByType['income']),
                 'despesas' => count($categoriesByType['expense'])
             ]);
-            
-            // Verificar se temos as configurações necessárias
-            $apiKey = $apiConfig->api_token ?? env('GEMINI_API_KEY');
-            $model = $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro');
-            
+
+            // Verificar se temos as configurações necessárias do objeto $apiConfig
+            $apiKey = $apiConfig->api_token ?? env('GEMINI_API_KEY'); // Revertido para usar $apiConfig->api_token
+            $model = $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro'); // Revertido para usar $apiConfig->model
+            // $promptTemplate = $aiConfig['prompt'] ?? ''; // Removido - Não busca mais prompt da config
+
             // Validar chave API
             if (empty($apiKey)) {
-                Log::error('❌ Chave API para Gemini está vazia');
-                return null;
+                Log::error('❌ Chave API para Gemini está vazia'); // Mensagem revertida
+                return null; // Retornar null se a chave estiver faltando
             }
-            
+
+            // Validar template do prompt - Removido
+            // if (empty($promptTemplate)) {
+            //     Log::error('❌ Template do prompt para Gemini está vazio nas configurações');
+            //     return null; // Retornar null se o prompt estiver faltando
+            // }
+            // Validar se os placeholders existem no template (opcional, mas útil) - Removido
+            // if (strpos($promptTemplate, '{{transactions}}') === false || strpos($promptTemplate, '{{categories}}') === false) {
+            //     Log::warning('⚠️ Template do prompt não contém os placeholders {{transactions}} e/ou {{categories}}. A substituição pode falhar.');
+            // }
+
+
             // Configurar endpoint da API
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
-            
+
             Log::info('📣 INICIANDO CHAMADA GEMINI PARA CATEGORIZAÇÃO', [
                 'model' => $model,
                 'api_key_preview' => substr($apiKey, 0, 5) . '...' . substr($apiKey, -3),
                 'total_transacoes' => count($transactions),
                 'endpoint' => $endpoint
             ]);
-            
-            // Preparar o prompt - versão melhorada com instruções mais claras
+
+            // Preparar o prompt - Revertido para versão fixa (hardcoded)
             $userPrompt = "Você é um assistente especializado em finanças pessoais. Sua tarefa é categorizar as seguintes transações bancárias:\n\n";
             $userPrompt .= "TRANSAÇÕES A CATEGORIZAR:\n" . json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
             $userPrompt .= "CATEGORIAS DISPONÍVEIS:\n" . json_encode($categoriesByType, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
-            $userPrompt .= "INSTRUÇÕES DE CATEGORIZAÇÃO:\n"; 
-            $userPrompt .= "1. Para cada transação, analise a descrição e o valor para determinar a que categoria ela pertence\n";
-            $userPrompt .= "2. Se a transação já indica um tipo (income/expense), respeite esta informação\n";
-            $userPrompt .= "3. Atribua a categoria existente mais adequada usando seu ID\n";
-            $userPrompt .= "4. Se nenhuma categoria existente for adequada, sugira uma nova categoria com nome apropriado\n";
-            $userPrompt .= "5. Transações com valores positivos geralmente são receitas (income)\n";
-            $userPrompt .= "6. Transações com valores negativos geralmente são despesas (expense)\n\n";
-            $userPrompt .= "RESPONDA APENAS NO SEGUINTE FORMATO JSON (sem explicações adicionais):\n";
-            $userPrompt .= "```json\n{\n  \"transactions\": [\n    {\n      \"id\": 0,\n      \"type\": \"income\",\n      \"category_id\": 1,\n      \"suggested_category\": null\n    },\n    {\n      \"id\": 1,\n      \"type\": \"expense\",\n      \"category_id\": null,\n      \"suggested_category\": \"Nome da nova categoria\"\n    }\n  ]\n}\n```";
-            
+            $userPrompt .= "INSTRUÇÕES DE CATEGORIZAÇÃO:\n";
+            $userPrompt .= "1. Para cada transação (com seu 'id' original), analise a 'description', 'amount' e 'type'.\n";
+            $userPrompt .= "2. Verifique se o 'type' ('income' ou 'expense') fornecido está correto. Corrija se necessário.\n";
+            $userPrompt .= "3. Atribua a categoria existente mais adequada de 'CATEGORIAS DISPONÍVEIS' usando seu 'id'. Use o ID da categoria encontrada no campo 'category_id'.\n";
+            $userPrompt .= "4. Se NENHUMA categoria existente for adequada, deixe 'category_id' como null e sugira um nome para uma NOVA categoria específica no campo 'suggested_category'.\n";
+            $userPrompt .= "5. Se uma categoria existente foi usada, deixe 'suggested_category' como null.\n";
+            $userPrompt .= "6. EVITE sugerir categorias genéricas como 'Outros', 'Diversos', 'Pagamento'. Tente ser específico ou use uma categoria existente como 'Outras Despesas'/'Outras Receitas' se disponíveis.\n\n";
+            $userPrompt .= "RESPONDA APENAS NO SEGUINTE FORMATO JSON (sem explicações adicionais):
+```json
+{
+  \"transactions\": [
+    {
+      \"id\": 0,            // ID original da transação de entrada
+      \"type\": \"expense\",   // Tipo final ('income' ou 'expense')
+      \"category_id\": 15,    // ID da categoria existente (ou null)
+      \"suggested_category\": null // Nome da nova categoria (ou null)
+    },
+    {
+      \"id\": 1,
+      \"type\": \"expense\",
+      \"category_id\": null,
+      \"suggested_category\": \"Taxas Bancárias\"
+    }
+    // ... mais transações
+  ]
+}
+```";
+
             // Imprimir parte do prompt para debugging
-            Log::debug('Preview do prompt para Gemini', [
+            Log::debug('Preview do prompt FIXO para Gemini', [ // Log message updated
                 'prompt_preview' => substr($userPrompt, 0, 500) . '... (truncado)'
             ]);
-            
+
             // Preparar o payload para a API Gemini
             $data = [
                 'contents' => [
