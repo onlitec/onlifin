@@ -1,7 +1,11 @@
 /node_modules
 /public/hot
 /public/storage
+/storage/framework
+/storage/logs
+storage/database_backup_*.sql
 /storage/*.key
+/storage/*.tar.gz
 /vendor
 .env
 .env.backup
