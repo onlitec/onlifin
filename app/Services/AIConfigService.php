@@ -24,6 +24,7 @@ class AIConfigService
                 'model_name' => '',
                 'api_key' => '',
                 'system_prompt' => '',
+                'prompt_template' => '',
                 'is_configured' => false
             ];
         }
@@ -33,6 +34,7 @@ class AIConfigService
             'model_name' => $modelKey->model,
             'api_key' => $modelKey->api_token,
             'system_prompt' => $modelKey->system_prompt,
+            'prompt_template' => $modelKey->system_prompt,
             'is_configured' => true
         ];
     }

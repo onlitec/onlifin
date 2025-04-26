@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Services\AIConfigService;
 use DateTime;
 use Endeken\OFX;
+use App\Models\AiCallLog;
 
 class TempStatementImportController extends Controller
 {
@@ -205,118 +206,158 @@ class TempStatementImportController extends Controller
             'path' => $path, 'account_id' => $accountId, 'extension' => $extension, 'use_ai' => $useAI
         ]);
 
-        // Verificar se o arquivo existe no storage (na pasta de previews)
-        if (!Storage::exists($path)) {
-             Log::error('Arquivo temporário não encontrado em showMapping', ['path' => $path]);
-            return redirect()->route('statements.import')
-                ->with('error', 'Arquivo temporário não encontrado. Por favor, faça o upload novamente.');
-        }
+        // ****** MODO DEBUG PARA TESTAR SEM ARQUIVO ******
+        $isDebugMode = ($path === 'debug_test');
         
-        $account = Account::findOrFail($accountId);
-        // Verificar permissão do usuário
-        if ($account->user_id !== auth()->id()) {
-             Log::warning('Tentativa de acesso não autorizado ao mapeamento', ['user_id' => auth()->id(), 'account_id' => $accountId]);
-            abort(403, 'Acesso não autorizado a esta conta.');
-        }
-        
-        // Extrair transações do arquivo baseado no formato
-        $extractedTransactions = [];
-        try {
-            // Usar os métodos de extração agora presentes neste controller
-            if (in_array($extension, ['ofx', 'qfx'])) {
-                 Log::info('Extraindo de OFX/QFX', ['path' => $path]);
-                $extractedTransactions = $this->extractTransactionsFromOFX($path);
-            } elseif ($extension === 'csv') {
-                 Log::info('Extraindo de CSV', ['path' => $path]);
-                $extractedTransactions = $this->extractTransactionsFromCSV($path);
-            } else {
-                 Log::warning('Extração não implementada para extensão', ['extension' => $extension]);
-                 // Poderia tentar extrair de PDF/XLS aqui se os métodos existissem
+        if ($isDebugMode) {
+            Log::info('🧪 MODO DEBUG ATIVADO: Usando transações simuladas para teste da IA');
+            
+            $account = Account::findOrFail($accountId);
+            // Verificar permissão do usuário
+            if ($account->user_id !== auth()->id()) {
+                Log::warning('Tentativa de acesso não autorizado ao mapeamento (modo debug)', ['user_id' => auth()->id(), 'account_id' => $accountId]);
+                abort(403, 'Acesso não autorizado a esta conta.');
             }
-            Log::info('Transações extraídas', ['count' => count($extractedTransactions)]);
-        } catch (\Exception $e) {
-            Log::error('Erro ao extrair transações no mapeamento', [
-                'message' => $e->getMessage(), 'path' => $path, 'trace' => $e->getTraceAsString()
-            ]);
-            // Usar transações de exemplo em caso de erro? Ou mostrar erro?
-            // Vamos mostrar erro por enquanto
-             return redirect()->route('statements.import')
-                ->with('error', 'Erro ao ler o arquivo do extrato: ' . $e->getMessage());
-        }
-        
-        // Se não há transações, redirecionar com aviso
-        if (empty($extractedTransactions)) {
-            Log::warning('Nenhuma transação extraída do arquivo no mapeamento', ['path' => $path]);
-             // Limpar arquivo temporário?
-            Storage::delete($path);
-            return redirect()->route('statements.import')
-                ->with('warning', 'Não foi possível extrair nenhuma transação do arquivo. Verifique o formato ou tente outro arquivo.');
-        }
-        
-        // ---- ANÁLISE COM IA (Usando a lógica deste Controller) ----
-        $aiAnalysisResult = null;
-        if ($useAI) {
-            Log::info('Tentando análise com IA configurada neste controller');
+            
+            // Simular transações extraídas para teste
+            $extractedTransactions = [
+                ['date' => '2024-07-26', 'description' => 'PAGAMENTO SALARIO', 'amount' => 550000, 'type' => 'income'],
+                ['date' => '2024-07-25', 'description' => 'NETFLIX SERVICOS INTERNET', 'amount' => -3990, 'type' => 'expense'],
+                ['date' => '2024-07-24', 'description' => 'SUPERMERCADO TAUSTE', 'amount' => -24550, 'type' => 'expense'],
+                ['date' => '2024-07-23', 'description' => 'PAGAMENTO DIVIDENDOS AÇÕES', 'amount' => 12500, 'type' => 'income'],
+                ['date' => '2024-07-22', 'description' => 'FARMACIA DROGA RAIA', 'amount' => -7850, 'type' => 'expense'],
+                ['date' => '2024-07-21', 'description' => 'POSTO DE GASOLINA SHELL', 'amount' => -18920, 'type' => 'expense'],
+            ];
+        } else {
+            // Verificar se o arquivo existe no storage (na pasta de uploads temporários)
+            if (!Storage::exists($path)) {
+                Log::error('Arquivo temporário não encontrado em showMapping', ['path' => $path]);
+                return redirect()->route('statements.import')
+                    ->with('error', 'Arquivo temporário não encontrado. Por favor, faça o upload novamente.');
+            }
+            
+            $account = Account::findOrFail($accountId);
+            // Verificar permissão do usuário
+            if ($account->user_id !== auth()->id()) {
+                Log::warning('Tentativa de acesso não autorizado ao mapeamento', ['user_id' => auth()->id(), 'account_id' => $accountId]);
+                abort(403, 'Acesso não autorizado a esta conta.');
+            }
+            
+            // Extrair transações do arquivo baseado no formato
+            $extractedTransactions = [];
             try {
-                // Chama o método analyzeTransactionsWithAI deste controller
-                $aiAnalysisResult = $this->analyzeTransactionsWithAI($extractedTransactions); 
+                // Usar os métodos de extração agora presentes neste controller
+                if (in_array($extension, ['ofx', 'qfx'])) {
+                    Log::info('Extraindo de OFX/QFX', ['path' => $path]);
+                    $extractedTransactions = $this->extractTransactionsFromOFX($path);
+                } elseif ($extension === 'csv') {
+                    Log::info('Extraindo de CSV', ['path' => $path]);
+                    $extractedTransactions = $this->extractTransactionsFromCSV($path);
+                } elseif ($extension === 'pdf') { // Adicionar PDF se o método existir
+                    if (method_exists($this, 'extractTransactionsFromPDF')) {
+                        Log::info('Extraindo de PDF', ['path' => $path]);
+                        $extractedTransactions = $this->extractTransactionsFromPDF($path);
+                    } else {
+                        Log::warning('Método extractTransactionsFromPDF não existe');
+                        // Tente métodos de extração alternativos se disponíveis
+                    }
+                } // Adicionar outros formatos conforme necessário
+                
+                Log::info('Transações extraídas com sucesso', ['count' => count($extractedTransactions)]);
+            } catch (\Exception $e) {
+                Log::error('Erro ao extrair transações', [
+                    'path' => $path, 
+                    'extension' => $extension, 
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                // Se não conseguir extrair, use transações de exemplo
+                $extractedTransactions = $this->getExampleTransactions();
+                
+                // Informar ao usuário sobre o problema
+                session()->flash('warning', 'Não foi possível extrair todas as transações do arquivo. Exibindo exemplos. ' . $e->getMessage());
+            }
+        }
+        // ****** FIM DO CÓDIGO MODIFICADO ******
 
-                if (empty($aiAnalysisResult)) {
-                    Log::warning('Análise com IA não retornou resultados válidos.');
-                    // Opcional: Poderia tentar uma categorização local aqui como fallback
+        // Se não há transações, mostrar mensagem e transações vazias
+        if (empty($extractedTransactions)) {
+            Log::warning('Nenhuma transação extraída', ['path' => $path, 'extension' => $extension]);
+            session()->flash('warning', 'Não foi possível extrair transações do arquivo. Verifique o formato do arquivo.');
+        }
+
+        // Analisar transações usando a IA se solicitado
+        $aiAnalysis = null;
+        if ($useAI) {
+            try {
+                // Diagnóstico adicional
+                Log::info('Chamando análise com IA para ' . count($extractedTransactions) . ' transações');
+                
+                // A análise com IA será sempre realizada através de analyzeTransactionsWithAI
+                $aiAnalysis = $this->analyzeTransactionsWithAI($extractedTransactions);
+                
+                if ($aiAnalysis) {
+                    Log::info('Análise com IA concluída com sucesso', [
+                        'transactions_analyzed' => count($aiAnalysis['transactions'] ?? [])
+                    ]);
                 } else {
-                     Log::info('Análise com IA concluída', ['results_count' => count($aiAnalysisResult['transactions'] ?? [])]);
+                    Log::warning('Análise com IA retornou nulo');
                 }
             } catch (\Exception $e) {
-                Log::error('Erro durante analyzeTransactionsWithAI em showMapping', [
-                    'message' => $e->getMessage(), 'trace' => $e->getTraceAsString()
+                Log::error('Erro na análise com IA', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
-                // Continua sem análise IA em caso de erro
+                
+                session()->flash('error', 'Ocorreu um erro durante a análise com IA: ' . $e->getMessage());
             }
-        } else {
-             Log::info('Análise com IA não solicitada (use_ai=0)');
         }
-        // ----------------------------------------------------------
-
-        // Aplicar categorização às transações (se a análise IA retornou algo)
-        // Usar o método applyCategorizationToTransactions deste controller
-        $extractedTransactions = $this->applyCategorizationToTransactions($extractedTransactions, $aiAnalysisResult);
         
-        // Carregar categorias do usuário
+        // Aplicar categorização às transações se a análise de IA for bem-sucedida
+        if ($aiAnalysis) {
+            $extractedTransactions = $this->applyCategorizationToTransactions($extractedTransactions, $aiAnalysis);
+        }
+        
+        // Verificar se a resposta da IA está em um formato diferente e precisa ser adaptada
+        if ($aiAnalysis && isset($aiAnalysis['categories']) && !isset($aiAnalysis['transactions'])) {
+            // Formato diferente detectado, fazer adaptação aqui
+            Log::warning('Formato de resposta da IA não padrão detectado. Adaptando...');
+            // Código de adaptação...
+        }
+
+        // Categorias disponíveis para o usuário
         $categories = Category::where('user_id', auth()->id())
             ->orderBy('name')
             ->get()
             ->groupBy('type');
-            
-        // Log detalhado antes de passar para a view
-        Log::debug('Dados sendo passados para a view transactions.mapping', [
-            'path' => $path,
-            'account_id' => $account->id,
-            'extension' => $extension,
-            'useAI' => $useAI,
-            'autoSave' => $autoSave,
-            'extractedTransactions_count' => is_array($extractedTransactions) ? count($extractedTransactions) : 'N/A',
-            'extractedTransactions_type' => gettype($extractedTransactions),
-            // Logar apenas as duas primeiras transações como amostra JSON para evitar logs muito grandes
-            'extractedTransactions_sample' => is_array($extractedTransactions) ? json_encode(array_slice($extractedTransactions, 0, 2), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : 'N/A',
-            'aiAnalysisResult_exists' => !empty($aiAnalysisResult),
-            'aiAnalysisResult_sample' => (is_array($aiAnalysisResult) && isset($aiAnalysisResult['transactions'])) ? json_encode(array_slice($aiAnalysisResult['transactions'], 0, 2), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : 'N/A',
-            'categories_income_count' => count($categories['income'] ?? []),
-            'categories_expense_count' => count($categories['expense'] ?? [])
-        ]);
-            
-        Log::info('Renderizando view transactions.mapping');
         
-        // Renderizar a view
-        return view('transactions.mapping', compact(
-            'path', // Passar o path para a view poder incluir no form de salvar
-            'account', 
-            'categories', 
-            'extractedTransactions', 
-            'aiAnalysisResult', // Passar o resultado completo da IA se necessário na view
-            'useAI', // Passar useAI para a view, se necessário
-            'autoSave' // Manter autoSave
-        ));
+        // Verifica se a IA está configurada no banco de dados
+        $aiConfigService = new AIConfigService();
+        $aiConfig = $aiConfigService->getAIConfig();
+        $aiConfigured = $aiConfig['is_configured'];
+        
+        // Determinar se deve mostrar instruções para primeira importação
+        $hasImportedBefore = Transaction::where('user_id', auth()->id())
+                                         ->where('created_at', '>', now()->subDays(90))
+                                         ->where('status', 'paid')
+                                         ->exists();
+        
+        // Preparar dados para a view
+        $viewData = [
+            'account' => $account,
+            'transactions' => $extractedTransactions,
+            'categories' => $categories,
+            'path' => $path,
+            'extension' => $extension,
+            'aiConfigured' => $aiConfigured,
+            'hasImportedBefore' => $hasImportedBefore,
+            'usedAI' => $useAI && !empty($aiAnalysis),
+            'autoSave' => $autoSave,
+            'isDebugMode' => $isDebugMode // Nova flag para informar a view que estamos em modo debug
+        ];
+        
+        return view('transactions.mapping', $viewData);
     }
 
     /**
@@ -326,6 +367,14 @@ class TempStatementImportController extends Controller
     {
         // Tempo de início da operação para medir performance
         $startTime = microtime(true);
+        
+        // Diagnóstico extra
+        Log::info('🔍 [DIAGNÓSTICO IA] Método analyzeTransactionsWithAI INICIADO', [
+            'total_transacoes' => count($transactions ?? []),
+            'usuario_id' => auth()->id(),
+            'memory_usage' => memory_get_usage(true) / 1024 / 1024 . ' MB',
+            'exemplo_transacao' => isset($transactions[0]) ? json_encode($transactions[0]) : null
+        ]);
         
         // Se não houver transações, retornar nulo imediatamente
         if (empty($transactions)) {
@@ -352,83 +401,127 @@ class TempStatementImportController extends Controller
             $aiProvider = $aiConfig['provider'];
             Log::info('🔍 Usando provedor IA: ' . $aiProvider);
 
-            // Obter a chave da API e o modelo do banco de dados
-            $apiKey = $aiConfig['api_key'] ?? ''; // Restaurado
-            $modelName = $aiConfig['model_name'] ?? ''; // Restaurado
+            // Obter a chave da API, modelo e prompt do banco de dados
+            $apiKey = $aiConfig['api_key'] ?? '';
+            $modelName = $aiConfig['model_name'] ?? '';
+            $promptTemplate = $aiConfig['system_prompt'] ?? ''; // Usar system_prompt em vez de prompt_template
 
-            // Verificar se a chave da API existe - Verificação agora dentro de analyzeTransactionsWithGemini
+            // Verificar se a chave da API existe (verificação essencial)
             if (empty($apiKey)) {
-                Log::error('❗ Erro: Chave da API não encontrada no banco de dados');
+                Log::error('❗ Erro: Chave da API não encontrada no banco de dados para o provedor: ' . $aiProvider);
                 return $this->getMockAIResponse($transactions);
             }
+            
+            // **** Verificar prompt (adiantado para evitar chamadas desnecessárias) ****
+            if (empty($promptTemplate)) {
+                Log::error('❗ Erro: Template do prompt não encontrado no banco de dados para o provedor: ' . $aiProvider);
+                return $this->getMockAIResponse($transactions); // Ou retornar null?
+            }
 
-            // Criar a configuração para a IA - Restaurado: Usar $config simplificado
+            // Criar a configuração para a IA - Incluir prompt
             $config = new \stdClass();
             $config->api_token = $apiKey;
             $config->model = $modelName;
             $config->provider = $aiProvider;
+            $config->prompt = $promptTemplate; // Passar o prompt para o método específico
 
-            // Executar a análise com a IA configurada
-            Log::info('💬 Iniciando análise de transações com ' . $aiProvider);
+            // **** ROTEAMENTO BASEADO NO PROVEDOR ****
+            $resultado = null;
+            Log::info('💬 Iniciando roteamento para análise de transações com ' . $aiProvider);
 
-            try {
-                // Passar o objeto $config simplificado
-                $resultado = $this->analyzeTransactionsWithGemini($transactions, $config);
+            switch ($aiProvider) {
+                case 'gemini':
+                    try {
+                        $resultado = $this->analyzeTransactionsWithGemini($transactions, $config);
+                    } catch (\Exception $e) {
+                        Log::error('❌ Erro no método analyzeTransactionsWithGemini', [
+                            'mensagem' => $e->getMessage(),
+                            'arquivo' => $e->getFile(),
+                            'linha' => $e->getLine()
+                        ]);
+                        // Fallback para mock em caso de erro DENTRO do método Gemini
+                        $resultado = $this->getMockAIResponse($transactions);
+                    }
+                    break;
+                
+                // case 'openai':
+                //     Log::info('Provedor OpenAI ainda não implementado. Usando mock.');
+                //     $resultado = $this->getMockAIResponse($transactions);
+                //     break;
+                
+                // case 'claude':
+                //     Log::info('Provedor Claude ainda não implementado. Usando mock.');
+                //     $resultado = $this->getMockAIResponse($transactions);
+                //     break;
 
-                // Verificar se o resultado é válido
-                if ($resultado && isset($resultado['transactions']) && !empty($resultado['transactions'])) {
-                    $duration = round(microtime(true) - $startTime, 2);
-                    Log::info('🎉 Análise com Gemini concluída com sucesso', [
-                        'tempo_execucao' => $duration . 's',
-                        'total_transacoes_analisadas' => count($resultado['transactions']),
-                        'exemplo_resultado' => isset($resultado['transactions'][0]) ? json_encode($resultado['transactions'][0]) : null
-                    ]);
-                    return $resultado;
-                } else {
-                    Log::warning('⚠️ Resposta vazia ou inválida da API Gemini, usando resposta simulada');
-                    return $this->getMockAIResponse($transactions);
-                }
-            } catch (\Exception $e) {
-                Log::error('❌ Erro no método analyzeTransactionsWithGemini', [
-                    'mensagem' => $e->getMessage(),
-                    'arquivo' => $e->getFile(),
-                    'linha' => $e->getLine()
-                ]);
-                return $this->getMockAIResponse($transactions);
+                default:
+                    Log::error('❗ Provedor de IA configurado ("' . $aiProvider . '") não é suportado ou não possui método de análise implementado. Usando mock.');
+                    $resultado = $this->getMockAIResponse($transactions);
+                    break;
             }
-        } catch (\Exception $e) {
-            Log::error('❌ Erro geral ao analisar transações com IA', [
-                'mensagem' => $e->getMessage(),
-                'arquivo' => $e->getFile(),
-                'linha' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
             
-            // Se falhar, usar resposta simulada
-            return $this->getMockAIResponse($transactions);
+            // **** FIM DO ROTEAMENTO ****
+
+            // Verificar se o resultado é válido (seja da IA real ou do mock)
+            if ($resultado && isset($resultado['transactions']) && !empty($resultado['transactions'])) {
+                $duration = round(microtime(true) - $startTime, 2);
+                $logMessage = ($aiProvider === 'gemini' && $resultado !== $this->getMockAIResponse($transactions)) // Verifica se não é mock
+                                ? '🎉 Análise com ' . $aiProvider . ' concluída com sucesso' 
+                                : '⚠️ Análise concluída (usando resposta simulada ou provedor não Gemini)';
+                
+                Log::info($logMessage, [
+                    'provedor_usado' => $aiProvider, // Informa qual provedor foi tentado
+                    'tempo_execucao' => $duration . 's',
+                    'total_transacoes_analisadas' => count($resultado['transactions']),
+                    'exemplo_resultado' => isset($resultado['transactions'][0]) ? json_encode($resultado['transactions'][0]) : null
+                ]);
+                return $resultado;
+            } else {
+                Log::warning('⚠️ Resposta vazia ou inválida do método de análise (incluindo mock). Nenhuma categorização será aplicada.', ['provedor' => $aiProvider]);
+                return null; // Retornar null se nem o mock funcionou ou a análise falhou totalmente
+            }
+            
+        } catch (\Exception $e) {
+            // Logar exceção geral e registrar no banco se possível
+            Log::error('❌ Exceção GERAL ao processar requisição Gemini', ['mensagem' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            $logData['error_message'] = 'Exceção Geral: ' . substr($e->getMessage(), 0, 800);
+            $logData['duration_ms'] = isset($logData['duration_ms']) ? $logData['duration_ms'] : (int) round((microtime(true) - $startTime) * 1000);
+            // Tenta salvar o log mesmo com a exceção geral
+            try { AiCallLog::create($logData); } catch (\Exception $logEx) { Log::error('Falha ao salvar log de erro da IA', ['log_exception' => $logEx->getMessage()]); }
+            return null;
         }
     }
     
     /**
      * Método específico para análise com Gemini
      */
-    private function analyzeTransactionsWithGemini($transactions, $apiConfig) // Parâmetro revertido para $apiConfig
+    private function analyzeTransactionsWithGemini($transactions, $apiConfig)
     {
         $startTime = microtime(true);
+        $logData = [
+            'user_id' => auth()->id(),
+            'provider' => $apiConfig->provider ?? 'gemini',
+            'model' => $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro'),
+            'error_message' => null,
+            'status_code' => null,
+            'duration_ms' => null,
+            'prompt_preview' => null,
+            'response_preview' => null,
+        ];
 
         try {
             // Preparar as transações para análise (formato JSON)
             $transactionDescriptions = [];
             foreach ($transactions as $index => $transaction) {
                 $transactionDescriptions[] = [
-                    'id' => $index, // Manter o índice original como ID
+                    'id' => $index,
                     'date' => $transaction['date'] ?? '',
                     'description' => $transaction['description'] ?? '',
-                    'amount' => $transaction['amount'] ?? 0, // Valor absoluto
-                    'type' => $transaction['type'] ?? '' // income ou expense
+                    'amount' => $transaction['amount'] ?? 0,
+                    'type' => $transaction['type'] ?? ''
                 ];
             }
-            // $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE); // Removido
+            $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
             // Obter categories do usuário para treinamento da IA
             $categories = Category::where('user_id', auth()->id())
@@ -441,12 +534,10 @@ class TempStatementImportController extends Controller
                 $categoriesFormatted[] = [
                     'id' => $category->id,
                     'name' => $category->name,
-                    'type' => $category->type, // income ou expense
+                    'type' => $category->type,
                     'icon' => $category->icon ?? ''
                 ];
             }
-
-            // Agrupar categorias por tipo para melhor formato no prompt
             $categoriesByType = [
                 'income' => [],
                 'expense' => []
@@ -455,7 +546,7 @@ class TempStatementImportController extends Controller
                 $type = $category['type'] == 'income' ? 'income' : 'expense';
                 $categoriesByType[$type][] = $category;
             }
-            // $categoriesJson = json_encode($categoriesByType, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE); // Removido
+            $categoriesJson = json_encode($categoriesByType, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
             Log::info('🔎 Usando categorias para prompt Gemini', [
                 'total_categorias' => count($categoriesFormatted),
@@ -463,81 +554,58 @@ class TempStatementImportController extends Controller
                 'despesas' => count($categoriesByType['expense'])
             ]);
 
-            // Verificar se temos as configurações necessárias do objeto $apiConfig
-            $apiKey = $apiConfig->api_token ?? env('GEMINI_API_KEY'); // Revertido para usar $apiConfig->api_token
-            $model = $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro'); // Revertido para usar $apiConfig->model
-            // $promptTemplate = $aiConfig['prompt'] ?? ''; // Removido - Não busca mais prompt da config
+            // Obter configurações da IA (incluindo o prompt)
+            $apiKey = $apiConfig->api_token ?? env('GEMINI_API_KEY');
+            $model = $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro');
+            $promptTemplate = $apiConfig->prompt;
 
             // Validar chave API
             if (empty($apiKey)) {
-                Log::error('❌ Chave API para Gemini está vazia'); // Mensagem revertida
-                return null; // Retornar null se a chave estiver faltando
+                Log::error('❌ Chave API para Gemini está vazia');
+                return null;
             }
 
-            // Validar template do prompt - Removido
-            // if (empty($promptTemplate)) {
-            //     Log::error('❌ Template do prompt para Gemini está vazio nas configurações');
-            //     return null; // Retornar null se o prompt estiver faltando
-            // }
-            // Validar se os placeholders existem no template (opcional, mas útil) - Removido
-            // if (strpos($promptTemplate, '{{transactions}}') === false || strpos($promptTemplate, '{{categories}}') === false) {
-            //     Log::warning('⚠️ Template do prompt não contém os placeholders {{transactions}} e/ou {{categories}}. A substituição pode falhar.');
-            // }
-
+            // **** VALIDAR PROMPT DA CONFIGURAÇÃO ****
+            if (empty($promptTemplate)) {
+                Log::error('❌ Template do prompt para ' . ($apiConfig->provider ?? 'IA') . ' está vazio');
+                return null;
+            }
+            // Validar placeholders (opcional, mas recomendado)
+            if (strpos($promptTemplate, '{{transactions}}') === false || strpos($promptTemplate, '{{categories}}') === false) {
+                Log::warning('⚠️ Template do prompt não contém os placeholders {{transactions}} e/ou {{categories}}. A análise pode falhar ou gerar resultados inesperados.');
+            }
 
             // Configurar endpoint da API
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-            Log::info('📣 INICIANDO CHAMADA GEMINI PARA CATEGORIZAÇÃO', [
+            Log::info('📣 INICIANDO CHAMADA ' . strtoupper($apiConfig->provider ?? 'API') . ' PARA CATEGORIZAÇÃO', [
                 'model' => $model,
                 'api_key_preview' => substr($apiKey, 0, 5) . '...' . substr($apiKey, -3),
                 'total_transacoes' => count($transactions),
                 'endpoint' => $endpoint
             ]);
 
-            // Preparar o prompt - Revertido para versão fixa (hardcoded)
-            $userPrompt = "Você é um assistente especializado em finanças pessoais. Sua tarefa é categorizar as seguintes transações bancárias:\n\n";
-            $userPrompt .= "TRANSAÇÕES A CATEGORIZAR:\n" . json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
-            $userPrompt .= "CATEGORIAS DISPONÍVEIS:\n" . json_encode($categoriesByType, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
-            $userPrompt .= "INSTRUÇÕES DE CATEGORIZAÇÃO:\n";
-            $userPrompt .= "1. Para cada transação (com seu 'id' original), analise a 'description', 'amount' e 'type'.\n";
-            $userPrompt .= "2. Verifique se o 'type' ('income' ou 'expense') fornecido está correto. Corrija se necessário.\n";
-            $userPrompt .= "3. Atribua a categoria existente mais adequada de 'CATEGORIAS DISPONÍVEIS' usando seu 'id'. Use o ID da categoria encontrada no campo 'category_id'.\n";
-            $userPrompt .= "4. Se NENHUMA categoria existente for adequada, deixe 'category_id' como null e sugira um nome para uma NOVA categoria específica no campo 'suggested_category'.\n";
-            $userPrompt .= "5. Se uma categoria existente foi usada, deixe 'suggested_category' como null.\n";
-            $userPrompt .= "6. EVITE sugerir categorias genéricas como 'Outros', 'Diversos', 'Pagamento'. Tente ser específico ou use uma categoria existente como 'Outras Despesas'/'Outras Receitas' se disponíveis.\n\n";
-            $userPrompt .= "RESPONDA APENAS NO SEGUINTE FORMATO JSON (sem explicações adicionais):
-```json
-{
-  \"transactions\": [
-    {
-      \"id\": 0,            // ID original da transação de entrada
-      \"type\": \"expense\",   // Tipo final ('income' ou 'expense')
-      \"category_id\": 15,    // ID da categoria existente (ou null)
-      \"suggested_category\": null // Nome da nova categoria (ou null)
-    },
-    {
-      \"id\": 1,
-      \"type\": \"expense\",
-      \"category_id\": null,
-      \"suggested_category\": \"Taxas Bancárias\"
-    }
-    // ... mais transações
-  ]
-}
-```";
+            // **** CONSTRUIR PROMPT DINAMICAMENTE ****
+            $finalPrompt = str_replace(
+                ['{{transactions}}', '{{categories}}'],
+                [$transactionsJson, $categoriesJson],
+                $promptTemplate
+            );
 
-            // Imprimir parte do prompt para debugging
-            Log::debug('Preview do prompt FIXO para Gemini', [ // Log message updated
-                'prompt_preview' => substr($userPrompt, 0, 500) . '... (truncado)'
+            Log::debug('Preview do prompt DINÂMICO para ' . ($apiConfig->provider ?? 'IA'), [
+                'prompt_preview' => substr($finalPrompt, 0, 500) . '... (truncado)'
             ]);
 
-            // Preparar o payload para a API Gemini
+            // **** REGISTRAR INÍCIO DA CHAMADA NO LOG ****
+            $logData['prompt_preview'] = substr($finalPrompt, 0, 1000); // Limitar tamanho do preview
+            $logData['model'] = $model; // Atualiza o modelo caso tenha pego do env
+            
+            // Preparar o payload para a API Gemini usando o prompt dinâmico
             $data = [
                 'contents' => [
                     [
                         'parts' => [
-                            ['text' => $userPrompt]
+                            ['text' => $finalPrompt] // <-- Usar o prompt final
                         ]
                     ]
                 ],
@@ -548,10 +616,13 @@ class TempStatementImportController extends Controller
             ];
             
             // Usar a classe Http do Laravel para fazer a requisição
-            Log::info('▶️ Enviando requisição para API Gemini: ' . $endpoint);
+            Log::info('▶️ Enviando requisição para API ' . ($apiConfig->provider ?? 'IA') . ': ' . $endpoint);
             
+            // Inicializar $apiError e $result
+            $apiError = null;
+            $result = null;
+
             try {
-                // Configurar a requisição com timeout adequado e headers corretos
                 $response = \Illuminate\Support\Facades\Http::withHeaders([
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
@@ -559,53 +630,52 @@ class TempStatementImportController extends Controller
                 ->timeout(60)
                 ->post($endpoint, $data);
                 
-                // Verificar se a requisição foi bem-sucedida
+                $statusCode = $response->status();
+                $logData['status_code'] = $statusCode;
+
                 if ($response->successful()) {
                     Log::info('✅ Requisição HTTP bem-sucedida', [
-                        'status' => $response->status(),
+                        'status' => $statusCode,
                         'size' => strlen($response->body())
                     ]);
-                    
                     $result = $response->body();
+                    $logData['response_preview'] = substr($result, 0, 1000); // Limitar tamanho
                 } else {
-                    Log::error('❗ Erro na requisição HTTP', [
-                        'status' => $response->status(),
-                        'body' => $response->body()
-                    ]);
-                    return null;
+                    $apiError = 'Erro HTTP: ' . $statusCode . ' - ' . $response->body();
+                    $logData['error_message'] = substr($apiError, 0, 1000);
+                    $logData['response_preview'] = substr($response->body(), 0, 1000);
+                    Log::error('❗ Erro na requisição HTTP', ['status' => $statusCode, 'body' => $response->body()]);
+                    // Não retorna null ainda, registra o log primeiro
                 }
-                
-                // Status já foi verificado na chamada HTTP
-                
-                if (!$result) {
-                    Log::error('Nenhum resultado retornado da API Gemini');
-                    return null;
-                }
-                
-                Log::info('✅ Resposta recebida da API Gemini', [
-                    'tamanho_resposta' => strlen($result),
-                    'tempo_resposta' => round(microtime(true) - $startTime, 2) . 's'
-                ]);
                 
             } catch (\Exception $e) {
-                Log::error('❌ ERRO AO CHAMAR API GEMINI', [
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine()
-                ]);
+                $apiError = 'Exceção na chamada HTTP: ' . $e->getMessage();
+                $logData['error_message'] = substr($apiError, 0, 1000);
+                Log::error('❌ ERRO AO CHAMAR API GEMINI', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+                // Não retorna null ainda, registra o log primeiro
+            }
+
+            // **** REGISTRAR RESULTADO FINAL NO LOG (APÓS A CHAMADA) ****
+            $logData['duration_ms'] = (int) round((microtime(true) - $startTime) * 1000);
+            AiCallLog::create($logData); // <-- Criar o registro no banco AQUI
+
+            // Se houve erro na API, agora retorna null
+            if ($apiError) {
                 return null;
             }
-            
+            if (!$result) {
+                 Log::error('Nenhum resultado retornado da API ' . ($apiConfig->provider ?? 'IA') . ' (pós-log)');
+                 return null;
+            }
+
             // Processar a resposta
             if ($result) {
                 $duration = round(microtime(true) - $startTime, 2);
                 $responseData = json_decode($result, true);
                 
-                // Verificar se a resposta contém o texto esperado
                 if ($responseData && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
-                    // Extrair o texto da resposta
                     $text = $responseData['candidates'][0]['content']['parts'][0]['text'];
-                    Log::debug('Resposta bruta da API Gemini', ['text_preview' => substr($text, 0, 500) . '... (truncado)']);
+                    Log::debug('Resposta bruta da API ' . ($apiConfig->provider ?? 'IA'), ['text_preview' => substr($text, 0, 500) . '... (truncado)']);
                     
                     try {
                         // Extrair JSON da resposta (pode estar dentro de bloco markdown)
@@ -637,19 +707,35 @@ class TempStatementImportController extends Controller
                         
                         // Verificar se o processamento foi bem-sucedido e se há transações
                         if ($processedResponse && isset($processedResponse['transactions']) && !empty($processedResponse['transactions'])) {
-                            // Contar categorias sugeridas e existentes
+                            // Contar categorias sugeridas e existentes e processar notas
                             $suggestedCategories = 0;
                             $existingCategories = 0;
-                            
-                            foreach ($processedResponse['transactions'] as $transaction) {
-                                if (!empty($transaction['suggested_category']) && empty($transaction['category_id'])) {
+                            $processedTransactions = []; // Array temporário para guardar transações processadas
+
+                            foreach ($processedResponse['transactions'] as $aiTransactionData) { 
+                                // Contagem para logs
+                                if (!empty($aiTransactionData['suggested_category']) && empty($aiTransactionData['category_id'])) {
                                     $suggestedCategories++;
-                                } elseif (!empty($transaction['category_id'])) {
+                                } elseif (!empty($aiTransactionData['category_id'])) {
                                     $existingCategories++;
                                 }
+                                
+                                // **** ADICIONAR CAMPO NOTES ****
+                                // Garante que o array tenha todos os campos esperados, incluindo 'notes'
+                                $processedTransaction = [
+                                    'id' => $aiTransactionData['id'] ?? null, // ID original
+                                    'type' => $aiTransactionData['type'] ?? null,
+                                    'category_id' => $aiTransactionData['category_id'] ?? null,
+                                    'suggested_category' => $aiTransactionData['suggested_category'] ?? null,
+                                    'notes' => $aiTransactionData['notes'] ?? null // <-- Extrai o campo notes da resposta da IA
+                                ];
+                                $processedTransactions[] = $processedTransaction;
                             }
                             
-                            Log::info('🎉 Análise de transações com Gemini concluída com sucesso', [
+                            // Atualizar o array original com as transações processadas (incluindo notes)
+                            $processedResponse['transactions'] = $processedTransactions;
+
+                            Log::info('🎉 Análise de transações com ' . ($apiConfig->provider ?? 'IA') . ' concluída com sucesso', [
                                 'duration' => $duration . 's',
                                 'total_transacoes' => count($processedResponse['transactions']),
                                 'sugestoes_categoria' => $suggestedCategories,
@@ -660,7 +746,7 @@ class TempStatementImportController extends Controller
                             return $processedResponse;
                         } else {
                             // Resposta processada, mas sem transações válidas
-                            Log::warning('⚠️ Resposta Gemini processada, mas sem transações válidas', [
+                            Log::warning('⚠️ Resposta ' . ($apiConfig->provider ?? 'IA') . ' processada, mas sem transações válidas', [
                                 'duration' => $duration . 's',
                                 'response_preview' => substr($text, 0, 200) . '... (truncado)'
                             ]);
@@ -669,7 +755,7 @@ class TempStatementImportController extends Controller
                         }
                     } catch (\Exception $e) {
                         // Erro ao processar o JSON da resposta
-                        Log::error('❌ Erro ao processar JSON da resposta Gemini', [
+                        Log::error('❌ Erro ao processar JSON da resposta ' . ($apiConfig->provider ?? 'IA'), [
                             'message' => $e->getMessage(),
                             'file' => $e->getFile(),
                             'line' => $e->getLine(),
@@ -680,7 +766,7 @@ class TempStatementImportController extends Controller
                     }
                 } else {
                     // Resposta em formato inesperado
-                    Log::error('❌ Formato de resposta Gemini inesperado', [
+                    Log::error('❌ Formato de resposta ' . ($apiConfig->provider ?? 'IA') . ' inesperado', [
                         'response_keys' => isset($responseData) ? array_keys($responseData) : 'null',
                         'response_preview' => substr($result, 0, 200) . '... (truncado)'
                     ]);
@@ -689,16 +775,16 @@ class TempStatementImportController extends Controller
                 }
             } else {
                 // Falha na chamada à API
-                Log::error('❌ Falha na chamada à API Gemini - resultado vazio');
+                Log::error('❌ Falha na chamada à API ' . ($apiConfig->provider ?? 'IA') . ' - resultado vazio');
                 return null;
             }
         } catch (\Exception $e) {
-            Log::error('❌ Exceção ao processar requisição Gemini', [
-                'mensagem' => $e->getMessage(),
-                'arquivo' => $e->getFile(),
-                'linha' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Logar exceção geral e registrar no banco se possível
+            Log::error('❌ Exceção GERAL ao processar requisição Gemini', ['mensagem' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            $logData['error_message'] = 'Exceção Geral: ' . substr($e->getMessage(), 0, 800);
+            $logData['duration_ms'] = isset($logData['duration_ms']) ? $logData['duration_ms'] : (int) round((microtime(true) - $startTime) * 1000);
+            // Tenta salvar o log mesmo com a exceção geral
+            try { AiCallLog::create($logData); } catch (\Exception $logEx) { Log::error('Falha ao salvar log de erro da IA', ['log_exception' => $logEx->getMessage()]); }
             return null;
         }
     }
@@ -1367,9 +1453,11 @@ class TempStatementImportController extends Controller
                 $aiData = $aiMap[$index];
                 
                 // Aplicar tipo sugerido pela IA se diferente e válido
-                if (isset($aiData['type']) && in_array($aiData['type'], ['income', 'expense']) && $aiData['type'] !== $transaction['type']) {
+                if (isset($transaction['type']) && isset($aiData['type']) && in_array($aiData['type'], ['income', 'expense']) && $aiData['type'] !== $transaction['type']) {
                      Log::debug('Atualizando tipo da transação via IA', ['index' => $index, 'original' => $transaction['type'], 'novo' => $aiData['type']]);
                     $transaction['type'] = $aiData['type'];
+                } elseif (!isset($transaction['type'])) {
+                    Log::warning('Chave [type] ausente na transação original ao aplicar categorização IA.', ['index' => $index, 'transaction_data' => $transaction]);
                 }
                 
                 // Aplicar category_id sugerido pela IA (pode ser null)
