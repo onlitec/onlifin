@@ -91,6 +91,14 @@ class ModelApiKeyController extends Controller
      */
     public function update(Request $request, ModelApiKey $modelKey)
     {
+        // Debug para verificar os dados recebidos
+        Log::info('Dados recebidos na atualização de ModelApiKey:', [
+            'id' => $modelKey->id,
+            'request_all' => $request->all(),
+            'has_system_prompt' => $request->has('system_prompt'),
+            'system_prompt_length' => strlen($request->system_prompt ?? '')
+        ]);
+        
         $validated = $request->validate([
             'api_token' => 'required|string',
             'system_prompt' => 'nullable|string',
@@ -103,10 +111,32 @@ class ModelApiKeyController extends Controller
                 $validated['is_active'] = false;
             }
             
-            $modelKey->update($validated);
+            // Garantir que system_prompt seja incluído mesmo que vazio
+            if ($request->has('system_prompt')) {
+                $validated['system_prompt'] = $request->system_prompt;
+            }
+            
+            // Debug antes da atualização
+            Log::info('Dados validados para atualização:', $validated);
+            
+            // Atualizar diretamente com os dados brutos do request para garantir
+            $modelKey->api_token = $request->api_token;
+            $modelKey->system_prompt = $request->system_prompt;
+            $modelKey->is_active = $request->has('is_active') ? true : false;
+            $modelKey->save();
+            
+            // Debug após a atualização
+            Log::info('ModelApiKey após atualização:', [
+                'id' => $modelKey->id,
+                'has_system_prompt' => !empty($modelKey->system_prompt),
+                'system_prompt_length' => strlen($modelKey->system_prompt ?? '')
+            ]);
+            
             return redirect()->route('settings.model-keys.index')->with('success', 'Configuração atualizada com sucesso!');
         } catch (\Exception $e) {
-            Log::error('Erro ao atualizar configuração de chave por modelo: ' . $e->getMessage());
+            Log::error('Erro ao atualizar configuração de chave por modelo: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->route('settings.model-keys.index')->with('error', 'Erro ao atualizar configuração: ' . $e->getMessage());
         }
     }

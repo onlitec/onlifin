@@ -60,11 +60,16 @@
 
                     <!-- Prompt do Sistema -->
                     <div class="mt-6 space-y-2">
-                        <label class="block text-sm font-medium text-gray-700">
+                        <label for="system_prompt" class="block text-sm font-medium text-gray-700">
                             Prompt do Sistema específico para este modelo
                         </label>
-                        <textarea name="system_prompt" rows="4"
-                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">{{ $modelKey->system_prompt }}</textarea>
+                        <textarea 
+                            name="system_prompt" 
+                            id="system_prompt" 
+                            rows="10"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        >{{ $modelKey->system_prompt }}</textarea>
+                        <p class="text-gray-500 text-xs mt-1">Este prompt será enviado como contexto do sistema para o modelo de IA em todas as solicitações.</p>
                     </div>
 
                     <!-- Status -->
