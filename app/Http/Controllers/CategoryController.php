@@ -9,7 +9,9 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::orderBy('name')->paginate(10);
+        $categories = Category::where('user_id', auth()->id())
+            ->orderBy('name')
+            ->paginate(10);
         return view('categories.index', compact('categories'));
     }
 
