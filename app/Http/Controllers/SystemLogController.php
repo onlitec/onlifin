@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SystemLog;
+use App\Models\AiCallLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -11,7 +12,18 @@ class SystemLogController extends Controller
 
     public function index(Request $request)
     {
-        // Exibir diretamente os logs da API
+        $tab = $request->query('tab', 'api'); // Default para 'api'
+
+        if ($tab === 'ai') {
+            return $this->aiLogs($request);
+        } elseif ($tab === 'laravel') {
+            return $this->laravelLogs($request);
+        } elseif ($tab === 'system') {
+            // Manter funcionalidade existente se necessário, ou remover se não for mais usada diretamente
+             return $this->systemLogs($request); // Ou redirecionar para outra aba padrão
+        }
+
+        // Por padrão, mostrar logs da API
         return $this->apiLogs($request);
     }
     
@@ -232,5 +244,47 @@ class SystemLogController extends Controller
         return response($csv)
             ->header('Content-Type', 'text/csv')
             ->header('Content-Disposition', "attachment; filename=\"$filename\"");
+    }
+
+    /**
+     * Exibe os logs de chamadas de IA
+     */
+    protected function aiLogs(Request $request)
+    {
+        $query = AiCallLog::with('user')->latest();
+
+        // Adicionar filtros se necessário (exemplo: por usuário, provider, status)
+        if ($request->filled('provider')) {
+            $query->where('provider', $request->provider);
+        }
+        if ($request->filled('status_code')) {
+            $query->where('status_code', $request->status_code);
+        }
+         if ($request->filled('user')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->user}%")
+                  ->orWhere('email', 'like', "%{$request->user}%");
+            });
+        }
+        if ($request->filled('date_start')) {
+            $query->whereDate('created_at', '>=', $request->date_start);
+        }
+        if ($request->filled('date_end')) {
+            $query->whereDate('created_at', '<=', $request->date_end);
+        }
+
+        $logs = $query->paginate(50); // Paginação
+
+        // Obter lista de providers e status codes para filtros
+        $providers = AiCallLog::distinct()->pluck('provider');
+        $statusCodes = AiCallLog::distinct()->pluck('status_code');
+
+        return view('settings.logs.ai', [
+            'activeTab' => 'ai',
+            'logs' => $logs,
+            'providers' => $providers,
+            'statusCodes' => $statusCodes,
+            'filters' => $request->only(['provider', 'status_code', 'user', 'date_start', 'date_end']) // Passar filtros para a view
+        ]);
     }
 } 

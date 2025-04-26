@@ -758,11 +758,6 @@ class SettingsController extends Controller
 
         $userIdToDelete = $request->input('user_id');
         $targetUser = User::find($userIdToDelete);
-
-        // 3. Prevenir auto-exclusão por esta interface
-        if ($userIdToDelete == auth()->id()) {
-             return back()->with('error', 'Não é possível apagar os próprios dados por esta interface.');
-        }
         
         if (!$targetUser) {
              return back()->with('error', 'Usuário não encontrado.');
@@ -786,7 +781,12 @@ class SettingsController extends Controller
             });
 
             // 5. Feedback
-            return back()->with('success', 'Todos os dados financeiros do usuário ' . $targetUser->name . ' foram excluídos com sucesso.');
+            // Mensagem personalizada se for auto-exclusão
+            $message = ($userIdToDelete == auth()->id())
+                ? 'Seus dados financeiros foram excluídos com sucesso.'
+                : 'Todos os dados financeiros do usuário ' . $targetUser->name . ' foram excluídos com sucesso.';
+                
+            return back()->with('success', $message);
 
         } catch (\Exception $e) {
             // Logar o erro real para debug

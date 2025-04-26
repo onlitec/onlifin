@@ -19,7 +19,7 @@
                 Nova Receita
             </a>
         </div>
-
+        
         <!-- Filtros e Pesquisa -->
         <div class="flex justify-between items-center mb-6">
             <!-- Navegação do Mês -->

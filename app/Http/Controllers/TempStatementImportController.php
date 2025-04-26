@@ -731,34 +731,201 @@ class TempStatementImportController extends Controller
                     Log::debug('Resposta bruta da API ' . ($apiConfig->provider ?? 'IA'), ['text_preview' => substr($text, 0, 500) . '... (truncado)']);
                     
                     try {
-                        // Extrair JSON da resposta (pode estar dentro de bloco markdown)
-                        if (preg_match('/```json\s*({[\s\S]*?})\s*```/m', $text, $matches)) {
-                            $jsonContent = $matches[1];
-                            Log::debug('JSON extraído de bloco markdown');
-                        } elseif (preg_match('/```\s*({[\s\S]*?})\s*```/m', $text, $matches)) {
-                            $jsonContent = $matches[1];
-                            Log::debug('JSON extraído de bloco genérico');
-                        } elseif (preg_match('/({\s*"transactions"[\s\S]*?})/m', $text, $matches)) {
-                            $jsonContent = $matches[1];
-                            Log::debug('JSON extraído por padrão de transactions');
+                        $processedResponse = null;
+                        $jsonContent = null; // Para guardar o conteúdo que será decodificado
+
+                        // Tentativa 1: Decodificar o texto completo diretamente
+                        $tempResponse = json_decode($text, true);
+                        $jsonError = json_last_error();
+
+                        if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
+                            Log::debug('JSON decodificado diretamente da resposta da API (sem marcadores markdown detectados)');
+                            $processedResponse = $tempResponse;
+                            $jsonContent = $text; // O texto original já era JSON válido
                         } else {
-                            // Tenta usar o texto completo como JSON
-                            $jsonContent = $text;
-                            Log::debug('Usando texto completo como JSON');
+                            Log::debug('Decodificação direta falhou ou formato inválido, tentando remover marcadores markdown', ['json_error' => json_last_error_msg()]);
+                            
+                            // Tentativa 2: Remover marcadores ```json e ```
+                            $potentialJson = $text;
+                            $removedStart = false;
+                            $removedEnd = false;
+
+                            // Verificar e remover ```json no início (com ou sem newline após)
+                            if (str_starts_with($potentialJson, "```json\n")) {
+                                $potentialJson = substr($potentialJson, strlen("```json\n"));
+                                $removedStart = true;
+                            } elseif (str_starts_with($potentialJson, "```json")) { // Caso sem newline
+                                 $potentialJson = substr($potentialJson, strlen("```json"));
+                                 $removedStart = true;
+                            }
+                            
+                            // Verificar e remover ``` no final (com ou sem newline antes)
+                            if (str_ends_with($potentialJson, "\n```")) {
+                                $potentialJson = substr($potentialJson, 0, -strlen("\n```"));
+                                $removedEnd = true;
+                            } elseif (str_ends_with($potentialJson, "```")) { // Caso sem newline
+                                 $potentialJson = substr($potentialJson, 0, -strlen("```"));
+                                 $removedEnd = true;
+                            }
+
+                            // Se removemos os marcadores esperados, tentar decodificar a string resultante
+                            if ($removedStart && $removedEnd) {
+                                $jsonContent = trim($potentialJson); // Guardar o conteúdo limpo
+                                Log::debug('Marcadores markdown removidos, tentando decodificar conteúdo extraído.', [
+                                    'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                                ]);
+                                
+                                $tempResponse = json_decode($jsonContent, true);
+                                $jsonError = json_last_error();
+
+                                if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
+                                     Log::debug('JSON extraído por remoção de marcadores e decodificado com sucesso');
+                                     $processedResponse = $tempResponse;
+                                } else {
+                                    Log::error('Erro ao decodificar JSON após remover marcadores markdown ou formato inválido', [
+                                        'json_error' => json_last_error_msg(),
+                                        'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                                    ]);
+                                    // Mantém $processedResponse como null
+                                }
+                            } else {
+                                // NOVO FLUXO: Se removeu apenas o início, tentar extrair o JSON diretamente 
+                                // baseado na estrutura de abertura/fechamento de chaves
+                                if ($removedStart && !$removedEnd) {
+                                    Log::warning('Marcador final não encontrado. Tentando extrair o JSON pela estrutura.', [
+                                        'content_start' => substr($potentialJson, 0, 100) . '... (truncado)'
+                                    ]);
+                                
+                                    // NOVA ABORDAGEM: Reconstruir o JSON diretamente
+                                    if (strpos($potentialJson, '{') === 0) {
+                                        // Verificar se o texto tem o formato esperado
+                                        if (preg_match('/^\s*{\s*"transactions"\s*:\s*\[\s*{/s', $potentialJson)) {
+                                            Log::debug('Formato de JSON de transações detectado. Tentando reconstruí-lo...');
+                                            
+                                            // Extrair todas as transações que conseguir
+                                            $transactions = [];
+                                            $jsonText = trim($potentialJson);
+                                            
+                                            // Remover o prefixo para obter apenas o array de transações
+                                            $startPos = strpos($jsonText, '"transactions"');
+                                            if ($startPos !== false) {
+                                                $startPos = strpos($jsonText, '[', $startPos);
+                                                if ($startPos !== false) {
+                                                    $jsonText = substr($jsonText, $startPos + 1); // +1 para pular o '['
+                                                    
+                                                    // Dividir por chaves de objetos para identificar cada transação
+                                                    preg_match_all('/\s*{\s*(.*?)}\s*(?:,|\]|$)/s', $jsonText, $matches);
+                                                    
+                                                    if (!empty($matches[1])) {
+                                                        foreach ($matches[1] as $transactionContent) {
+                                                            // Limpar e validar cada transação
+                                                            $transaction = '{' . $transactionContent . '}';
+                                                            $decoded = @json_decode($transaction, true);
+                                                            
+                                                            if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
+                                                                // Verificar se tem os campos mínimos necessários
+                                                                if (isset($decoded['id'])) {
+                                                                    $transactions[] = $decoded;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            
+                                            if (!empty($transactions)) {
+                                                // Reconstruir o JSON completo
+                                                $newJsonData = ['transactions' => $transactions];
+                                                $jsonContent = json_encode($newJsonData);
+                                                
+                                                if ($jsonContent !== false) {
+                                                    Log::info('JSON reconstruído com sucesso a partir de fragmentos', [
+                                                        'total_transactions' => count($transactions)
+                                                    ]);
+                                                    
+                                                    $processedResponse = $newJsonData;
+                                                } else {
+                                                    Log::error('Falha ao codificar o JSON reconstruído');
+                                                }
+                                            } else {
+                                                Log::warning('Não foi possível extrair nenhuma transação válida do JSON fragmentado');
+                                            }
+                                        } else {
+                                            Log::warning('O formato do JSON não corresponde à estrutura esperada de transações');
+                                        }
+                                    }
+                                    
+                                    // CÓDIGO ANTERIOR MANTIDO COMO FALLBACK
+                                    if ($processedResponse === null) {
+                                        // Encontrar chaves de abertura/fechamento balanceadas
+                                        $level = 0;
+                                        $endPos = -1;
+                                        $len = strlen($potentialJson);
+                                        
+                                        for ($i = 0; $i < $len; $i++) {
+                                            $char = $potentialJson[$i];
+                                            if ($char === '{') {
+                                                $level++;
+                                            } elseif ($char === '}') {
+                                                $level--;
+                                                if ($level === 0) {
+                                                    $endPos = $i;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if ($endPos > 0) {
+                                            // Extrair o JSON da posição 0 até endPos (inclusive)
+                                            $jsonContent = substr($potentialJson, 0, $endPos + 1);
+                                            Log::debug('JSON extraído pela análise estrutural de chaves', [
+                                                'content_length' => strlen($jsonContent),
+                                                'content_preview' => substr($jsonContent, 0, 100) . '... (truncado)'
+                                            ]);
+                                            
+                                            $tempResponse = json_decode($jsonContent, true);
+                                            $jsonError = json_last_error();
+
+                                            if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
+                                                Log::debug('JSON extraído por análise estrutural e decodificado com sucesso');
+                                                $processedResponse = $tempResponse;
+                                            } else {
+                                                Log::error('Erro ao decodificar JSON após extração estrutural', [
+                                                    'json_error' => json_last_error_msg(),
+                                                    'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                                                ]);
+                                            }
+                                        } else {
+                                            Log::warning('Não foi possível encontrar um JSON válido com chaves balanceadas');
+                                        }
+                                    }
+                                } else {
+                                    Log::warning('Não foi possível remover os marcadores markdown esperados (```json ... ```). A resposta pode não estar formatada corretamente.', [
+                                        'removed_start' => $removedStart,
+                                        'removed_end' => $removedEnd
+                                    ]);
+                                }
+                                // $processedResponse continua null se nenhuma tentativa acima funcionou
+                            }
                         }
                         
-                        // Decodificar o JSON
-                        $processedResponse = json_decode($jsonContent, true);
+                        // REMOVIDO o bloco preg_match
                         
-                        if (json_last_error() !== JSON_ERROR_NONE) {
-                            Log::error('Erro ao decodificar JSON da resposta', [
-                                'json_error' => json_last_error_msg(),
-                                'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                        // Verificar se temos uma resposta processada válida após as tentativas
+                        if ($processedResponse === null) {
+                            Log::error('Falha final ao decodificar/extrair JSON válido da resposta da API.', [
+                                'text_preview' => substr($text, 0, 500) . '... (truncado)'
                             ]);
-                            return null;
+                            return null; // Retorna null se nenhuma tentativa funcionou
                         }
+
+                        // ****************************************************************
+                        // O código continua daqui para baixo, usando $processedResponse
+                        // A verificação de erro JSON (json_last_error) já foi feita acima.
+                        // ****************************************************************
                         
                         // Verificar se o processamento foi bem-sucedido e se há transações
+                        // A linha original "if ($processedResponse && isset($processedResponse['transactions']) ...)" começa aqui
                         if ($processedResponse && isset($processedResponse['transactions']) && !empty($processedResponse['transactions'])) {
                             // Contar categorias sugeridas e existentes e processar notas
                             $suggestedCategories = 0;
@@ -918,6 +1085,16 @@ class TempStatementImportController extends Controller
                 return [];
             }
 
+            // **** NOVO: Detectar e converter encoding para UTF-8 ****
+            $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+            if ($encoding && $encoding !== 'UTF-8') {
+                $content = mb_convert_encoding($content, 'UTF-8', $encoding);
+                Log::info('Convertido encoding de OFX para UTF-8', ['original' => $encoding, 'path' => $filePath]);
+            } elseif (!$encoding) {
+                 Log::warning('Não foi possível detectar o encoding do arquivo OFX. Tentando continuar com o conteúdo original.', ['path' => $filePath]);
+            }
+            // **** FIM DA ADIÇÃO ****
+
             // Pré-processamento: remover padrões de colchetes em datas (ex: [0:GMT])
             $content = preg_replace('/\[.*?\]/', '', $content);
 
@@ -941,7 +1118,12 @@ class TempStatementImportController extends Controller
                             $transaction = [];
                             $transaction['date'] = $ofxTransaction->date->format('Y-m-d');
                             $transaction['amount'] = (float) $ofxTransaction->amount; // Valor já vem como float
-                            $transaction['description'] = trim($ofxTransaction->memo ?: $ofxTransaction->name ?: 'Sem descrição');
+                            
+                            // **** APLICAR utf8_decode AQUI ****
+                            $rawDescription = trim($ofxTransaction->memo ?: $ofxTransaction->name ?: 'Sem descrição');
+                            $transaction['description'] = utf8_decode($rawDescription); // Tentar corrigir double encoding
+                            // **** FIM DA ALTERAÇÃO ****
+                            
                             $transaction['type'] = $transaction['amount'] >= 0 ? 'income' : 'expense';
                              // A biblioteca já deve retornar o valor com sinal correto
                              // Se type for income, amount deve ser positivo. Se expense, negativo.

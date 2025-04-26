@@ -30,9 +30,6 @@ class AccountController extends Controller
 
         $validated['user_id'] = auth()->id();
         
-        $validated['balance'] = $validated['initial_balance'];
-        unset($validated['initial_balance']);
-
         $account = Account::create($validated);
 
         return redirect()->route('accounts.index')
@@ -53,9 +50,6 @@ class AccountController extends Controller
             'description' => 'nullable|string',
             'color' => 'nullable|string|max:7',
         ]);
-
-        $validated['balance'] = $validated['initial_balance'];
-        unset($validated['initial_balance']);
 
         $account->update($validated);
 

@@ -121,6 +121,12 @@
             let categories = @json($categories ?? []); // Categorias ainda podemos passar diretamente
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+            // Remover logs de depuração
+            // DEBUG: Inspecionar estrutura de categorias
+            // console.log('Estrutura completa de categorias:', categories);
+            // console.log('Categorias de receita (income):', categories.income);
+            // console.log('Categorias de despesa (expense):', categories.expense);
+            
             // --- Funções Auxiliares ---
             function showLoading(button) {
                 button.disabled = true;

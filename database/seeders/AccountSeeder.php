@@ -16,7 +16,7 @@ class AccountSeeder extends Seeder
             Account::create([
                 'name' => 'Conta Corrente',
                 'type' => 'checking',
-                'balance' => 0,
+                'initial_balance' => 0,
                 'active' => true,
                 'user_id' => $admin->id,
             ]);
@@ -24,7 +24,7 @@ class AccountSeeder extends Seeder
             Account::create([
                 'name' => 'Poupança',
                 'type' => 'savings',
-                'balance' => 0,
+                'initial_balance' => 0,
                 'active' => true,
                 'user_id' => $admin->id,
             ]);
@@ -32,7 +32,7 @@ class AccountSeeder extends Seeder
             Account::create([
                 'name' => 'Cartão de Crédito',
                 'type' => 'credit_card',
-                'balance' => 0,
+                'initial_balance' => 0,
                 'active' => true,
                 'user_id' => $admin->id,
             ]);

@@ -21,6 +21,16 @@
 }
 
 @layer components {
+    /* Container para layout full width */
+    .container-app {
+        @apply w-full px-4 sm:px-6 lg:px-8 mx-auto;
+    }
+
+    /* Elementos fluidos com largura máxima para conteúdo */
+    .content-container {
+        @apply mx-auto w-full;
+    }
+
     /* Menu principal */
     .main-menu {
         @apply flex flex-row justify-center w-full;
@@ -35,14 +45,14 @@
     a.menu-item,
     .menu-item[href],
     [wire\:navigate].menu-item {
-        @apply inline-flex items-center px-3 py-2 text-[18px] font-medium text-gray-600 whitespace-nowrap transition-colors duration-200 hover:text-blue-600;
+        @apply inline-flex items-center px-4 py-2 text-base font-medium text-gray-800 whitespace-nowrap transition-colors duration-200 hover:bg-gray-100 hover:text-blue-600 rounded-md;
     }
 
     .menu-item.active,
     a.menu-item.active,
     .menu-item[href].active,
     [wire\:navigate].menu-item.active {
-        @apply text-blue-600 font-semibold;
+        @apply text-blue-600 bg-blue-50 font-semibold;
     }
 
     /* Menu mobile */

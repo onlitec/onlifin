@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('replicate_settings', function (Blueprint $table) {
-            $table->string('provider')->default('openai')->after('id');
+            if (!Schema::hasColumn('replicate_settings', 'provider')) {
+                $table->string('provider')->default('openai')->after('id');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('replicate_settings', function (Blueprint $table) {
-            $table->dropColumn('provider');
+            if (Schema::hasColumn('replicate_settings', 'provider')) {
+                $table->dropColumn('provider');
+            }
         });
     }
 };

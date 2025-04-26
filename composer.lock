@@ -1516,6 +1516,7 @@
                 "issues": "https://github.com/google/php-crc32/issues",
                 "source": "https://github.com/google/php-crc32/tree/v0.2.0"
             },
+            "abandoned": true,
             "time": "2023-04-16T22:44:57+00:00"
         },
         {
@@ -2183,16 +2184,16 @@
         },
         {
             "name": "jantinnerezo/livewire-alert",
-            "version": "v4.0.4",
+            "version": "4.0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jantinnerezo/livewire-alert.git",
-                "reference": "c1f3477f6d22d8bb88247028c6bc97fee24a679f"
+                "reference": "4bab76cba849da2f783c82103edb37165e646897"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jantinnerezo/livewire-alert/zipball/c1f3477f6d22d8bb88247028c6bc97fee24a679f",
-                "reference": "c1f3477f6d22d8bb88247028c6bc97fee24a679f",
+                "url": "https://api.github.com/repos/jantinnerezo/livewire-alert/zipball/4bab76cba849da2f783c82103edb37165e646897",
+                "reference": "4bab76cba849da2f783c82103edb37165e646897",
                 "shasum": ""
             },
             "require": {
@@ -2241,9 +2242,9 @@
             ],
             "support": {
                 "issues": "https://github.com/jantinnerezo/livewire-alert/issues",
-                "source": "https://github.com/jantinnerezo/livewire-alert/tree/v4.0.4"
+                "source": "https://github.com/jantinnerezo/livewire-alert/tree/4.0.5"
             },
-            "time": "2025-03-20T06:47:20+00:00"
+            "time": "2025-04-21T10:09:52+00:00"
         },
         {
             "name": "laminas/laminas-diactoros",
@@ -2335,16 +2336,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v11.44.2",
+            "version": "v11.44.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "f85216c82cbd38b66d67ebd20ea762cb3751a4b4"
+                "reference": "00bc6ac91a6d577bf051c18ddaa638c0d221e1c7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/f85216c82cbd38b66d67ebd20ea762cb3751a4b4",
-                "reference": "f85216c82cbd38b66d67ebd20ea762cb3751a4b4",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/00bc6ac91a6d577bf051c18ddaa638c0d221e1c7",
+                "reference": "00bc6ac91a6d577bf051c18ddaa638c0d221e1c7",
                 "shasum": ""
             },
             "require": {
@@ -2546,7 +2547,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-03-12T14:34:30+00:00"
+            "time": "2025-04-25T12:40:47+00:00"
         },
         {
             "name": "laravel/octane",
@@ -2699,16 +2700,16 @@
         },
         {
             "name": "laravel/sanctum",
-            "version": "v4.0.8",
+            "version": "v4.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/sanctum.git",
-                "reference": "ec1dd9ddb2ab370f79dfe724a101856e0963f43c"
+                "reference": "4e4ced5023e9d8949214e0fb43d9f4bde79c7166"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/sanctum/zipball/ec1dd9ddb2ab370f79dfe724a101856e0963f43c",
-                "reference": "ec1dd9ddb2ab370f79dfe724a101856e0963f43c",
+                "url": "https://api.github.com/repos/laravel/sanctum/zipball/4e4ced5023e9d8949214e0fb43d9f4bde79c7166",
+                "reference": "4e4ced5023e9d8949214e0fb43d9f4bde79c7166",
                 "shasum": ""
             },
             "require": {
@@ -2759,7 +2760,7 @@
                 "issues": "https://github.com/laravel/sanctum/issues",
                 "source": "https://github.com/laravel/sanctum"
             },
-            "time": "2025-01-26T19:34:36+00:00"
+            "time": "2025-04-22T13:53:47+00:00"
         },
         {
             "name": "laravel/serializable-closure",
@@ -5038,22 +5039,22 @@
         },
         {
             "name": "spiral/core",
-            "version": "3.15.7",
+            "version": "3.15.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spiral/core.git",
-                "reference": "65ae5c2cda2d5e6f00d2538f364304fc4c225aed"
+                "reference": "e6b06d6c1e88139fd66463ce842ccdc5c204fc16"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spiral/core/zipball/65ae5c2cda2d5e6f00d2538f364304fc4c225aed",
-                "reference": "65ae5c2cda2d5e6f00d2538f364304fc4c225aed",
+                "url": "https://api.github.com/repos/spiral/core/zipball/e6b06d6c1e88139fd66463ce842ccdc5c204fc16",
+                "reference": "e6b06d6c1e88139fd66463ce842ccdc5c204fc16",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.1",
                 "psr/container": "^1.1|^2.0",
-                "spiral/security": "^3.15.7"
+                "spiral/security": "^3.15.8"
             },
             "provide": {
                 "psr/container-implementation": "^1.1|^2.0"
@@ -5108,7 +5109,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-03-31T15:31:09+00:00"
+            "time": "2025-04-22T14:03:55+00:00"
         },
         {
             "name": "spiral/goridge",
@@ -5199,23 +5200,23 @@
         },
         {
             "name": "spiral/hmvc",
-            "version": "3.15.7",
+            "version": "3.15.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spiral/hmvc.git",
-                "reference": "7cf4404b2bb6c172fe0c703b47ecd74cb59812b5"
+                "reference": "533b441af0fa4bcf8fda2c763207b4bf52e34e40"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spiral/hmvc/zipball/7cf4404b2bb6c172fe0c703b47ecd74cb59812b5",
-                "reference": "7cf4404b2bb6c172fe0c703b47ecd74cb59812b5",
+                "url": "https://api.github.com/repos/spiral/hmvc/zipball/533b441af0fa4bcf8fda2c763207b4bf52e34e40",
+                "reference": "533b441af0fa4bcf8fda2c763207b4bf52e34e40",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.1",
                 "psr/event-dispatcher": "^1.0",
-                "spiral/core": "^3.15.7",
-                "spiral/interceptors": "^3.15.7"
+                "spiral/core": "^3.15.8",
+                "spiral/interceptors": "^3.15.8"
             },
             "require-dev": {
                 "phpunit/phpunit": "^10.5.41",
@@ -5269,26 +5270,26 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-03-31T15:31:08+00:00"
+            "time": "2025-04-22T14:03:19+00:00"
         },
         {
             "name": "spiral/interceptors",
-            "version": "3.15.7",
+            "version": "3.15.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spiral/interceptors.git",
-                "reference": "eb64a8f40fc1fe6c66dcdf653d067d67153707c7"
+                "reference": "511da02bb400c64dde27bb87b63df6d7007bceef"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spiral/interceptors/zipball/eb64a8f40fc1fe6c66dcdf653d067d67153707c7",
-                "reference": "eb64a8f40fc1fe6c66dcdf653d067d67153707c7",
+                "url": "https://api.github.com/repos/spiral/interceptors/zipball/511da02bb400c64dde27bb87b63df6d7007bceef",
+                "reference": "511da02bb400c64dde27bb87b63df6d7007bceef",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.1",
                 "psr/event-dispatcher": "^1.0",
-                "spiral/core": "^3.15.7"
+                "spiral/core": "^3.15.8"
             },
             "require-dev": {
                 "phpunit/phpunit": "^10.5.41",
@@ -5347,26 +5348,26 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-03-31T15:34:15+00:00"
+            "time": "2025-04-22T14:03:19+00:00"
         },
         {
             "name": "spiral/logger",
-            "version": "3.15.7",
+            "version": "3.15.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spiral/logger.git",
-                "reference": "7d7bd08171fc873d9acea47a55cfc1a0cc66f91b"
+                "reference": "35553e8badee07dbb8290a7b73aa416c78e4c390"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spiral/logger/zipball/7d7bd08171fc873d9acea47a55cfc1a0cc66f91b",
-                "reference": "7d7bd08171fc873d9acea47a55cfc1a0cc66f91b",
+                "url": "https://api.github.com/repos/spiral/logger/zipball/35553e8badee07dbb8290a7b73aa416c78e4c390",
+                "reference": "35553e8badee07dbb8290a7b73aa416c78e4c390",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.1",
                 "psr/log": "1 - 3",
-                "spiral/core": "^3.15.7"
+                "spiral/core": "^3.15.8"
             },
             "require-dev": {
                 "mockery/mockery": "^1.6.12",
@@ -5418,7 +5419,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-03-31T15:31:09+00:00"
+            "time": "2025-04-22T14:03:39+00:00"
         },
         {
             "name": "spiral/roadrunner",
@@ -5714,27 +5715,27 @@
         },
         {
             "name": "spiral/security",
-            "version": "3.15.7",
+            "version": "3.15.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spiral/security.git",
-                "reference": "02022f4228d721c202c17e0e6eeab3ea8004161b"
+                "reference": "a7a7a83cb474f70c02ffd00899f9f87b1d5c1d0e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spiral/security/zipball/02022f4228d721c202c17e0e6eeab3ea8004161b",
-                "reference": "02022f4228d721c202c17e0e6eeab3ea8004161b",
+                "url": "https://api.github.com/repos/spiral/security/zipball/a7a7a83cb474f70c02ffd00899f9f87b1d5c1d0e",
+                "reference": "a7a7a83cb474f70c02ffd00899f9f87b1d5c1d0e",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.1",
-                "spiral/core": "^3.15.7",
-                "spiral/hmvc": "^3.15.7"
+                "spiral/core": "^3.15.8",
+                "spiral/hmvc": "^3.15.8"
             },
             "require-dev": {
                 "mockery/mockery": "^1.6.12",
                 "phpunit/phpunit": "^10.5.41",
-                "spiral/console": "^3.15.7",
+                "spiral/console": "^3.15.8",
                 "vimeo/psalm": "^6.0"
             },
             "type": "library",
@@ -5782,35 +5783,35 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-03-31T15:32:34+00:00"
+            "time": "2025-04-22T14:03:55+00:00"
         },
         {
             "name": "spiral/tokenizer",
-            "version": "3.15.7",
+            "version": "3.15.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spiral/tokenizer.git",
-                "reference": "1e61580c485a91baf58ca55f0f34ff0cf8f4c2d4"
+                "reference": "0e1141ec8e92a55199a2e705f122b91c5964c42f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spiral/tokenizer/zipball/1e61580c485a91baf58ca55f0f34ff0cf8f4c2d4",
-                "reference": "1e61580c485a91baf58ca55f0f34ff0cf8f4c2d4",
+                "url": "https://api.github.com/repos/spiral/tokenizer/zipball/0e1141ec8e92a55199a2e705f122b91c5964c42f",
+                "reference": "0e1141ec8e92a55199a2e705f122b91c5964c42f",
                 "shasum": ""
             },
             "require": {
                 "ext-tokenizer": "*",
                 "php": ">=8.1",
-                "spiral/core": "^3.15.7",
-                "spiral/logger": "^3.15.7",
+                "spiral/core": "^3.15.8",
+                "spiral/logger": "^3.15.8",
                 "symfony/finder": "^5.4.45 || ^6.4.17 || ^7.2"
             },
             "require-dev": {
                 "mockery/mockery": "^1.6.12",
                 "phpunit/phpunit": "^10.5.41",
                 "spiral/attributes": "^2.8|^3.0",
-                "spiral/boot": "^3.15.7",
-                "spiral/files": "^3.15.7",
+                "spiral/boot": "^3.15.8",
+                "spiral/files": "^3.15.8",
                 "vimeo/psalm": "^6.0"
             },
             "type": "library",
@@ -5858,7 +5859,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-03-31T15:34:46+00:00"
+            "time": "2025-04-22T14:05:18+00:00"
         },
         {
             "name": "symfony/clock",
@@ -9006,16 +9007,16 @@
         },
         {
             "name": "laravel/sail",
-            "version": "v1.41.0",
+            "version": "v1.41.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/sail.git",
-                "reference": "fe1a4ada0abb5e4bd99eb4e4b0d87906c00cdeec"
+                "reference": "e5692510f1ef8e0f5096cde2b885d558f8d86592"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/sail/zipball/fe1a4ada0abb5e4bd99eb4e4b0d87906c00cdeec",
-                "reference": "fe1a4ada0abb5e4bd99eb4e4b0d87906c00cdeec",
+                "url": "https://api.github.com/repos/laravel/sail/zipball/e5692510f1ef8e0f5096cde2b885d558f8d86592",
+                "reference": "e5692510f1ef8e0f5096cde2b885d558f8d86592",
                 "shasum": ""
             },
             "require": {
@@ -9065,7 +9066,7 @@
                 "issues": "https://github.com/laravel/sail/issues",
                 "source": "https://github.com/laravel/sail"
             },
-            "time": "2025-01-24T15:45:36+00:00"
+            "time": "2025-04-22T13:39:39+00:00"
         },
         {
             "name": "mockery/mockery",

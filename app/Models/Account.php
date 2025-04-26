@@ -14,7 +14,7 @@ class Account extends Model
     protected $fillable = [
         'name',
         'type',
-        'balance',
+        'initial_balance',
         'active',
         'user_id',
         'description',
@@ -22,7 +22,8 @@ class Account extends Model
     ];
 
     protected $casts = [
-        'balance' => 'decimal:2',
+        'initial_balance' => 'decimal:2',
+        'current_balance' => 'decimal:2',
         'active' => 'boolean',
     ];
 

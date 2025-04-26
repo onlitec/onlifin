@@ -200,7 +200,7 @@
     <div class="min-h-screen flex flex-col">
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <!-- Logo -->
                     <div class="flex-shrink-0">
@@ -334,14 +334,8 @@
         </header>
 
         <!-- Page Content -->
-        <main class="flex-1">
-            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                @hasSection('content')
-                    @yield('content')
-                @else
-                    {{ $slot ?? '' }}
-                @endif
-            </div>
+        <main class="flex-grow w-full py-8 px-4 sm:px-6 lg:px-8">
+            {{ $slot }}
         </main>
 
         <!-- Footer -->
