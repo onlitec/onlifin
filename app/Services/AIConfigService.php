@@ -184,4 +184,71 @@ class AIConfigService
         
         return $processedData;
     }
+
+    /**
+     * Corrige problemas de codificação em textos com caracteres especiais
+     * 
+     * @param string $texto Texto com problemas de codificação
+     * @return string Texto corrigido
+     */
+    public function corrigirAcentuacao($texto)
+    {
+        if (empty($texto)) {
+            return $texto;
+        }
+        
+        // Detecta a codificação atual
+        $encoding = mb_detect_encoding($texto, 'UTF-8, ISO-8859-1, ISO-8859-15', true);
+        
+        // Se não for UTF-8, converte para UTF-8
+        if ($encoding && $encoding !== 'UTF-8') {
+            $texto = mb_convert_encoding($texto, 'UTF-8', $encoding);
+        }
+        
+        // Correções específicas para problemas comuns
+        $substituicoes = [
+            // Vogais acentuadas
+            '/Ã©/' => 'é', '/Ã¡/' => 'á', '/Ã³/' => 'ó', '/Ãº/' => 'ú', '/Ã­/' => 'í',
+            '/Ãª/' => 'ê', '/Ã¢/' => 'â', '/Ã´/' => 'ô', '/Ã£/' => 'ã', '/Ãµ/' => 'õ',
+            '/Ã‰/' => 'É', '/Ã/' => 'Á', '/Ã"/' => 'Ó', '/Ãš/' => 'Ú', '/Ã/' => 'Í',
+            '/ÃŠ/' => 'Ê', '/Ã‚/' => 'Â', '/Ã"/' => 'Ô', '/Ãƒ/' => 'Ã', '/Ã•/' => 'Õ',
+            
+            // Cedilha e outros caracteres especiais
+            '/Ã§/' => 'ç', '/Ã‡/' => 'Ç',
+            
+            // Caracteres usados para ofuscar informações sensíveis
+            '/â¢/' => '*', '/â€¢/' => '*'
+        ];
+        
+        foreach ($substituicoes as $padrao => $substituicao) {
+            $texto = preg_replace($padrao, $substituicao, $texto);
+        }
+        
+        return $texto;
+    }
+
+    /**
+     * Aplica correção de acentuação em um array de transações
+     * 
+     * @param array $transacoes Array de transações
+     * @return array Transações com textos corrigidos
+     */
+    public function corrigirAcentuacaoEmTransacoes($transacoes)
+    {
+        if (empty($transacoes) || !is_array($transacoes)) {
+            return $transacoes;
+        }
+        
+        foreach ($transacoes as $key => $transacao) {
+            if (isset($transacao['description'])) {
+                $transacoes[$key]['description'] = $this->corrigirAcentuacao($transacao['description']);
+            }
+            
+            if (isset($transacao['notes'])) {
+                $transacoes[$key]['notes'] = $this->corrigirAcentuacao($transacao['notes']);
+            }
+        }
+        
+        return $transacoes;
+    }
 }

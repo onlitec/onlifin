@@ -429,6 +429,9 @@ class StatementImportController extends Controller
                         $description = isset($nameMatch[1]) ? $nameMatch[1] : 'Transação sem descrição';
                     }
                     
+                    // Corrigir caracteres especiais na descrição
+                    $description = $this->corrigirCaracteresEspeciais($description);
+                    
                     // Determina o tipo
                     $type = ($amount >= 0) ? 'income' : 'expense';
                     
@@ -446,6 +449,63 @@ class StatementImportController extends Controller
             Log::error('Erro ao extrair transações do arquivo OFX', ['path' => $path, 'error' => $e->getMessage()]);
             return $this->getExampleTransactions();
         }
+    }
+    
+    /**
+     * Corrige problemas de codificação em textos com caracteres especiais
+     * 
+     * @param string $texto Texto com problemas de codificação
+     * @return string Texto corrigido
+     */
+    private function corrigirCaracteresEspeciais($texto)
+    {
+        // Tenta diferentes abordagens para corrigir a codificação
+        
+        // 1. Tenta UTF-8 para ISO-8859-1 (comum em sistemas brasileiros)
+        $tentativa1 = utf8_decode($texto);
+        
+        // 2. Tenta detectar automaticamente e converter para UTF-8
+        $tentativa2 = mb_convert_encoding($texto, 'UTF-8', mb_detect_encoding($texto, 'UTF-8, ISO-8859-1, ISO-8859-15', true));
+        
+        // 3. Tenta conversão específica de ISO para UTF
+        $tentativa3 = iconv('ISO-8859-1', 'UTF-8', $texto);
+        
+        // Verifica qual tentativa produziu o melhor resultado (com menos caracteres estranhos)
+        // Consideramos que a melhor conversão tem menos caracteres como 'Ã', 'Â', 'Ã¡', etc.
+        $pontuacao1 = $this->contaCaracteresProblematicos($tentativa1);
+        $pontuacao2 = $this->contaCaracteresProblematicos($tentativa2);
+        $pontuacao3 = $this->contaCaracteresProblematicos($tentativa3);
+        
+        // Usa a conversão com menor pontuação (menos caracteres problemáticos)
+        if ($pontuacao1 <= $pontuacao2 && $pontuacao1 <= $pontuacao3) {
+            return $tentativa1;
+        } elseif ($pontuacao2 <= $pontuacao1 && $pontuacao2 <= $pontuacao3) {
+            return $tentativa2;
+        } else {
+            return $tentativa3;
+        }
+    }
+    
+    /**
+     * Conta caracteres problemáticos em um texto para avaliar qualidade da conversão
+     * 
+     * @param string $texto Texto a ser avaliado
+     * @return int Pontuação (menor é melhor)
+     */
+    private function contaCaracteresProblematicos($texto)
+    {
+        // Lista de padrões problemáticos comuns em conversões de charset
+        $padroes = [
+            '/Ã£/', '/Ãª/', '/Ã§/', '/Ã©/', '/Ã¡/', '/Ã³/', '/Ã­/', '/Ãº/',
+            '/Ã\w/', '/â\w/', '/Â\w/', '/ã\w/', '/ç\w/', '/á\w/', '/ó\w/', '/é\w/'
+        ];
+        
+        $pontuacao = 0;
+        foreach ($padroes as $padrao) {
+            $pontuacao += preg_match_all($padrao, $texto);
+        }
+        
+        return $pontuacao;
     }
 
 /**
@@ -685,7 +745,22 @@ private function extractTransactionsFromCSV($path)
         $startTime = microtime(true);
         
         try {
-            // Preparar as transações para análise
+            // Extrair configurações da API
+            $apiKey = $apiConfig->api_token;
+            $model = $apiConfig->model;
+            
+            if (empty($apiKey)) {
+                Log::error('Chave API Gemini vazia');
+                return null;
+            }
+            
+            Log::info('Iniciando análise com Gemini', [
+                'model' => $model,
+                'provider' => 'gemini',
+                'transcation_count' => count($transactions)
+            ]);
+            
+            // Preparar os dados das transações para a API
             $transactionDescriptions = [];
             foreach ($transactions as $index => $transaction) {
                 $transactionDescriptions[] = [
@@ -696,43 +771,35 @@ private function extractTransactionsFromCSV($path)
                 ];
             }
             
-            // Obter categories do usuário para treinamento da IA
+            // Obter as categorias do usuário atual para referência
             $categories = Category::where('user_id', auth()->id())
                 ->orderBy('name')
                 ->get()
                 ->groupBy('type')
                 ->toArray();
             
-            // Verificar se temos as configurações necessárias
-            $apiKey = $apiConfig->api_token ?? null;
-            $model = $apiConfig->model ?? 'gemini-2.0-flash';
-            
-            if (empty($apiKey)) {
-                Log::error('Chave API para Gemini está vazia');
-                return null;
-            }
-            
-            // Preparar o prompt
-            $systemPrompt = "Você é um assistente financeiro especializado em análise e categorização de transações bancárias. ";
-            $systemPrompt .= "Sua tarefa é identificar a categoria mais adequada para cada transação, respeitando o tipo (receita ou despesa). ";
-            $systemPrompt .= "Se uma transação não se encaixar adequadamente em nenhuma categoria existente, sugira uma nova categoria.";
-            
-            $userPrompt = "Por favor, analise e categorize as seguintes transações bancárias:\n\n";
+            // Construir o prompt para a API
+            $userPrompt = "Analise as seguintes transações bancárias:\n\n";
             $userPrompt .= "Transações:\n" . json_encode($transactionDescriptions, JSON_PRETTY_PRINT) . "\n\n";
             $userPrompt .= "Categorias disponíveis:\n" . json_encode($categories, JSON_PRETTY_PRINT) . "\n\n";
-            $userPrompt .= "Instruções:\n"; 
-            $userPrompt .= "1. Para cada transação, determine se é uma RECEITA ou DESPESA com base no contexto da descrição\n";
-            $userPrompt .= "2. Atribua cada transação a uma categoria existente usando o ID da categoria, quando apropriado\n";
-            $userPrompt .= "3. Se uma transação não se encaixar bem em nenhuma categoria existente, sugira uma nova categoria\n";
-            $userPrompt .= "4. Ao sugerir novas categorias, mantenha consistência com as categorias existentes e o contexto financeiro\n\n";
-            $userPrompt .= "Formato esperado da resposta (apenas JSON):\n";
-            $userPrompt .= "{\n  \"transactions\": [\n    {\n      \"id\": 0,\n      \"type\": \"income\" ou \"expense\",\n      \"category_id\": ID da categoria existente ou null,\n      \"suggested_category\": \"Nome da categoria sugerida\" (apenas se category_id for null)\n    }\n  ]\n}";
+            $userPrompt .= "Determine para cada transação:\n";
+            $userPrompt .= "1. Se é receita (income) ou despesa (expense)\n";
+            $userPrompt .= "2. A categoria mais apropriada usando o ID de uma categoria existente\n";
+            $userPrompt .= "3. Se não houver categoria adequada, sugira um nome para uma nova\n\n";
+            $userPrompt .= "RESPONDA APENAS COM O JSON NO SEGUINTE FORMATO (sem explicações adicionais):\n";
+            $userPrompt .= "{\n  \"transactions\": [\n    {\n      \"id\": 0,\n      \"type\": \"income\" ou \"expense\",\n      \"category_id\": ID ou null,\n      \"suggested_category\": \"Nome\" (apenas se category_id for null)\n    }\n  ]\n}";
             
+            // Determinar a versão da API correta com base no modelo
+            $apiVersion = "v1beta";
+            if (strpos($model, 'gemini-1.5') === 0 || strpos($model, 'gemini-2.0') === 0) {
+                $apiVersion = "v1beta";
+            } elseif (strpos($model, 'gemini-pro') === 0) {
+                $apiVersion = "v1";
+            }
             
-            // Configurar endpoint da API
-            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            $endpoint = "https://generativelanguage.googleapis.com/{$apiVersion}/models/{$model}:generateContent?key={$apiKey}";
             
-            // Preparar dados para envio
+            // Preparar os dados para a API
             $data = [
                 'contents' => [
                     [
@@ -747,77 +814,55 @@ private function extractTransactionsFromCSV($path)
                 ]
             ];
         
-        // Executar a chamada à API
-        $options = [
-            'http' => [
-                'method' => 'POST',
-                'header' => 'Content-Type: application/json',
-                'content' => json_encode($data),
-                'timeout' => 60 // Aumentar timeout para 60 segundos
-            ]
-        ];
-        
-        Log::info('Analisando transações com Gemini', [
-            'model' => $model,
-            'transactions_count' => count($transactions),
-            'endpoint' => $endpoint,
-            'api_key_length' => strlen($apiKey),
-            'request_data_sample' => json_encode(array_slice($transactionDescriptions, 0, 2))
-        ]);
-        
-        // Desativar tratamento de erros para capturar mensagens de erro completas
-        $previousErrorReporting = error_reporting();
-        error_reporting(E_ALL);
-        
-        try {
-            $context = stream_context_create($options);
-            $result = file_get_contents($endpoint, false, $context);
-        } catch (\Exception $e) {
-            Log::error('Exceção ao chamar API Gemini', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            $result = false;
-        }
-        
-        // Restaurar configuração de erros
-        error_reporting($previousErrorReporting);
+            // Executar a chamada à API
+            $options = [
+                'http' => [
+                    'method' => 'POST',
+                    'header' => 'Content-Type: application/json',
+                    'content' => json_encode($data),
+                    'timeout' => 60 // Aumentar timeout para 60 segundos
+                ]
+            ];
             
-        // Verificar erro na chamada
-        if ($result === false) {
-            $error = error_get_last();
-            $errorMsg = $error ? $error['message'] : 'Erro desconhecido';
-            
-            // Registrar a chamada para diagnóstico
-            $this->monitorApiCall('gemini', $endpoint, $data, null, false, [
-                'message' => $errorMsg,
-                'type' => 'connection_error'
-            ]);
-            Log::error('Falha ao conectar com API Gemini', [
-                'error' => $errorMsg,
-                'endpoint' => $endpoint,
+            Log::info('Analisando transações com Gemini', [
                 'model' => $model,
-                'api_key_valid' => !empty($apiKey),
-                'http_response_header' => isset($http_response_header) ? implode("\n", $http_response_header) : 'N/A'
+                'transactions_count' => count($transactions),
+                'endpoint' => $endpoint,
+                'api_key_length' => strlen($apiKey),
+                'request_data_sample' => json_encode(array_slice($transactionDescriptions, 0, 2))
             ]);
             
-            // SOLUÇÃO ALTERNATIVA: Usar dados simulados para testes
-            if (env('APP_ENV') !== 'production') {
-                Log::info('Usando dados simulados para teste de IA em ambiente de desenvolvimento');
-                return $this->getMockAIResponse($transactions);
+            // Usar cURL em vez de file_get_contents para maior controle
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+            
+            if ($result === false || $httpCode >= 400) {
+                Log::error('Erro na chamada à API Gemini', [
+                    'http_code' => $httpCode,
+                    'curl_error' => $error,
+                    'response_preview' => substr($result, 0, 500)
+                ]);
+                return null;
             }
             
-            return null;
-        }
-        
-        // Processar resposta
-        $responseData = json_decode($result, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            // Registrar a chamada para diagnóstico
-            $this->monitorApiCall('gemini', $endpoint, $data, $result, false, [
-                'message' => json_last_error_msg(),
-                'type' => 'json_decode_error'
-            ]);
+            // Processar a resposta
+            $responseData = json_decode($result, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // Registrar a chamada para diagnóstico
+                $this->monitorApiCall('gemini', $endpoint, $data, $result, false, [
+                    'message' => json_last_error_msg(),
+                    'type' => 'json_decode_error'
+                ]);
                 
                 Log::error('Erro ao decodificar resposta JSON do Gemini', [
                     'error' => json_last_error_msg(),
@@ -839,44 +884,26 @@ private function extractTransactionsFromCSV($path)
                 $endTime = microtime(true);
                 $duration = round($endTime - $startTime, 2);
                 
-                if ($processedResponse && isset($processedResponse['transactions'])) {
-                    $suggestedCategories = 0;
-                    $existingCategories = 0;
-                    
-                    // Verificar quantas sugestões de novas categorias existem
-                    foreach ($processedResponse['transactions'] as $transaction) {
-                        if (!empty($transaction['suggested_category']) && empty($transaction['category_id'])) {
-                            $suggestedCategories++;
-                        } elseif (!empty($transaction['category_id'])) {
-                            $existingCategories++;
-                        }
-                    }
-                    
-                    Log::info('Análise Gemini concluída com sucesso', [
-                        'duration' => $duration . 's',
-                        'total_transactions' => count($processedResponse['transactions']),
-                        'suggested_categories' => $suggestedCategories,
-                        'existing_categories' => $existingCategories
+                if ($processedResponse) {
+                    Log::info('Análise com Gemini concluída com sucesso', [
+                        'duration_seconds' => $duration,
+                        'transactions_analyzed' => count($processedResponse['transactions'] ?? [])
                     ]);
                 } else {
-                    Log::warning('Análise Gemini concluída, mas nenhuma transação processada', [
-                        'duration' => $duration . 's'
+                    Log::warning('Análise com Gemini concluída mas resposta processada é nula', [
+                        'duration_seconds' => $duration
                     ]);
                 }
                 
                 return $processedResponse;
-            } else {
-                // Registrar a chamada para diagnóstico
-                $this->monitorApiCall('gemini', $endpoint, $data, $responseData, false, [
-                    'message' => 'Formato de resposta inesperado',
-                    'type' => 'unexpected_response_format'
-                ]);
-                
-                Log::error('Formato de resposta Gemini inesperado', [
-                    'response_data' => $responseData
-                ]);
-                return null;
             }
+            
+            Log::warning('Análise com Gemini retornou nulo', [
+                'http_code' => $httpCode,
+                'response_preview' => substr($result, 0, 200)
+            ]);
+            return null;
+            
         } catch (\Exception $e) {
             // Registrar exceção para diagnóstico
             $this->monitorApiCall('gemini', $endpoint ?? 'unknown', $data ?? [], null, false, [
@@ -909,6 +936,13 @@ private function extractTransactionsFromCSV($path)
             if (empty($transactions)) {
                 Log::warning('Nenhuma transação para analisar com IA');
                 return null;
+            }
+            
+            // Corrigir problemas de acentuação nas descrições
+            foreach ($transactions as $i => $transaction) {
+                if (isset($transaction['description'])) {
+                    $transactions[$i]['description'] = $this->corrigirCaracteresEspeciais($transaction['description']);
+                }
             }
             
             // Prepara os dados para enviar para a API de IA
@@ -1213,38 +1247,54 @@ private function extractTransactionsFromCSV($path)
                 'response_length' => strlen($aiResponse)
             ]);
             
+            // Salvar a resposta original para depuração
+            Log::debug('Resposta original da IA', ['raw_response' => $aiResponse]);
+            
             // Tenta extrair conteúdo JSON da resposta da IA
             $cleaned = $aiResponse;
             
-            // Remove formatação Markdown para código JSON
+            // Passo 1: Remove blocos de código markdown
             if (preg_match('/```(?:json)?\s*({[\s\S]*?})\s*```/s', $cleaned, $matches)) {
                 // Encontrou código JSON dentro de bloco Markdown
                 $cleaned = $matches[1];
                 Log::info('JSON extraído de bloco Markdown', [
                     'json_length' => strlen($cleaned)
                 ]);
-            } else {
-                // Tenta remover qualquer marcador Markdown
-                $cleaned = preg_replace('/```json\s*|```/', '', $cleaned);
-                $cleaned = trim($cleaned);
+            } 
+            
+            // Passo 2: Remover qualquer marcador Markdown restante
+            $cleaned = preg_replace('/```json\s*|```/', '', $cleaned);
+            $cleaned = trim($cleaned);
+            
+            // Passo 3: Se ainda não for um JSON válido, tenta extrair a primeira estrutura JSON válida
+            if (json_decode($cleaned, true) === null) {
+                if (preg_match('/{[\s\S]*}/s', $cleaned, $matches)) {
+                    $cleaned = $matches[0];
+                    Log::info('JSON extraído por padrão de transactions', [
+                        'extracted_json_length' => strlen($cleaned)
+                    ]);
+                }
             }
             
-            // Se ainda assim não for um JSON válido, tenta extrair qualquer parte que pareça JSON
-            if (json_decode($cleaned, true) === null && preg_match('/{[\s\S]*}/s', $cleaned, $matches)) {
-                $cleaned = $matches[0];
-                Log::info('Tentando extrair parte JSON válida do texto', [
-                    'extracted_json_length' => strlen($cleaned)
-                ]);
-            }
+            // Registrar o JSON limpo para depuração
+            Log::debug('JSON limpo antes da decodificação', ['cleaned_json' => $cleaned]);
             
             // Tenta parsear a resposta como JSON
             $data = json_decode($cleaned, true);
             
+            // Registrar erro de decodificação JSON se houver
             if (json_last_error() !== JSON_ERROR_NONE) {
-                // Tenta uma abordagem mais robusta de reconstrução manual do JSON
-                if (preg_match_all('/"id":\s*(\d+)[^}]*"type":\s*"([^"]+)"[^}]*"category_id":\s*([\d\w]+|null)[^}]*"suggested_category":\s*(?:"([^"]*)"|null)/s', $cleaned, $matches, PREG_SET_ORDER)) {
+                Log::error('Erro ao decodificar JSON da resposta', [
+                    'json_error' => json_last_error_msg(),
+                    'content_preview' => substr($cleaned, 0, 500)
+                ]);
+                
+                // Tenta uma abordagem ainda mais robusta com regex
+                $reconstructedData = ['transactions' => []];
+                
+                // Verifica se conseguimos extrair partes relevantes com regex
+                if (preg_match_all('/"id":\s*(\d+)[^}]*"type":\s*"([^"]+)"[^}]*"category_id":\s*([\d\w]+|null)[^}]*(?:"suggested_category":\s*(?:"([^"]*)"|null))?/s', $cleaned, $matches, PREG_SET_ORDER)) {
                     
-                    $reconstructedData = ['transactions' => []];
                     foreach ($matches as $match) {
                         $id = (int)$match[1];
                         $type = $match[2];
@@ -1260,21 +1310,33 @@ private function extractTransactionsFromCSV($path)
                     }
                     
                     if (!empty($reconstructedData['transactions'])) {
-                        Log::info('Resposta JSON reconstruída manualmente', [
+                        Log::info('Resposta JSON reconstruída via regex', [
                             'transactions_count' => count($reconstructedData['transactions'])
                         ]);
                         return $reconstructedData;
                     }
                 }
                 
-                Log::error('Erro ao parsear resposta JSON da IA', [
-                    'json_error' => json_last_error_msg(),
-                    'response_text' => substr($aiResponse, 0, 1000),
-                    'cleaned_text' => substr($cleaned, 0, 1000)
+                // Se não conseguimos extrair com regex, tentamos uma última abordagem manual
+                Log::warning('⚠️ Resposta vazia ou inválida do método de análise (incluindo mock). Nenhuma categorização será aplicada.', [
+                    'provedor' => 'gemini'
                 ]);
+                
+                Log::warning('Análise com IA retornou nulo');
+                
+                // Tenta uma solução alternativa com json_encode manual para diagnóstico
+                $manualJson = json_encode($transactions);
+                Log::debug('DEBUG: Resultado do json_encode manual', [
+                    'json_error' => json_last_error() === JSON_ERROR_NONE ? 'No error' : json_last_error_msg(),
+                    'output_length' => strlen($manualJson),
+                    'output_preview' => substr($manualJson, 0, 500),
+                    'original_count' => count($transactions ?? [])
+                ]);
+                
                 return null;
             }
             
+            // Verifica a estrutura básica esperada
             if (!isset($data['transactions']) || !is_array($data['transactions'])) {
                 Log::error('Estrutura de resposta da IA inválida - faltando campo transactions', [
                     'keys' => array_keys($data)

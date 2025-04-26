@@ -28,6 +28,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Configurar codificação UTF-8 para toda a aplicação
+        mb_internal_encoding('UTF-8');
+        
+        // Registrar provider de configuração de IA
+        $this->app->singleton('ai.config', function () {
+            return new \App\Services\AIConfigService();
+        });
+        
+        // Middlewares
+        $this->app['router']->pushMiddlewareToGroup('web', \App\Http\Middleware\HandleUTF8Encoding::class);
+
         Blade::component('components.application-logo', 'application-logo');
         User::observe(UserObserver::class);
         Transaction::observe(TransactionObserver::class);
