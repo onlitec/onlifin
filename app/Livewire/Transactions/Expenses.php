@@ -63,8 +63,6 @@ class Expenses extends TransactionBase
         $this->resetPage();
     }
 
-
-
     public function onTransactionDeleted()
     {
         $this->resetPage();
@@ -163,8 +161,6 @@ class Expenses extends TransactionBase
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
     }
-
-
 
     public function render()
     {
