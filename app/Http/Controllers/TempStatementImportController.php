@@ -12,7 +12,7 @@ use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\AIConfigService;
 use DateTime;
-use Endeken\OFX;
+// use Endeken\OFX\Ofx; // Remover ou comentar este, se não for usado em outro lugar
 use App\Models\AiCallLog;
 
 class TempStatementImportController extends Controller
@@ -147,6 +147,16 @@ class TempStatementImportController extends Controller
             // Análise das transações
             $analysis = $this->analyzeTransactions($transactions);
 
+            // **** NOVO LOG: Antes de salvar na sessão ****
+            Log::debug('DEBUG: Dados a serem salvos na sessão', [
+                'keys' => ['file_path', 'account_id', 'use_ai', 'transactions', 'analysis'],
+                'transaction_count' => count($transactions),
+                'analysis_keys' => isset($analysis) ? array_keys($analysis) : 'null',
+                'transaction_preview' => array_slice($transactions, 0, 2), // Logar as primeiras 2 transações
+                'analysis_preview' => isset($analysis) ? array_slice($analysis, 0, 2, true) : null // Logar as primeiras 2 chaves da análise
+            ]);
+            // **** FIM DO NOVO LOG ****
+
             // Armazena dados na sessão para uso na próxima página
             session(['import_data' => [
                 'file_path' => $path,
@@ -208,6 +218,10 @@ class TempStatementImportController extends Controller
 
         // ****** MODO DEBUG PARA TESTAR SEM ARQUIVO ******
         $isDebugMode = ($path === 'debug_test');
+        
+        // **** NOVO LOG: Logo após iniciar e antes de verificar debug mode ****
+        Log::debug('DEBUG: Dados brutos recuperados da sessão', ['import_data' => session('import_data')]);
+        // **** FIM DO NOVO LOG ****
         
         if ($isDebugMode) {
             Log::info('🧪 MODO DEBUG ATIVADO: Usando transações simuladas para teste da IA');
@@ -357,7 +371,46 @@ class TempStatementImportController extends Controller
             'isDebugMode' => $isDebugMode // Nova flag para informar a view que estamos em modo debug
         ];
         
+        // **** NOVO LOG: Testar json_encode manualmente ****
+        $jsonTransactions = json_encode($extractedTransactions);
+        $jsonError = json_last_error_msg();
+        Log::debug('DEBUG: Resultado do json_encode manual', [
+            'json_error' => $jsonError,
+            'output_length' => ($jsonError === 'No error' && $jsonTransactions !== false) ? strlen($jsonTransactions) : 0,
+            'output_preview' => ($jsonError === 'No error' && $jsonTransactions !== false) ? substr($jsonTransactions, 0, 500) . '...' : 'Falha na codificação',
+            'original_count' => count($extractedTransactions)
+        ]);
+        // **** FIM DO NOVO LOG ****
+
+        // DEBUG: Logar a contagem final de transações ANTES de retornar a view
+        Log::info('Preparando dados para a view mapping', [
+            'final_transaction_count' => count($extractedTransactions), // << Verificar esta contagem
+            'view_data_keys' => array_keys($viewData)
+        ]);
+
+        // **** NOVO: Armazenar transações em uma chave de sessão temporária ****
+        // Isso permitirá recuperá-las via AJAX em uma rota separada
+        session(['temp_transactions' => $extractedTransactions]);
+        
+        // Incluir uma flag indicando que as transações devem ser carregadas via AJAX
+        $viewData['load_via_ajax'] = true;
+
         return view('transactions.mapping', $viewData);
+    }
+
+    /**
+     * Endpoint AJAX para retornar as transações armazenadas na sessão temporária
+     */
+    public function getTransactions()
+    {
+        // Recuperar transações da sessão
+        $transactions = session('temp_transactions', []);
+        
+        // Remover da sessão após recuperar (opcional)
+        // session()->forget('temp_transactions');
+        
+        // Retornar como JSON
+        return response()->json(['transactions' => $transactions]);
     }
 
     /**
@@ -865,14 +918,22 @@ class TempStatementImportController extends Controller
                 return [];
             }
 
+            // Pré-processamento: remover padrões de colchetes em datas (ex: [0:GMT])
+            $content = preg_replace('/\[.*?\]/', '', $content);
+
             // Tentar usar a biblioteca Endeken\OFX se disponível (melhor que regex)
-            if (class_exists(OFX::class)) {
+            if (class_exists(\Endeken\OFX\OFX::class)) {
                  Log::info('Usando biblioteca Endeken\\OFX para parse', ['path' => $filePath]);
                 try {
-                    $ofx = new OFX($content); // Pode precisar do path completo: new OFX($fullPath) ou file_get_contents($fullPath)
+                    // Chamar o método estático parse() ao invés de instanciar a classe
+                    $ofxData = \Endeken\OFX\OFX::parse($content);
+                    
+                    if ($ofxData === null) {
+                        throw new \Exception("Falha ao parsear OFX: retornou null");
+                    }
                     
                     // Iterar sobre as contas no arquivo OFX
-                    foreach ($ofx->bankAccounts as $bankAccount) {
+                    foreach ($ofxData->bankAccounts as $bankAccount) {
                         $statement = $bankAccount->statement;
                         Log::info('Processando conta OFX', ['bankId' => $bankAccount->routingNumber, 'accountId' => $bankAccount->accountNumber, 'transacoes' => count($statement->transactions)]);
 

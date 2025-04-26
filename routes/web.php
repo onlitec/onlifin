@@ -76,8 +76,8 @@ Route::middleware(['auth'])->group(function () {
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {
         Route::get('/', [TransactionController::class, 'index'])->name('index');
-        Route::get('/income', Income::class)->name('income');
-        Route::get('/expenses', Expenses::class)->name('expenses');
+        Route::get('/income', [TransactionController::class, 'showIncome'])->name('income');
+        Route::get('/expenses', [TransactionController::class, 'showExpenses'])->name('expenses');
         Route::get('/create/{type?}', [TransactionController::class, 'create'])->name('create');
         Route::post('/', [TransactionController::class, 'store'])->name('store');
         Route::get('/{transaction}/edit', [TransactionController::class, 'edit'])->name('edit');
@@ -219,6 +219,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/templates', [NotificationConfigController::class, 'templates'])->name('templates');
         Route::post('/test', [NotificationConfigController::class, 'sendTest'])->name('test');
     });
+
+    // Adicionar nova rota para obter transações via AJAX
+    Route::get('/transactions/ajax/get', 'App\Http\Controllers\TempStatementImportController@getTransactions')
+        ->name('transactions.ajax.get')
+        ->middleware('auth');
 });
 
 // Rota de logout

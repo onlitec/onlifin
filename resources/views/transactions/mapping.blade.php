@@ -101,6 +101,13 @@
         </div>
     </div>
 
+    {{-- Adicionar div oculto para guardar os dados das transações --}}
+    <div id="transaction-data" 
+         style="display: none;" 
+         data-transactions="{{ json_encode($extractedTransactions ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+         data-categories="{{ json_encode($categories ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+    ></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('transactions-container');
@@ -109,9 +116,9 @@
             const filePathInput = document.getElementById('file_path');
             const ajaxErrorMessage = document.getElementById('ajax-error-message');
             
-            // Dados passados pelo PHP
-            const transactions = @json($extractedTransactions ?? []);
-            const categories = @json($categories ?? []); // Estrutura: { income: [...], expense: [...] }
+            // Dados passados pelo PHP via AJAX
+            let transactions = [];
+            let categories = @json($categories ?? []); // Categorias ainda podemos passar diretamente
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             // --- Funções Auxiliares ---
@@ -159,6 +166,9 @@
                  }
                 
                 transactions.forEach((transaction, index) => {
+                    // DEBUG: Logar cada transação individualmente antes de renderizar
+                    console.log(`Processando transação [${index}]:`, transaction);
+                
                     const row = document.createElement('tr');
                     row.className = 'border-b border-gray-200';
                     
@@ -172,6 +182,9 @@
                     
                     // Usar category_id e suggested_category conforme aplicados pelo controller
                     const categoryName = getCategoryName(transaction.category_id, transaction.suggested_category, transaction.type);
+                    
+                    // DEBUG: Logar o nome da categoria determinado para esta linha
+                    console.log(` - Categoria determinada para linha ${index}:`, categoryName);
 
                     row.innerHTML = `
                         <td class="px-3 py-3 text-sm">${transaction.date || 'N/A'}</td>
@@ -181,6 +194,42 @@
                         <td class="px-3 py-3 text-sm">${categoryName}</td>
                     `;
                     container.appendChild(row);
+                });
+            }
+
+            // --- Carregar transações via AJAX ---
+            function loadTransactions() {
+                // Mostrar mensagem de carregamento
+                container.innerHTML = '<tr><td colspan="5" class="text-center py-4">Carregando transações...</td></tr>';
+                
+                // Fazer a requisição AJAX
+                fetch('{{ route("transactions.ajax.get") }}', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Atualizar a variável global
+                    transactions = data.transactions || [];
+                    
+                    // Logar os dados recebidos
+                    console.log('Transações carregadas via AJAX:', transactions.length);
+                    
+                    // Renderizar as transações
+                    renderTransactions();
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar transações:', error);
+                    container.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Erro ao carregar transações: ${error.message}</td></tr>`;
+                    confirmSaveButton.disabled = true;
                 });
             }
 
@@ -272,8 +321,21 @@
             });
 
             // --- Inicialização ---
-            renderTransactions();
+            @if(isset($load_via_ajax) && $load_via_ajax)
+                loadTransactions(); // Carregar via AJAX se a flag estiver presente
+            @else
+                renderTransactions(); // Renderizar diretamente se não estiver usando AJAX
+            @endif
 
         });
     </script>
+    
+    {{-- DEBUG: Imprimir JSON diretamente para verificar a serialização --}}
+    {{-- <div class="mt-10 p-4 bg-gray-100 border border-gray-300">
+        <h3 class="font-bold mb-2">DEBUG: Saída direta do @json($extractedTransactions)</h3>
+        <pre class="text-xs overflow-auto max-h-96">{{ json_encode($extractedTransactions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE) }}</pre>
+        <h3 class="font-bold mt-4 mb-2">DEBUG: Contagem via PHP na View</h3>
+        <p>Contagem de transações (PHP): {{ count($extractedTransactions ?? []) }}</p>
+    </div> --}}
+    
 </x-app-layout> 
