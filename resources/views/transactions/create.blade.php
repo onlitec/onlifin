@@ -88,6 +88,27 @@
                         </div>
                     </div>
 
+                    @if(old('type', request()->type) == 'income')
+                        <div class="mb-4 cliente-field" style="display: block;">
+                            <label for="cliente" class="block text-sm font-medium text-gray-700">Cliente</label>
+                            <input type="text" name="cliente" id="cliente" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Nome do cliente que pagou">
+                        </div>
+                    @elseif(old('type', request()->type) == 'expense')
+                        <div class="mb-4 fornecedor-field" style="display: block;">
+                            <label for="fornecedor" class="block text-sm font-medium text-gray-700">Fornecedor</label>
+                            <input type="text" name="fornecedor" id="fornecedor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Nome do fornecedor que recebeu">
+                        </div>
+                    @else
+                        <div class="mb-4 cliente-field" style="display: none;">
+                            <label for="cliente" class="block text-sm font-medium text-gray-700">Cliente</label>
+                            <input type="text" name="cliente" id="cliente" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Nome do cliente que pagou">
+                        </div>
+                        <div class="mb-4 fornecedor-field" style="display: none;">
+                            <label for="fornecedor" class="block text-sm font-medium text-gray-700">Fornecedor</label>
+                            <input type="text" name="fornecedor" id="fornecedor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Nome do fornecedor que recebeu">
+                        </div>
+                    @endif
+
                     <!-- Categoria e Conta -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Categoria -->
@@ -207,14 +228,34 @@
 </div>
 
 <script>
-    // REMOVIDO: Código customizado de formatação que causava problemas
-    // function formatCurrency(input) { ... }
-    // document.addEventListener('DOMContentLoaded', function() { ... }); // Bloco relacionado à formatação customizada
-</script>
-</x-app-layout>
+    document.addEventListener('DOMContentLoaded', () => {
+        const typeSelect = document.getElementById('type');
+        const clienteField = document.querySelector('.cliente-field');
+        const fornecedorField = document.querySelector('.fornecedor-field');
+        
+        if (typeSelect && clienteField && fornecedorField) {
+            // Definir estado inicial com base no valor atual do select
+            const initialType = typeSelect.value;
+            updateFields(initialType);
+            
+            // Adicionar listener para mudanças
+            typeSelect.addEventListener('change', (e) => updateFields(e.target.value));
+        }
+        
+        function updateFields(type) {
+            if (type === 'income') {
+                clienteField.style.display = 'block';
+                fornecedorField.style.display = 'none';
+            } else if (type === 'expense') {
+                clienteField.style.display = 'none';
+                fornecedorField.style.display = 'block';
+            } else {
+                clienteField.style.display = 'none';
+                fornecedorField.style.display = 'none';
+            }
+        }
+    });
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
     // Inicializar máscara monetária com IMask.js
     const amountDisplayInput = document.getElementById('amount_display');
     const amountHiddenInput = document.getElementById('amount');
@@ -374,3 +415,4 @@ function toggleRecurrenceFields() {
     }
 }
 </script>
+</x-app-layout>

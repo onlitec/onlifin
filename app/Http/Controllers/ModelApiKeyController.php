@@ -34,7 +34,11 @@ class ModelApiKeyController extends Controller
                 'gemini' => [
                     'name' => 'Google Gemini',
                     'models' => ['gemini-2.0-flash', 'gemini-2.0-pro', 'gemini-1.5-flash', 'gemini-pro', 'gemini-pro-vision']
-                ]
+                ],
+                'openrouter' => [
+                    'name' => 'OpenRouter',
+                    'models' => ['meta-llama/llama-3-70b-instruct', 'other-openrouter-models']
+                ],
             ];
         }
         

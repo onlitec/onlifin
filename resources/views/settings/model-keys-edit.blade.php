@@ -17,7 +17,7 @@
             @endif
 
             <div class="bg-white shadow-md rounded-lg p-6 mb-6">
-                <form action="{{ route('settings.model-keys.update', $modelKey->id) }}" method="POST">
+                <form action="{{ route('settings.settings.openrouter.save') }}" method="POST">
                     @csrf
                     @method('PUT')
                     
@@ -88,7 +88,7 @@
 
                     <!-- Botões -->
                     <div class="mt-6 flex items-center justify-between">
-                        <a href="{{ route('settings.model-keys.index') }}" 
+                        <a href="{{ route('settings.settings.openrouter.config') }}" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Cancelar
                         </a>

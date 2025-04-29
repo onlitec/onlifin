@@ -48,6 +48,8 @@ class TransactionController extends Controller
             'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
             'total_installments' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
             'next_date' => 'nullable|required_unless:recurrence_type,none|date',
+            'cliente' => 'nullable|string|max:255',
+            'fornecedor' => 'nullable|string|max:255',
         ]);
 
         // Debug: Verificar o valor recebido
@@ -59,6 +61,17 @@ class TransactionController extends Controller
         // Debug: Verificar o valor final
         \Log::info('Valor amount a ser salvo: ' . $amount);
 
+        if (( $validated['type'] ?? null) === 'income') {
+            $validated['cliente'] = $request->input('cliente', null);
+            $validated['fornecedor'] = null; // Garantir que seja nulo para despesas
+        } elseif (( $validated['type'] ?? null) === 'expense') {
+            $validated['fornecedor'] = $request->input('fornecedor', null);
+            $validated['cliente'] = null; // Garantir que seja nulo para receitas
+        } else {
+            $validated['cliente'] = null;
+            $validated['fornecedor'] = null;
+        }
+
         // Preparar dados da transação
         $transactionData = [
             'type' => $validated['type'],
@@ -69,6 +82,8 @@ class TransactionController extends Controller
             'category_id' => $validated['category_id'],
             'account_id' => $validated['account_id'],
             'notes' => $validated['notes'] ?? null,
+            'cliente' => $validated['cliente'],
+            'fornecedor' => $validated['fornecedor'],
             'user_id' => auth()->id(),
         ];
 
@@ -119,7 +134,22 @@ class TransactionController extends Controller
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
             'notes' => 'nullable|string',
+            'cliente' => 'nullable|string|max:255',
+            'fornecedor' => 'nullable|string|max:255',
         ]);
+
+        $validatedData['cliente'] = $request->input('cliente', null);
+        $validatedData['fornecedor'] = $request->input('fornecedor', null);
+        if (( $validatedData['type'] ?? null) === 'income') {
+            $validatedData['cliente'] = $request->input('cliente', null);
+            $validatedData['fornecedor'] = null;
+        } elseif (( $validatedData['type'] ?? null) === 'expense') {
+            $validatedData['fornecedor'] = $request->input('fornecedor', null);
+            $validatedData['cliente'] = null;
+        } else {
+            $validatedData['cliente'] = null;
+            $validatedData['fornecedor'] = null;
+        }
 
         // O modelo já fará a conversão para centavos, então apenas passamos o valor como está
         // Isso evita a multiplicação dupla por 100

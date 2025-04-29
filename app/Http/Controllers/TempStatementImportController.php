@@ -14,6 +14,8 @@ use App\Services\AIConfigService;
 use DateTime;
 // use Endeken\OFX\Ofx; // Remover ou comentar este, se não for usado em outro lugar
 use App\Models\AiCallLog;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class TempStatementImportController extends Controller
 {
@@ -177,7 +179,7 @@ class TempStatementImportController extends Controller
         } catch (\Exception $e) {
             Log::error('Erro ao analisar arquivo', [
                 'path' => $path, 
-                'extensão' => $extension,
+                'extension' => $extension, 
                 'erro' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -497,15 +499,9 @@ class TempStatementImportController extends Controller
                     }
                     break;
                 
-                // case 'openai':
-                //     Log::info('Provedor OpenAI ainda não implementado. Usando mock.');
-                //     $resultado = $this->getMockAIResponse($transactions);
-                //     break;
-                
-                // case 'claude':
-                //     Log::info('Provedor Claude ainda não implementado. Usando mock.');
-                //     $resultado = $this->getMockAIResponse($transactions);
-                //     break;
+                case 'grok':
+                    $resultado = $this->analyzeTransactionsWithGrok($transactions, $config);
+                    break;
 
                 default:
                     Log::error('❗ Provedor de IA configurado ("' . $aiProvider . '") não é suportado ou não possui método de análise implementado. Usando mock.');
@@ -618,30 +614,13 @@ class TempStatementImportController extends Controller
                 return null;
             }
 
-            // **** VALIDAR PROMPT DA CONFIGURAÇÃO ****
-            if (empty($promptTemplate)) {
-                Log::error('❌ Template do prompt para ' . ($apiConfig->provider ?? 'IA') . ' está vazio');
-                return null;
-            }
-            // Validar placeholders (opcional, mas recomendado)
-            if (strpos($promptTemplate, '{{transactions}}') === false || strpos($promptTemplate, '{{categories}}') === false) {
-                Log::warning('⚠️ Template do prompt não contém os placeholders {{transactions}} e/ou {{categories}}. A análise pode falhar ou gerar resultados inesperados.');
-            }
-
-            // Configurar endpoint da API
+            // Definir endpoint da API com base nas configurações
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-            Log::info('📣 INICIANDO CHAMADA ' . strtoupper($apiConfig->provider ?? 'API') . ' PARA CATEGORIZAÇÃO', [
-                'model' => $model,
-                'api_key_preview' => substr($apiKey, 0, 5) . '...' . substr($apiKey, -3),
-                'total_transacoes' => count($transactions),
-                'endpoint' => $endpoint
-            ]);
-
-            // **** CONSTRUIR PROMPT DINAMICAMENTE ****
+            // Substituir placeholders com dados reais (assumindo que os dados estejam disponíveis)
             $finalPrompt = str_replace(
-                ['{{transactions}}', '{{categories}}'],
-                [$transactionsJson, $categoriesJson],
+                ['{{transactions}}', '{{categories}}', '{{observations}}', '{{cliente}}', '{{fornecedor}}', '{{data}}'],
+                [$transactionsJson, $categoriesJson, json_encode($observations ?? 'null', JSON_PRETTY_PRINT), json_encode($cliente ?? 'null', JSON_PRETTY_PRINT), json_encode($fornecedor ?? 'null', JSON_PRETTY_PRINT), json_encode($data ?? 'null', JSON_PRETTY_PRINT)],
                 $promptTemplate
             );
 
@@ -691,7 +670,7 @@ class TempStatementImportController extends Controller
                         'status' => $statusCode,
                         'size' => strlen($response->body())
                     ]);
-                    $result = $response->body();
+                    $result = $response->getBody()->getContents();
                     $logData['response_preview'] = substr($result, 0, 1000); // Limitar tamanho
                 } else {
                     $apiError = 'Erro HTTP: ' . $statusCode . ' - ' . $response->body();
@@ -1005,6 +984,93 @@ class TempStatementImportController extends Controller
             $logData['duration_ms'] = isset($logData['duration_ms']) ? $logData['duration_ms'] : (int) round((microtime(true) - $startTime) * 1000);
             // Tenta salvar o log mesmo com a exceção geral
             try { AiCallLog::create($logData); } catch (\Exception $logEx) { Log::error('Falha ao salvar log de erro da IA', ['log_exception' => $logEx->getMessage()]); }
+            return null;
+        }
+    }
+    
+    /**
+     * Método específico para análise com xAI Grok
+     */
+    private function analyzeTransactionsWithGrok($transactions, $apiConfig)
+    {
+        $startTime = microtime(true);
+        $logData = [
+            'user_id' => auth()->id(),
+            'provider' => $apiConfig->provider ?? 'grok',
+            'model' => $apiConfig->model ?? 'grok-2', // Ajustar com base na configuração do modelo
+            'error_message' => null,
+            'status_code' => null,
+            'duration_ms' => null,
+            'prompt_preview' => null,
+            'response_preview' => null,
+        ];
+
+        try {
+            // Preparar as transações para análise (formato JSON)
+            $transactionDescriptions = [];
+            foreach ($transactions as $index => $transaction) {
+                $transactionDescriptions[] = [
+                    'id' => $index,
+                    'date' => $transaction['date'] ?? '',
+                    'description' => $transaction['description'] ?? '',
+                    'amount' => $transaction['amount'] ?? 0,
+                    'type' => $transaction['type'] ?? ''
+                ];
+            }
+            $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+            // Obter categories do usuário para treinamento da IA (similar a Gemini)
+            $categories = Category::where('user_id', auth()->id())->orderBy('name')->get();
+            $categoriesFormatted = [];
+            foreach ($categories as $category) {
+                $categoriesFormatted[] = [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'type' => $category->type,
+                    'icon' => $category->icon ?? ''
+                ];
+            }
+            $categoriesByType = [
+                'income' => [],
+                'expense' => []
+            ];
+            foreach ($categoriesFormatted as $category) {
+                $type = $category['type'] == 'income' ? 'income' : 'expense';
+                $categoriesByType[$type][] = $category;
+            }
+
+            // Construir o prompt dinâmico (adaptado para Grok, assumindo endpoint similar)
+            $prompt = "Você é uma IA especializada em extração de dados de transações financeiras. Analise o texto bruto fornecido e retorne **apenas** um objeto JSON com as informações extraídas e formatadas. Não adicione nenhum texto fora do JSON. Siga estes passos:\n\n1. **Extração de Dados**: Extraia do texto:\n\n   - \"date\": Data no formato \"DD/MM/AAAA\".\n   - \"identificador\": Qualquer ID único como UUID.\n   - \"bank_data\": Informações de banco, agência e conta.\n   - \"name\": Nome de pessoa ou empresa.\n   - \"tax_id\": CPF ou CNPJ.\n   - \"category\": Categoria com base no contexto e nas categorias fornecidas: " . json_encode($categoriesFormatted) . ".\n   - \"transaction_type\": \"income\" ou \"expense\".\n\n2. **Formatação da Saída**: Retorne um array de objetos JSON, cada um representando uma transação formatada.\n\nTexto bruto: " . $transactionsJson;
+
+            // Fazer a requisição à API do Grok (endpoint pode variar; use o configurado ou padrão)
+            $response = Http::withHeaders(['Content-Type' => 'application/json'])->post('https://api.grok.com/v1/chat/completions?api_key=' . env('GROK_API_KEY'), [ // Ajuste o endpoint com base na API real do Grok
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ]
+            ]);
+
+            // Log e verificar resposta
+            $logData['status_code'] = $response->status();
+            $logData['response_preview'] = substr($response->body(), 0, 500);
+            $logData['duration_ms'] = (int) round((microtime(true) - $startTime) * 1000);
+            Log::info('Resposta da API Grok: ' . $response->body());
+
+            if ($response->successful()) {
+                $result = $response->json();
+                if (isset($result['choices'][0]['message']['content']) && !empty($result['choices'][0]['message']['content'])) {
+                    $decodedResult = json_decode($result['choices'][0]['message']['content'], true);
+                    AiCallLog::create($logData);
+                    return $decodedResult;
+                } else {
+                    Log::warning('Resposta inválida da API Grok.', ['response' => $result]);
+                    return null;
+                }
+            } else {
+                Log::error('Erro na requisição à API Grok', ['status' => $response->status(), 'body' => $response->body()]);
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('Exceção ao processar requisição Grok', ['mensagem' => $e->getMessage()]);
             return null;
         }
     }
@@ -1727,5 +1793,27 @@ class TempStatementImportController extends Controller
         unset($transaction); // Quebrar referência do loop
 
         return $transactions;
+    }
+
+    /**
+     * Testa a API Gemini com uma consulta simples
+     */
+    public function testGeminiAPI()
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthenticated. Please log in.'], 401);
+        }
+        $apiKey = env('GEMINI_API_KEY');
+        Log::debug('Usando API Key mascarada: ' . substr($apiKey, 0, 5) . '*****');
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey;
+        Log::debug('URL de requisição: ' . $url);
+        $prompt = "Teste simples: responda com 'OK' se você está funcionando.";
+        $response = Http::withHeaders(['Content-Type' => 'application/json'])->post($url, [
+            'contents' => [
+                ['parts' => [['text' => $prompt]]]
+            ]
+        ]);
+        Log::info('Resposta da API Gemini: ' . $response->body());
+        return response()->json(['status' => 'Test completed', 'response' => $response->json()]);
     }
 }

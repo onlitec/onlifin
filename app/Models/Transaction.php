@@ -22,7 +22,9 @@ class Transaction extends Model
         'category_id',
         'account_id',
         'user_id',
-        'notes'
+        'notes',
+        'cliente', // Adicionado para transações de receita
+        'fornecedor', // Adicionado para transações de despesa
     ];
 
     protected $casts = [
@@ -61,7 +63,18 @@ class Transaction extends Model
 
     public function validate(array $data)
     {
-        return Validator::make($data, $this->rules);
+        $rules = $this->rules;
+        if (( $data['type'] ?? null) === 'income') {
+            $rules['cliente'] = 'nullable|string|max:255';
+            $rules['fornecedor'] = 'prohibited';
+        } elseif (( $data['type'] ?? null) === 'expense') {
+            $rules['fornecedor'] = 'nullable|string|max:255';
+            $rules['cliente'] = 'prohibited';
+        } else {
+            $rules['cliente'] = 'prohibited';
+            $rules['fornecedor'] = 'prohibited';
+        }
+        return Validator::make($data, $rules);
     }
 
     // Acessor para formatar o valor

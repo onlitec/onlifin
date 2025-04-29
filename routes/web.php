@@ -157,10 +157,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/replicate/test', [ReplicateSettingController::class, 'test'])->name('replicate.test');
         Route::get('/replicate/get-settings/{provider}', [ReplicateSettingController::class, 'getSettings'])->name('replicate.get-settings');
         
+        // Rotas para configuração da OpenRouter
+        Route::get('/openrouter-config', [App\Http\Controllers\OpenRouterConfigController::class, 'showConfigForm'])->name('settings.openrouter.config');
+        Route::post('/openrouter-config', [App\Http\Controllers\OpenRouterConfigController::class, 'saveConfig'])->name('settings.openrouter.save');
+
         // Rotas para configuração de chaves API específicas por modelo
-        Route::get('/model-keys', [ModelApiKeyController::class, 'index'])->name('model-keys.index');
-        Route::post('/model-keys', [ModelApiKeyController::class, 'store'])->name('model-keys.store');
-        Route::post('/model-keys/test', [ModelApiKeyController::class, 'testConnection'])->name('model-keys.test');
         Route::get('/model-keys/edit/{modelKey}', [ModelApiKeyController::class, 'edit'])->name('model-keys.edit');
         Route::put('/model-keys/{modelKey}', [ModelApiKeyController::class, 'update'])->name('model-keys.update');
         Route::delete('/model-keys/{modelKey}', [ModelApiKeyController::class, 'destroy'])->name('model-keys.destroy');
@@ -224,6 +225,24 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/transactions/ajax/get', 'App\Http\Controllers\TempStatementImportController@getTransactions')
         ->name('transactions.ajax.get')
         ->middleware('auth');
+
+    // Adicionar nova rota para testar a API do Gemini
+    Route::get('/test-gemini', [App\Http\Controllers\TempStatementImportController::class, 'testGeminiAPI'])->name('test.gemini');
+
+    // Adicionando rotas para gerenciamento de chaves API
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/api-key/create', [App\Http\Controllers\ApiKeyController::class, 'create'])->name('api-key.create');
+        Route::post('/api-key/store', [App\Http\Controllers\ApiKeyController::class, 'store'])->name('api-key.store');
+    });
+
+    // Adicionando rotas para chat com OpenRouter
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+        Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
+    });
+
+    // Adicionar nova rota para o método uploadAndAnalyze no controlador BankStatementController
+    Route::post('/bank-statement-analyze', [App\Http\Controllers\BankStatementController::class, 'uploadAndAnalyze'])->name('bank-statement.analyze');
 });
 
 // Rota de logout

@@ -66,7 +66,7 @@
 
             <!-- Provedor e Modelo -->
             <div class="bg-white shadow-md rounded-lg p-6 mb-6">
-                <form action="{{ route('settings.model-keys.store') }}" method="POST">
+                <form action="{{ route('settings.settings.openrouter.save') }}" method="POST">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Seleção do Provedor -->
@@ -191,8 +191,8 @@
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('settings.model-keys.edit', $key->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Editar</a>
-                                            <form action="{{ route('settings.model-keys.destroy', $key->id) }}" method="POST" class="inline">
+                                            <a href="{{ route('settings.settings.openrouter.config') }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Editar</a>
+                                            <form action="{{ route('settings.settings.openrouter.save') }}" method="POST" class="inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Tem certeza que deseja excluir esta configuração?')">Excluir</button>
@@ -208,7 +208,7 @@
 
             <!-- Link para voltar às configurações gerais -->
             <div class="mt-6">
-                <a href="{{ route('settings.model-keys.index') }}" class="text-indigo-600 hover:text-indigo-800">
+                <a href="{{ route('settings.settings.openrouter.config') }}" class="text-indigo-600 hover:text-indigo-800">
                     <i class="ri-arrow-left-line mr-1"></i> Voltar para configurações gerais
                 </a>
             </div>
@@ -322,7 +322,7 @@
                 formData.append('api_token', apiToken);
                 
                 // Fazer a requisição
-                fetch('{{ route("settings.model-keys.test") }}', {
+                fetch('{{ route("settings.settings.openrouter.config") }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',

@@ -84,6 +84,11 @@ return [
                 'deepseek-coder'
             ],
             'icon' => 'ri-braces-fill'
+        ],
+        'openrouter' => [
+            'name' => 'OpenRouter',
+            'models' => ['meta-llama/llama-3-70b-instruct', 'other-openrouter-models'],
+            'icon' => 'ri-global-fill'
         ]
     ]
 ];
