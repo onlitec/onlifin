@@ -9,7 +9,7 @@
 
 <div>
     <button 
-        wire:click="confirmDelete" 
+        wire:click="$dispatch('swal:confirm', { transactionId: {{ $transactionId }} })" 
         class="text-red-600 hover:text-red-700 p-2 flex items-center justify-center" 
         title="Excluir"
     >
@@ -20,8 +20,10 @@
     @if ($confirming)
         <div 
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300"
-            x-data
+            x-data="{ show: true }"
+            x-show="show"
             x-on:click.self="$wire.cancelDelete()"
+            x-transition
         >
             <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 relative transform transition-all duration-300">
                 <!-- Cabeçalho do modal -->

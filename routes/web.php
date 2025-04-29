@@ -233,3 +233,8 @@ Route::post('/logout', function () {
     session()->regenerateToken();
     return redirect('/');
 })->middleware('auth')->name('logout');
+
+// Rota temporária para teste de menu
+Route::get('/menu-test', function () {
+    return view('menu-test');
+})->middleware(['auth'])->name('menu.test');

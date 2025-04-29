@@ -85,12 +85,17 @@ class Transaction extends Model
             // Converte vírgula para ponto
             $value = str_replace(',', '.', $value);
             
-            // Converte para float e multiplica por 100 para obter centavos
-            $value = (float)$value * 100;
+            // Converte para float
+            $value = (float)$value;
         }
 
-        // Arredonda para o inteiro mais próximo
-        $this->attributes['amount'] = round($value);
+        // Se o valor já for numérico (float ou integer), converte para float
+        if (is_numeric($value)) {
+            $value = (float)$value;
+        }
+
+        // Multiplica por 100 para armazenar em centavos e arredonda para o inteiro mais próximo
+        $this->attributes['amount'] = round($value * 100);
     }
 
     // Adicione estes métodos auxiliares

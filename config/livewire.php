@@ -7,6 +7,7 @@ return [
     'asset_url' => null,
     'app_url' => null,
     'middleware_group' => 'web',
+    'inject_assets' => false,
     'temporary_file_upload' => [
         'disk' => null,
         'rules' => null,

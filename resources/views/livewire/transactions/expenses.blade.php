@@ -117,13 +117,24 @@
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="flex items-center space-x-2">
+                                            @if (!$transaction->isPaid())
+                                                <button wire:click="markAsPaid({{ $transaction->id }})"
+                                                        class="text-green-600 hover:text-green-900"
+                                                        title="Marcar como pago">
+                                                    <i class="ri-checkbox-circle-line"></i>
+                                                </button>
+                                            @endif
                                             <a href="{{ route('transactions.edit', $transaction) }}" 
                                                class="text-gray-600 hover:text-gray-900">
                                                 <i class="ri-pencil-line"></i>
                                             </a>
-                                            <livewire:transactions.delete-button 
-                                                wire:key="delete-button-expense-{{ $transaction->id }}" 
-                                                :transaction-id="$transaction->id" />
+                                            <button 
+                                                wire:click="$dispatch('swal:confirm', { transactionId: {{ $transaction->id }}, type: 'despesa' })" 
+                                                class="text-red-600 hover:text-red-700" 
+                                                title="Excluir"
+                                            >
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

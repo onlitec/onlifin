@@ -24,7 +24,6 @@ class Income extends TransactionBase
     public $confirmingDeletion = false;
     public $transactionToDelete;
 
-
     protected $queryString = [
         'search' => ['except' => ''],
         'month' => ['except' => ''],
@@ -34,24 +33,17 @@ class Income extends TransactionBase
     ];
 
     protected $listeners = [
+        'swal:confirm' => 'confirmDelete',
+        'swal:success' => '$refresh',
+        'swal:error' => '$refresh',
         'refresh' => '$refresh',
-        'transactionDeleted' => 'handleTransactionDeleted',
+        'transactionDeleted' => '$refresh'
     ];
-
-    public function __construct()
-    {
-        $this->month = now()->month;
-        $this->year = now()->year;
-    }
 
     public function mount()
     {
-        if (request()->has('month')) {
-            $this->month = request()->query('month');
-        }
-        if (request()->has('year')) {
-            $this->year = request()->query('year');
-        }
+        $this->month = $this->month ?: now()->month;
+        $this->year = $this->year ?: now()->year;
     }
 
     public function updatingSearch()
@@ -75,30 +67,18 @@ class Income extends TransactionBase
         $this->resetPage();
     }
 
-
-
-    public function onTransactionDeleted()
-    {
-        $this->resetPage();
-    }
-    
     public function deleteTransaction($transactionId = null)
     {
         try {
-            // Se o ID não foi fornecido como parâmetro, usa o ID armazenado na propriedade
             if ($transactionId === null) {
                 $transactionId = $this->transactionToDelete;
             }
             
-            // Verifica se temos um ID de transação para excluir
             if (!$transactionId) {
                 throw new \Exception('Nenhuma transação selecionada para exclusão.');
             }
             
             DB::beginTransaction();
-            
-            // Registra no log para depuração
-            \Log::info('Excluindo transação com ID: ' . $transactionId);
             
             $transaction = Transaction::findOrFail($transactionId);
             
@@ -135,13 +115,10 @@ class Income extends TransactionBase
         }
     }
     
-    public function confirmDelete($transactionId)
+    public function confirmDelete($data)
     {
-        // Registra no log para depuração
-        \Log::info('Método confirmDelete chamado com ID: ' . $transactionId);
-        
         $this->confirmingDeletion = true;
-        $this->transactionToDelete = $transactionId;
+        $this->transactionToDelete = $data['transactionId'];
     }
     
     public function cancelDelete()
@@ -175,8 +152,6 @@ class Income extends TransactionBase
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
     }
-
-
 
     public function render()
     {
@@ -220,6 +195,41 @@ class Income extends TransactionBase
         } else {
             $this->sortField = $field;
             $this->sortDirection = 'asc';
+        }
+    }
+
+    public function markAsPaid($transactionId)
+    {
+        try {
+            $transaction = Transaction::findOrFail($transactionId);
+
+            if ($transaction->user_id !== auth()->id() || $transaction->type !== 'income') {
+                throw new \Exception('Você não tem permissão para marcar esta receita como paga.');
+            }
+
+            // Atualiza apenas o status, sem tocar no valor
+            $transaction->status = 'paid';
+            $transaction->save();
+
+            $this->dispatch('swal:success', [
+                'title' => 'Receita marcada como paga!',
+                'text' => 'A receita foi atualizada com sucesso.',
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
+
+            $this->dispatch('refresh');
+        } catch (\Exception $e) {
+            $this->dispatch('swal:error', [
+                'title' => 'Erro ao marcar receita como paga',
+                'text' => $e->getMessage(),
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
         }
     }
 } 

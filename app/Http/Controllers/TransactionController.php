@@ -149,7 +149,9 @@ class TransactionController extends Controller
             abort(403);
         }
 
-        $transaction->update(['status' => 'paid']);
+        // Atualiza apenas o status, sem tocar no valor
+        $transaction->status = 'paid';
+        $transaction->save();
 
         $message = $transaction->type === 'income' 
             ? 'Receita marcada como recebida!' 

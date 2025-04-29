@@ -207,189 +207,91 @@
 </div>
 
 <script>
-    function formatCurrency(input) {
-        // Remove o prefixo R$ se existir
-        let value = input.value.replace('R$ ', '');
-        
-        // Remove todos os caracteres não numéricos e vírgula
-        value = value.replace(/[^0-9,]/g, '');
-        
-        // Se não houver valor, limpa os campos
-        if (!value) {
-            input.value = '';
-            document.getElementById('amount').value = '';
-            return;
-        }
-
-        // Remove a vírgula e converte para número
-        let number = parseFloat(value.replace(',', '.'));
-        
-        // Converte para centavos
-        let amount = Math.round(number * 100);
-        
-        // Atualiza o campo hidden com o valor em centavos
-        document.getElementById('amount').value = amount;
-
-        // Formata para moeda brasileira
-        input.value = 'R$ ' + new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(number);
-    }
-
-    // Inicializa o campo com o valor correto se houver um valor antigo
-    document.addEventListener('DOMContentLoaded', function() {
-        let amountDisplay = document.getElementById('amount_display');
-        let amount = document.getElementById('amount');
-        
-        if (amountDisplay && amount) {
-            let amountValue = amount.value;
-            if (amountValue) {
-                // Converte de centavos para real
-                let realValue = parseFloat(amountValue) / 100;
-                formatCurrency(amountDisplay, realValue);
-            }
-        }
-    });
-
-    // Função auxiliar para inicialização
-    // Inicializa os campos quando o DOM é carregado
-    document.addEventListener('DOMContentLoaded', function() {
-        // Configura a máscara de moeda para o campo de valor
-        let amountDisplayEl = document.getElementById('amount_display');
-        let amountEl = document.getElementById('amount');
-        
-        if (amountDisplayEl && amountEl) {
-            // Define o valor inicial se houver
-            if (amountEl.value) {
-                // Converte de centavos para real para exibição
-                let realValue = parseInt(amountEl.value) / 100;
-                amountDisplayEl.value = realValue.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                });
-            }
-            
-            // Função para formatar valor monetário brasileiro
-            function formatCurrency(value) {
-                if (!value) return '';
-                return value.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                    minimumFractionDigits: 2
-                });
-            }
-
-            // Função para converter string formatada em número
-            function parseFormattedNumber(formattedValue) {
-                if (!formattedValue) return 0;
-                
-                // Remove tudo exceto dígitos, ponto e vírgula
-                const cleanValue = formattedValue.replace(/[^0-9,.]/g, '');
-                
-                // Substitui vírgula por ponto para poder fazer o parse
-                const valueWithDot = cleanValue.replace(',', '.');
-                
-                return parseFloat(valueWithDot) || 0;
-            }
-
-            // Manipulador de input para campo de valor
-            amountDisplayEl.addEventListener('input', function(e) {
-                // Guarda a posição do cursor
-                const cursorPosition = e.target.selectionStart;
-                const inputLength = e.target.value.length;
-                
-                // Remove qualquer caractere não numérico para processamento
-                let rawValue = e.target.value.replace(/[^0-9]/g, '');
-                
-                // Se não houver valor, limpa os campos
-                if (!rawValue) {
-                    e.target.value = '';
-                    amountEl.value = '';
-                    return;
-                }
-                
-                // Consideramos que o valor digitado está em reais
-                // Por exemplo, se o usuário digita 300, queremos R$ 300,00
-                let reais = parseFloat(rawValue) / 100;
-                
-                // Formata o valor para moeda brasileira
-                e.target.value = formatCurrency(reais);
-                
-                // Atualiza o campo hidden com o valor em reais (sem conversão)
-                amountEl.value = reais;
-                
-                // Calcula nova posição do cursor após formatação
-                const newLength = e.target.value.length;
-                const newPosition = cursorPosition + (newLength - inputLength);
-                
-                // Posiciona o cursor mantendo a posição relativa
-                if (newPosition > 0) {
-                    e.target.setSelectionRange(newPosition, newPosition);
-                } else {
-                    e.target.setSelectionRange(e.target.value.length, e.target.value.length);
-                }
-            });
-            
-            // Adiciona evento de blur para garantir formato correto ao perder foco
-            amountDisplayEl.addEventListener('blur', function(e) {
-                // Se o campo estiver vazio, não faz nada
-                if (!e.target.value) return;
-                
-                // Extrai o valor numérico do campo formatado
-                const numericValue = parseFormattedNumber(e.target.value);
-                
-                // Reformata para garantir apresentação correta
-                e.target.value = formatCurrency(numericValue);
-                
-                // Atualiza o campo hidden com centavos
-                amountEl.value = Math.round(numericValue);
-            });
-            
-            // Adiciona validação no envio do formulário
-            let form = document.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    // Impede o envio se não houver valor
-                    if (!amountEl.value || amountEl.value <= 0) {
-                        e.preventDefault();
-                        alert('Por favor, insira um valor válido para a transação.');
-                        return false;
-                    }
-                });
-            }
-        }
-    });
+    // REMOVIDO: Código customizado de formatação que causava problemas
+    // function formatCurrency(input) { ... }
+    // document.addEventListener('DOMContentLoaded', function() { ... }); // Bloco relacionado à formatação customizada
 </script>
 </x-app-layout>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar máscara monetária
-    const amountInput = document.getElementById('amount');
-    if (amountInput) {
-        const mask = IMask(amountInput, {
+    // Inicializar máscara monetária com IMask.js
+    const amountDisplayInput = document.getElementById('amount_display');
+    const amountHiddenInput = document.getElementById('amount');
+    
+    if (amountDisplayInput && amountHiddenInput) {
+        // Configuração da máscara monetária
+        const maskOptions = {
             mask: 'R$ num',
             blocks: {
                 num: {
                     mask: Number,
                     scale: 2,
                     thousandsSeparator: '.',
-                    radix: ',',
+                    padFractionalZeros: true,
                     normalizeZeros: true,
-                    padFractional: true,
+                    radix: ',',
+                    mapToRadix: ['.'],
                     min: 0,
-                    max: 999999999.99
+                    max: 999999999.99,
+                    placeholderChar: '0'
                 }
+            }
+        };
+
+        // Inicializar a máscara
+        const mask = IMask(amountDisplayInput, maskOptions);
+
+        // Função para atualizar o valor hidden
+        function updateHiddenValue() {
+            const value = mask.unmaskedValue;
+            if (!value) {
+                amountHiddenInput.value = '0';
+                return;
+            }
+            
+            // Apenas atualiza o valor hidden com o valor não formatado
+            amountHiddenInput.value = value;
+        }
+
+        // Definir valor inicial
+        if (amountHiddenInput.value) {
+            let initialCents = parseInt(amountHiddenInput.value);
+            if (!isNaN(initialCents)) {
+                mask.value = (initialCents / 100).toString();
+            }
+        } else {
+            mask.value = '';
+        }
+
+        // Evento de foco
+        amountDisplayInput.addEventListener('focus', function() {
+            if (!this.value) {
+                mask.value = '';
             }
         });
 
-        // Adicionar o prefixo R$ se o campo estiver vazio ao receber foco
-        amountInput.addEventListener('focus', function() {
+        // Evento de blur
+        amountDisplayInput.addEventListener('blur', function() {
             if (!this.value) {
-                mask.value = "0";
+                mask.value = '';
+                amountHiddenInput.value = '0';
+            } else {
+                updateHiddenValue();
+            }
+        });
+
+        // Evento de input
+        amountDisplayInput.addEventListener('input', function() {
+            updateHiddenValue();
+        });
+
+        // Evento de submit
+        amountDisplayInput.form.addEventListener('submit', function(e) {
+            if (!amountHiddenInput.value || amountHiddenInput.value === '0') {
+                if (!confirm('O valor está zerado. Deseja continuar?')) {
+                    e.preventDefault();
+                }
             }
         });
     }
@@ -408,25 +310,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Função para atualizar as categorias com base no tipo selecionado
 function updateCategories(type) {
+    // Buscar token CSRF da meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
     // Buscar categorias via AJAX
-    fetch(`/api/categories?type=${type}`)
-        .then(response => response.json())
-        .then(data => {
-            // Limpar categorias existentes
-            const categorySelect = document.getElementById('category_id');
-            categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
-            
-            // Adicionar novas categorias
-            data.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = category.name;
-                categorySelect.appendChild(option);
+    fetch(`/api/categories?type=${type}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Redirecionar para a página de login se não estiver autenticado
+                window.location.href = '/login';
+                return;
+            }
+            return response.text().then(text => {
+                throw new Error(`Erro na API: ${response.status} ${response.statusText}. Resposta: ${text.substring(0, 100)}...`);
             });
-        })
-        .catch(error => {
-            console.error('Erro ao carregar categorias:', error);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const categorySelect = document.getElementById('category_id');
+        categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
+        
+        data.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
         });
+    })
+    .catch(error => {
+        console.error('Erro ao carregar categorias:', error);
+        // Mostrar mensagem de erro para o usuário
+        const categorySelect = document.getElementById('category_id');
+        categorySelect.innerHTML = '<option value="">Erro ao carregar categorias</option>';
+    });
 }
 
 // Função para mostrar/ocultar campos de recorrência
