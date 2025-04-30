@@ -29,7 +29,22 @@ class StatementImportController extends Controller
         // Verifica se a IA está configurada
         $aiConfigService = new AIConfigService();
         $aiConfig = $aiConfigService->getAIConfig();
-        $aiConfigured = $aiConfig['is_configured'];
+        $aiConfigured = false;
+        
+        // Verificar ReplicateSetting
+        if (class_exists('\App\Models\ReplicateSetting')) {
+            $settings = \App\Models\ReplicateSetting::getActive();
+            $aiConfigured = $settings && $settings->isConfigured();
+            
+            Log::info('Verificação de configuração da IA no index', [
+                'has_settings' => !empty($settings),
+                'is_active' => $settings ? $settings->is_active : false,
+                'has_api_token' => $settings ? !empty($settings->api_token) : false,
+                'has_model' => $settings ? !empty($settings->model_version) : false,
+                'has_provider' => $settings ? !empty($settings->provider) : false,
+                'is_configured' => $aiConfigured
+            ]);
+        }
             
         return view('transactions.import', compact('accounts', 'aiConfig', 'aiConfigured'));
     }
@@ -1056,60 +1071,46 @@ private function extractTransactionsFromCSV($path)
             // Verificar ReplicateSetting (para compatibilidade)
             if (!$apiKey && class_exists('\App\Models\ReplicateSetting')) {
                 $settings = \App\Models\ReplicateSetting::getActive();
-                if ($settings && !empty($settings->api_key)) {
-                    $apiKey = $settings->api_key;
+                if ($settings && $settings->isConfigured()) {
+                    $apiKey = $settings->api_token;
                     $model = $settings->model_version;
                     $provider = $settings->provider;
                     
-                    Log::info('Gemini indisponível. Usando ReplicateSetting como alternativa', [
+                    Log::info('Usando configuração do ReplicateSetting', [
                         'provider' => $provider,
-                        'model' => $model
+                        'model' => $model,
+                        'is_active' => $settings->is_active,
+                        'has_api_token' => !empty($settings->api_token),
+                        'has_model' => !empty($settings->model_version),
+                        'has_provider' => !empty($settings->provider)
+                    ]);
+                } else {
+                    Log::warning('Configuração do ReplicateSetting não encontrada ou inválida', [
+                        'has_settings' => !empty($settings),
+                        'is_active' => $settings ? $settings->is_active : false,
+                        'has_api_token' => $settings ? !empty($settings->api_token) : false,
+                        'has_model' => $settings ? !empty($settings->model_version) : false,
+                        'has_provider' => $settings ? !empty($settings->provider) : false
                     ]);
                 }
             }
             
             // Último recurso: usar config/ai.php para outros provedores
-            if (!$apiKey && config('ai.enabled')) {
-                $provider = config('ai.provider');
-                $providerId = strtolower($provider);
+            if (!$apiKey) {
+                $apiKey = config('ai.api_key');
+                $model = config('ai.model', 'gemini-2.0-flash');
+                $provider = config('ai.provider', 'google');
                 
-                if ($providerId === 'openai' && !empty(config('ai.openai.api_key'))) {
-                    $apiKey = config('ai.openai.api_key');
-                    $model = config('ai.openai.model');
-                } elseif ($providerId === 'anthropic' && !empty(config('ai.anthropic.api_key'))) {
-                    $apiKey = config('ai.anthropic.api_key');
-                    $model = config('ai.anthropic.model');
-                }
-                
-                if ($apiKey) {
-                    Log::info('Gemini indisponível. Usando config/ai.php como alternativa', [
+                Log::info('Usando configuração do arquivo config/ai.php', [
                         'provider' => $provider,
                         'model' => $model
                     ]);
                 }
-            }
             
-            // Último recurso absoluto: .env OPENAI_API_KEY
-            if (!$apiKey) {
-                $apiKey = env('OPENAI_API_KEY');
-                $model = 'gpt-3.5-turbo';
-                $provider = 'openai';
-                
-                if ($apiKey) {
-                    Log::warning('Gemini indisponível. Usando OpenAI do .env como fallback final');
-                }
-            }
-            
-            if (!$apiKey) {
-                Log::error('Nenhuma chave da API de IA configurada');
-                // Registrando informações adicionais para diagnóstico
-                Log::debug('Estado das configurações de IA', [
-                    'model_api_key_exists' => class_exists('\App\Models\ModelApiKey'),
-                    'replicate_setting_exists' => class_exists('\App\Models\ReplicateSetting'),
-                    'env_openai_key' => !empty(env('OPENAI_API_KEY')) ? 'Configurada' : 'Não configurada',
-                    'config_ai' => config('ai')
-                ]);
-                return null;
+            // Verificar se temos uma configuração válida
+            if (empty($apiKey)) {
+                Log::error('Nenhuma configuração de IA válida encontrada');
+                throw new \Exception('Nenhuma configuração de IA válida encontrada. Por favor, configure uma IA antes de importar extratos.');
             }
             
             // Verificar se a chave não está vazia (apenas para garantir)

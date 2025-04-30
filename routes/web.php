@@ -23,6 +23,7 @@ use App\Http\Controllers\NotificationConfigController;
 use App\Http\Controllers\SystemLogController;
 use App\Http\Controllers\TransactionExportController;
 use App\Http\Controllers\ModelApiKeyController;
+use App\Http\Controllers\OpenRouterConfigController;
 
 /*
 |--------------------------------------------------------------------------
@@ -126,7 +127,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post("/settings/notifications", [SettingsController::class, "updateNotifications"])->middleware(["auth"])->name("settings.notifications.update");
     
     // Configurações (protegidas por middleware admin)
-    Route::prefix('settings')->name('settings.')->middleware(['auth', AdminMiddleware::class])->group(function () {
+    Route::prefix('settings')->name('settings.')->middleware(['auth'])->group(function () {
         Route::get('/users', [SettingsController::class, 'users'])->name('users');
         Route::get('/users/new', [SettingsController::class, 'createUser'])->name('users.new');
         Route::post('/users/store', [SettingsController::class, 'storeUser'])->name('users.store');
@@ -157,10 +158,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/replicate/test', [ReplicateSettingController::class, 'test'])->name('replicate.test');
         Route::get('/replicate/get-settings/{provider}', [ReplicateSettingController::class, 'getSettings'])->name('replicate.get-settings');
         
-        // Rotas para configuração da OpenRouter
-        Route::get('/openrouter-config', [App\Http\Controllers\OpenRouterConfigController::class, 'showConfigForm'])->name('settings.openrouter.config');
-        Route::post('/openrouter-config', [App\Http\Controllers\OpenRouterConfigController::class, 'saveConfig'])->name('settings.openrouter.save');
-
         // Rotas para configuração de chaves API específicas por modelo
         Route::get('/model-keys/edit/{modelKey}', [ModelApiKeyController::class, 'edit'])->name('model-keys.edit');
         Route::put('/model-keys/{modelKey}', [ModelApiKeyController::class, 'update'])->name('model-keys.update');
@@ -243,6 +240,26 @@ Route::middleware(['auth'])->group(function () {
 
     // Adicionar nova rota para o método uploadAndAnalyze no controlador BankStatementController
     Route::post('/bank-statement-analyze', [App\Http\Controllers\BankStatementController::class, 'uploadAndAnalyze'])->name('bank-statement.analyze');
+
+    // Rotas para configuração do OpenRouter
+    Route::prefix('openrouter-config')->name('openrouter-config.')->group(function () {
+        Route::get('/', [OpenRouterConfigController::class, 'index'])->name('index');
+        Route::get('/create', [OpenRouterConfigController::class, 'create'])->name('create');
+        Route::post('/', [OpenRouterConfigController::class, 'store'])->name('store');
+        Route::get('/{openRouterConfig}/edit', [OpenRouterConfigController::class, 'edit'])->name('edit');
+        Route::put('/{openRouterConfig}', [OpenRouterConfigController::class, 'update'])->name('update');
+        Route::delete('/{openRouterConfig}', [OpenRouterConfigController::class, 'destroy'])->name('destroy');
+        Route::post('/test', [OpenRouterConfigController::class, 'testConnection'])->name('test');
+    });
+
+    // Adicionando rotas para configuração de chaves API específicas por modelo
+    Route::get('/settings/model-keys', [OpenRouterConfigController::class, 'index'])->name('openrouter-config.index');
+    Route::post('/settings/model-keys', [OpenRouterConfigController::class, 'store'])->name('openrouter-config.store');
+    Route::post('/settings/model-keys/test', [OpenRouterConfigController::class, 'testConnection'])->name('openrouter-config.test');
+    Route::post('/settings/model-keys/delete', [OpenRouterConfigController::class, 'destroy'])->name('openrouter-config.delete');
+    Route::get('/settings/model-keys/{id}/edit', [OpenRouterConfigController::class, 'edit'])->name('openrouter-config.edit');
+    Route::put('/settings/model-keys/{id}', [OpenRouterConfigController::class, 'update'])->name('openrouter-config.update');
+
 });
 
 // Rota de logout

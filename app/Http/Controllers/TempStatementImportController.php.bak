@@ -990,9 +990,374 @@ EOT;
             $decoded = array_merge($decoded, $mockResponse);
         }
 
-        return $decoded;
-    }
+                [$transactionsJson, $categoriesJson, json_encode($observations ?? 'null', JSON_PRETTY_PRINT), json_encode($cliente ?? 'null', JSON_PRETTY_PRINT), json_encode($fornecedor ?? 'null', JSON_PRETTY_PRINT), json_encode($data ?? 'null', JSON_PRETTY_PRINT)],
+                $promptTemplate
+            );
 
+            Log::debug('Preview do prompt DINÂMICO para ' . ($apiConfig->provider ?? 'IA'), [
+                'prompt_preview' => substr($finalPrompt, 0, 500) . '... (truncado)'
+            ]);
+
+            // **** REGISTRAR INÍCIO DA CHAMADA NO LOG ****
+            $logData['prompt_preview'] = substr($finalPrompt, 0, 1000); // Limitar tamanho do preview
+            $logData['model'] = $model; // Atualiza o modelo caso tenha pego do env
+            
+            // Preparar o payload para a API Gemini usando o prompt dinâmico
+            $data = [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $finalPrompt] // <-- Usar o prompt final
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'maxOutputTokens' => 4096
+                ]
+            ];
+            
+            // Usar a classe Http do Laravel para fazer a requisição
+            Log::info('▶️ Enviando requisição para API ' . ($apiConfig->provider ?? 'IA') . ': ' . $endpoint);
+            
+            // Inicializar $apiError e $result
+            $apiError = null;
+            $result = null;
+
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ])
+                ->timeout(60)
+                ->post($endpoint, $data);
+                
+                $statusCode = $response->status();
+                $logData['status_code'] = $statusCode;
+
+                if ($response->successful()) {
+                    Log::info('✅ Requisição HTTP bem-sucedida', [
+                        'status' => $statusCode,
+                        'size' => strlen($response->body())
+                    ]);
+                    $result = $response->getBody()->getContents();
+                    $logData['response_preview'] = substr($result, 0, 1000); // Limitar tamanho
+                } else {
+                    $apiError = 'Erro HTTP: ' . $statusCode . ' - ' . $response->body();
+                    $logData['error_message'] = substr($apiError, 0, 1000);
+                    $logData['response_preview'] = substr($response->body(), 0, 1000);
+                    Log::error('❗ Erro na requisição HTTP', ['status' => $statusCode, 'body' => $response->body()]);
+                    // Não retorna null ainda, registra o log primeiro
+                }
+                
+            } catch (\Exception $e) {
+                $apiError = 'Exceção na chamada HTTP: ' . $e->getMessage();
+                $logData['error_message'] = substr($apiError, 0, 1000);
+                Log::error('❌ ERRO AO CHAMAR API GEMINI', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+                // Não retorna null ainda, registra o log primeiro
+            }
+
+            // **** REGISTRAR RESULTADO FINAL NO LOG (APÓS A CHAMADA) ****
+            $logData['duration_ms'] = (int) round((microtime(true) - $startTime) * 1000);
+            AiCallLog::create($logData); // <-- Criar o registro no banco AQUI
+
+            // Se houve erro na API, agora retorna null
+            if ($apiError) {
+                return null;
+            }
+            if (!$result) {
+                 Log::error('Nenhum resultado retornado da API ' . ($apiConfig->provider ?? 'IA') . ' (pós-log)');
+                 return null;
+            }
+
+            // Processar a resposta
+            if ($result) {
+                $duration = round(microtime(true) - $startTime, 2);
+                $responseData = json_decode($result, true);
+                
+                if ($responseData && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                    $text = $responseData['candidates'][0]['content']['parts'][0]['text'];
+                    Log::debug('Resposta bruta da API ' . ($apiConfig->provider ?? 'IA'), ['text_preview' => substr($text, 0, 500) . '... (truncado)']);
+                    
+                    try {
+                        $processedResponse = null;
+                        $jsonContent = null; // Para guardar o conteúdo que será decodificado
+
+                        // Tentativa 1: Decodificar o texto completo diretamente
+                        $tempResponse = json_decode($text, true);
+                        $jsonError = json_last_error();
+
+                        if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
+                            Log::debug('JSON decodificado diretamente da resposta da API (sem marcadores markdown detectados)');
+                            $processedResponse = $tempResponse;
+                            $jsonContent = $text; // O texto original já era JSON válido
+                        } else {
+                            Log::debug('Decodificação direta falhou ou formato inválido, tentando remover marcadores markdown', ['json_error' => json_last_error_msg()]);
+                            
+                            // Tentativa 2: Remover marcadores ```json e ```
+                            $potentialJson = $text;
+                            $removedStart = false;
+                            $removedEnd = false;
+
+                            // Verificar e remover ```json no início (com ou sem newline após)
+                            if (str_starts_with($potentialJson, "```json\n")) {
+                                $potentialJson = substr($potentialJson, strlen("```json\n"));
+                                $removedStart = true;
+                            } elseif (str_starts_with($potentialJson, "```json")) { // Caso sem newline
+                                 $potentialJson = substr($potentialJson, strlen("```json"));
+                                 $removedStart = true;
+                            }
+                            
+                            // Verificar e remover ``` no final (com ou sem newline antes)
+                            if (str_ends_with($potentialJson, "\n```")) {
+                                $potentialJson = substr($potentialJson, 0, -strlen("\n```"));
+                                $removedEnd = true;
+                            } elseif (str_ends_with($potentialJson, "```")) { // Caso sem newline
+                                 $potentialJson = substr($potentialJson, 0, -strlen("```"));
+                                 $removedEnd = true;
+                            }
+
+                            // Se removemos os marcadores esperados, tentar decodificar a string resultante
+                            if ($removedStart && $removedEnd) {
+                                $jsonContent = trim($potentialJson); // Guardar o conteúdo limpo
+                                Log::debug('Marcadores markdown removidos, tentando decodificar conteúdo extraído.', [
+                                    'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                                ]);
+                                
+                                $tempResponse = json_decode($jsonContent, true);
+                                $jsonError = json_last_error();
+
+                                if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
+                                     Log::debug('JSON extraído por remoção de marcadores e decodificado com sucesso');
+                                     $processedResponse = $tempResponse;
+                                } else {
+                                    Log::error('Erro ao decodificar JSON após remover marcadores markdown ou formato inválido', [
+                                        'json_error' => json_last_error_msg(),
+                                        'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                                    ]);
+                                    // Mantém $processedResponse como null
+                                }
+                            } else {
+                                // NOVO FLUXO: Se removeu apenas o início, tentar extrair o JSON diretamente 
+                                // baseado na estrutura de abertura/fechamento de chaves
+                                if ($removedStart && !$removedEnd) {
+                                    Log::warning('Marcador final não encontrado. Tentando extrair o JSON pela estrutura.', [
+                                        'content_start' => substr($potentialJson, 0, 100) . '... (truncado)'
+                                    ]);
+                                
+                                    // NOVA ABORDAGEM: Reconstruir o JSON diretamente
+                                    if (strpos($potentialJson, '{') === 0) {
+                                        // Verificar se o texto tem o formato esperado
+                                        if (preg_match('/^\s*{\s*"transactions"\s*:\s*\[\s*{/s', $potentialJson)) {
+                                            Log::debug('Formato de JSON de transações detectado. Tentando reconstruí-lo...');
+                                            
+                                            // Extrair todas as transações que conseguir
+                                            $transactions = [];
+                                            $jsonText = trim($potentialJson);
+                                            
+                                            // Remover o prefixo para obter apenas o array de transações
+                                            $startPos = strpos($jsonText, '"transactions"');
+                                            if ($startPos !== false) {
+                                                $startPos = strpos($jsonText, '[', $startPos);
+                                                if ($startPos !== false) {
+                                                    $jsonText = substr($jsonText, $startPos + 1); // +1 para pular o '['
+                                                    
+                                                    // Dividir por chaves de objetos para identificar cada transação
+                                                    preg_match_all('/\s*{\s*(.*?)}\s*(?:,|\]|$)/s', $jsonText, $matches);
+                                                    
+                                                    if (!empty($matches[1])) {
+                                                        foreach ($matches[1] as $transactionContent) {
+                                                            // Limpar e validar cada transação
+                                                            $transaction = '{' . $transactionContent . '}';
+                                                            $decoded = @json_decode($transaction, true);
+                                                            
+                                                            if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
+                                                                // Verificar se tem os campos mínimos necessários
+                                                                if (isset($decoded['id'])) {
+                                                                    $transactions[] = $decoded;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            
+                                            if (!empty($transactions)) {
+                                                // Reconstruir o JSON completo
+                                                $newJsonData = ['transactions' => $transactions];
+                                                $jsonContent = json_encode($newJsonData);
+                                                
+                                                if ($jsonContent !== false) {
+                                                    Log::info('JSON reconstruído com sucesso a partir de fragmentos', [
+                                                        'total_transactions' => count($transactions)
+                                                    ]);
+                                                    
+                                                    $processedResponse = $newJsonData;
+                                                } else {
+                                                    Log::error('Falha ao codificar o JSON reconstruído');
+                                                }
+                                            } else {
+                                                Log::warning('Não foi possível extrair nenhuma transação válida do JSON fragmentado');
+                                            }
+                                        } else {
+                                            Log::warning('O formato do JSON não corresponde à estrutura esperada de transações');
+                                        }
+                                    }
+                                    
+                                    // CÓDIGO ANTERIOR MANTIDO COMO FALLBACK
+                                    if ($processedResponse === null) {
+                                        // Encontrar chaves de abertura/fechamento balanceadas
+                                        $level = 0;
+                                        $endPos = -1;
+                                        $len = strlen($potentialJson);
+                                        
+                                        for ($i = 0; $i < $len; $i++) {
+                                            $char = $potentialJson[$i];
+                                            if ($char === '{') {
+                                                $level++;
+                                            } elseif ($char === '}') {
+                                                $level--;
+                                                if ($level === 0) {
+                                                    $endPos = $i;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if ($endPos > 0) {
+                                            // Extrair o JSON da posição 0 até endPos (inclusive)
+                                            $jsonContent = substr($potentialJson, 0, $endPos + 1);
+                                            Log::debug('JSON extraído pela análise estrutural de chaves', [
+                                                'content_length' => strlen($jsonContent),
+                                                'content_preview' => substr($jsonContent, 0, 100) . '... (truncado)'
+                                            ]);
+                                            
+                                            $tempResponse = json_decode($jsonContent, true);
+                                            $jsonError = json_last_error();
+
+                                            if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
+                                                Log::debug('JSON extraído por análise estrutural e decodificado com sucesso');
+                                                $processedResponse = $tempResponse;
+                                            } else {
+                                                Log::error('Erro ao decodificar JSON após extração estrutural', [
+                                                    'json_error' => json_last_error_msg(),
+                                                    'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
+                                                ]);
+                                            }
+                                        } else {
+                                            Log::warning('Não foi possível encontrar um JSON válido com chaves balanceadas');
+                                        }
+                                    }
+                                } else {
+                                    Log::warning('Não foi possível remover os marcadores markdown esperados (```json ... ```). A resposta pode não estar formatada corretamente.', [
+                                        'removed_start' => $removedStart,
+                                        'removed_end' => $removedEnd
+                                    ]);
+                                }
+                                // $processedResponse continua null se nenhuma tentativa acima funcionou
+                            }
+                        }
+                        
+                        // REMOVIDO o bloco preg_match
+                        
+                        // Verificar se temos uma resposta processada válida após as tentativas
+                        if ($processedResponse === null) {
+                            Log::error('Falha final ao decodificar/extrair JSON válido da resposta da API.', [
+                                'text_preview' => substr($text, 0, 500) . '... (truncado)'
+                            ]);
+                            return null; // Retorna null se nenhuma tentativa funcionou
+                        }
+
+                        // ****************************************************************
+                        // O código continua daqui para baixo, usando $processedResponse
+                        // A verificação de erro JSON (json_last_error) já foi feita acima.
+                        // ****************************************************************
+                        
+                        // Verificar se o processamento foi bem-sucedido e se há transações
+                        // A linha original "if ($processedResponse && isset($processedResponse['transactions']) ...)" começa aqui
+                        if ($processedResponse && isset($processedResponse['transactions']) && !empty($processedResponse['transactions'])) {
+                            // Contar categorias sugeridas e existentes e processar notas
+                            $suggestedCategories = 0;
+                            $existingCategories = 0;
+                            $processedTransactions = []; // Array temporário para guardar transações processadas
+
+                            foreach ($processedResponse['transactions'] as $aiTransactionData) { 
+                                // Contagem para logs
+                                if (!empty($aiTransactionData['suggested_category']) && empty($aiTransactionData['category_id'])) {
+                                    $suggestedCategories++;
+                                } elseif (!empty($aiTransactionData['category_id'])) {
+                                    $existingCategories++;
+                                }
+                                
+                                // **** ADICIONAR CAMPO NOTES ****
+                                // Garante que o array tenha todos os campos esperados, incluindo 'notes'
+                                $processedTransaction = [
+                                    'id' => $aiTransactionData['id'] ?? null, // ID original
+                                    'type' => $aiTransactionData['type'] ?? null,
+                                    'category_id' => $aiTransactionData['category_id'] ?? null,
+                                    'suggested_category' => $aiTransactionData['suggested_category'] ?? null,
+                                    'notes' => $aiTransactionData['notes'] ?? null // <-- Extrai o campo notes da resposta da IA
+                                ];
+                                $processedTransactions[] = $processedTransaction;
+                            }
+                            
+                            // Atualizar o array original com as transações processadas (incluindo notes)
+                            $processedResponse['transactions'] = $processedTransactions;
+
+                            Log::info('🎉 Análise de transações com ' . ($apiConfig->provider ?? 'IA') . ' concluída com sucesso', [
+                                'duration' => $duration . 's',
+                                'total_transacoes' => count($processedResponse['transactions']),
+                                'sugestoes_categoria' => $suggestedCategories,
+                                'categorias_existentes' => $existingCategories,
+                                'primeira_transacao' => isset($processedResponse['transactions'][0]) ? json_encode($processedResponse['transactions'][0]) : 'n/a'
+                            ]);
+                            
+                            return $processedResponse;
+                        } else {
+                            // Resposta processada, mas sem transações válidas
+                            Log::warning('⚠️ Resposta ' . ($apiConfig->provider ?? 'IA') . ' processada, mas sem transações válidas', [
+                                'duration' => $duration . 's',
+                                'response_preview' => substr($text, 0, 200) . '... (truncado)'
+                            ]);
+                            
+                            return null;
+                        }
+                    } catch (\Exception $e) {
+                        // Erro ao processar o JSON da resposta
+                        Log::error('❌ Erro ao processar JSON da resposta ' . ($apiConfig->provider ?? 'IA'), [
+                            'message' => $e->getMessage(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'text_preview' => substr($text, 0, 200) . '... (truncado)'
+                        ]);
+                        
+                        return null;
+                    }
+                } else {
+                    // Resposta em formato inesperado
+                    Log::error('❌ Formato de resposta ' . ($apiConfig->provider ?? 'IA') . ' inesperado', [
+                        'response_keys' => isset($responseData) ? array_keys($responseData) : 'null',
+                        'response_preview' => substr($result, 0, 200) . '... (truncado)'
+                    ]);
+                    
+                    return null;
+                }
+            } else {
+                // Falha na chamada à API
+                Log::error('❌ Falha na chamada à API ' . ($apiConfig->provider ?? 'IA') . ' - resultado vazio');
+                return null;
+            }
+        } catch (\Exception $e) {
+            // Logar exceção geral e registrar no banco se possível
+            Log::error('❌ Exceção GERAL ao processar requisição Gemini', ['mensagem' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            $logData['error_message'] = 'Exceção Geral: ' . substr($e->getMessage(), 0, 800);
+            $logData['duration_ms'] = isset($logData['duration_ms']) ? $logData['duration_ms'] : (int) round((microtime(true) - $startTime) * 1000);
+            // Tenta salvar o log mesmo com a exceção geral
+            try { AiCallLog::create($logData); } catch (\Exception $logEx) { Log::error('Falha ao salvar log de erro da IA', ['log_exception' => $logEx->getMessage()]); }
+            return null;
+        }
+    }
+    
     /**
      * Método específico para análise com xAI Grok
      */
@@ -1755,7 +2120,7 @@ EOT;
 
         // Mapear resultados da IA por ID para acesso rápido
         $aiMap = [];
-        foreach ($aiAnalysisResult['transactions'] as $analyzed) { 
+        foreach ($aiAnalysisResult['transactions'] as $analyzed) {
              if (isset($analyzed['id'])) { // Usa o ID que a IA retornou (deve ser o índice original)
                  $aiMap[$analyzed['id']] = $analyzed;
              }

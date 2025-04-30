@@ -44,8 +44,8 @@ class ReplicateSettingController extends Controller
             'gemini' => [
                 'name' => 'Google Gemini',
                 'models' => [
-                    'gemini-2.0-flash',
-                    'gemini-2.0-pro',
+                    'gemini-1.5-flash',
+                    'gemini-1.5-pro',
                     'gemini-pro',
                     'gemini-pro-vision',
                     'gemini-pro-vision-2'
@@ -89,19 +89,32 @@ class ReplicateSettingController extends Controller
                 ],
                 'api_token' => env('DEEPSEEK_API_KEY'),
                 'api_url' => 'https://deepseek.ai/developer'
+            ],
+            'openrouter' => [
+                'name' => 'OpenRouter',
+                'models' => [
+                    'anthropic/claude-3-opus',
+                    'anthropic/claude-3-sonnet',
+                    'meta-llama/llama-3-70b-instruct',
+                    'meta-llama/llama-3-8b-instruct',
+                    'google/gemini-pro',
+                    'custom'
+                ],
+                'api_token' => env('OPENROUTER_API_KEY'),
+                'api_url' => 'https://openrouter.ai/keys',
+                'endpoint' => 'https://openrouter.ai/api/v1'
             ]
         ];
 
         return view('settings.replicate', compact('settings', 'providers'));
     }
 
-
-
     public function store(Request $request)
     {
         $request->validate([
-            'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot,tongyi,deepseek',
+            'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot,tongyi,deepseek,openrouter',
             'api_token' => 'required|string',
+            'endpoint' => 'nullable|string|url',
             'model_version' => 'required|string',
             'system_prompt' => 'nullable|string',
             'is_active' => 'nullable|boolean'
@@ -141,6 +154,14 @@ class ReplicateSettingController extends Controller
                     'deepseek-r1-13b',
                     'deepseek-r2',
                     'deepseek-r2-70b'
+                ],
+                'openrouter' => [
+                    'anthropic/claude-3-opus',
+                    'anthropic/claude-3-sonnet',
+                    'meta-llama/llama-3-70b-instruct',
+                    'meta-llama/llama-3-8b-instruct',
+                    'google/gemini-pro',
+                    'custom'
                 ]
             ];
 
@@ -154,6 +175,7 @@ class ReplicateSettingController extends Controller
             $settings->fill([
                 'provider' => $request->provider,
                 'api_token' => $request->api_token,
+                'endpoint' => $request->endpoint,
                 'model_version' => $modelVersion,
                 'system_prompt' => $request->system_prompt,
                 'is_active' => $request->boolean('is_active')
@@ -169,7 +191,8 @@ class ReplicateSettingController extends Controller
                     'provider' => $request->provider,
                     'model' => $modelVersion,
                     'is_active' => $request->boolean('is_active'),
-                    'has_system_prompt' => !empty($request->system_prompt)
+                    'has_system_prompt' => !empty($request->system_prompt),
+                    'has_endpoint' => !empty($request->endpoint)
                 ]
             );
 
@@ -207,8 +230,9 @@ class ReplicateSettingController extends Controller
             
             // Validar os dados da requisição
             $validated = Validator::make($data, [
-                'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot,tongyi,deepseek',
+                'provider' => 'required|string|in:openai,anthropic,gemini,grok,copilot,tongyi,deepseek,openrouter',
                 'api_token' => 'required|string',
+                'endpoint' => 'nullable|string|url',
                 'model_version' => 'required|string'
             ]);
             
@@ -223,6 +247,7 @@ class ReplicateSettingController extends Controller
             Log::info('Dados recebidos para teste de conexão:', [
                 'provider' => $data['provider'],
                 'has_token' => !empty($data['api_token']),
+                'has_endpoint' => !empty($data['endpoint']),
                 'model' => $data['model_version'],
                 'is_json' => $request->isJson()
             ]);
@@ -231,6 +256,7 @@ class ReplicateSettingController extends Controller
             $settings = new ReplicateSetting();
             $settings->provider = $data['provider'];
             $settings->api_token = $data['api_token'];
+            $settings->endpoint = $data['endpoint'] ?? null;
             $settings->model_version = $data['model_version'];
             
             // Testar a conexão usando o serviço apropriado
@@ -240,7 +266,8 @@ class ReplicateSettingController extends Controller
             // Registrar o log do teste bem-sucedido
             Log::info('Teste de conexão com IA bem-sucedido', [
                 'provider' => $settings->provider,
-                'model' => $settings->model_version
+                'model' => $settings->model_version,
+                'has_endpoint' => !empty($settings->endpoint)
             ]);
 
             SystemLog::register(
@@ -306,7 +333,7 @@ class ReplicateSettingController extends Controller
     {
         try {
             // Validar o provedor
-            if (!in_array($provider, ['openai', 'anthropic', 'gemini', 'grok', 'copilot', 'tongyi', 'deepseek'])) {
+            if (!in_array($provider, ['openai', 'anthropic', 'gemini', 'grok', 'copilot', 'tongyi', 'deepseek', 'openrouter'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Provedor inválido'

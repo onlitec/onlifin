@@ -2,39 +2,40 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Editar Configuração de IA
+                {{ isset($config) ? 'Editar' : 'Nova' }} Configuração do OpenRouter
             </h2>
             <a href="{{ route('openrouter-config.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
-                Voltar
+                <i class="fas fa-arrow-left"></i> Voltar
             </a>
         </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            @endif
-
-            @if(session('error'))
+            @if($errors->any())
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline">{{ session('error') }}</span>
+                    <ul class="list-disc list-inside">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
             <div class="bg-white shadow-md rounded-lg p-6">
-                <form action="{{ route('openrouter-config.update', $setting->id) }}" method="POST">
+                <form action="{{ isset($config) ? route('openrouter-config.update', $config->id) : route('openrouter-config.store') }}" 
+                      method="POST">
                     @csrf
-                    @method('PUT')
-                    
+                    @if(isset($config))
+                        @method('PUT')
+                    @endif
+
                     <div class="mb-6">
-                        <label for="provider" class="block text-gray-700 font-medium mb-2">Selecione a IA (Provedor)</label>
-                        <select name="provider" id="provider" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-700 transition duration-150 ease-in-out" required>
+                        <label for="provider" class="block text-gray-700 font-medium mb-2">Provedor de IA</label>
+                        <select name="provider" id="provider" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                             <option value="">Selecione um provedor</option>
                             @foreach($providers as $key => $provider)
-                                <option value="{{ $key }}" {{ old('provider', $setting->provider) == $key ? 'selected' : '' }}>
+                                <option value="{{ $key }}" {{ old('provider', $config->provider ?? '') == $key ? 'selected' : '' }}>
                                     {{ $provider['name'] }}
                                 </option>
                             @endforeach
@@ -42,8 +43,8 @@
                     </div>
 
                     <div class="mb-6">
-                        <label for="model" class="block text-gray-700 font-medium mb-2">Selecione o Modelo</label>
-                        <select name="model" id="model" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-700 transition duration-150 ease-in-out" required>
+                        <label for="model" class="block text-gray-700 font-medium mb-2">Modelo</label>
+                        <select name="model" id="model" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                             <option value="">Selecione um modelo</option>
                         </select>
                     </div>
@@ -55,9 +56,9 @@
                     </div>
 
                     <div class="mb-6">
-                        <label for="openrouter_api_key" class="block text-gray-700 font-medium mb-2">Chave de API</label>
+                        <label for="api_key" class="block text-gray-700 font-medium mb-2">Chave de API</label>
                         <div class="relative">
-                            <input type="password" name="openrouter_api_key" id="openrouter_api_key" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required value="{{ old('openrouter_api_key', $setting->api_token) }}">
+                            <input type="password" name="api_key" id="api_key" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required value="{{ old('api_key', $config->api_key ?? '') }}">
                             <button type="button" id="toggleApiKey" class="absolute right-3 top-2 text-gray-500 hover:text-gray-700">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -65,25 +66,14 @@
                     </div>
 
                     <div class="mb-6">
-                        <label for="openrouter_endpoint" class="block text-gray-700 font-medium mb-2">Endpoint (Opcional)</label>
-                        <input type="url" name="openrouter_endpoint" id="openrouter_endpoint" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://api.openrouter.ai/api/v1" value="{{ old('openrouter_endpoint', $setting->endpoint) }}">
+                        <label for="endpoint" class="block text-gray-700 font-medium mb-2">Endpoint</label>
+                        <input type="url" name="endpoint" id="endpoint" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required value="{{ old('endpoint', $config->endpoint ?? '') }}" placeholder="https://api.openrouter.ai/api/v1">
                     </div>
 
                     <div class="mb-6">
-                        <label class="block text-gray-700 font-medium mb-2">Escolha um Prompt Pré-Definido (Opcional)</label>
-                        <select id="predefinedPrompt" class="w-full border border-gray-300 rounded px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-gray-700 transition duration-150 ease-in-out">
-                            <option value="">Nenhum</option>
-                            <option value="analyze_excerpt">Analisar Extrato Bancário</option>
-                            <option value="detect_fraud">Detectar Fraudes</option>
-                            <option value="summarize_transactions">Resumir Transações</option>
-                        </select>
-                        <p class="text-sm text-gray-500 mb-2">Selecione um prompt para carregar automaticamente no campo abaixo.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <label for="system_prompt" class="block text-gray-700 font-medium mb-2">Prompt do Sistema (Digite ou edite o prompt)</label>
-                        <textarea name="system_prompt" id="system_prompt" rows="4" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-gray-700 transition duration-150 ease-in-out" required>{{ old('system_prompt', $setting->system_prompt) }}</textarea>
-                        <p class="text-sm text-gray-500 mt-1">Instruções para o comportamento da IA. O prompt pré-definido será aplicado se selecionado.</p>
+                        <label for="system_prompt" class="block text-gray-700 font-medium mb-2">Prompt do Sistema</label>
+                        <textarea name="system_prompt" id="system_prompt" rows="4" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('system_prompt', $config->system_prompt ?? '') }}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">Instruções para o comportamento da IA</p>
                     </div>
 
                     <div class="flex justify-between">
@@ -91,7 +81,7 @@
                             Testar Conexão
                         </button>
                         <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                            Atualizar Configuração
+                            <i class="fas fa-save"></i> Salvar
                         </button>
                     </div>
                 </form>
@@ -107,13 +97,10 @@
         const customModelContainer = document.getElementById('customModelContainer');
         const customModelInput = document.getElementById('custom_model');
         const toggleApiKey = document.getElementById('toggleApiKey');
-        const apiKeyInput = document.getElementById('openrouter_api_key');
+        const apiKeyInput = document.getElementById('api_key');
         const testConnectionBtn = document.getElementById('testConnection');
-        const predefinedPromptSelect = document.getElementById('predefinedPrompt');
-        const systemPromptTextarea = document.getElementById('system_prompt');
 
         const providers = @json($providers);
-        const currentModel = '{{ $setting->model_version }}';
 
         // Função para atualizar os modelos baseado no provedor selecionado
         function updateModels() {
@@ -125,9 +112,6 @@
                     const option = document.createElement('option');
                     option.value = value;
                     option.textContent = label;
-                    if (value === currentModel) {
-                        option.selected = true;
-                    }
                     modelSelect.appendChild(option);
                 });
             }
@@ -164,7 +148,7 @@
             const provider = providerSelect.value;
             const model = modelSelect.value === 'custom' ? customModelInput.value : modelSelect.value;
             const apiKey = apiKeyInput.value;
-            const endpoint = document.getElementById('openrouter_endpoint').value;
+            const endpoint = document.getElementById('endpoint').value;
 
             if (!provider || !model || !apiKey) {
                 alert('Por favor, preencha todos os campos obrigatórios.');
@@ -183,7 +167,7 @@
                 body: JSON.stringify({
                     provider: provider,
                     model: model,
-                    api_token: apiKey,
+                    api_key: apiKey,
                     endpoint: endpoint
                 })
             })
@@ -204,21 +188,6 @@
             });
         });
 
-        // Load pre-defined prompt when selected
-        predefinedPromptSelect.addEventListener('change', function() {
-            const selectedPrompt = this.value;
-            const promptMap = {
-                'analyze_excerpt': 'Analise o extrato bancário fornecido e identifique transações anormais.',
-                'detect_fraud': 'Examine as transações para detectar possíveis fraudes, com foco em padrões suspeitos.',
-                'summarize_transactions': 'Resuma as transações do extrato bancário, agrupando por categoria e totalizando valores.'
-            };
-            if (selectedPrompt && promptMap[selectedPrompt]) {
-                systemPromptTextarea.value = promptMap[selectedPrompt];
-            } else {
-                systemPromptTextarea.value = '';
-            }
-        });
-
         // Inicializar modelos se houver um provedor selecionado
         if (providerSelect.value) {
             updateModels();
@@ -226,4 +195,4 @@
     });
     </script>
     @endpush
-</x-app-layout>
+</x-app-layout> 

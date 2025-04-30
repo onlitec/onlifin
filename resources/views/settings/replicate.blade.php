@@ -5,7 +5,7 @@
         
         <div class="flex justify-between items-center mb-4">
             <p class="text-gray-600">Configure as integrações com os principais provedores de IA do mercado.</p>
-            <a href="{{ route('settings.settings.openrouter.config') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <a href="{{ route('openrouter-config.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                 <i class="ri-key-2-line mr-2"></i> Configurar Chaves por Modelo
             </a>
         </div>
@@ -244,27 +244,43 @@
                         <div class="flex-1 relative">
                             <input type="password" name="api_token" id="api-token-input"
                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm pr-10"
-                                   value="{{ old('api_token', $settings->api_token) }}"
-                                   {{ old('provider', $settings->provider ?? 'openai') !== $settings->provider ? 'disabled' : '' }}>
+                                   value="{{ old('api_token', $settings->api_token) }}">
                             <button type="button" id="toggle-token-visibility" 
                                     class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
                                     title="Exibir/ocultar token">
                                 <i class="ri-eye-line" id="eye-icon"></i>
                             </button>
                         </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
                         <div class="flex items-center gap-2">
-                            <div class="text-sm text-gray-600">
-                                {{ $providers[old('provider', $settings->provider ?? 'openai')]['name'] }}
-                            </div>
                             <a href="{{ $providers[old('provider', $settings->provider ?? 'openai')]['api_url'] }}" 
-                                target="_blank" 
-                                class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-                                title="Obter chave API">
-                                <i class="ri-external-link-line"></i>
-                                Obter chave
+                               target="_blank" 
+                               class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                               title="Obter chave API">
+                               <i class="ri-external-link-line"></i>
+                               Obter chave API
                             </a>
                         </div>
+                        <button type="button" id="test-connection-btn" 
+                                class="bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium rounded-lg text-sm px-5 py-2 focus:outline-none">
+                            <i class="ri-shield-check-line mr-1"></i> Testar Conexão
+                        </button>
                     </div>
+                </div>
+
+                <!-- Endpoint (Opcional) -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">
+                        Endpoint (Opcional)
+                    </label>
+                    <input type="url" name="endpoint" id="endpoint-input"
+                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                           value="{{ old('endpoint', $settings->endpoint) }}"
+                           placeholder="{{ $providers[old('provider', $settings->provider ?? 'openai')]['endpoint'] ?? 'https://api.openai.com/v1' }}">
+                    <p class="text-xs text-gray-500">
+                        URL base da API. Deixe em branco para usar o endpoint padrão do provedor.
+                    </p>
                 </div>
 
                 <!-- Prompt do Sistema -->
@@ -390,6 +406,13 @@
                 formData.append('api_token', apiToken);
                 formData.append('model_version', modelVersion);
                 
+                // Obter endpoint (se disponível)
+                const endpoint = document.getElementById('endpoint-input') ? 
+                                 document.getElementById('endpoint-input').value : '';
+                if (endpoint) {
+                    formData.append('endpoint', endpoint);
+                }
+
                 // Criar e enviar requisição
                 fetch('{{ route("settings.replicate.test") }}', {
                     method: 'POST',

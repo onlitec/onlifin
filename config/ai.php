@@ -43,8 +43,6 @@ return [
         'gemini' => [
             'name' => 'Google Gemini',
             'models' => [
-                'gemini-2.0-flash',
-                'gemini-2.0-pro',
                 'gemini-1.5-flash',
                 'gemini-1.5-pro',
                 'gemini-pro',
