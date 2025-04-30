@@ -14,29 +14,45 @@ class AIConfigService
      * 
      * @return array
      */
-    public function getAIConfig(): array
+    public function getAIConfig()
     {
-        $modelKey = $this->getActiveModelKey();
+        $config = [
+            'is_configured' => false,
+            'provider' => null,
+            'model' => null,
+            'has_api_key' => false
+        ];
         
-        if (!$modelKey) {
-            return [
-                'provider' => '',
-                'model_name' => '',
-                'api_key' => '',
-                'system_prompt' => '',
-                'prompt_template' => '',
-                'is_configured' => false
-            ];
+        // Verificar ReplicateSetting
+        if (class_exists('\App\Models\ReplicateSetting')) {
+            $settings = \App\Models\ReplicateSetting::getActive();
+            if ($settings && $settings->isConfigured()) {
+                $config['is_configured'] = true;
+                $config['provider'] = $settings->provider;
+                $config['model'] = $settings->model_version;
+                $config['api_key'] = $settings->api_token; // Adicionado a chave da API
+                $config['model_name'] = $settings->model_version; // Adicionado nome do modelo
+                $config['system_prompt'] = $settings->system_prompt; // Adicionado o prompt do sistema
+                $config['has_api_key'] = !empty($settings->api_token);
+                
+                Log::info('Configuração da IA encontrada no ReplicateSetting', [
+                    'provider' => $settings->provider,
+                    'model' => $settings->model_version,
+                    'is_active' => $settings->is_active,
+                    'has_api_token' => !empty($settings->api_token)
+                ]);
+            } else {
+                Log::warning('Configuração da IA não encontrada no ReplicateSetting', [
+                    'has_settings' => !empty($settings),
+                    'is_active' => $settings ? $settings->is_active : false,
+                    'has_api_token' => $settings ? !empty($settings->api_token) : false,
+                    'has_model' => $settings ? !empty($settings->model_version) : false,
+                    'has_provider' => $settings ? !empty($settings->provider) : false
+                ]);
+            }
         }
         
-        return [
-            'provider' => $modelKey->provider,
-            'model_name' => $modelKey->model,
-            'api_key' => $modelKey->api_token,
-            'system_prompt' => $modelKey->system_prompt,
-            'prompt_template' => $modelKey->system_prompt,
-            'is_configured' => true
-        ];
+        return $config;
     }
     
     /**
@@ -54,9 +70,25 @@ class AIConfigService
      * 
      * @return bool
      */
-    public function isAIConfigured(): bool
+    public function isAIConfigured()
     {
-        return ModelApiKey::where('is_active', true)->exists();
+        if (class_exists('\App\Models\ReplicateSetting')) {
+            $settings = \App\Models\ReplicateSetting::getActive();
+            $isConfigured = $settings && $settings->isConfigured();
+            
+            Log::info('Verificação de configuração da IA', [
+                'has_settings' => !empty($settings),
+                'is_active' => $settings ? $settings->is_active : false,
+                'has_api_token' => $settings ? !empty($settings->api_token) : false,
+                'has_model' => $settings ? !empty($settings->model_version) : false,
+                'has_provider' => $settings ? !empty($settings->provider) : false,
+                'is_configured' => $isConfigured
+            ]);
+            
+            return $isConfigured;
+        }
+        
+        return false;
     }
     
     /**

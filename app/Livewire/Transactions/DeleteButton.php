@@ -12,13 +12,18 @@ class DeleteButton extends Component
     public $transactionId;
     public $confirming = false;
     
+    protected $listeners = [
+        'swal:confirm' => 'confirmDelete',
+    ];
+
     public function mount($transactionId)
     {
         $this->transactionId = $transactionId;
     }
     
-    public function confirmDelete()
+    public function confirmDelete($data)
     {
+        $this->transactionId = $data['transactionId'];
         $this->confirming = true;
     }
     
@@ -37,28 +42,29 @@ class DeleteButton extends Component
             
             DB::commit();
             
-            if (class_exists('Jantinnerezo\\LivewireAlert\\Facades\\LivewireAlert')) {
-                LivewireAlert::success('Excluído!', 'Transação excluída com sucesso.');
-            }
+            $this->dispatch('swal:success', [
+                'title' => 'Excluído!',
+                'text' => 'Transação excluída com sucesso.',
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
             
-            // Notifica todos os componentes
-            // $this->dispatch('transactionDeleted'); // Comentado
-            // $this->dispatch('$refresh');         // Comentado
-            
-            // Fecha o modal
-            // $this->confirming = false; // Comentado - o redirecionamento cuidará disso
-
-            // Força um recarregamento da página atual
-            return redirect(request()->header('Referer')); // Descomentado
+            $this->confirming = false;
+            $this->transactionId = null;
             
         } catch (\Exception $e) {
             DB::rollBack();
             
-            if (class_exists('Jantinnerezo\\LivewireAlert\\Facades\\LivewireAlert')) {
-                LivewireAlert::error('Erro!', 'Erro ao excluir transação: ' . $e->getMessage());
-            }
-            
-            \Log::error('Erro ao excluir transação: ' . $e->getMessage());
+            $this->dispatch('swal:error', [
+                'title' => 'Erro!',
+                'text' => 'Erro ao excluir transação: ' . $e->getMessage(),
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
         }
     }
 

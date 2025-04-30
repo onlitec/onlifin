@@ -45,19 +45,15 @@
                                     Não foi possível obter sugestões da IA. As transações podem estar sem categoria ou com uma categoria padrão.
                                 </p>
                                 <p class="text-sm mt-2">
-                                    Você pode verificar as configurações de IA em <a href="{{ route('settings.model-keys.index') }}" class="underline hover:text-purple-800">Configurações > IA</a>.
+                                    Você pode verificar as configurações de IA em <a href="{{ route('openrouter-config.index') }}" class="underline hover:text-purple-800">Configurações > IA</a>.
                                 </p>
                             @endif
                         </div>
                     @endif
                 </div>
 
-                <!-- Remover form antigo -->
+                <!-- Seção de filtros removida para evitar problemas de categorização -->
                 
-                 <!-- Inputs hidden para guardar dados essenciais para o botão de salvar -->
-                 <input type="hidden" id="account_id" value="{{ $account->id }}">
-                 <input type="hidden" id="file_path" value="{{ $path }}">
-                    
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
@@ -67,6 +63,8 @@
                                 <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Valor</th>
                                 <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Tipo</th>
                                 <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Categoria</th>
+                                <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Cliente</th>
+                                <th class="px-3 py-3 bg-gray-50 text-gray-600 font-medium">Fornecedor</th>
                                 <!-- Remover coluna Ações -->
                             </tr>
                         </thead>
@@ -166,7 +164,7 @@
             function renderTransactions() {
                 container.innerHTML = ''; // Limpar container
                 if (!transactions || transactions.length === 0) {
-                     container.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Nenhuma transação para exibir.</td></tr>';
+                     container.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Nenhuma transação para exibir.</td></tr>';
                      confirmSaveButton.disabled = true; // Desabilitar botão se não houver transações
                      return;
                  }
@@ -193,11 +191,13 @@
                     console.log(` - Categoria determinada para linha ${index}:`, categoryName);
 
                     row.innerHTML = `
-                        <td class="px-3 py-3 text-sm">${transaction.date || 'N/A'}</td>
-                        <td class="px-3 py-3 text-sm">${transaction.description || 'N/A'}</td>
-                        <td class="px-3 py-3 text-sm text-right">${formattedAmount}</td>
-                        <td class="px-3 py-3 text-sm"><span class="${typeColor} font-medium">${typeText}</span></td>
-                        <td class="px-3 py-3 text-sm">${categoryName}</td>
+                        <td class="px-3 py-3 text-sm" data-field="date">${transaction.date || 'N/A'}</td>
+                        <td class="px-3 py-3 text-sm" data-field="description">${transaction.description || 'N/A'}</td>
+                        <td class="px-3 py-3 text-sm" data-field="amount">${formattedAmount}</td>
+                        <td class="px-3 py-3 text-sm" data-field="type" class="${typeColor}">${typeText}</td>
+                        <td class="px-3 py-3 text-sm" data-field="cliente">${transaction.cliente || 'N/A'}</td>
+                        <td class="px-3 py-3 text-sm" data-field="fornecedor">${transaction.fornecedor || 'N/A'}</td>
+                        <td class="px-3 py-3 text-sm" data-field="categoria">${categoryName}</td>
                     `;
                     container.appendChild(row);
                 });
@@ -206,7 +206,7 @@
             // --- Carregar transações via AJAX ---
             function loadTransactions() {
                 // Mostrar mensagem de carregamento
-                container.innerHTML = '<tr><td colspan="5" class="text-center py-4">Carregando transações...</td></tr>';
+                container.innerHTML = '<tr><td colspan="7" class="text-center py-4">Carregando transações...</td></tr>';
                 
                 // Fazer a requisição AJAX
                 fetch('{{ route("transactions.ajax.get") }}', {
@@ -234,7 +234,7 @@
                 })
                 .catch(error => {
                     console.error('Erro ao carregar transações:', error);
-                    container.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Erro ao carregar transações: ${error.message}</td></tr>`;
+                    container.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Erro ao carregar transações: ${error.message}</td></tr>`;
                     confirmSaveButton.disabled = true;
                 });
             }
@@ -325,6 +325,10 @@
                     hideLoading(confirmSaveButton);
                 });
             });
+
+            // Função de filtragem removida, pois não é necessária nesta página
+            function filterTransactions() {
+            }
 
             // --- Inicialização ---
             @if(isset($load_via_ajax) && $load_via_ajax)

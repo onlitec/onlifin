@@ -280,28 +280,35 @@ class FixedStatementImportController extends Controller
             $savedCount = 0;
             $transactions = $request->transactions;
             
-            foreach ($transactions as $transactionData) {
-                // Verificar se a categoria pertence ao usuário
-                if (!empty($transactionData['category_id'])) {
-                    $category = Category::find($transactionData['category_id']);
-                    if (!$category || $category->user_id !== auth()->id()) {
-                        continue; // Pular esta transação
+            // Implemente tamanho de lote dinâmico baseado no número de transações para evitar limites de API
+            $totalTransactions = count($transactions);
+            $batchSize = ($totalTransactions > 50) ? 20 : 50; // Reduza para 20 se houver mais de 50 transações
+            $batchedTransactions = array_chunk($transactions, $batchSize);
+            
+            foreach ($batchedTransactions as $batch) {
+                foreach ($batch as $transactionData) {
+                    // Verificar se a categoria pertence ao usuário
+                    if (!empty($transactionData['category_id'])) {
+                        $category = Category::find($transactionData['category_id']);
+                        if (!$category || $category->user_id !== auth()->id()) {
+                            continue; // Pular esta transação
+                        }
                     }
+                    
+                    // Criar a transação
+                    $transaction = new Transaction();
+                    $transaction->user_id = auth()->id();
+                    $transaction->account_id = $request->account_id;
+                    $transaction->date = $transactionData['date'];
+                    $transaction->description = $transactionData['description'];
+                    $transaction->amount = $transactionData['amount'] * 100; // Converter para centavos
+                    $transaction->type = $transactionData['type'];
+                    $transaction->category_id = $transactionData['category_id'] ?? null;
+                    $transaction->status = 'paid'; // Transações importadas são consideradas pagas
+                    $transaction->save();
+                    
+                    $savedCount++;
                 }
-                
-                // Criar a transação
-                $transaction = new Transaction();
-                $transaction->user_id = auth()->id();
-                $transaction->account_id = $request->account_id;
-                $transaction->date = $transactionData['date'];
-                $transaction->description = $transactionData['description'];
-                $transaction->amount = $transactionData['amount'] * 100; // Converter para centavos
-                $transaction->type = $transactionData['type'];
-                $transaction->category_id = $transactionData['category_id'] ?? null;
-                $transaction->status = 'paid'; // Transações importadas são consideradas pagas
-                $transaction->save();
-                
-                $savedCount++;
             }
             
             DB::commit();

@@ -79,8 +79,21 @@ class AIService
                     $this->model = $this->validateModel($settings->model_version);
                 }
                 $this->systemPrompt = $settings->system_prompt;
+                
+                // Log para debug
+                Log::info('Prompt do sistema carregado:', [
+                    'provider' => $this->provider,
+                    'model' => $this->model,
+                    'prompt_length' => strlen($this->systemPrompt ?? ''),
+                    'prompt_preview' => substr($this->systemPrompt ?? '', 0, 100) . '...'
+                ]);
             } else {
-                Log::warning("Configuração não encontrada para o provedor {$this->provider}");
+                Log::warning("Configuração não encontrada para o provedor {$this->provider}", [
+                    'provider' => $this->provider,
+                    'model' => $this->model,
+                    'has_settings' => false,
+                    'reason' => 'No active configuration found in database'
+                ]);
             }
         } catch (\Exception $e) {
             Log::error("Erro ao carregar configuração: {$e->getMessage()}");
@@ -138,16 +151,33 @@ class AIService
      */
     public function test()
     {
-        return match($this->provider) {
-            'openai' => $this->testOpenAI(),
-            'anthropic' => $this->testAnthropic(),
-            'gemini' => $this->testGemini(),
-            'grok' => $this->testGrok(),
-            'copilot' => $this->testCopilot(),
-            'tongyi' => $this->testTongyi(),
-            'deepseek' => $this->testDeepseek(),
-            default => throw new \Exception('Provedor de IA não suportado')
-        };
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
+        // Chamar o método de teste específico com base no provedor
+        switch ($this->provider) {
+            case 'openai':
+                return $this->testOpenAI();
+            case 'anthropic':
+                return $this->testAnthropic();
+            case 'gemini':
+                return $this->testGemini();
+            case 'grok':
+                return $this->testGrok();
+            case 'copilot':
+                return $this->testCopilot();
+            case 'tongyi':
+                return $this->testTongyi();
+            case 'deepseek':
+                return $this->testDeepseek();
+            default:
+                return ['status' => 'error', 'message' => 'Provedor não suportado.'];
+        }
     }
 
     /**
@@ -172,6 +202,14 @@ class AIService
      */
     private function testOpenAI()
     {
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
         try {
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiToken,
@@ -204,6 +242,14 @@ class AIService
      */
     private function testAnthropic()
     {
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
         try {
             Log::info('Iniciando teste de conexão com Anthropic', [
                 'model' => $this->model
@@ -268,6 +314,14 @@ class AIService
      */
     private function testGemini()
     {
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
         try {
             // Usar o modelo gemini 2.0 flash que sabemos que funciona 
             $model = 'gemini-2.0-flash';
@@ -293,6 +347,14 @@ class AIService
      */
     private function testGrok()
     {
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
         try {
             Log::info('Iniciando teste de conexão com Grok', [
                 'model' => $this->model
@@ -314,6 +376,14 @@ class AIService
      */
     private function testCopilot()
     {
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
         try {
             Log::info('Iniciando teste de conexão com Copilot', [
                 'model' => $this->model
@@ -335,6 +405,14 @@ class AIService
      */
     private function testTongyi()
     {
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
         try {
             Log::info('Iniciando teste de conexão com Tongyi', [
                 'model' => $this->model
@@ -372,6 +450,14 @@ class AIService
      */
     private function testDeepseek()
     {
+        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_config' => false,
+                'reason' => 'Missing API key or inactive setting'
+            ]);
+            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+        }
         try {
             Log::info('Iniciando teste de conexão com Deepseek', [
                 'model' => $this->model

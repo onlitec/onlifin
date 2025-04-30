@@ -87,12 +87,18 @@
                                         <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
                                     @endif
                                 </th>
+                                <th wire:click="sortBy('status')" class="px-4 py-3 cursor-pointer">
+                                    Status
+                                    @if ($sortField === 'status')
+                                        <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line ml-1"></i>
+                                    @endif
+                                </th>
                                 <th class="px-4 py-3">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($transactions as $transaction)
-                                <tr class="border-t border-gray-100">
+                                <tr wire:key="income-transaction-{{ $transaction->id }}" class="border-t border-gray-100">
                                     <td class="px-4 py-3">
                                         {{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}
                                     </td>
@@ -107,14 +113,30 @@
                                         R$ {{ number_format($transaction->amount / 100, 2, ',', '.') }}
                                     </td>
                                     <td class="px-4 py-3">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $transaction->isPaid() ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                            {{ $transaction->isPaid() ? 'Paga' : 'Pendente' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
                                         <div class="flex items-center space-x-2">
+                                            @if (!$transaction->isPaid())
+                                                <button wire:click="markAsPaid({{ $transaction->id }})"
+                                                        class="text-green-600 hover:text-green-900"
+                                                        title="Marcar como paga">
+                                                    <i class="ri-checkbox-circle-line"></i>
+                                                </button>
+                                            @endif
                                             <a href="{{ route('transactions.edit', $transaction) }}" 
                                                class="text-gray-600 hover:text-gray-900">
                                                 <i class="ri-pencil-line"></i>
                                             </a>
-                                            <livewire:transactions.delete-button 
-                                                wire:key="delete-button-income-{{ $transaction->id }}" 
-                                                :transaction-id="$transaction->id" />
+                                            <button 
+                                                wire:click="$dispatch('swal:confirm', { transactionId: {{ $transaction->id }}, type: 'receita' })" 
+                                                class="text-red-600 hover:text-red-700" 
+                                                title="Excluir"
+                                            >
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

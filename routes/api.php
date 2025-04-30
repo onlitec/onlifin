@@ -20,9 +20,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Categorias por tipo
-Route::get('/categories', function (Request $request) {
+Route::middleware(['web', 'auth'])->get('/categories', function (Request $request) {
     $type = $request->type ?? 'expense';
+    
+    $userId = auth()->id();
+    if (!$userId) {
+        return response()->json([], 401);
+    }
+    
     return Category::where('type', $type)
+        ->where('user_id', $userId)
         ->orderBy('name')
         ->get(['id', 'name']);
 });

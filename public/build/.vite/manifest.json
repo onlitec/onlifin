@@ -4,12 +4,12 @@
     "name": "vendor"
   },
   "resources/css/app.css": {
-    "file": "assets/style-BzchsJZV.css",
+    "file": "assets/style-CmNqCLXY.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CtgnPSK7.js",
+    "file": "assets/app-CFTqCVQD.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

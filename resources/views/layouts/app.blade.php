@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- Modified: {{ date('Y-m-d H:i:s') }} -->
 
     @auth
     <!-- User ID for notifications -->
@@ -28,17 +29,16 @@
     <!-- Icons (Local) -->
     <link href="{{ asset('assets/css/remixicon.css') }}" rel="stylesheet">
     
-    <!-- IMask para campos de formulário -->
-
-    
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Styles -->
+    @vite(['resources/css/app.css'])
     @livewireStyles
     
-    <!-- Alpine.js -->
-
+    <!-- Scripts -->
+    <script src="{{ asset('assets/js/sweetalert2.all.min.js') }}" defer></script>
+    @livewireScripts
+    @vite(['resources/js/app.js'])
     
     <!-- LivewireUI Modal -->
-    @livewireScripts
     @livewire('components.modal')
     
     <style>
@@ -230,9 +230,9 @@
                                 Despesas
                             </a>
 
-                            <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                                <i class="ri-price-tag-3-line mr-2"></i>
-                                Categorias
+                            <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}">
+                                <i class="ri-bar-chart-line mr-2"></i>
+                                Relatórios
                             </a>
 
                             <a href="{{ route('accounts.index') }}" class="menu-item {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
@@ -240,10 +240,47 @@
                                 Contas
                             </a>
 
-                            <a href="{{ route('settings.index') }}" class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                                <i class="ri-settings-3-line mr-2"></i>
-                                Configurações
-                            </a>
+                            <div x-data="{ open: false }" class="relative">
+                                <button @click="open = !open" @click.away="open = false" class="menu-item flex items-center {{ request()->routeIs('settings.*') || request()->routeIs('categories.*') ? 'active' : '' }}">
+                                    <i class="ri-settings-3-line mr-2"></i>
+                                    Configurações
+                                    <i class="ri-arrow-down-s-line ml-1"></i>
+                                </button>
+
+                                <div x-show="open" 
+                                     x-transition:enter="transition ease-out duration-100" 
+                                     x-transition:enter-start="transform opacity-0 scale-95" 
+                                     x-transition:enter-end="transform opacity-100 scale-100" 
+                                     x-transition:leave="transition ease-in duration-75" 
+                                     x-transition:leave-start="transform opacity-100 scale-100" 
+                                     x-transition:leave-end="transform opacity-0 scale-95" 
+                                     class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 origin-top-right"
+                                     style="display: none;"
+                                     >
+                                    <div class="py-1">
+                                        <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.index') ? 'font-semibold text-blue-600' : '' }}">
+                                            Geral
+                                        </a>
+                                        <a href="{{ route('categories.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('categories.*') ? 'font-semibold text-blue-600' : '' }}">
+                                            Categorias
+                                        </a>
+                                        @if(auth()->user()->is_admin)
+                                            <a href="{{ route('settings.users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.users*') ? 'font-semibold text-blue-600' : '' }}">
+                                                Usuários
+                                            </a>
+                                             <a href="{{ route('settings.roles') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.roles*') ? 'font-semibold text-blue-600' : '' }}">
+                                                Perfis
+                                            </a>
+                                             <a href="{{ route('settings.backup') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.backup*') ? 'font-semibold text-blue-600' : '' }}">
+                                                Backup
+                                            </a>
+                                        @endif
+                                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('profile.edit') ? 'font-semibold text-blue-600' : '' }}">
+                                            Meu Perfil
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -306,22 +343,55 @@
                         <i class="ri-arrow-down-circle-line mr-2"></i>
                         Despesas
                     </a>
-                    <a href="{{ route('categories.index') }}" class="mobile-nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                        <i class="ri-price-tag-3-line mr-2"></i>
-                        Categorias
+                    <a href="{{ route('settings.reports') }}" class="mobile-nav-link {{ request()->routeIs('settings.reports') ? 'active' : '' }}">
+                        <i class="ri-bar-chart-line mr-2"></i>
+                        Relatórios
                     </a>
                     <a href="{{ route('accounts.index') }}" class="mobile-nav-link {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                         <i class="ri-bank-line mr-2"></i>
                         Contas
                     </a>
-                    <a href="{{ route('settings.index') }}" class="mobile-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                        <i class="ri-settings-3-line mr-2"></i>
-                        Configurações
-                    </a>
-                    <a href="{{ route('profile.edit') }}" class="mobile-nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
-                        <i class="ri-user-line mr-2"></i>
-                        Perfil
-                    </a>
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" @click.away="open = false" class="mobile-nav-link flex items-center {{ request()->routeIs('settings.*') || request()->routeIs('categories.*') ? 'active' : '' }}">
+                            <i class="ri-settings-3-line mr-2"></i>
+                            Configurações
+                            <i class="ri-arrow-down-s-line ml-1"></i>
+                        </button>
+
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-100" 
+                             x-transition:enter-start="transform opacity-0 scale-95" 
+                             x-transition:enter-end="transform opacity-100 scale-100" 
+                             x-transition:leave="transition ease-in duration-75" 
+                             x-transition:leave-start="transform opacity-100 scale-100" 
+                             x-transition:leave-end="transform opacity-0 scale-95" 
+                             class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 origin-top-right"
+                             style="display: none;"
+                             >
+                            <div class="py-1">
+                                <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.index') ? 'font-semibold text-blue-600' : '' }}">
+                                    Geral
+                                </a>
+                                <a href="{{ route('categories.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('categories.*') ? 'font-semibold text-blue-600' : '' }}">
+                                    Categorias
+                                </a>
+                                @if(auth()->user()->is_admin)
+                                    <a href="{{ route('settings.users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.users*') ? 'font-semibold text-blue-600' : '' }}">
+                                        Usuários
+                                    </a>
+                                     <a href="{{ route('settings.roles') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.roles*') ? 'font-semibold text-blue-600' : '' }}">
+                                        Perfis
+                                    </a>
+                                     <a href="{{ route('settings.backup') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.backup*') ? 'font-semibold text-blue-600' : '' }}">
+                                        Backup
+                                    </a>
+                                @endif
+                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('profile.edit') ? 'font-semibold text-blue-600' : '' }}">
+                                    Meu Perfil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="mobile-nav-link w-full text-left">
@@ -348,7 +418,6 @@
         </footer>
     </div>
 
-    <script src="{{ asset('assets/js/sweetalert2.all.min.js') }}"></script>
     <script>
         window.addEventListener('alert', event => {
             Swal.fire({

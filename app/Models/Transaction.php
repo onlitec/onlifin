@@ -22,7 +22,9 @@ class Transaction extends Model
         'category_id',
         'account_id',
         'user_id',
-        'notes'
+        'notes',
+        'cliente', // Adicionado para transações de receita
+        'fornecedor', // Adicionado para transações de despesa
     ];
 
     protected $casts = [
@@ -61,7 +63,18 @@ class Transaction extends Model
 
     public function validate(array $data)
     {
-        return Validator::make($data, $this->rules);
+        $rules = $this->rules;
+        if (( $data['type'] ?? null) === 'income') {
+            $rules['cliente'] = 'nullable|string|max:255';
+            $rules['fornecedor'] = 'prohibited';
+        } elseif (( $data['type'] ?? null) === 'expense') {
+            $rules['fornecedor'] = 'nullable|string|max:255';
+            $rules['cliente'] = 'prohibited';
+        } else {
+            $rules['cliente'] = 'prohibited';
+            $rules['fornecedor'] = 'prohibited';
+        }
+        return Validator::make($data, $rules);
     }
 
     // Acessor para formatar o valor
@@ -85,12 +98,17 @@ class Transaction extends Model
             // Converte vírgula para ponto
             $value = str_replace(',', '.', $value);
             
-            // Converte para float e multiplica por 100 para obter centavos
-            $value = (float)$value * 100;
+            // Converte para float
+            $value = (float)$value;
         }
 
-        // Arredonda para o inteiro mais próximo
-        $this->attributes['amount'] = round($value);
+        // Se o valor já for numérico (float ou integer), converte para float
+        if (is_numeric($value)) {
+            $value = (float)$value;
+        }
+
+        // Multiplica por 100 para armazenar em centavos e arredonda para o inteiro mais próximo
+        $this->attributes['amount'] = round($value * 100);
     }
 
     // Adicione estes métodos auxiliares

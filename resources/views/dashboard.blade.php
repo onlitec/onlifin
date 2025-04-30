@@ -108,6 +108,59 @@
         </div>
     </div>
 
+    <!-- NOVO: Seção de Transações Pendentes (Hoje e Amanhã) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Despesas a Vencer -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Despesas a Vencer</h2>
+                <p class="text-sm text-gray-600">Hoje e amanhã</p>
+            </div>
+            <div class="p-4 space-y-3 max-h-60 overflow-y-auto">
+                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
+                 @forelse ($pendingExpensesToday as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa pendente para hoje.</p>
+                 @endforelse
+                
+                 <hr class="my-3">
+                
+                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Amanhã ({{ \Carbon\Carbon::tomorrow()->format('d/m') }})</h4>
+                 @forelse ($pendingExpensesTomorrow as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa pendente para amanhã.</p>
+                 @endforelse
+            </div>
+        </div>
+        
+         <!-- Receitas a Receber -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+             <div class="px-6 py-4 border-b border-gray-200">
+                 <h2 class="text-lg font-semibold text-gray-900">Receitas a Receber</h2>
+                  <p class="text-sm text-gray-600">Hoje e amanhã</p>
+             </div>
+             <div class="p-4 space-y-3 max-h-60 overflow-y-auto">
+                  <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
+                 @forelse ($pendingIncomesToday as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma receita pendente para hoje.</p>
+                 @endforelse
+                
+                 <hr class="my-3">
+                
+                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Amanhã ({{ \Carbon\Carbon::tomorrow()->format('d/m') }})</h4>
+                 @forelse ($pendingIncomesTomorrow as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma receita pendente para amanhã.</p>
+                 @endforelse
+             </div>
+         </div>
+    </div>
+
     <!-- Gráficos -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <!-- Gráfico de Despesas por Categoria -->
@@ -135,17 +188,56 @@
         </div>
     </div>
     
-     <!-- Gráfico de Saldo ao Longo do Tempo -->
+    <!-- NOVO: Gráfico de Despesas por Conta Bancária -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-         <h3 class="text-lg font-semibold text-gray-800 mb-4">Saldo no Mês Atual</h3>
-          @if(!empty($balanceOverTimeData))
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Despesas por Conta Bancária ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
+        @if(isset($accountExpenseData) && $accountExpenseData->isNotEmpty())
             <div class="relative h-64 md:h-80">
-                <canvas id="balanceOverTimeChart"></canvas>
+                <canvas id="accountExpenseChart"></canvas>
             </div>
-         @else
-             <p class="text-center text-gray-500 py-8">Nenhuma transação encontrada no mês atual para gerar o gráfico.</p>
-         @endif
-     </div>
+        @else
+            <p class="text-center text-gray-500 py-8">Nenhuma despesa por conta encontrada no período.</p>
+        @endif
+    </div>
+    
+    <!-- Grid com Saldo Atual e Previsão -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Gráfico de Saldo ao Longo do Tempo -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Saldo no Mês Atual</h3>
+            @if(!empty($balanceOverTimeData))
+                <div class="relative h-64 md:h-80">
+                    <canvas id="balanceOverTimeChart"></canvas>
+                </div>
+            @else
+                <p class="text-center text-gray-500 py-8">Nenhuma transação encontrada no mês atual para gerar o gráfico.</p>
+            @endif
+        </div>
+
+        <!-- NOVO: Gráfico de Previsão de Saldo -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Previsão de Saldo (Próximos 30 dias)</h3>
+            @if(isset($balanceForecastData) && !empty($balanceForecastData))
+                <div class="relative h-64 md:h-80">
+                    <canvas id="balanceForecastChart"></canvas>
+                </div>
+            @else
+                <p class="text-center text-gray-500 py-8">Não foi possível gerar previsão de saldo.</p>
+            @endif
+        </div>
+    </div>
+
+    <!-- NOVO: Gráfico de Receitas vs Despesas ao Longo do Período -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Receitas vs Despesas ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
+        @if(!empty($incomeExpenseTrendLabels) && (!empty($incomeTrendData) || !empty($expenseTrendData)))
+            <div class="relative h-64 md:h-80">
+                <canvas id="incomeExpenseTrendChart"></canvas>
+            </div>
+        @else
+            <p class="text-center text-gray-500 py-8">Dados insuficientes para gerar o gráfico de Receitas vs Despesas no período.</p>
+        @endif
+    </div>
 
     <!-- Listas de Transações (Hoje, Pendentes) - Opcional, pode simplificar -->
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -159,20 +251,6 @@
                      <x-transactions.list-item :transaction="$transaction" />
                  @empty
                      <p class="text-center text-gray-500 py-4">Nenhuma transação hoje.</p>
-                 @endforelse
-             </div>
-         </div>
-         
-          <!-- Transações Pendentes Próximos 7 Dias -->
-         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-             <div class="px-6 py-4 border-b border-gray-200">
-                 <h2 class="text-lg font-semibold text-gray-900">Pendentes (Próximos 7 Dias)</h2>
-             </div>
-             <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
-                  @forelse ($pendingIncomes->merge($pendingExpenses)->sortBy('date') as $transaction)
-                     <x-transactions.list-item :transaction="$transaction" />
-                 @empty
-                     <p class="text-center text-gray-500 py-4">Nenhuma transação pendente.</p>
                  @endforelse
              </div>
          </div>
@@ -328,6 +406,173 @@
                  });
             }
          }
+         
+        // 4. NOVO: Gráfico de Previsão de Saldo (Linha)
+        const forecastCtx = document.getElementById('balanceForecastChart');
+        if (forecastCtx) {
+            const forecastLabels = @json($balanceForecastLabels ?? []);
+            const forecastData = @json($balanceForecastData ?? []);
+
+            if (forecastData && forecastData.length > 0) {
+                new Chart(forecastCtx, {
+                    type: 'line',
+                    data: {
+                        labels: forecastLabels,
+                        datasets: [{
+                            label: 'Previsão de Saldo',
+                            data: forecastData,
+                            fill: true,
+                            borderColor: 'rgb(99, 102, 241)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                            tension: 0.2,
+                            borderDash: [5, 5] // Linha tracejada para indicar previsão
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: { callback: value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // 5. NOVO: Gráfico de Despesas por Conta Bancária (Barras)
+        const accountExpenseCtx = document.getElementById('accountExpenseChart');
+        if (accountExpenseCtx) {
+            const accountLabels = @json($accountExpenseLabels ?? []);
+            const accountData = @json($accountExpenseData ?? []);
+            
+            if (accountData && accountData.length > 0) {
+                new Chart(accountExpenseCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: accountLabels,
+                        datasets: [{
+                            label: 'Despesas por Conta',
+                            data: accountData,
+                            backgroundColor: chartColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { callback: value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 6. NOVO: Gráfico de Receitas vs Despesas ao Longo do Período (Bar)
+        const trendCtx = document.getElementById('incomeExpenseTrendChart');
+        if (trendCtx) {
+            const trendLabels = @json($incomeExpenseTrendLabels ?? []);
+            const trendIncomeData = @json($incomeTrendData ?? []);
+            const trendExpenseData = @json($expenseTrendData ?? []);
+
+            if (trendLabels.length > 0) {
+                new Chart(trendCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: trendLabels,
+                        datasets: [
+                            {
+                                label: 'Receitas',
+                                data: trendIncomeData,
+                                backgroundColor: 'rgba(16, 185, 129, 0.6)', // Verde
+                                borderColor: 'rgb(16, 185, 129)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Despesas',
+                                data: trendExpenseData,
+                                backgroundColor: 'rgba(239, 68, 68, 0.6)', // Vermelho
+                                borderColor: 'rgb(239, 68, 68)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: false // Barras lado a lado
+                            },
+                            y: {
+                                stacked: false,
+                                beginAtZero: true,
+                                ticks: { callback: value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) }
+                             }
+                         },
+                          plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                 callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                             label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        } 
+                     }
+                 });
+            }
+        }
     });
 </script>
 </x-app-layout>

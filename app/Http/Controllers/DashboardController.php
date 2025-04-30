@@ -157,14 +157,172 @@ class DashboardController extends Controller
             $currentDate->addDay();
         }
 
+        // 4. NOVO: Previsão de Saldo (próximos 30 dias)
+        $balanceForecastLabels = [];
+        $balanceForecastData = [];
+        
+        // Último saldo conhecido (atual)
+        $lastKnownBalance = end($balanceOverTimeData) ?: ($currentBalance / 100);
+        
+        // Próximos 30 dias
+        $forecastStartDate = now()->addDay(); // Começar amanhã
+        $forecastEndDate = now()->addDays(30); // Próximos 30 dias
+        
+        // Buscar transações futuras (programadas/pendentes)
+        $futurePendingTransactions = Transaction::where('user_id', $userId)
+            ->where('status', 'pending')
+            ->whereBetween('date', [$forecastStartDate, $forecastEndDate])
+            ->orderBy('date')
+            ->select('date', 'amount', 'type')
+            ->get()
+            ->groupBy(fn($date) => Carbon::parse($date->date)->format('d/m'));
+        
+        // Projetar o saldo para os próximos 30 dias
+        $forecastDate = $forecastStartDate->copy();
+        $forecastBalance = $lastKnownBalance;
+        
+        while($forecastDate->lte($forecastEndDate)) {
+            $dayKey = $forecastDate->format('d/m');
+            $balanceForecastLabels[] = $dayKey;
+            
+            // Adicionar transações pendentes programadas para este dia
+            if(isset($futurePendingTransactions[$dayKey])) {
+                foreach($futurePendingTransactions[$dayKey] as $t) {
+                    $forecastBalance += ($t->type === 'income' ? $t->amount : -$t->amount) / 100;
+                }
+            }
+            
+            $balanceForecastData[] = $forecastBalance;
+            $forecastDate->addDay();
+        }
+        
+        // 5. NOVO: Despesas por Conta Bancária
+        $expensesByAccount = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'expense')
+            ->where('status', 'paid')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->join('accounts', 'transactions.account_id', '=', 'accounts.id')
+            ->select('accounts.name as account_name', DB::raw('SUM(transactions.amount) as total_amount'))
+            ->groupBy('accounts.name')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+            
+        // Preparar dados para Chart.js (Despesas por Conta)
+        $accountExpenseLabels = $expensesByAccount->pluck('account_name');
+        $accountExpenseData = $expensesByAccount->pluck('total_amount')->map(fn($amount) => $amount / 100);
+
+        // 6. NOVO: Receitas vs Despesas ao Longo do Período
+        $incomeExpenseTrendLabels = [];
+        $incomeTrendData = [];
+        $expenseTrendData = [];
+
+        // Determinar a granularidade (diária ou mensal) baseado na duração do período
+        $periodDurationInDays = $startDate->diffInDays($endDate);
+        $granularityFormat = 'Y-m-d'; // Default: Diário
+        $dbDateFormat = '%Y-%m-%d';
+        if ($periodDurationInDays > 62) { // Se > ~2 meses, agrupar por mês
+            $granularityFormat = 'Y-m';
+            $dbDateFormat = '%Y-%m';
+        }
+
+        // Buscar transações pagas no período
+        $periodTransactions = Transaction::where('user_id', $userId)
+            ->where('status', 'paid')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->select(
+                DB::raw("DATE_FORMAT(date, '$dbDateFormat') as period_key"),
+                'type',
+                DB::raw('SUM(amount) as total')
+            )
+            ->groupBy('period_key', 'type')
+            ->orderBy('period_key')
+            ->get();
+
+        // Agrupar por período (dia ou mês)
+        $groupedTransactions = $periodTransactions->groupBy('period_key');
+
+        // Iterar sobre o período para preencher os dados
+        $trendDate = $startDate->copy();
+        $endDateLoop = $endDate->copy(); // Usar cópia para não modificar o original
+
+        while ($trendDate->lte($endDateLoop)) {
+            $currentKey = $trendDate->format($granularityFormat);
+            $incomeExpenseTrendLabels[] = $granularityFormat === 'Y-m-d' ? $trendDate->format('d/m') : $trendDate->format('m/Y'); // Formato do label
+
+            $dailyIncome = 0;
+            $dailyExpense = 0;
+
+            if (isset($groupedTransactions[$currentKey])) {
+                foreach ($groupedTransactions[$currentKey] as $transaction) {
+                    if ($transaction->type === 'income') {
+                        $dailyIncome = $transaction->total / 100; // Converter para Reais
+                    } elseif ($transaction->type === 'expense') {
+                        $dailyExpense = $transaction->total / 100; // Converter para Reais
+                    }
+                }
+            }
+
+            $incomeTrendData[] = $dailyIncome;
+            $expenseTrendData[] = $dailyExpense;
+
+            // Avançar para o próximo período
+            if ($granularityFormat === 'Y-m-d') {
+                $trendDate->addDay();
+            } else {
+                $trendDate->addMonthNoOverflow()->startOfMonth(); // Ir para o início do próximo mês
+                 // Prevenir loop infinito se startDate e endDate estiverem no mesmo mês > 62 dias (caso raro)
+                if ($trendDate->gt($endDateLoop) && $trendDate->format('Y-m') === $endDateLoop->format('Y-m')) {
+                   break;
+                }
+            }
+        }
+
         // --- DADOS ADICIONAIS (Transações recentes, pendentes, etc.) --- 
         // Manter ou remover as buscas por transações de hoje/amanhã/pendentes?
         // Por enquanto, vamos manter.
         $todayIncomes = Transaction::with(['category', 'account'])->where('user_id', $userId)->where('type', 'income')->whereDate('date', now()->toDateString())->orderBy('status', 'asc')->orderBy('date')->get();
         $todayExpenses = Transaction::with(['category', 'account'])->where('user_id', $userId)->where('type', 'expense')->whereDate('date', now()->toDateString())->orderBy('status', 'asc')->orderBy('date')->get();
-        $nextWeek = now()->addDays(7)->toDateString();
-        $pendingIncomes = Transaction::with(['category', 'account'])->where('user_id', $userId)->where('type', 'income')->where('status', 'pending')->whereBetween('date', [now()->toDateString(), $nextWeek])->orderBy('date')->get();
-        $pendingExpenses = Transaction::with(['category', 'account'])->where('user_id', $userId)->where('type', 'expense')->where('status', 'pending')->whereBetween('date', [now()->toDateString(), $nextWeek])->orderBy('date')->get();
+        
+        // NOVO: Buscar pendentes de hoje e amanhã
+        $today = now()->toDateString();
+        $tomorrow = now()->addDay()->toDateString();
+        
+        $pendingExpensesToday = Transaction::with(['category', 'account'])
+            ->where('user_id', $userId)
+            ->where('type', 'expense')
+            ->where('status', 'pending')
+            ->whereDate('date', $today)
+            ->orderBy('date')
+            ->get();
+            
+        $pendingExpensesTomorrow = Transaction::with(['category', 'account'])
+            ->where('user_id', $userId)
+            ->where('type', 'expense')
+            ->where('status', 'pending')
+            ->whereDate('date', $tomorrow)
+            ->orderBy('date')
+            ->get();
+            
+        $pendingIncomesToday = Transaction::with(['category', 'account'])
+            ->where('user_id', $userId)
+            ->where('type', 'income')
+            ->where('status', 'pending')
+            ->whereDate('date', $today)
+            ->orderBy('date')
+            ->get();
+            
+        $pendingIncomesTomorrow = Transaction::with(['category', 'account'])
+            ->where('user_id', $userId)
+            ->where('type', 'income')
+            ->where('status', 'pending')
+            ->whereDate('date', $tomorrow)
+            ->orderBy('date')
+            ->get();
+        
+        // Remover buscas antigas que serão substituídas ou não são mais necessárias para esta view
+        // $nextWeek = now()->addDays(7)->toDateString();
+        // $pendingIncomes = Transaction::with(['category', 'account'])->where('user_id', $userId)->where('type', 'income')->where('status', 'pending')->whereBetween('date', [now()->toDateString(), $nextWeek])->orderBy('date')->get();
+        // $pendingExpenses = Transaction::with(['category', 'account'])->where('user_id', $userId)->where('type', 'expense')->where('status', 'pending')->whereBetween('date', [now()->toDateString(), $nextWeek])->orderBy('date')->get();
 
 
         // Passar todos os dados para a view
@@ -183,10 +341,23 @@ class DashboardController extends Controller
             'incomeChartData',
             'balanceOverTimeLabels',
             'balanceOverTimeData',
+            'balanceForecastLabels',
+            'balanceForecastData',
+            'accountExpenseLabels',
+            'accountExpenseData',
             'todayIncomes',
             'todayExpenses',
-            'pendingIncomes',
-            'pendingExpenses'
+            // 'pendingIncomes', // Removido
+            // 'pendingExpenses', // Removido
+            // NOVO: Dados do gráfico de tendência
+            'incomeExpenseTrendLabels',
+            'incomeTrendData',
+            'expenseTrendData',
+            // NOVO: Pendentes hoje/amanhã
+            'pendingExpensesToday',
+            'pendingExpensesTomorrow',
+            'pendingIncomesToday',
+            'pendingIncomesTomorrow'
         ));
     }
 } 

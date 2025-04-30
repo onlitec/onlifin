@@ -14,6 +14,8 @@ use App\Services\AIConfigService;
 use DateTime;
 // use Endeken\OFX\Ofx; // Remover ou comentar este, se não for usado em outro lugar
 use App\Models\AiCallLog;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class TempStatementImportController extends Controller
 {
@@ -177,7 +179,7 @@ class TempStatementImportController extends Controller
         } catch (\Exception $e) {
             Log::error('Erro ao analisar arquivo', [
                 'path' => $path, 
-                'extensão' => $extension,
+                'extension' => $extension, 
                 'erro' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -497,15 +499,23 @@ class TempStatementImportController extends Controller
                     }
                     break;
                 
-                // case 'openai':
-                //     Log::info('Provedor OpenAI ainda não implementado. Usando mock.');
-                //     $resultado = $this->getMockAIResponse($transactions);
-                //     break;
-                
-                // case 'claude':
-                //     Log::info('Provedor Claude ainda não implementado. Usando mock.');
-                //     $resultado = $this->getMockAIResponse($transactions);
-                //     break;
+                case 'grok':
+                    $resultado = $this->analyzeTransactionsWithGrok($transactions, $config);
+                    break;
+                    
+                case 'openrouter':
+                    try {
+                        $resultado = $this->analyzeTransactionsWithOpenRouter($transactions, $config);
+                    } catch (\Exception $e) {
+                        Log::error('❌ Erro no método analyzeTransactionsWithOpenRouter', [
+                            'mensagem' => $e->getMessage(),
+                            'arquivo' => $e->getFile(),
+                            'linha' => $e->getLine()
+                        ]);
+                        // Fallback para mock em caso de erro com OpenRouter
+                        $resultado = $this->getMockAIResponse($transactions);
+                    }
+                    break;
 
                 default:
                     Log::error('❗ Provedor de IA configurado ("' . $aiProvider . '") não é suportado ou não possui método de análise implementado. Usando mock.');
@@ -608,7 +618,7 @@ class TempStatementImportController extends Controller
             ]);
 
             // Obter configurações da IA (incluindo o prompt)
-            $apiKey = $apiConfig->api_token ?? env('GEMINI_API_KEY');
+            $apiKey = $apiConfig->api_key ?? env('GEMINI_API_KEY');
             $model = $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro');
             $promptTemplate = $apiConfig->prompt;
 
@@ -618,30 +628,13 @@ class TempStatementImportController extends Controller
                 return null;
             }
 
-            // **** VALIDAR PROMPT DA CONFIGURAÇÃO ****
-            if (empty($promptTemplate)) {
-                Log::error('❌ Template do prompt para ' . ($apiConfig->provider ?? 'IA') . ' está vazio');
-                return null;
-            }
-            // Validar placeholders (opcional, mas recomendado)
-            if (strpos($promptTemplate, '{{transactions}}') === false || strpos($promptTemplate, '{{categories}}') === false) {
-                Log::warning('⚠️ Template do prompt não contém os placeholders {{transactions}} e/ou {{categories}}. A análise pode falhar ou gerar resultados inesperados.');
-            }
-
-            // Configurar endpoint da API
+            // Definir endpoint da API com base nas configurações
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-            Log::info('📣 INICIANDO CHAMADA ' . strtoupper($apiConfig->provider ?? 'API') . ' PARA CATEGORIZAÇÃO', [
-                'model' => $model,
-                'api_key_preview' => substr($apiKey, 0, 5) . '...' . substr($apiKey, -3),
-                'total_transacoes' => count($transactions),
-                'endpoint' => $endpoint
-            ]);
-
-            // **** CONSTRUIR PROMPT DINAMICAMENTE ****
+            // Substituir placeholders com dados reais (assumindo que os dados estejam disponíveis)
             $finalPrompt = str_replace(
-                ['{{transactions}}', '{{categories}}'],
-                [$transactionsJson, $categoriesJson],
+                ['{{transactions}}', '{{categories}}', '{{observations}}', '{{cliente}}', '{{fornecedor}}', '{{data}}'],
+                [$transactionsJson, $categoriesJson, json_encode($observations ?? 'null', JSON_PRETTY_PRINT), json_encode($cliente ?? 'null', JSON_PRETTY_PRINT), json_encode($fornecedor ?? 'null', JSON_PRETTY_PRINT), json_encode($data ?? 'null', JSON_PRETTY_PRINT)],
                 $promptTemplate
             );
 
@@ -698,19 +691,17 @@ class TempStatementImportController extends Controller
                     $logData['error_message'] = substr($apiError, 0, 1000);
                     $logData['response_preview'] = substr($response->body(), 0, 1000);
                     Log::error('❗ Erro na requisição HTTP', ['status' => $statusCode, 'body' => $response->body()]);
-                    // Não retorna null ainda, registra o log primeiro
                 }
                 
             } catch (\Exception $e) {
                 $apiError = 'Exceção na chamada HTTP: ' . $e->getMessage();
                 $logData['error_message'] = substr($apiError, 0, 1000);
                 Log::error('❌ ERRO AO CHAMAR API GEMINI', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
-                // Não retorna null ainda, registra o log primeiro
             }
 
             // **** REGISTRAR RESULTADO FINAL NO LOG (APÓS A CHAMADA) ****
             $logData['duration_ms'] = (int) round((microtime(true) - $startTime) * 1000);
-            AiCallLog::create($logData); // <-- Criar o registro no banco AQUI
+            AiCallLog::create($logData);
 
             // Se houve erro na API, agora retorna null
             if ($apiError) {
@@ -722,289 +713,369 @@ class TempStatementImportController extends Controller
             }
 
             // Processar a resposta
-            if ($result) {
-                $duration = round(microtime(true) - $startTime, 2);
-                $responseData = json_decode($result, true);
-                
-                if ($responseData && isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
-                    $text = $responseData['candidates'][0]['content']['parts'][0]['text'];
-                    Log::debug('Resposta bruta da API ' . ($apiConfig->provider ?? 'IA'), ['text_preview' => substr($text, 0, 500) . '... (truncado)']);
-                    
-                    try {
-                        $processedResponse = null;
-                        $jsonContent = null; // Para guardar o conteúdo que será decodificado
-
-                        // Tentativa 1: Decodificar o texto completo diretamente
-                        $tempResponse = json_decode($text, true);
-                        $jsonError = json_last_error();
-
-                        if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
-                            Log::debug('JSON decodificado diretamente da resposta da API (sem marcadores markdown detectados)');
-                            $processedResponse = $tempResponse;
-                            $jsonContent = $text; // O texto original já era JSON válido
-                        } else {
-                            Log::debug('Decodificação direta falhou ou formato inválido, tentando remover marcadores markdown', ['json_error' => json_last_error_msg()]);
-                            
-                            // Tentativa 2: Remover marcadores ```json e ```
-                            $potentialJson = $text;
-                            $removedStart = false;
-                            $removedEnd = false;
-
-                            // Verificar e remover ```json no início (com ou sem newline após)
-                            if (str_starts_with($potentialJson, "```json\n")) {
-                                $potentialJson = substr($potentialJson, strlen("```json\n"));
-                                $removedStart = true;
-                            } elseif (str_starts_with($potentialJson, "```json")) { // Caso sem newline
-                                 $potentialJson = substr($potentialJson, strlen("```json"));
-                                 $removedStart = true;
-                            }
-                            
-                            // Verificar e remover ``` no final (com ou sem newline antes)
-                            if (str_ends_with($potentialJson, "\n```")) {
-                                $potentialJson = substr($potentialJson, 0, -strlen("\n```"));
-                                $removedEnd = true;
-                            } elseif (str_ends_with($potentialJson, "```")) { // Caso sem newline
-                                 $potentialJson = substr($potentialJson, 0, -strlen("```"));
-                                 $removedEnd = true;
-                            }
-
-                            // Se removemos os marcadores esperados, tentar decodificar a string resultante
-                            if ($removedStart && $removedEnd) {
-                                $jsonContent = trim($potentialJson); // Guardar o conteúdo limpo
-                                Log::debug('Marcadores markdown removidos, tentando decodificar conteúdo extraído.', [
-                                    'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
-                                ]);
-                                
-                                $tempResponse = json_decode($jsonContent, true);
-                                $jsonError = json_last_error();
-
-                                if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
-                                     Log::debug('JSON extraído por remoção de marcadores e decodificado com sucesso');
-                                     $processedResponse = $tempResponse;
-                                } else {
-                                    Log::error('Erro ao decodificar JSON após remover marcadores markdown ou formato inválido', [
-                                        'json_error' => json_last_error_msg(),
-                                        'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
-                                    ]);
-                                    // Mantém $processedResponse como null
-                                }
-                            } else {
-                                // NOVO FLUXO: Se removeu apenas o início, tentar extrair o JSON diretamente 
-                                // baseado na estrutura de abertura/fechamento de chaves
-                                if ($removedStart && !$removedEnd) {
-                                    Log::warning('Marcador final não encontrado. Tentando extrair o JSON pela estrutura.', [
-                                        'content_start' => substr($potentialJson, 0, 100) . '... (truncado)'
-                                    ]);
-                                
-                                    // NOVA ABORDAGEM: Reconstruir o JSON diretamente
-                                    if (strpos($potentialJson, '{') === 0) {
-                                        // Verificar se o texto tem o formato esperado
-                                        if (preg_match('/^\s*{\s*"transactions"\s*:\s*\[\s*{/s', $potentialJson)) {
-                                            Log::debug('Formato de JSON de transações detectado. Tentando reconstruí-lo...');
-                                            
-                                            // Extrair todas as transações que conseguir
-                                            $transactions = [];
-                                            $jsonText = trim($potentialJson);
-                                            
-                                            // Remover o prefixo para obter apenas o array de transações
-                                            $startPos = strpos($jsonText, '"transactions"');
-                                            if ($startPos !== false) {
-                                                $startPos = strpos($jsonText, '[', $startPos);
-                                                if ($startPos !== false) {
-                                                    $jsonText = substr($jsonText, $startPos + 1); // +1 para pular o '['
-                                                    
-                                                    // Dividir por chaves de objetos para identificar cada transação
-                                                    preg_match_all('/\s*{\s*(.*?)}\s*(?:,|\]|$)/s', $jsonText, $matches);
-                                                    
-                                                    if (!empty($matches[1])) {
-                                                        foreach ($matches[1] as $transactionContent) {
-                                                            // Limpar e validar cada transação
-                                                            $transaction = '{' . $transactionContent . '}';
-                                                            $decoded = @json_decode($transaction, true);
-                                                            
-                                                            if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
-                                                                // Verificar se tem os campos mínimos necessários
-                                                                if (isset($decoded['id'])) {
-                                                                    $transactions[] = $decoded;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            
-                                            if (!empty($transactions)) {
-                                                // Reconstruir o JSON completo
-                                                $newJsonData = ['transactions' => $transactions];
-                                                $jsonContent = json_encode($newJsonData);
-                                                
-                                                if ($jsonContent !== false) {
-                                                    Log::info('JSON reconstruído com sucesso a partir de fragmentos', [
-                                                        'total_transactions' => count($transactions)
-                                                    ]);
-                                                    
-                                                    $processedResponse = $newJsonData;
-                                                } else {
-                                                    Log::error('Falha ao codificar o JSON reconstruído');
-                                                }
-                                            } else {
-                                                Log::warning('Não foi possível extrair nenhuma transação válida do JSON fragmentado');
-                                            }
-                                        } else {
-                                            Log::warning('O formato do JSON não corresponde à estrutura esperada de transações');
-                                        }
-                                    }
-                                    
-                                    // CÓDIGO ANTERIOR MANTIDO COMO FALLBACK
-                                    if ($processedResponse === null) {
-                                        // Encontrar chaves de abertura/fechamento balanceadas
-                                        $level = 0;
-                                        $endPos = -1;
-                                        $len = strlen($potentialJson);
-                                        
-                                        for ($i = 0; $i < $len; $i++) {
-                                            $char = $potentialJson[$i];
-                                            if ($char === '{') {
-                                                $level++;
-                                            } elseif ($char === '}') {
-                                                $level--;
-                                                if ($level === 0) {
-                                                    $endPos = $i;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        
-                                        if ($endPos > 0) {
-                                            // Extrair o JSON da posição 0 até endPos (inclusive)
-                                            $jsonContent = substr($potentialJson, 0, $endPos + 1);
-                                            Log::debug('JSON extraído pela análise estrutural de chaves', [
-                                                'content_length' => strlen($jsonContent),
-                                                'content_preview' => substr($jsonContent, 0, 100) . '... (truncado)'
-                                            ]);
-                                            
-                                            $tempResponse = json_decode($jsonContent, true);
-                                            $jsonError = json_last_error();
-
-                                            if ($jsonError === JSON_ERROR_NONE && is_array($tempResponse) && isset($tempResponse['transactions'])) {
-                                                Log::debug('JSON extraído por análise estrutural e decodificado com sucesso');
-                                                $processedResponse = $tempResponse;
-                                            } else {
-                                                Log::error('Erro ao decodificar JSON após extração estrutural', [
-                                                    'json_error' => json_last_error_msg(),
-                                                    'content_preview' => substr($jsonContent, 0, 200) . '... (truncado)'
-                                                ]);
-                                            }
-                                        } else {
-                                            Log::warning('Não foi possível encontrar um JSON válido com chaves balanceadas');
-                                        }
-                                    }
-                                } else {
-                                    Log::warning('Não foi possível remover os marcadores markdown esperados (```json ... ```). A resposta pode não estar formatada corretamente.', [
-                                        'removed_start' => $removedStart,
-                                        'removed_end' => $removedEnd
-                                    ]);
-                                }
-                                // $processedResponse continua null se nenhuma tentativa acima funcionou
-                            }
-                        }
-                        
-                        // REMOVIDO o bloco preg_match
-                        
-                        // Verificar se temos uma resposta processada válida após as tentativas
-                        if ($processedResponse === null) {
-                            Log::error('Falha final ao decodificar/extrair JSON válido da resposta da API.', [
-                                'text_preview' => substr($text, 0, 500) . '... (truncado)'
-                            ]);
-                            return null; // Retorna null se nenhuma tentativa funcionou
-                        }
-
-                        // ****************************************************************
-                        // O código continua daqui para baixo, usando $processedResponse
-                        // A verificação de erro JSON (json_last_error) já foi feita acima.
-                        // ****************************************************************
-                        
-                        // Verificar se o processamento foi bem-sucedido e se há transações
-                        // A linha original "if ($processedResponse && isset($processedResponse['transactions']) ...)" começa aqui
-                        if ($processedResponse && isset($processedResponse['transactions']) && !empty($processedResponse['transactions'])) {
-                            // Contar categorias sugeridas e existentes e processar notas
-                            $suggestedCategories = 0;
-                            $existingCategories = 0;
-                            $processedTransactions = []; // Array temporário para guardar transações processadas
-
-                            foreach ($processedResponse['transactions'] as $aiTransactionData) { 
-                                // Contagem para logs
-                                if (!empty($aiTransactionData['suggested_category']) && empty($aiTransactionData['category_id'])) {
-                                    $suggestedCategories++;
-                                } elseif (!empty($aiTransactionData['category_id'])) {
-                                    $existingCategories++;
-                                }
-                                
-                                // **** ADICIONAR CAMPO NOTES ****
-                                // Garante que o array tenha todos os campos esperados, incluindo 'notes'
-                                $processedTransaction = [
-                                    'id' => $aiTransactionData['id'] ?? null, // ID original
-                                    'type' => $aiTransactionData['type'] ?? null,
-                                    'category_id' => $aiTransactionData['category_id'] ?? null,
-                                    'suggested_category' => $aiTransactionData['suggested_category'] ?? null,
-                                    'notes' => $aiTransactionData['notes'] ?? null // <-- Extrai o campo notes da resposta da IA
-                                ];
-                                $processedTransactions[] = $processedTransaction;
-                            }
-                            
-                            // Atualizar o array original com as transações processadas (incluindo notes)
-                            $processedResponse['transactions'] = $processedTransactions;
-
-                            Log::info('🎉 Análise de transações com ' . ($apiConfig->provider ?? 'IA') . ' concluída com sucesso', [
-                                'duration' => $duration . 's',
-                                'total_transacoes' => count($processedResponse['transactions']),
-                                'sugestoes_categoria' => $suggestedCategories,
-                                'categorias_existentes' => $existingCategories,
-                                'primeira_transacao' => isset($processedResponse['transactions'][0]) ? json_encode($processedResponse['transactions'][0]) : 'n/a'
-                            ]);
-                            
-                            return $processedResponse;
-                        } else {
-                            // Resposta processada, mas sem transações válidas
-                            Log::warning('⚠️ Resposta ' . ($apiConfig->provider ?? 'IA') . ' processada, mas sem transações válidas', [
-                                'duration' => $duration . 's',
-                                'response_preview' => substr($text, 0, 200) . '... (truncado)'
-                            ]);
-                            
-                            return null;
-                        }
-                    } catch (\Exception $e) {
-                        // Erro ao processar o JSON da resposta
-                        Log::error('❌ Erro ao processar JSON da resposta ' . ($apiConfig->provider ?? 'IA'), [
-                            'message' => $e->getMessage(),
-                            'file' => $e->getFile(),
-                            'line' => $e->getLine(),
-                            'text_preview' => substr($text, 0, 200) . '... (truncado)'
-                        ]);
-                        
-                        return null;
-                    }
-                } else {
-                    // Resposta em formato inesperado
-                    Log::error('❌ Formato de resposta ' . ($apiConfig->provider ?? 'IA') . ' inesperado', [
-                        'response_keys' => isset($responseData) ? array_keys($responseData) : 'null',
-                        'response_preview' => substr($result, 0, 200) . '... (truncado)'
-                    ]);
-                    
-                    return null;
-                }
-            } else {
-                // Falha na chamada à API
-                Log::error('❌ Falha na chamada à API ' . ($apiConfig->provider ?? 'IA') . ' - resultado vazio');
+            $responseData = json_decode($result, true);
+            if (!$responseData || !isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+                Log::error('Formato de resposta Gemini inválido', [
+                    'response' => substr($result, 0, 500) . '... (truncado)'
+                ]);
                 return null;
             }
+
+            return $this->extractGeminiJsonOutput($responseData['candidates'][0]['content']['parts'][0]['text'], $transactions);
+            
         } catch (\Exception $e) {
-            // Logar exceção geral e registrar no banco se possível
-            Log::error('❌ Exceção GERAL ao processar requisição Gemini', ['mensagem' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            $logData['error_message'] = 'Exceção Geral: ' . substr($e->getMessage(), 0, 800);
+            Log::error('❌ Exceção geral no método analyzeTransactionsWithGemini', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            $logData['error_message'] = substr($e->getMessage(), 0, 1000);
             $logData['duration_ms'] = isset($logData['duration_ms']) ? $logData['duration_ms'] : (int) round((microtime(true) - $startTime) * 1000);
             // Tenta salvar o log mesmo com a exceção geral
             try { AiCallLog::create($logData); } catch (\Exception $logEx) { Log::error('Falha ao salvar log de erro da IA', ['log_exception' => $logEx->getMessage()]); }
+            return null;
+        }
+    }
+
+    /**
+     * Analisa transações usando o OpenRouter
+     * 
+     * @param array $transactions Transações a serem analisadas
+     * @param object $config Configuração da IA
+     * @return array Transações categorizadas
+     */
+    private function analyzeTransactionsWithOpenRouter($transactions, $config)
+    {
+        $startTime = microtime(true);
+        Log::info('🔍 Iniciando análise com OpenRouter...');
+        
+        try {
+            $requestUrl = !empty($config->endpoint) ? rtrim($config->endpoint, '/') : 'https://openrouter.ai/api/v1/chat/completions';
+            $modelName = $config->model ?? 'anthropic/claude-3-haiku'; // Modelo padrão se não estiver definido
+            
+            // Prepara os dados para a requisição
+            $requestData = [
+                'model' => $modelName,
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => $config->prompt ?? 'Você é um assistente especializado em análise financeira, categorização de transações bancárias.'
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $this->prepareOpenRouterPrompt($transactions)
+                    ]
+                ],
+                'temperature' => 0.2,
+                'max_tokens' => 4000
+            ];
+            
+            Log::debug('🔍 Detalhes da requisição para OpenRouter', [
+                'model' => $requestData['model'],
+                'endpoint' => $requestUrl,
+                'temperature' => $requestData['temperature'],
+                'max_tokens' => $requestData['max_tokens'],
+                'system_prompt_length' => strlen($requestData['messages'][0]['content'])
+            ]);
+            
+            $apiKey = $config->api_key;
+            if (empty($apiKey)) {
+                Log::error('❌ API Key para OpenRouter não foi encontrada. Usando mock.');
+                $endTime = microtime(true);
+                $executionTime = round($endTime - $startTime, 2);
+                Log::info('⏱️ Tempo de execução (mock): ' . $executionTime . 's');
+                return $this->getMockAIResponse($transactions);
+            }
+            
+            $response = Http::timeout(60)->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => config('app.url'), // Origem da requisição
+                'X-Title' => 'Onlifin - Análise Financeira' // Nome do aplicativo
+            ])->post($requestUrl, $requestData);
+            
+            if ($response->failed()) {
+                Log::error('❌ Falha na requisição para OpenRouter', [
+                    'status_code' => $response->status(),
+                    'reason' => $response->reason(),
+                    'body' => $response->body()
+                ]);
+                $endTime = microtime(true);
+                $executionTime = round($endTime - $startTime, 2);
+                Log::info('⏱️ Tempo de execução (falha): ' . $executionTime . 's');
+                return $this->getMockAIResponse($transactions);
+            }
+            
+            $responseData = $response->json();
+            $fullContent = $responseData['choices'][0]['message']['content'] ?? '';
+            Log::debug('🔍 Resposta recebida do OpenRouter com sucesso', [
+                'content_length' => strlen($fullContent),
+                'usage' => $responseData['usage'] ?? null,
+                'provider' => $responseData['provider'] ?? 'desconhecido',
+                'model_usado' => $responseData['model'] ?? 'desconhecido'
+            ]);
+            
+            if (empty($fullContent)) {
+                Log::error('❌ Resposta vazia do OpenRouter');
+                $endTime = microtime(true);
+                $executionTime = round($endTime - $startTime, 2);
+                Log::info('⏱️ Tempo de execução (resposta vazia): ' . $executionTime . 's');
+                return $this->getMockAIResponse($transactions);
+            }
+            
+            // Processar saída
+            $categorizedTransactions = $this->extractOpenRouterJsonOutput($fullContent, $transactions);
+            if (empty($categorizedTransactions)) {
+                Log::error('❌ Falha ao extrair JSON da resposta do OpenRouter');
+                $endTime = microtime(true);
+                $executionTime = round($endTime - $startTime, 2);
+                Log::info('⏱️ Tempo de execução (falha no JSON): ' . $executionTime . 's');
+                return $this->getMockAIResponse($transactions);
+            }
+            
+            $endTime = microtime(true);
+            $executionTime = round($endTime - $startTime, 2);
+            Log::info('⏱️ Análise com OpenRouter concluída com sucesso', [
+                'tempo_execucao' => $executionTime . 's',
+                'total_transacoes_analisadas' => count($categorizedTransactions),
+                'provider' => $responseData['provider'] ?? 'desconhecido',
+                'model' => $responseData['model'] ?? 'desconhecido'
+            ]);
+            
+            return $categorizedTransactions;
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Exceção durante análise com OpenRouter', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $endTime = microtime(true);
+            $executionTime = round($endTime - $startTime, 2);
+            Log::info('⏱️ Tempo de execução (exceção): ' . $executionTime . 's');
+            return $this->getMockAIResponse($transactions);
+        }
+    }
+    
+    /**
+     * Prepara o prompt para o OpenRouter
+     * 
+     * @param array $transactions Transações a serem analisadas
+     * @return string Prompt formatado
+     */
+    private function prepareOpenRouterPrompt($transactions)
+    {
+        $transactionsJson = json_encode(array_slice($transactions, 0, 100), JSON_PRETTY_PRINT);
+        
+        return <<<EOT
+Analise as seguintes transações bancárias e sugira uma categoria apropriada para cada uma delas.
+
+Categorias sugeridas podem incluir: Alimentação, Moradia, Transporte, Saúde, Educação, Lazer, Vestuário, 
+Utilidades, Investimentos, Receitas Diversas, Salário, Transferência, Saque, Depósito, etc.
+
+Transações para análise:
+$transactionsJson
+
+Retorne APENAS um array JSON com as categorias sugeridas, seguindo exatamente este formato:
+[
+  {
+    "id": 0,
+    "type": "expense ou income",
+    "category_id": null,
+    "suggested_category": "Nome da categoria sugerida"
+  },
+  ...
+]
+
+Não inclua nenhum outro texto, apenas o JSON formatado no padrão acima.
+EOT;
+    }
+    
+    /**
+     * Extrai o JSON da saída do OpenRouter
+     * 
+     * @param string $output Saída da IA
+     * @param array $transactions Transações originais
+     * @return array Transações categorizadas
+     */
+    private function extractOpenRouterJsonOutput($output, $transactions)
+    {
+        // Tentar extrair apenas o JSON da resposta
+        $pattern = '/\[\s*\{.*?\}\s*\]/s';
+        if (preg_match($pattern, $output, $matches)) {
+            $jsonStr = $matches[0];
+        } else {
+            // Tentar usar a resposta completa como JSON
+            $jsonStr = $output;
+        }
+        
+        // Limpar caracteres problemáticos e tentar decodificar
+        $jsonStr = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonStr);
+        $decoded = json_decode($jsonStr, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('❌ Erro ao decodificar JSON da resposta do OpenRouter', [
+                'error' => json_last_error_msg(),
+                'json_extract' => substr($jsonStr, 0, 500) . (strlen($jsonStr) > 500 ? '...' : '')
+            ]);
+            return [];
+        }
+        
+        // Validar e garantir que temos categorias para todas as transações
+        if (empty($decoded) || !is_array($decoded)) {
+            Log::error('❌ Formato de resposta do OpenRouter inválido (não é array)');
+            return [];
+        }
+        
+        // Se temos menos categorias que transações, completar com mock
+        if (count($decoded) < count($transactions)) {
+            Log::warning('⚠️ OpenRouter retornou menos categorias que transações', [
+                'expected' => count($transactions),
+                'received' => count($decoded)
+            ]);
+            
+            // Completar o restante com categorias padrão
+            $mockResponse = $this->getMockAIResponse(array_slice($transactions, count($decoded)));
+            $decoded = array_merge($decoded, $mockResponse);
+        }
+        
+        return $decoded;
+    }
+    
+    /**
+     * Extrai JSON do output do Gemini
+     * @param string $output
+     * @param array $transactions
+     * @return array
+     */
+    private function extractGeminiJsonOutput($output, $transactions)
+    {
+        // Try to extract just the JSON part
+        $pattern = '/\[\s*\{.*?\}\s*\]/s';
+        if (preg_match($pattern, $output, $matches)) {
+            $jsonStr = $matches[0];
+        } else {
+            $jsonStr = $output; // Try with the full response
+        }
+
+        // Clean up and decode
+        $jsonStr = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonStr);
+        $decoded = json_decode($jsonStr, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('Error decoding JSON from Gemini: ' . json_last_error_msg(), [
+                'json_extract' => substr($jsonStr, 0, 500) . (strlen($jsonStr) > 500 ? '...' : '')
+            ]);
+            return [];
+        }
+
+        // Ensure we have categories for all transactions
+        if (empty($decoded) || !is_array($decoded)) {
+            Log::error('Invalid response format from Gemini (not an array)');
+            return [];
+        }
+
+        // If we have fewer categories than transactions, fill with mock
+        if (count($decoded) < count($transactions)) {
+            Log::warning('Gemini returned fewer categories than transactions', [
+                'expected' => count($transactions),
+                'received' => count($decoded)
+            ]);
+            
+            // Fill the rest with default categories
+            $mockResponse = $this->getMockAIResponse(array_slice($transactions, count($decoded)));
+            $decoded = array_merge($decoded, $mockResponse);
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Método específico para análise com xAI Grok
+     */
+    private function analyzeTransactionsWithGrok($transactions, $apiConfig)
+    {
+        $startTime = microtime(true);
+        $logData = [
+            'user_id' => auth()->id(),
+            'provider' => $apiConfig->provider ?? 'grok',
+            'model' => $apiConfig->model ?? 'grok-2', // Ajustar com base na configuração do modelo
+            'error_message' => null,
+            'status_code' => null,
+            'duration_ms' => null,
+            'prompt_preview' => null,
+            'response_preview' => null,
+        ];
+
+        try {
+            // Preparar as transações para análise (formato JSON)
+            $transactionDescriptions = [];
+            foreach ($transactions as $index => $transaction) {
+                $transactionDescriptions[] = [
+                    'id' => $index,
+                    'date' => $transaction['date'] ?? '',
+                    'description' => $transaction['description'] ?? '',
+                    'amount' => $transaction['amount'] ?? 0,
+                    'type' => $transaction['type'] ?? ''
+                ];
+            }
+            $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+            // Obter categories do usuário para treinamento da IA (similar a Gemini)
+            $categories = Category::where('user_id', auth()->id())->orderBy('name')->get();
+            $categoriesFormatted = [];
+            foreach ($categories as $category) {
+                $categoriesFormatted[] = [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'type' => $category->type,
+                    'icon' => $category->icon ?? ''
+                ];
+            }
+            $categoriesByType = [
+                'income' => [],
+                'expense' => []
+            ];
+            foreach ($categoriesFormatted as $category) {
+                $type = $category['type'] == 'income' ? 'income' : 'expense';
+                $categoriesByType[$type][] = $category;
+            }
+
+            // Construir o prompt dinâmico (adaptado para Grok, assumindo endpoint similar)
+            $prompt = "Você é uma IA especializada em extração de dados de transações financeiras. Analise o texto bruto fornecido e retorne **apenas** um objeto JSON com as informações extraídas e formatadas. Não adicione nenhum texto fora do JSON. Siga estes passos:\n\n1. **Extração de Dados**: Extraia do texto:\n\n   - \"date\": Data no formato \"DD/MM/AAAA\".\n   - \"identificador\": Qualquer ID único como UUID.\n   - \"bank_data\": Informações de banco, agência e conta.\n   - \"name\": Nome de pessoa ou empresa.\n   - \"tax_id\": CPF ou CNPJ.\n   - \"category\": Categoria com base no contexto e nas categorias fornecidas: " . json_encode($categoriesFormatted) . ".\n   - \"transaction_type\": \"income\" ou \"expense\".\n\n2. **Formatação da Saída**: Retorne um array de objetos JSON, cada um representando uma transação formatada.\n\nTexto bruto: " . $transactionsJson;
+
+            // Fazer a requisição à API do Grok (endpoint pode variar; use o configurado ou padrão)
+            $response = Http::withHeaders(['Content-Type' => 'application/json'])->post('https://api.grok.com/v1/chat/completions?api_key=' . env('GROK_API_KEY'), [ // Ajuste o endpoint com base na API real do Grok
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ]
+            ]);
+
+            // Log e verificar resposta
+            $logData['status_code'] = $response->status();
+            $logData['response_preview'] = substr($response->body(), 0, 500);
+            $logData['duration_ms'] = (int) round((microtime(true) - $startTime) * 1000);
+            Log::info('Resposta da API Grok: ' . $response->body());
+
+            if ($response->successful()) {
+                $result = $response->json();
+                if (isset($result['choices'][0]['message']['content']) && !empty($result['choices'][0]['message']['content'])) {
+                    $decodedResult = json_decode($result['choices'][0]['message']['content'], true);
+                    AiCallLog::create($logData);
+                    return $decodedResult;
+                } else {
+                    Log::warning('Resposta inválida da API Grok.', ['response' => $result]);
+                    return null;
+                }
+            } else {
+                Log::error('Erro na requisição à API Grok', ['status' => $response->status(), 'body' => $response->body()]);
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('Exceção ao processar requisição Grok', ['mensagem' => $e->getMessage()]);
             return null;
         }
     }
@@ -1684,7 +1755,7 @@ class TempStatementImportController extends Controller
 
         // Mapear resultados da IA por ID para acesso rápido
         $aiMap = [];
-        foreach ($aiAnalysisResult['transactions'] as $analyzed) {
+        foreach ($aiAnalysisResult['transactions'] as $analyzed) { 
              if (isset($analyzed['id'])) { // Usa o ID que a IA retornou (deve ser o índice original)
                  $aiMap[$analyzed['id']] = $analyzed;
              }
@@ -1727,5 +1798,27 @@ class TempStatementImportController extends Controller
         unset($transaction); // Quebrar referência do loop
 
         return $transactions;
+    }
+
+    /**
+     * Testa a API Gemini com uma consulta simples
+     */
+    public function testGeminiAPI()
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Unauthenticated. Please log in.'], 401);
+        }
+        $apiKey = env('GEMINI_API_KEY');
+        Log::debug('Usando API Key mascarada: ' . substr($apiKey, 0, 5) . '*****');
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey;
+        Log::debug('URL de requisição: ' . $url);
+        $prompt = "Teste simples: responda com 'OK' se você está funcionando.";
+        $response = Http::withHeaders(['Content-Type' => 'application/json'])->post($url, [
+            'contents' => [
+                ['parts' => [['text' => $prompt]]]
+            ]
+        ]);
+        Log::info('Resposta da API Gemini: ' . $response->body());
+        return response()->json(['status' => 'Test completed', 'response' => $response->json()]);
     }
 }

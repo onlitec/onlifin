@@ -256,7 +256,44 @@ class SettingsController extends Controller
 
     public function reports()
     {
-        return view('settings.reports.index');
+        $userId = auth()->id();
+        $currentMonthStart = Carbon::now()->startOfMonth();
+        $currentMonthEnd = Carbon::now()->endOfMonth();
+
+        // 1. Despesas por Categoria (Mês Atual)
+        $expensesByCategory = Transaction::where('user_id', $userId)
+            ->where('type', 'expense')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->join('categories', 'transactions.category_id', '=', 'categories.id')
+            ->select('categories.name as category_name', DB::raw('SUM(transactions.amount) as total_amount'))
+            ->groupBy('categories.name')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+            
+        // Preparar dados para Chart.js (Categoria)
+        $categoryLabels = $expensesByCategory->pluck('category_name');
+        $categoryData = $expensesByCategory->pluck('total_amount')->map(fn($amount) => $amount / 100); // Convert cents to currency unit
+
+        // 2. Despesas por Conta (Mês Atual)
+        $expensesByAccount = Transaction::where('user_id', $userId)
+            ->where('type', 'expense')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->join('accounts', 'transactions.account_id', '=', 'accounts.id')
+            ->select('accounts.name as account_name', DB::raw('SUM(transactions.amount) as total_amount'))
+            ->groupBy('accounts.name')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+
+        // Preparar dados para Chart.js (Conta)
+        $accountLabels = $expensesByAccount->pluck('account_name');
+        $accountData = $expensesByAccount->pluck('total_amount')->map(fn($amount) => $amount / 100); // Convert cents to currency unit
+
+        return view('settings.reports.index', compact(
+            'categoryLabels',
+            'categoryData',
+            'accountLabels',
+            'accountData'
+        ));
     }
 
     public function notifications()
@@ -753,7 +790,6 @@ class SettingsController extends Controller
         // 2. Validação
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'confirmation_text' => 'required|in:APAGAR DADOS', // Texto de confirmação exato
         ]);
 
         $userIdToDelete = $request->input('user_id');
@@ -769,8 +805,8 @@ class SettingsController extends Controller
                 // Excluir Transações
                 Transaction::where('user_id', $userIdToDelete)->delete();
                 
-                // Excluir Contas
-                Account::where('user_id', $userIdToDelete)->delete();
+                // Não excluir Contas - Linha removida/comentada
+                // Account::where('user_id', $userIdToDelete)->delete(); 
                 
                 // Excluir Categorias
                 Category::where('user_id', $userIdToDelete)->delete();

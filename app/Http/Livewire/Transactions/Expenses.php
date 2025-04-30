@@ -20,7 +20,11 @@ class Expenses extends Component
     public $confirmingDeletion = false;
     public $transactionToDelete;
 
-    protected $listeners = ['delete' => 'deleteTransaction'];
+    protected $listeners = [
+        'swal:confirm' => 'confirmDelete',
+        'swal:success' => '$refresh',
+        'swal:error' => '$refresh'
+    ];
 
     public function mount()
     {
@@ -73,6 +77,7 @@ class Expenses extends Component
         if ($transaction && $transaction->type === 'expense') {
             $transaction->status = 'paid';
             $transaction->save();
+            
             session()->flash('message', 'Despesa marcada como paga com sucesso!');
         }
     }

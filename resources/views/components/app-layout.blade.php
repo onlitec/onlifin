@@ -21,9 +21,6 @@
     @livewireStyles
 
     <script src="//unpkg.com/imask"></script>
-    
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
 </head>
 <body>
     @inject('aiConfigService', 'App\\Services\\AIConfigService')
@@ -91,13 +88,13 @@
                             @if($aiConfig['is_configured'])
                                 <i class="ri-robot-line text-lg text-blue-600"></i>
                                 <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>
-                                <a href="{{ route('settings.model-keys.index') }}" class="text-gray-500 hover:text-blue-600" title="Configurar IA">
+                                <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-blue-600" title="Configurar IA">
                                     <i class="ri-settings-3-line text-lg"></i>
                                 </a>
                             @else
                                 <i class="ri-refresh-line text-lg text-yellow-600"></i> {{-- Ícone da imagem --}}
                                 <span class="whitespace-nowrap">IA não configurada</span>
-                                <a href="{{ route('settings.model-keys.index') }}" class="text-gray-500 hover:text-yellow-600" title="Configurar IA">
+                                <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-yellow-600" title="Configurar IA">
                                    <i class="ri-settings-3-line text-lg"></i> {{-- Ícone de engrenagem como link --}}
                                 </a>
                             @endif
@@ -141,13 +138,13 @@
                     @if($aiConfig['is_configured'])
                         <i class="ri-robot-line text-lg text-blue-600"></i>
                         <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>
-                        <a href="{{ route('settings.model-keys.index') }}" class="text-gray-500 hover:text-blue-600" title="Configurar IA">
+                        <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-blue-600" title="Configurar IA">
                            <i class="ri-settings-3-line text-lg"></i>
                         </a>
                     @else
                         <i class="ri-refresh-line text-lg text-yellow-600"></i>
                         <span class="whitespace-nowrap">IA não configurada</span>
-                         <a href="{{ route('settings.model-keys.index') }}" class="text-gray-500 hover:text-yellow-600" title="Configurar IA">
+                         <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-yellow-600" title="Configurar IA">
                            <i class="ri-settings-3-line text-lg"></i>
                         </a>
                     @endif

@@ -139,16 +139,15 @@ class GeminiController extends Controller
                 ->groupBy('type')
                 ->toArray();
             
-            // Preparar prompt
-            $prompt = "Categorize as seguintes transações bancárias:\n\n";
-            $prompt .= "Transações:\n" . json_encode($transactionData, JSON_PRETTY_PRINT) . "\n\n";
-            $prompt .= "Categorias disponíveis:\n" . json_encode($categories, JSON_PRETTY_PRINT) . "\n\n";
-            $prompt .= "Para cada transação, determine:\n";
-            $prompt .= "1. Se é uma RECEITA ou DESPESA\n";
-            $prompt .= "2. A categoria existente mais adequada (pelo ID)\n";
-            $prompt .= "3. Sugira nova categoria se nenhuma existente for adequada\n\n";
-            $prompt .= "Responda apenas com JSON no formato:\n";
-            $prompt .= "{\n  \"transactions\": [\n    {\n      \"id\": 0,\n      \"type\": \"income\" ou \"expense\",\n      \"category_id\": ID ou null,\n      \"suggested_category\": \"Nome\" (se category_id for null)\n    }\n  ]\n}";
+            // Atualizar prompt para usar placeholders e substituição dinâmica
+            $promptTemplate = "Categorize as seguintes transações bancárias:\n\nTransações:\n{{transactions}}\n\nCategorias disponíveis:\n{{categories}}\n\nPara cada transação, determine:\n1. Se é uma RECEITA ou DESPESA\n2. A categoria existente mais adequada (pelo ID)\n3. Sugira nova categoria se nenhuma existente for adequada\n\nResponda apenas com JSON no formato:\n{
+  \"transactions\": [
+    {
+      \"id\": 0,
+      \"type\": \"income\" ou \"expense\",\n      \"category_id\": ID ou null,\n      \"suggested_category\": \"Nome\" (se category_id for null)\n    }
+  ]
+}";
+            $prompt = str_replace(['{{transactions}}', '{{categories}}'], [json_encode($transactionData, JSON_PRETTY_PRINT), json_encode($categories, JSON_PRETTY_PRINT)], $promptTemplate);
             
             // Configurar endpoint e payload
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";

@@ -33,7 +33,10 @@ class Expenses extends TransactionBase
 
     protected $listeners = [
         'transactionDeleted' => 'onTransactionDeleted',
-        'refresh' => '$refresh'
+        'refresh' => '$refresh',
+        'swal:confirm' => 'confirmDelete',
+        'swal:success' => '$refresh',
+        'swal:error' => '$refresh'
     ];
 
     public function mount()
@@ -204,6 +207,41 @@ class Expenses extends TransactionBase
         } else {
             $this->sortField = $field;
             $this->sortDirection = 'asc';
+        }
+    }
+
+    public function markAsPaid($transactionId)
+    {
+        try {
+            $transaction = Transaction::findOrFail($transactionId);
+
+            if ($transaction->user_id !== auth()->id() || $transaction->type !== 'expense') {
+                throw new \Exception('Você não tem permissão para marcar esta despesa como paga.');
+            }
+
+            // Atualiza apenas o status, sem tocar no valor
+            $transaction->status = 'paid';
+            $transaction->save();
+
+            $this->dispatch('swal:success', [
+                'title' => 'Despesa marcada como paga!',
+                'text' => 'A despesa foi atualizada com sucesso.',
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
+
+            $this->dispatch('refresh');
+        } catch (\Exception $e) {
+            $this->dispatch('swal:error', [
+                'title' => 'Erro ao marcar despesa como paga',
+                'text' => $e->getMessage(),
+                'toast' => true,
+                'position' => 'top-right',
+                'timer' => 3000,
+                'showConfirmButton' => false
+            ]);
         }
     }
 }
