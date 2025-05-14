@@ -300,16 +300,30 @@
         </div>
     </div>
     
-    <!-- NOVO: Gráfico de Despesas por Conta Bancária -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Despesas por Conta Bancária ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
-        @if(isset($accountExpenseData) && $accountExpenseData->isNotEmpty())
-            <div class="relative h-64 md:h-80">
-                <canvas id="accountExpenseChart"></canvas>
-            </div>
-        @else
-            <p class="text-center text-gray-500 py-8">Nenhuma despesa por conta encontrada no período.</p>
-        @endif
+    <!-- NOVO: Gráficos de Despesas e Receitas por Conta Bancária -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Despesas por Conta Bancária -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Despesas por Conta Bancária ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
+            @if(isset($accountExpenseData) && $accountExpenseData->isNotEmpty())
+                <div class="relative h-64 md:h-80">
+                    <canvas id="accountExpenseChart"></canvas>
+                </div>
+            @else
+                <p class="text-center text-gray-500 py-8">Nenhuma despesa por conta encontrada no período.</p>
+            @endif
+        </div>
+        <!-- Receitas por Conta Bancária -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Receitas por Conta Bancária ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
+            @if(isset($accountIncomeData) && $accountIncomeData->isNotEmpty())
+                <div class="relative h-64 md:h-80">
+                    <canvas id="accountIncomeChart"></canvas>
+                </div>
+            @else
+                <p class="text-center text-gray-500 py-8">Nenhuma receita por conta encontrada no período.</p>
+            @endif
+        </div>
     </div>
     
     <!-- Grid com Saldo Atual e Previsão -->
@@ -620,7 +634,57 @@
             }
         }
 
-        // 6. NOVO: Gráfico de Receitas vs Despesas ao Longo do Período (Bar)
+        // 6. NOVO: Gráfico de Receitas por Conta Bancária (Barras)
+        const accountIncomeCtx = document.getElementById('accountIncomeChart');
+        if (accountIncomeCtx) {
+            const accountIncomeLabels = @json($accountIncomeLabels ?? []);
+            const accountIncomeData = @json($accountIncomeData ?? []);
+            
+            if (accountIncomeData && accountIncomeData.length > 0) {
+                new Chart(accountIncomeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: accountIncomeLabels,
+                        datasets: [{
+                            label: 'Receitas por Conta',
+                            data: accountIncomeData,
+                            backgroundColor: chartColors,
+                            borderColor: chartColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { callback: value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 7. NOVO: Gráfico de Receitas vs Despesas ao Longo do Período (Bar)
         const trendCtx = document.getElementById('incomeExpenseTrendChart');
         if (trendCtx) {
             const trendLabels = @json($incomeExpenseTrendLabels ?? []);

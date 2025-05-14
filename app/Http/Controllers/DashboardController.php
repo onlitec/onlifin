@@ -239,6 +239,19 @@ class DashboardController extends Controller
             return ($sum ?? 0) / 100; // Retornar soma em Reais, ou 0 se não houver despesas
         });
 
+        // 6. NOVO: Receitas por Conta Bancária
+        // Preparar dados para Chart.js (Receitas por Conta)
+        $accountIncomeLabels = $userAccounts->pluck('name');
+        $accountIncomeData = $userAccounts->map(function($account) use ($userId, $startDate, $endDate) {
+            $sum = Transaction::where('user_id', $userId)
+                ->where('account_id', $account->id)
+                ->where('type', 'income')
+                ->where('status', 'paid') // CONFIGURAÇÃO CRÍTICA: Apenas transações pagas
+                ->whereBetween('date', [$startDate, $endDate])
+                ->sum('amount');
+            return ($sum ?? 0) / 100; // Retornar soma em Reais, ou 0 se não houver receitas
+        });
+
         // 6. NOVO: Receitas vs Despesas ao Longo do Período
         $incomeExpenseTrendLabels = [];
         $incomeTrendData = [];
@@ -417,15 +430,13 @@ class DashboardController extends Controller
             'balanceForecastData',
             'accountExpenseLabels',
             'accountExpenseData',
+            'accountIncomeLabels',
+            'accountIncomeData',
             'todayIncomes',
             'todayExpenses',
-            // 'pendingIncomes', // Removido
-            // 'pendingExpenses', // Removido
-            // NOVO: Dados do gráfico de tendência
             'incomeExpenseTrendLabels',
             'incomeTrendData',
             'expenseTrendData',
-            // NOVO: Pendentes hoje/amanhã
             'pendingExpensesToday',
             'pendingExpensesTomorrow',
             'pendingIncomesToday',
