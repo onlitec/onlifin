@@ -85,7 +85,7 @@
                     <!-- Wrapper para IA Status e User Dropdown -->
                     <div class="hidden sm:flex items-center ml-6 space-x-4"> 
                          <!-- **** Exibir Status da IA (Estilo da Imagem) **** -->
-                        <div class="text-sm text-gray-600 dark:text-gray-200 flex items-center space-x-2"> 
+                        <div class="text-sm text-gray-600 dark:text-gray-100 flex items-center space-x-2"> 
                             @if($aiConfig['is_configured'])
                                 <i class="ri-robot-line text-lg text-blue-600"></i>
                                 <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>
@@ -104,7 +104,7 @@
 
                         <!-- User Dropdown -->
                         <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                            <button @click="open = !open" class="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none transition duration-150 ease-in-out">
+                            <button @click="open = !open" class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white focus:outline-none transition duration-150 ease-in-out">
                                 <span>{{ auth()->user()->name }}</span>
                                 <i class="ri-arrow-down-s-line ml-1"></i>
                             </button>
@@ -135,7 +135,7 @@
             <!-- Mobile Navigation -->
             <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-200 py-2 px-4">
                 <!-- **** Status da IA no menu mobile (Estilo da Imagem) **** -->
-                 <div class="text-sm text-gray-600 dark:text-gray-200 my-2 flex items-center justify-center space-x-2"> 
+                 <div class="text-sm text-gray-600 dark:text-gray-100 my-2 flex items-center justify-center space-x-2"> 
                     @if($aiConfig['is_configured'])
                         <i class="ri-robot-line text-lg text-blue-600"></i>
                         <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>

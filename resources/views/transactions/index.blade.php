@@ -17,11 +17,11 @@
         {{-- Filtros discretos de transações --}}
         <div class="mb-4">
             <nav class="flex space-x-4 text-sm">
-                <a href="{{ route('transactions.index', ['filter'=>'all']) }}" class="pb-1 {{ $filter=='all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Todos</a>
-                <a href="{{ route('transactions.index', ['filter'=>'income']) }}" class="pb-1 {{ $filter=='income' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Receitas</a>
-                <a href="{{ route('transactions.index', ['filter'=>'expense']) }}" class="pb-1 {{ $filter=='expense' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Despesas</a>
-                <a href="{{ route('transactions.index', ['filter'=>'paid']) }}" class="pb-1 {{ $filter=='paid' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Pagos</a>
-                <a href="{{ route('transactions.index', ['filter'=>'pending']) }}" class="pb-1 {{ $filter=='pending' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Pendentes</a>
+                <a href="{{ route('transactions.index', ['filter'=>'all']) }}" class="pb-1 {{ $filter=='all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-200 dark:hover:text-gray-100">Todos</a>
+                <a href="{{ route('transactions.index', ['filter'=>'income']) }}" class="pb-1 {{ $filter=='income' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-200 dark:hover:text-gray-100">Receitas</a>
+                <a href="{{ route('transactions.index', ['filter'=>'expense']) }}" class="pb-1 {{ $filter=='expense' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-200 dark:hover:text-gray-100">Despesas</a>
+                <a href="{{ route('transactions.index', ['filter'=>'paid']) }}" class="pb-1 {{ $filter=='paid' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-200 dark:hover:text-gray-100">Pagos</a>
+                <a href="{{ route('transactions.index', ['filter'=>'pending']) }}" class="pb-1 {{ $filter=='pending' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-200 dark:hover:text-gray-100">Pendentes</a>
             </nav>
         </div>
 

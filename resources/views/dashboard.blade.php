@@ -7,12 +7,12 @@
         {{-- Bloco do Título --}}
         <div class="flex-grow">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Visão geral das suas finanças.</p>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-200">Visão geral das suas finanças.</p>
         </div>
         {{-- Bloco do Seletor de Período --}}
         <div class="flex-shrink-0">
             <form method="GET" action="{{ route('dashboard') }}" class="flex items-center">
-                <label for="period" class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">Período:</label>
+                <label for="period" class="text-sm font-medium text-gray-700 dark:text-gray-200 mr-2 whitespace-nowrap">Período:</label>
                 <select name="period" id="period"
                        class="form-select bg-white dark:bg-gray-800 rounded-md shadow-sm border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500 text-sm dark:text-gray-100 dark:placeholder-gray-400"
                        onchange="this.form.submit()">
