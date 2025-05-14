@@ -8,6 +8,7 @@ use App\Models\Category;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * ATENÇÃO: CONFIGURAÇÃO CRÍTICA
@@ -121,37 +122,31 @@ class DashboardController extends Controller
         
         // --- DADOS PARA GRÁFICOS --- 
 
-        // 1. Despesas por Categoria (Período Selecionado)
-        $expensesByCategory = Transaction::where('transactions.user_id', $userId)
-            ->where('transactions.type', 'expense')
-            ->where('status', 'paid') // CONFIGURAÇÃO CRÍTICA: Apenas transações pagas
+        // 1. Despesas por Categoria (Período Selecionado) - incluir todas as categorias existentes
+        $expenseCategories = Category::where('user_id', $userId)->where('type', 'expense')->get();
+        $expenseChartLabels = $expenseCategories->pluck('name');
+        $expenseChartData = $expenseCategories->map(function($cat) use($userId, $startDate, $endDate) {
+            $sum = Transaction::where('user_id', $userId)
+                ->where('status', 'paid')
+                ->where('type', 'expense')
+                ->where('category_id', $cat->id)
             ->whereBetween('date', [$startDate, $endDate])
-            ->join('categories', 'transactions.category_id', '=', 'categories.id')
-            ->select('categories.name as category_name', DB::raw('SUM(transactions.amount) as total_amount'))
-            ->groupBy('categories.name')
-            ->orderBy('total_amount', 'desc')
-            ->limit(10) // Limitar para não poluir o gráfico
-            ->get();
+                ->sum('amount');
+            return ($sum ?? 0) / 100;
+        });
 
-        // Preparar dados para Chart.js (Despesas)
-        $expenseChartLabels = $expensesByCategory->pluck('category_name');
-        $expenseChartData = $expensesByCategory->pluck('total_amount')->map(fn($amount) => $amount / 100); // Converter centavos para reais
-
-        // 2. Receitas por Categoria (Período Selecionado)
-        $incomeByCategory = Transaction::where('transactions.user_id', $userId)
-            ->where('transactions.type', 'income')
-            ->where('status', 'paid') // CONFIGURAÇÃO CRÍTICA: Apenas transações pagas
+        // 2. Receitas por Categoria (Período Selecionado) - incluir todas as categorias existentes
+        $incomeCategories = Category::where('user_id', $userId)->where('type', 'income')->get();
+        $incomeChartLabels = $incomeCategories->pluck('name');
+        $incomeChartData = $incomeCategories->map(function($cat) use($userId, $startDate, $endDate) {
+            $sum = Transaction::where('user_id', $userId)
+                ->where('status', 'paid')
+                ->where('type', 'income')
+                ->where('category_id', $cat->id)
             ->whereBetween('date', [$startDate, $endDate])
-            ->join('categories', 'transactions.category_id', '=', 'categories.id')
-            ->select('categories.name as category_name', DB::raw('SUM(transactions.amount) as total_amount'))
-            ->groupBy('categories.name')
-            ->orderBy('total_amount', 'desc')
-            ->limit(10)
-            ->get();
-        
-        // Preparar dados para Chart.js (Receitas)
-        $incomeChartLabels = $incomeByCategory->pluck('category_name');
-        $incomeChartData = $incomeByCategory->pluck('total_amount')->map(fn($amount) => $amount / 100);
+                ->sum('amount');
+            return ($sum ?? 0) / 100;
+        });
         
         // 3. Saldo ao Longo do Tempo (Ex: Últimos 30 dias - pode ser ajustado pelo período)
         //   -> Calcular saldo diário pode ser pesado. Fazer para o mês atual como exemplo?
@@ -228,24 +223,30 @@ class DashboardController extends Controller
         }
         
         // 5. NOVO: Despesas por Conta Bancária
-        $expensesByAccount = Transaction::where('transactions.user_id', $userId)
-            ->where('transactions.type', 'expense')
-            ->where('status', 'paid') // CONFIGURAÇÃO CRÍTICA: Apenas transações pagas
-            ->whereBetween('date', [$startDate, $endDate])
-            ->join('accounts', 'transactions.account_id', '=', 'accounts.id')
-            ->select('accounts.name as account_name', DB::raw('SUM(transactions.amount) as total_amount'))
-            ->groupBy('accounts.name')
-            ->orderBy('total_amount', 'desc')
-            ->get();
-            
+        // Primeiro, buscar todas as contas do usuário
+        $userAccounts = Account::where('user_id', $userId)->orderBy('name')->get();
+
         // Preparar dados para Chart.js (Despesas por Conta)
-        $accountExpenseLabels = $expensesByAccount->pluck('account_name');
-        $accountExpenseData = $expensesByAccount->pluck('total_amount')->map(fn($amount) => $amount / 100);
+        // Mapear sobre cada conta para obter o total de despesas
+        $accountExpenseLabels = $userAccounts->pluck('name');
+        $accountExpenseData = $userAccounts->map(function($account) use ($userId, $startDate, $endDate) {
+            $sum = Transaction::where('user_id', $userId)
+                ->where('account_id', $account->id)
+                ->where('type', 'expense')
+                ->where('status', 'paid') // CONFIGURAÇÃO CRÍTICA: Apenas transações pagas
+                ->whereBetween('date', [$startDate, $endDate])
+                ->sum('amount');
+            return ($sum ?? 0) / 100; // Retornar soma em Reais, ou 0 se não houver despesas
+        });
 
         // 6. NOVO: Receitas vs Despesas ao Longo do Período
         $incomeExpenseTrendLabels = [];
         $incomeTrendData = [];
         $expenseTrendData = [];
+
+        Log::info('--- Debug Receitas vs Despesas Trend ---');
+        Log::info('Start Date: ' . $startDate->toDateString());
+        Log::info('End Date: ' . $endDate->toDateString());
 
         // Determinar a granularidade (diária ou mensal) baseado na duração do período
         $periodDurationInDays = $startDate->diffInDays($endDate);
@@ -268,6 +269,8 @@ class DashboardController extends Controller
             ->groupBy('period_key', 'type')
             ->orderBy('period_key')
             ->get();
+
+        Log::info('Period Transactions Query Result:', $periodTransactions->toArray());
 
         // Agrupar por período (dia ou mês)
         $groupedTransactions = $periodTransactions->groupBy('period_key');
@@ -307,6 +310,11 @@ class DashboardController extends Controller
                 }
             }
         }
+
+        Log::info('IncomeExpenseTrendLabels:', $incomeExpenseTrendLabels);
+        Log::info('IncomeTrendData:', $incomeTrendData);
+        Log::info('ExpenseTrendData:', $expenseTrendData);
+        Log::info('--- End Debug Receitas vs Despesas Trend ---');
 
         // --- DADOS ADICIONAIS (Transações recentes, pendentes, etc.) --- 
         // Manter ou remover as buscas por transações de hoje/amanhã/pendentes?

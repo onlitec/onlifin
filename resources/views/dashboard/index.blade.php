@@ -101,6 +101,18 @@
             </div>
         </div>
 
+        <!-- Gráficos de Despesas e Receitas por Categoria -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white shadow-sm rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Despesas por Categoria (Período)</h3>
+                <canvas id="expenseChart"></canvas>
+            </div>
+            <div class="bg-white shadow-sm rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Receitas por Categoria (Período)</h3>
+                <canvas id="incomeChart"></canvas>
+            </div>
+        </div>
+
         <!-- Seção de Análise Diária -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <!-- Bloco de Hoje -->
@@ -456,9 +468,102 @@
 </x-app-layout>
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     function updateDashboard(period) {
         window.location.href = `{{ route('dashboard') }}?period=${period}`;
     }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Despesas por Categoria
+        var expenseLabels = @json($expenseChartLabels);
+        var expenseData = @json($expenseChartData);
+        var ctxExp = document.getElementById('expenseChart');
+        if (ctxExp) {
+            new Chart(ctxExp.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: expenseLabels,
+                    datasets: [{
+                        data: expenseData,
+                        backgroundColor: ['#ef4444','#f87171','#fca5a5','#fbbf24','#f59e0b','#d97706','#f97316','#ea580c','#dc2626','#b91c1c'].slice(0, expenseData.length)
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+        // Receitas por Categoria
+        var incomeLabels = @json($incomeChartLabels);
+        var incomeData = @json($incomeChartData);
+        var ctxInc = document.getElementById('incomeChart');
+        if (ctxInc) {
+            new Chart(ctxInc.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: incomeLabels,
+                    datasets: [{
+                        data: incomeData,
+                        backgroundColor: ['#10b981','#6ee7b7','#34d399','#047857','#065f46','#059669','#047857','#065f46','#047857','#059669'].slice(0, incomeData.length)
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+        // Receitas vs Despesas ao Longo do Período
+        var trendCtx = document.getElementById('incomeExpenseTrendChart');
+        if (trendCtx) {
+            const trendLabels = @json($incomeExpenseTrendLabels);
+            const incomeTrend = @json($incomeTrendData);
+            const expenseTrend = @json($expenseTrendData);
+            new Chart(trendCtx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        {
+                            label: 'Receitas',
+                            data: incomeTrend,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Despesas',
+                            data: expenseTrend,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
 </script>
 @endpush 

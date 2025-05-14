@@ -78,9 +78,9 @@
                                 <div class="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
                                     <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
                                         Configurações
-                                    </a>
-                                </div>
-                            </div>
+                            </a>
+                        </div>
+                    </div>
                             @endif
                             <!-- IA Icon inside main menu -->
                             <a href="{{ route('openrouter-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
@@ -94,20 +94,20 @@
                                     @else
                                         <i class="ri-user-line text-lg"></i>
                                     @endif
-                                    <i class="ri-arrow-down-s-line ml-1"></i>
-                                </button>
+                                <i class="ri-arrow-down-s-line ml-1"></i>
+                            </button>
                                 <div class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
-                                    <form method="POST" action="{{ route('logout') }}">
-                                        @csrf
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
                                         <button type="submit" class="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
-                                            Sair
-                                        </button>
-                                    </form>
+                                        Sair
+                                    </button>
+                                </form>
                                 </div>
                             </div>
                         </div>
                     </div>
-
+                    
                     <!-- Mobile menu button -->
                     <div class="md:hidden">
                         <button type="button" onclick="toggleMobileMenu()" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
@@ -123,7 +123,7 @@
                 <div class="my-2 flex items-center justify-center">
                     <a href="{{ route('openrouter-config.index') }}" class="{{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
                         <i class="ri-robot-line text-lg"></i>
-                    </a>
+                        </a>
                 </div>
                 <!-- ------------------------------------------------------- -->
                 <div class="space-y-2">
@@ -158,9 +158,9 @@
                             <i :class="open ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
                         </button>
                         <div x-show="open" class="ml-4 space-y-1">
-                            <a href="{{ route('settings.index') }}" class="mobile-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                                Configurações
-                            </a>
+                        <a href="{{ route('settings.index') }}" class="mobile-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                            Configurações
+                        </a>
                         </div>
                     </div>
                     @endif

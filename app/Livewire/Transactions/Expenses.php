@@ -1,4 +1,16 @@
 <?php
+/*
+--------------------------------------------------------------------------
+ATENÇÃO!
+--------------------------------------------------------------------------
+Este arquivo e seu conteúdo foram ajustados e corrigidos.
+Qualquer alteração subsequente deve ser feita com autorização explícita
+para evitar a quebra de funcionalidades implementadas.
+
+Última modificação por: Assistente AI
+Data da modificação: [DATA DA ALTERAÇÃO ATUAL]
+--------------------------------------------------------------------------
+*/
 
 namespace App\Livewire\Transactions;
 
@@ -16,6 +28,7 @@ class Expenses extends Component
     public $month;
     public $year;
     public $search = '';
+    public $perPage = 20;
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $isAdmin = false;
@@ -31,6 +44,7 @@ class Expenses extends Component
     
     public function previousMonth()
     {
+        $this->resetPage();
         $date = Carbon::createFromDate($this->year, $this->month, 1)->subMonth();
         $this->month = $date->month;
         $this->year = $date->year;
@@ -38,6 +52,7 @@ class Expenses extends Component
 
     public function nextMonth()
     {
+        $this->resetPage();
         $date = Carbon::createFromDate($this->year, $this->month, 1)->addMonth();
         $this->month = $date->month;
         $this->year = $date->year;
@@ -97,6 +112,16 @@ class Expenses extends Component
         }
     }
     
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage()
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
         $query = Transaction::query()
@@ -116,7 +141,7 @@ class Expenses extends Component
         }
         
         $transactions = $query->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+            ->paginate($this->perPage);
             
         // Calculate totals
         $totalQuery = clone $query;

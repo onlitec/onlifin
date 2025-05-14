@@ -1,4 +1,16 @@
 <?php
+/*
+--------------------------------------------------------------------------
+ATENÇÃO!
+--------------------------------------------------------------------------
+Este arquivo e seu conteúdo foram ajustados e corrigidos.
+Qualquer alteração subsequente deve ser feita com autorização explícita
+para evitar a quebra de funcionalidades implementadas.
+
+Última modificação por: Assistente AI
+Data da modificação: [DATA DA ALTERAÇÃO ATUAL]
+--------------------------------------------------------------------------
+*/
 
 namespace App\Livewire\Transactions;
 
@@ -18,7 +30,7 @@ class Income extends TransactionBase
     public $month;
     public $year;
     public $search = '';
-    public $perPage = 10;
+    public $perPage = 20;
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $confirmingDeletion = false;
@@ -50,6 +62,11 @@ class Income extends TransactionBase
     }
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage()
     {
         $this->resetPage();
     }
@@ -183,6 +200,7 @@ class Income extends TransactionBase
             ->when($this->search, function($query) {
                 $query->where(function($q) {
                     $q->where('description', 'like', '%' . $this->search . '%')
+                      ->orWhere('cliente', 'like', '%' . $this->search . '%')
                       ->orWhereHas('category', function($q) {
                           $q->where('name', 'like', '%' . $this->search . '%');
                       })

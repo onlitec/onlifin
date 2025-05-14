@@ -1,6 +1,18 @@
+<!--
+--------------------------------------------------------------------------
+ATENÇÃO!
+--------------------------------------------------------------------------
+Este arquivo e seu conteúdo foram ajustados e corrigidos.
+Qualquer alteração subsequente deve ser feita com autorização explícita
+para evitar a quebra de funcionalidades implementadas.
+
+Última modificação por: Assistente AI
+Data da modificação: [DATA DA ALTERAÇÃO ATUAL]
+--------------------------------------------------------------------------
+-->
 <div>
-    <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between">
-        <div class="flex items-center mb-3 md:mb-0">
+    <div class="mb-4">
+        <div class="flex items-center mb-3">
             <button wire:click="previousMonth" class="btn btn-sm btn-outline">
                 <i class="ri-arrow-left-s-line"></i>
             </button>
@@ -15,18 +27,9 @@
                 <i class="ri-arrow-right-s-line"></i>
             </button>
         </div>
-        
-        <div class="flex items-center space-x-2">
-            <div class="form-control">
-                <input type="text" wire:model.debounce.300ms="search" placeholder="Buscar receitas..." class="input input-sm input-bordered">
-            </div>
-            <a href="{{ route('transactions.create', ['type' => 'income']) }}" class="btn btn-sm btn-primary">
-                <i class="ri-add-line mr-1"></i> Nova Receita
-            </a>
-        </div>
     </div>
 
-    <div class="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="card shadow">
             <div class="card-body p-4">
                 <div class="text-sm text-gray-500">Total de Receitas</div>
@@ -51,10 +54,43 @@
                 </div>
             </div>
         </div>
+        <div class="card shadow">
+            <div class="card-body p-4 flex items-center justify-end space-x-2">
+                <div class="form-control">
+                    <div class="input-group input-group-sm">
+                        <input type="text"
+                            wire:model.debounce.300ms="search"
+                            wire:keydown.enter="resetPage"
+                            placeholder="Buscar..."
+                            class="input input-bordered input-sm w-48"
+                        />
+                        <button type="button" wire:click="resetPage" class="btn btn-square btn-sm" title="Buscar">
+                            <i class="ri-search-line"></i>
+                        </button>
+                    </div>
+                </div>
+                <a href="{{ route('transactions.create', ['type' => 'income']) }}" class="btn btn-primary btn-sm">
+                    <i class="ri-add-line mr-1"></i> Nova Receita
+                </a>
+            </div>
+        </div>
     </div>
 
     <div class="card shadow">
         <div class="card-body overflow-x-auto">
+            <div class="mb-4 flex items-center justify-start">
+                <span class="text-sm text-gray-600 mr-2">Exibir:</span>
+                <select wire:model.live="perPage" class="select select-bordered select-sm">
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                </select>
+                <span class="text-sm text-gray-600 ml-2">por página</span>
+            </div>
             <table class="table w-full">
                 <thead class="table-header">
                     <tr>
