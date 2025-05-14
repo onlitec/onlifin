@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Definir tamanho base da fonte via variável CSS */
+html { font-size: var(--root-font-size, 16px) !important; }
+
 @layer base {
     body {
         @apply bg-gray-50 text-gray-800 font-['Inter'];

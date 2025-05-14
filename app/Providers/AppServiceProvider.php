@@ -81,5 +81,11 @@ class AppServiceProvider extends ServiceProvider
         // Compartilhar tema do site (claro/escuro)
         $siteTheme = \App\Models\Setting::get('site_theme', 'light');
         \Illuminate\Support\Facades\View::share('siteTheme', $siteTheme);
+        // Compartilhar tamanho base da fonte (px)
+        $rootFontSize = \App\Models\Setting::get('root_font_size', '16');
+        \Illuminate\Support\Facades\View::share('rootFontSize', $rootFontSize);
+        // Compartilhar tamanho da fonte dos cards
+        $cardFontSize = \App\Models\Setting::get('card_font_size', '2xl');
+        \Illuminate\Support\Facades\View::share('cardFontSize', $cardFontSize);
     }
 }

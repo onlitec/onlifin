@@ -59,6 +59,28 @@
                         </select>
                         <p class="mt-1 text-sm text-gray-500">Selecione o tema claro ou escuro para o site.</p>
                     </div>
+                    <div class="mb-6">
+                        <label for="root_font_size" class="block text-sm font-medium text-gray-700 mb-1">Tamanho Base da Fonte (px)</label>
+                        <select name="root_font_size" id="root_font_size"
+                                class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
+                            <option value="14" {{ old('root_font_size', $rootFontSize) === '14' ? 'selected' : '' }}>14</option>
+                            <option value="16" {{ old('root_font_size', $rootFontSize) === '16' ? 'selected' : '' }}>16</option>
+                            <option value="18" {{ old('root_font_size', $rootFontSize) === '18' ? 'selected' : '' }}>18</option>
+                            <option value="20" {{ old('root_font_size', $rootFontSize) === '20' ? 'selected' : '' }}>20</option>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">Selecione o tamanho base da fonte em pixels para todo o site.</p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="card_font_size" class="block text-sm font-medium text-gray-700 mb-1">Tamanho da Fonte dos Cards</label>
+                        <select name="card_font_size" id="card_font_size"
+                                class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
+                            <option value="lg" {{ old('card_font_size', $cardFontSize) === 'lg' ? 'selected' : '' }}>Pequeno</option>
+                            <option value="xl" {{ old('card_font_size', $cardFontSize) === 'xl' ? 'selected' : '' }}>Médio</option>
+                            <option value="2xl" {{ old('card_font_size', $cardFontSize) === '2xl' ? 'selected' : '' }}>Grande</option>
+                            <option value="3xl" {{ old('card_font_size', $cardFontSize) === '3xl' ? 'selected' : '' }}>Muito Grande</option>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">Selecione o tamanho da fonte para os valores nos cards da dashboard.</p>
+                    </div>
                     <div class="flex justify-end">
                         <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                     </div>

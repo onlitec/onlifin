@@ -883,8 +883,10 @@ class SettingsController extends Controller
         $siteTitle = Setting::get('site_title', config('app.name'));
         $siteFavicon = Setting::get('site_favicon', 'favicon.ico');
         $siteTheme = Setting::get('site_theme', 'light');
+        $rootFontSize = Setting::get('root_font_size', '16');
         $siteLogo = Setting::get('site_logo', null);
-        return view('settings.appearance', compact('siteTitle', 'siteFavicon', 'siteTheme', 'siteLogo'));
+        $cardFontSize = Setting::get('card_font_size', '2xl');
+        return view('settings.appearance', compact('siteTitle', 'siteFavicon', 'siteTheme', 'siteLogo', 'rootFontSize', 'cardFontSize'));
     }
 
     /**
@@ -900,9 +902,13 @@ class SettingsController extends Controller
             'site_logo' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
             'site_favicon' => 'nullable|image|mimes:png,ico,svg|max:1024',
             'site_theme' => 'required|in:light,dark',
+            'root_font_size'  => 'required|in:14,16,18,20',
+            'card_font_size'  => 'required|in:lg,xl,2xl,3xl',
         ]);
         Setting::set('site_title', $data['site_title']);
         Setting::set('site_theme', $data['site_theme']);
+        Setting::set('root_font_size', $data['root_font_size']);
+        Setting::set('card_font_size', $data['card_font_size']);
         if ($request->hasFile('site_logo')) {
             $pathLogo = $request->file('site_logo')->store('site-logos', 'public');
             Setting::set('site_logo', 'storage/' . $pathLogo);

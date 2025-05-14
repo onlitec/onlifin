@@ -119,11 +119,7 @@ class Account extends Model
      */
     public function getCurrentBalanceAttribute($value): float
     {
-        // Return the provided value if it exists, otherwise calculate it
-        if (!is_null($value)) {
-            return $value;
-        }
-        
+        // Sempre recalcula o saldo, ignorando valor salvo no DB
         return $this->recalculateBalance();
     }
 

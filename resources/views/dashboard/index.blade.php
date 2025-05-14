@@ -27,12 +27,17 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                            <i class="ri-arrow-up-circle-line text-2xl text-green-600"></i>
+                        <div class="relative group inline-block">
+                            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <i class="ri-arrow-up-circle-line text-2xl text-green-600"></i>
+                            </div>
+                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-green-50 text-green-700 text-xs rounded-md px-2 py-1 whitespace-pre-line z-10">
+                                Total de receitas:<br>Somente transações pagas no período
+                            </div>
                         </div>
                         <div>
                             <h3 class="text-sm font-medium text-gray-600">Total de Receitas</h3>
-                            <p class="text-2xl font-bold text-gray-900">
+                            <p class="text-{{ $cardFontSize }} font-bold text-gray-900">
                                 R$ {{ number_format($totalIncome / 100, 2, ',', '.') }}
                             </p>
                         </div>
@@ -57,7 +62,7 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-medium text-gray-600">Total de Despesas</h3>
-                            <p class="text-2xl font-bold text-gray-900">
+                            <p class="text-{{ $cardFontSize }} font-bold text-gray-900">
                                 R$ {{ number_format($totalExpenses / 100, 2, ',', '.') }}
                             </p>
                         </div>
@@ -82,7 +87,7 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-medium text-gray-600">Saldo Total</h3>
-                            <p class="text-2xl font-bold {{ ($balance >= 0) ? 'text-green-600' : 'text-red-600' }}">
+                            <p class="text-{{ $cardFontSize }} font-bold {{ ($balance >= 0) ? 'text-green-600' : 'text-red-600' }}">
                                 R$ {{ number_format($balance / 100, 2, ',', '.') }}
                             </p>
                         </div>
