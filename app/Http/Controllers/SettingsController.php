@@ -874,6 +874,9 @@ class SettingsController extends Controller
 
     /**
      * Aparência: exibe opções para configurar título e favicon do site.
+     *
+     * IMPLEMENTAÇÃO CRÍTICA: Esta funcionalidade está disponível em http://onlifin.onlitec.com.br/settings/appearance
+     * NÃO MODIFICAR sem autorização explícita.
      */
     public function appearance()
     {
@@ -884,6 +887,9 @@ class SettingsController extends Controller
 
     /**
      * Atualiza configurações de aparência (título e favicon).
+     *
+     * IMPLEMENTAÇÃO CRÍTICA: Esta funcionalidade está disponível em http://onlifin.onlitec.com.br/settings/appearance
+     * NÃO MODIFICAR sem autorização explícita.
      */
     public function updateAppearance(Request $request)
     {
