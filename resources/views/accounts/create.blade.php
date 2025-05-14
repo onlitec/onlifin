@@ -37,7 +37,7 @@
                                 Tipo de Conta
                             </label>
                             <select name="type" id="type" 
-                                class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-300 dark:text-gray-100"
                                 required>
                                 <option value="checking" {{ old('type') === 'checking' ? 'selected' : '' }}>Conta Corrente</option>
                                 <option value="savings" {{ old('type') === 'savings' ? 'selected' : '' }}>Conta Poupança</option>
@@ -89,7 +89,7 @@
                         <!-- Campo de seleção de usuário (apenas para administradores) -->
                         <div class="mb-4">
                             <label for="user_id" class="block text-sm font-medium text-gray-700">Usuário</label>
-                            <select name="user_id" id="user_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <select name="user_id" id="user_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-300 dark:text-gray-100">
                                 @foreach($users as $user)
                                     <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
                                 @endforeach
