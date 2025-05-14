@@ -19,3 +19,7 @@
 *.log
 npm-debug.log
 yarn-error.log
+
+/storage/framework/views/*
+
+/storage/archived_code/*

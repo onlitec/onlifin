@@ -15,7 +15,7 @@ class Expenses extends Component
     public $month;
     public $year;
     public $search = '';
-    public $perPage = 10;
+    public $perPage = 20;
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $confirmingDeletion = false;
@@ -118,7 +118,16 @@ class Expenses extends Component
             
             // Aplicar filtro de pesquisa
             if ($this->search) {
-                $query->where('description', 'like', '%' . $this->search . '%');
+                $query->where(function($q) {
+                    $q->where('description', 'like', '%' . $this->search . '%')
+                      ->orWhere('fornecedor', 'like', '%' . $this->search . '%')
+                      ->orWhereHas('category', function($q) {
+                          $q->where('name', 'like', '%' . $this->search . '%');
+                      })
+                      ->orWhereHas('account', function($q) {
+                          $q->where('name', 'like', '%' . $this->search . '%');
+                      });
+                });
             }
             
             // Ordenar e paginar resultados
@@ -189,5 +198,13 @@ class Expenses extends Component
             $this->sortField = $field;
             $this->sortDirection = 'asc';
         }
+    }
+
+    /**
+     * Reset pagination when per-page count changes.
+     */
+    public function updatedPerPage()
+    {
+        $this->resetPage();
     }
 } 
