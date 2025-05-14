@@ -3,8 +3,8 @@
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Nova Transação</h1>
-                <p class="mt-1 text-sm text-gray-600">Preencha os dados para registrar uma nova transação</p>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Nova Transação</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Preencha os dados para registrar uma nova transação</p>
             </div>
             <a href="{{ route('transactions.index') }}" class="btn btn-secondary">
                 <i class="ri-arrow-left-line mr-2"></i>

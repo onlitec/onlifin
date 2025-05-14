@@ -6,14 +6,14 @@
     <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-start gap-4 md:gap-6">
         {{-- Bloco do Título --}}
         <div class="flex-grow">
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p class="mt-1 text-sm text-gray-600">Visão geral das suas finanças.</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Visão geral das suas finanças.</p>
         </div>
         {{-- Bloco do Seletor de Período --}}
         <div class="flex-shrink-0">
             <form method="GET" action="{{ route('dashboard') }}" class="flex items-center">
-                <label for="period" class="text-sm font-medium text-gray-700 mr-2 whitespace-nowrap">Período:</label>
-                <select name="period" id="period" class="form-select rounded-md shadow-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 text-sm" onchange="this.form.submit()">
+                <label for="period" class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2 whitespace-nowrap">Período:</label>
+                <select name="period" id="period" class="form-select rounded-md shadow-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 text-sm dark:text-gray-900" onchange="this.form.submit()">
                     <option value="current_month" {{ $period == 'current_month' ? 'selected' : '' }}>Este Mês</option>
                     <option value="last_month" {{ $period == 'last_month' ? 'selected' : '' }}>Mês Passado</option>
                     <option value="current_year" {{ $period == 'current_year' ? 'selected' : '' }}>Este Ano</option>

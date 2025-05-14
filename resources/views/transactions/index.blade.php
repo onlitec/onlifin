@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="container-app">
         <div class="mb-6 flex items-center justify-between">
-            <h1>Transações</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Transações</h1>
             <div class="flex gap-2">
                 <a href="{{ route('transactions.import') }}" class="btn btn-secondary">
                     <i class="ri-file-upload-line mr-2"></i>
@@ -17,11 +17,11 @@
         {{-- Filtros discretos de transações --}}
         <div class="mb-4">
             <nav class="flex space-x-4 text-sm">
-                <a href="{{ route('transactions.index', ['filter'=>'all']) }}" class="pb-1 {{ $filter=='all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Todos</a>
-                <a href="{{ route('transactions.index', ['filter'=>'income']) }}" class="pb-1 {{ $filter=='income' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Receitas</a>
-                <a href="{{ route('transactions.index', ['filter'=>'expense']) }}" class="pb-1 {{ $filter=='expense' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Despesas</a>
-                <a href="{{ route('transactions.index', ['filter'=>'paid']) }}" class="pb-1 {{ $filter=='paid' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Pagos</a>
-                <a href="{{ route('transactions.index', ['filter'=>'pending']) }}" class="pb-1 {{ $filter=='pending' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }}">Pendentes</a>
+                <a href="{{ route('transactions.index', ['filter'=>'all']) }}" class="pb-1 {{ $filter=='all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Todos</a>
+                <a href="{{ route('transactions.index', ['filter'=>'income']) }}" class="pb-1 {{ $filter=='income' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Receitas</a>
+                <a href="{{ route('transactions.index', ['filter'=>'expense']) }}" class="pb-1 {{ $filter=='expense' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Despesas</a>
+                <a href="{{ route('transactions.index', ['filter'=>'paid']) }}" class="pb-1 {{ $filter=='paid' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Pagos</a>
+                <a href="{{ route('transactions.index', ['filter'=>'pending']) }}" class="pb-1 {{ $filter=='pending' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-gray-900 dark:hover:text-gray-800">Pendentes</a>
             </nav>
         </div>
 

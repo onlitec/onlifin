@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $siteTheme === 'dark' ? 'dark' : '' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,21 +23,21 @@
 
     <script src="//unpkg.com/imask"></script>
 </head>
-<body>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     @inject('aiConfigService', 'App\\Services\\AIConfigService')
     @php
         $aiConfig = $aiConfigService->getAIConfig();
     @endphp
 
-    <div class="min-h-screen flex flex-col bg-gray-50">
+    <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-800">
         
         <!-- Top Navigation -->
-        <header class="bg-white shadow-sm sticky top-0 z-10">
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10">
             <div class="container-app">
                 <div class="flex items-center justify-between h-16">
                     <!-- Logo -->
                     <div class="flex-shrink-0">
-                        <h1 class="text-2xl font-bold text-gray-800">Onlifin</h1>
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Onlifin</h1>
                     </div>
 
                     <!-- Main Navigation -->
@@ -85,7 +85,7 @@
                     <!-- Wrapper para IA Status e User Dropdown -->
                     <div class="hidden sm:flex items-center ml-6 space-x-4"> 
                          <!-- **** Exibir Status da IA (Estilo da Imagem) **** -->
-                        <div class="text-sm text-gray-600 flex items-center space-x-2"> 
+                        <div class="text-sm text-gray-600 dark:text-gray-200 flex items-center space-x-2"> 
                             @if($aiConfig['is_configured'])
                                 <i class="ri-robot-line text-lg text-blue-600"></i>
                                 <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>
@@ -135,7 +135,7 @@
             <!-- Mobile Navigation -->
             <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-200 py-2 px-4">
                 <!-- **** Status da IA no menu mobile (Estilo da Imagem) **** -->
-                 <div class="text-sm text-gray-600 my-2 flex items-center justify-center space-x-2"> 
+                 <div class="text-sm text-gray-600 dark:text-gray-200 my-2 flex items-center justify-center space-x-2"> 
                     @if($aiConfig['is_configured'])
                         <i class="ri-robot-line text-lg text-blue-600"></i>
                         <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>

@@ -78,5 +78,8 @@ class AppServiceProvider extends ServiceProvider
         $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
         \Illuminate\Support\Facades\View::share('siteTitle', $siteTitle);
         \Illuminate\Support\Facades\View::share('siteFavicon', $siteFavicon);
+        // Compartilhar tema do site (claro/escuro)
+        $siteTheme = \App\Models\Setting::get('site_theme', 'light');
+        \Illuminate\Support\Facades\View::share('siteTheme', $siteTheme);
     }
 }

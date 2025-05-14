@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="container-app">
         <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between">
-            <h1>Categorias</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Categorias</h1>
             <a href="{{ route('categories.create') }}" class="btn btn-primary">
                 <i class="ri-add-line mr-2"></i>
                 Nova Categoria
