@@ -25,7 +25,9 @@
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">
                                 Tipo de Transação
                             </label>
-                            <select name="type" id="type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-300 dark:text-gray-100" onchange="updateCategories(this.value)">
+                            <select name="type" id="type"
+                                   class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
+                                   onchange="updateCategories(this.value)">
                                 <option value="income" {{ old('type', $type ?? '') == 'income' ? 'selected' : '' }}>Receita</option>
                                 <option value="expense" {{ old('type', $type ?? '') == 'expense' ? 'selected' : '' }}>Despesa</option>
                             </select>
@@ -113,7 +115,8 @@
                     <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">
                         Categoria
                     </label>
-                    <select name="category_id" id="category_id" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-300 dark:text-gray-100">
+                    <select name="category_id" id="category_id"
+                           class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
                         <option value="">Selecione uma categoria</option>
                         @foreach($categories ?? [] as $category)
                             <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
@@ -130,7 +133,8 @@
                         <label for="account_id" class="block text-sm font-medium text-gray-700 mb-1">
                             Conta
                         </label>
-                        <select name="account_id" id="account_id" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-300 dark:text-gray-100">
+                        <select name="account_id" id="account_id"
+                               class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
                             <option value="">Selecione uma conta</option>
                             @foreach($accounts ?? [] as $account)
                                 <option value="{{ $account->id }}" {{ old('account_id') == $account->id ? 'selected' : '' }}>
@@ -159,7 +163,9 @@
                     <!-- Status -->
                     <div class="form-group">
                         <label class="form-label">Status</label>
-                        <select name="status" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-300 dark:text-gray-100" required>
+                        <select name="status" 
+                                class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400" 
+                                required>
                             <option value="pending" {{ old('status') === 'pending' ? 'selected' : '' }}>Pendente</option>
                             <option value="paid" {{ old('status') === 'paid' ? 'selected' : '' }}>Pago</option>
                         </select>
@@ -170,7 +176,9 @@
                         <label for="recurrence_type" class="block text-sm font-medium text-gray-700 mb-1">
                             Fatura
                         </label>
-                        <select name="recurrence_type" id="recurrence_type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-300 dark:text-gray-100" onchange="toggleRecurrenceFields()">
+                        <select name="recurrence_type" id="recurrence_type"
+                                class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
+                                onchange="toggleRecurrenceFields()">
                             <option value="none" {{ old('recurrence_type') === 'none' ? 'selected' : '' }}>Nenhuma</option>
                             <option value="fixed" {{ old('recurrence_type') === 'fixed' ? 'selected' : '' }}>Fixa</option>
                             <option value="installment" {{ old('recurrence_type') === 'installment' ? 'selected' : '' }}>Parcelada</option>
