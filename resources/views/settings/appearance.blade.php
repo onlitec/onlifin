@@ -40,6 +40,15 @@
                         </div>
                         <p class="mt-1 text-sm text-gray-500">Deixe em branco para manter o favicon atual.</p>
                     </div>
+                    <div class="mb-6">
+                        <label for="site_theme" class="block text-sm font-medium text-gray-700 mb-1">Tema do Site</label>
+                        <select name="site_theme" id="site_theme"
+                               class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="light" {{ old('site_theme', $siteTheme) === 'light' ? 'selected' : '' }}>Claro</option>
+                            <option value="dark" {{ old('site_theme', $siteTheme) === 'dark' ? 'selected' : '' }}>Escuro</option>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">Selecione o tema claro ou escuro para o site.</p>
+                    </div>
                     <div class="flex justify-end">
                         <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                     </div>
