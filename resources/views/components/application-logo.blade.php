@@ -1,0 +1,1 @@
+<img src="{{ asset('assets/svg/svg_7fca9c99d8d71bc9eb4587a70a3a24a5.svg') }}" alt="" class=""/> 

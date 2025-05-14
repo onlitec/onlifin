@@ -1,0 +1,19 @@
+
+2025-03-12 03:29:31 - Erro ao processar o extrato: Erro HTTP 429: {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
+
+2025-03-12 22:58:22 - Erro ao processar o extrato: Erro HTTP 401: {
+    "error": {
+        "message": "Incorrect API key provided: export R*******************************************************JouO. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": "invalid_api_key"
+    }
+}
+

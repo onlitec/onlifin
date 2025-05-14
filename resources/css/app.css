@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-gray-50 text-gray-800 font-['Inter'];
+    }
+
+    h1 {
+        @apply text-2xl font-bold text-gray-900;
+    }
+
+    h2 {
+        @apply text-xl font-semibold text-gray-800;
+    }
+
+    h3 {
+        @apply text-lg font-medium text-gray-800;
+    }
+}
+
+@layer components {
+    /* Container para layout full width */
+    .container-app {
+        @apply w-full px-4 sm:px-6 lg:px-8 mx-auto;
+    }
+
+    /* Elementos fluidos com largura máxima para conteúdo */
+    .content-container {
+        @apply mx-auto w-full;
+    }
+
+    /* Menu principal */
+    .main-menu {
+        @apply flex flex-row justify-center w-full;
+    }
+
+    .menu-container {
+        @apply flex flex-row items-center gap-6;
+    }
+
+    /* Estilos base do menu */
+    .menu-item, 
+    a.menu-item,
+    .menu-item[href],
+    [wire\:navigate].menu-item {
+        @apply inline-flex items-center px-4 py-2 text-base font-medium text-gray-800 whitespace-nowrap transition-colors duration-200 hover:bg-gray-100 hover:text-blue-600 rounded-md;
+    }
+
+    .menu-item.active,
+    a.menu-item.active,
+    .menu-item[href].active,
+    [wire\:navigate].menu-item.active {
+        @apply text-blue-600 bg-blue-50 font-semibold;
+    }
+
+    /* Menu mobile */
+    .mobile-nav-link {
+        @apply block w-full px-4 py-3 text-base font-medium text-gray-600 transition-all duration-200 rounded-lg hover:text-gray-900 hover:bg-gray-100;
+    }
+
+    .mobile-nav-link.active {
+        @apply text-blue-600 bg-blue-50 font-semibold;
+    }
+
+    @media (max-width: 767px) {
+        .main-menu {
+            @apply hidden;
+        }
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors;
+    }
+
+    .btn-primary {
+        @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    }
+
+    .btn-secondary {
+        @apply bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+    }
+
+    .card {
+        @apply bg-white rounded-xl shadow-sm border border-gray-200;
+    }
+
+    .card-header {
+        @apply px-6 py-4 border-b border-gray-200;
+    }
+
+    .card-body {
+        @apply p-6;
+    }
+
+    .table {
+        @apply min-w-full divide-y divide-gray-200;
+    }
+
+    .table-header {
+        @apply bg-gray-50;
+    }
+
+    .table-header-cell {
+        @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+    }
+
+    .table-body {
+        @apply bg-white divide-y divide-gray-200;
+    }
+
+    .table-row {
+        @apply hover:bg-gray-50;
+    }
+
+    .table-cell {
+        @apply px-6 py-4 whitespace-nowrap text-sm text-gray-500;
+    }
+
+    .badge {
+        @apply px-2 py-1 text-xs font-medium rounded-full;
+    }
+
+    .badge-success {
+        @apply bg-green-100 text-green-800;
+    }
+
+    .badge-danger {
+        @apply bg-red-100 text-red-800;
+    }
+
+    .transaction-card {
+        @apply relative;
+    }
+
+    .transaction-card.pending::before {
+        content: '';
+        @apply absolute left-0 top-0 h-full w-1 bg-yellow-400 rounded-l-lg;
+    }
+
+    .transaction-card.paid::before {
+        content: '';
+        @apply absolute left-0 top-0 h-full w-1 bg-green-400 rounded-l-lg;
+    }
+}
