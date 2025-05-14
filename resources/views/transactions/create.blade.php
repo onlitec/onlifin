@@ -109,43 +109,38 @@
                         </div>
                     @endif
 
-                    <!-- Categoria e Conta -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Categoria -->
-                        <div class="form-group">
-                            <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                Categoria
-                            </label>
-                            <select name="category_id" id="category_id" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="">Selecione uma categoria</option>
-                                @foreach($categories ?? [] as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('category_id')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    {{-- ATENÇÃO: Correção crítica - carregamento de todas as categorias implementado. NÃO ALTERAR sem autorização explícita. --}}
+                    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">
+                        Categoria
+                    </label>
+                    <select name="category_id" id="category_id" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Selecione uma categoria</option>
+                        @foreach($categories ?? [] as $category)
+                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('category_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
 
-                        <!-- Conta -->
-                        <div class="form-group">
-                            <label for="account_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                Conta
-                            </label>
-                            <select name="account_id" id="account_id" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="">Selecione uma conta</option>
-                                @foreach($accounts ?? [] as $account)
-                                    <option value="{{ $account->id }}" {{ old('account_id') == $account->id ? 'selected' : '' }}>
-                                        {{ $account->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('account_id')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    <!-- Conta -->
+                    <div class="form-group">
+                        <label for="account_id" class="block text-sm font-medium text-gray-700 mb-1">
+                            Conta
+                        </label>
+                        <select name="account_id" id="account_id" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Selecione uma conta</option>
+                            @foreach($accounts ?? [] as $account)
+                                <option value="{{ $account->id }}" {{ old('account_id') == $account->id ? 'selected' : '' }}>
+                                    {{ $account->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('account_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Observações -->
@@ -238,8 +233,6 @@
             // Definir estado inicial com base no valor atual do select
             const initialType = typeSelect.value;
             updateFields(initialType);
-            // Carregar categorias iniciais
-            updateCategories(initialType);
             
             // Adicionar listener para mudanças de tipo
             typeSelect.addEventListener('change', (e) => {

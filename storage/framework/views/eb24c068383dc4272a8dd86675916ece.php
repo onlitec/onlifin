@@ -298,8 +298,6 @@ unset($__errorArgs, $__bag); ?>
             // Definir estado inicial com base no valor atual do select
             const initialType = typeSelect.value;
             updateFields(initialType);
-            // Carregar categorias iniciais
-            updateCategories(initialType);
             
             // Adicionar listener para mudanças de tipo
             typeSelect.addEventListener('change', (e) => {

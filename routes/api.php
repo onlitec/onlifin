@@ -20,6 +20,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Categorias por tipo
+
+/*
+ * ATENÇÃO: Endpoint /api/categories retorna todas as categorias por tipo.
+ * NÃO MODIFICAR ESSA LÓGICA SEM AUTORIZAÇÃO EXPLÍCITA.
+ */
 Route::middleware(['web', 'auth'])->get('/categories', function (Request $request) {
     $type = $request->type ?? 'expense';
     $userId = auth()->id();
@@ -27,12 +32,8 @@ Route::middleware(['web', 'auth'])->get('/categories', function (Request $reques
         return response()->json([], 401);
     }
 
-    // Return both global categories (user_id null) and those created by the user
+    // Return all categories by type
     return Category::where('type', $type)
-        ->where(function ($q) use ($userId) {
-            $q->where('user_id', $userId)
-              ->orWhereNull('user_id');
-        })
         ->orderBy('name')
         ->get(['id', 'name']);
 });

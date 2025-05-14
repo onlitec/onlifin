@@ -7,6 +7,11 @@ use App\Models\Category;
 use App\Models\Account;
 use Illuminate\Http\Request;
 
+/*
+ * ATENÇÃO: CORREÇÕES CRÍTICAS nas funções create(), edit() e no endpoint de categorias.
+ * NÃO ALTERAR ESSA LÓGICA SEM AUTORIZAÇÃO EXPLÍCITA.
+ */
+
 class TransactionController extends Controller
 {
     public function index(Request $request)
@@ -56,8 +61,10 @@ class TransactionController extends Controller
         // Determina o tipo de transação padrão com base no parâmetro da URL
         $type = $request->type ?? 'expense';
         
-        // Filtra as categorias pelo tipo (receita ou despesa)
-        $categories = Category::where('type', $type)->orderBy('name')->get();
+        // Carrega todas as categorias pelo tipo
+        $categories = Category::where('type', $type)
+            ->orderBy('name')
+            ->get();
         
         // Verifica se o usuário é administrador - com verificação segura
         $isAdmin = auth()->check() && auth()->user()->is_admin;
@@ -169,7 +176,10 @@ class TransactionController extends Controller
             abort(403);
         }
 
-        $categories = Category::where('type', $transaction->type)->get();
+        // Carrega todas as categorias pelo tipo
+        $categories = Category::where('type', $transaction->type)
+            ->orderBy('name')
+            ->get();
         
         // Se for admin, mostra todas as contas ativas; senão, filtra por usuário
         if ($isAdmin) {

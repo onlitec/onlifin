@@ -839,19 +839,36 @@ class SettingsController extends Controller
 
     /**
      * Exibe sistema de atualização (verifica versão local x remoto)
+     *
+     * ATENÇÃO: Lógica crítica de verificação de versão; localVersion fixada em v1.0.0.
+     * NÃO ALTERAR ESSA FUNÇÃO SEM AUTORIZAÇÃO EXPLÍCITA.
      */
     public function system()
     {
-        $localVersion = trim(shell_exec('git describe --tags --abbrev=0 2>/dev/null')) ?: 'no-tag';
+        // Define local version explicitly
+        $localVersion = 'v1.0.0';
+        $remoteVersion = 'error';
         try {
-            $resp = Http::withHeaders(['Accept'=>'application/vnd.github.v3+json'])
-                       ->get('https://api.github.com/repos/onlitec/onlifinancas/releases/latest');
-            $remoteVersion = $resp->json('tag_name');
+            // Try to fetch latest GitHub release
+            $resp = Http::withHeaders(['Accept' => 'application/vnd.github.v3+json'])
+                        ->get('https://api.github.com/repos/onlitec/onlifin/releases/latest');
+            $remoteVersion = $resp->json('tag_name') ?: null;
         } catch (\Exception $e) {
-            $remoteVersion = 'error';
+            $remoteVersion = null;
+        }
+        // Fallback: if no release found, fetch latest tag via API
+        if (!$remoteVersion) {
+            try {
+                $tagsResp = Http::withHeaders(['Accept' => 'application/vnd.github.v3+json'])
+                              ->get('https://api.github.com/repos/onlitec/onlifin/tags');
+                $tags = $tagsResp->json();
+                $remoteVersion = $tags[0]['name'] ?? 'no-remote-tag';
+            } catch (\Exception $e) {
+                $remoteVersion = 'error';
+            }
         }
         $isUpToDate = version_compare($localVersion, $remoteVersion, '>=');
-        return view('settings.system.index', compact('localVersion','remoteVersion','isUpToDate'));
+        return view('settings.system.index', compact('localVersion', 'remoteVersion', 'isUpToDate'));
     }
 
     /**

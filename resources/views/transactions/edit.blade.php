@@ -88,6 +88,7 @@
                     <!-- Categoria, Conta e Status -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <!-- Categoria -->
+                        {{-- ATENÇÃO: Correção crítica - carregamento de todas as categorias implementado. NÃO ALTERAR sem autorização explícita. --}}
                         <div class="form-group">
                             <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">
                                 Categoria
@@ -221,8 +222,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar filtro de categorias
     const typeSelect = document.getElementById('type');
     if (typeSelect) {
-        // Carregar categorias iniciais
-        updateCategories(typeSelect.value);
         // Atualizar categorias ao mudar tipo
         typeSelect.addEventListener('change', function(e) {
             updateCategories(e.target.value);

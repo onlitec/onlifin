@@ -154,10 +154,10 @@ unset($__errorArgs, $__bag); ?>
                         </div>
                     </div>
 
-                    <!-- Recorrência -->
+                    <!-- Fatura -->
                     <div class="form-group">
                         <label for="recurrence_type" class="block text-sm font-medium text-gray-700 mb-1">
-                            Tipo de Recorrência
+                            Fatura
                         </label>
                         <select name="recurrence_type" id="recurrence_type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="toggleRecurrenceFields()">
                             <option value="none" <?php echo e($transaction->recurrence_type === 'none' || !$transaction->recurrence_type ? 'selected' : ''); ?>>Nenhuma</option>
@@ -224,7 +224,7 @@ unset($__errorArgs, $__bag); ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove qualquer container SweetAlert2 que possa estar persistindo
+    // Remover qualquer container SweetAlert2 que possa estar persistindo
     const swalContainer = document.querySelector("body > div.swal2-container.swal2-backdrop-show");
     if (swalContainer) {
         swalContainer.remove();
@@ -248,7 +248,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar filtro de categorias
     const typeSelect = document.getElementById('type');
     if (typeSelect) {
-        updateCategories(typeSelect.value);
+        // Atualizar categorias ao mudar tipo
+        typeSelect.addEventListener('change', function(e) {
+            updateCategories(e.target.value);
+            toggleRecurrenceFields();
+        });
     }
     
     // Inicializar campos de recorrência
