@@ -9,6 +9,8 @@ class Setting extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
+
     /**
      * Os atributos que são atribuíveis em massa.
      *
@@ -57,5 +59,25 @@ class Setting extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Retrieve a setting value by key or return default
+     */
+    public static function get(string $key, $default = null)
+    {
+        $setting = static::where('key', $key)->first();
+        return $setting ? $setting->value : $default;
+    }
+
+    /**
+     * Create or update a setting value by key
+     */
+    public static function set(string $key, $value)
+    {
+        return static::updateOrCreate(
+            ['key' => $key],
+            ['value' => $value]
+        );
     }
 } 

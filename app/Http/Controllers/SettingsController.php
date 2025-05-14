@@ -18,6 +18,7 @@ use Livewire\WithPagination;
 use App\Models\Account;
 use App\Models\Category;
 use Illuminate\Support\Facades\Http;
+use App\Models\Setting;
 
 class SettingsController extends Controller
 {
@@ -869,6 +870,33 @@ class SettingsController extends Controller
         }
         $isUpToDate = version_compare($localVersion, $remoteVersion, '>=');
         return view('settings.system.index', compact('localVersion', 'remoteVersion', 'isUpToDate'));
+    }
+
+    /**
+     * Aparência: exibe opções para configurar título e favicon do site.
+     */
+    public function appearance()
+    {
+        $siteTitle = Setting::get('site_title', config('app.name'));
+        $siteFavicon = Setting::get('site_favicon', 'favicon.ico');
+        return view('settings.appearance', compact('siteTitle', 'siteFavicon'));
+    }
+
+    /**
+     * Atualiza configurações de aparência (título e favicon).
+     */
+    public function updateAppearance(Request $request)
+    {
+        $data = $request->validate([
+            'site_title' => 'required|string|max:255',
+            'site_favicon' => 'nullable|image|mimes:png,ico,svg|max:1024',
+        ]);
+        Setting::set('site_title', $data['site_title']);
+        if ($request->hasFile('site_favicon')) {
+            $path = $request->file('site_favicon')->store('favicons', 'public');
+            Setting::set('site_favicon', 'storage/' . $path);
+        }
+        return redirect()->route('settings.appearance')->with('success', 'Configurações de aparência salvas com sucesso!');
     }
 
     /**

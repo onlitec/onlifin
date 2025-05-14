@@ -72,5 +72,11 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Notification::extend('whatsapp', function ($app) {
             return new \App\Channels\WhatsAppChannel();
         });
+
+        // Compartilhar título do site e favicon dinâmicos de configurações
+        $siteTitle = \App\Models\Setting::get('site_title', config('app.name'));
+        $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
+        \Illuminate\Support\Facades\View::share('siteTitle', $siteTitle);
+        \Illuminate\Support\Facades\View::share('siteFavicon', $siteFavicon);
     }
 }

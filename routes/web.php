@@ -161,6 +161,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/system/backup', [SettingsController::class, 'backupPlatform'])->name('system.backup');
         Route::post('/system/update', [SettingsController::class, 'updatePlatform'])->name('system.update');
         
+        // Aparência: personalizar título e favicon do site
+        Route::get('/appearance', [SettingsController::class, 'appearance'])->name('appearance');
+        Route::post('/appearance', [SettingsController::class, 'updateAppearance'])->name('appearance.update');
+        
         // Rotas do Replicate
         Route::get('/replicate', [ReplicateSettingController::class, 'index'])->name('replicate.index');
         Route::post('/replicate', [ReplicateSettingController::class, 'store'])->name('replicate.store');
