@@ -31,6 +31,12 @@ class Income extends TransactionBase
     public $year;
     public $search = '';
     public $perPage = 20;
+    public $accountFilter = '';
+    public $categoryFilter = '';
+    public $statusFilter = '';
+    public $dateFrom = '';
+    public $dateTo = '';
+    public $clientFilter = '';
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $confirmingDeletion = false;
@@ -67,6 +73,36 @@ class Income extends TransactionBase
     }
 
     public function updatedPerPage()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedAccountFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCategoryFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDateFrom()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDateTo()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedClientFilter()
     {
         $this->resetPage();
     }
@@ -197,6 +233,12 @@ class Income extends TransactionBase
         
         $query->whereMonth('date', $this->month)
             ->whereYear('date', $this->year)
+            ->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))
+            ->when($this->categoryFilter, fn($q) => $q->where('category_id', $this->categoryFilter))
+            ->when($this->statusFilter, fn($q) => $q->where('status', $this->statusFilter))
+            ->when($this->dateFrom, fn($q) => $q->whereDate('date', '>=', $this->dateFrom))
+            ->when($this->dateTo, fn($q) => $q->whereDate('date', '<=', $this->dateTo))
+            ->when($this->clientFilter, fn($q) => $q->where('cliente', 'like', "%{$this->clientFilter}%"))
             ->when($this->search, function($query) {
                 $query->where(function($q) {
                     $q->where('description', 'like', '%' . $this->search . '%')
@@ -264,5 +306,24 @@ class Income extends TransactionBase
         } catch (\Exception $e) {
             \Log::error('Erro ao marcar receita como paga: ' . $e->getMessage());
         }
+    }
+
+    // ATENÇÃO: Filtros de transações implementados via solicitação do usuário. Não modificar sem autorização explícita.
+    /**
+     * Reseta todos os filtros para valores iniciais e volta à página 1
+     */
+    public function resetFilters()
+    {
+        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'clientFilter']);
+        $this->resetPage();
+    }
+
+    // ATENÇÃO: Filtros de transações implementados via solicitação do usuário. Não modificar sem autorização explícita.
+    /**
+     * Aplica os filtros manualmente e reseta a paginação
+     */
+    public function applyFilters()
+    {
+        $this->resetPage();
     }
 } 

@@ -77,6 +77,54 @@ Data da modificação: [DATA DA ALTERAÇÃO ATUAL]
 
     <div class="card shadow">
         <div class="card-body overflow-x-auto">
+            <div class="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div>
+                    <label class="text-sm">Conta</label>
+                    <select wire:model="accountFilter" class="form-select w-full select-sm">
+                        <option value="">Todas</option>
+                        @foreach($accounts as $acc)
+                            <option value="{{ $acc->id }}">{{ $acc->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm">Categoria</label>
+                    <select wire:model="categoryFilter" class="form-select w-full select-sm">
+                        <option value="">Todas</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm">Status</label>
+                    <select wire:model="statusFilter" class="form-select w-full select-sm">
+                        <option value="">Todos</option>
+                        <option value="paid">Pago</option>
+                        <option value="pending">Pendente</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm">De</label>
+                    <input type="date" wire:model.lazy="dateFrom" class="input input-bordered w-full input-sm" />
+                </div>
+                <div>
+                    <label class="text-sm">Até</label>
+                    <input type="date" wire:model.lazy="dateTo" class="input input-bordered w-full input-sm" />
+                </div>
+                <div>
+                    <label class="text-sm">Fornecedor</label>
+                    <input type="text" wire:model.debounce.500ms="supplierFilter" placeholder="Fornecedor" class="input input-bordered w-full input-sm" />
+                </div>
+                <div>
+                    <label class="text-sm">Descrição</label>
+                    <input type="text" wire:model.debounce.500ms="search" placeholder="Descrição" class="input input-bordered w-full input-sm" />
+                </div>
+            </div>
+            <div class="mb-4 flex space-x-2">
+                <button wire:click="resetFilters" class="btn btn-sm btn-secondary">Limpar Filtros</button>
+                <button wire:click="applyFilters" class="btn btn-sm btn-primary">Filtrar</button>
+            </div>
             <div class="mb-4 flex items-center justify-start">
                 <span class="text-sm text-gray-600 mr-2">Exibir:</span>
                 <select wire:model.live="perPage" class="select select-bordered select-sm">

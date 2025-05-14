@@ -29,6 +29,12 @@ class Expenses extends Component
     public $year;
     public $search = '';
     public $perPage = 20;
+    public $accountFilter = '';
+    public $categoryFilter = '';
+    public $statusFilter = '';
+    public $dateFrom = '';
+    public $dateTo = '';
+    public $supplierFilter = '';
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $isAdmin = false;
@@ -122,6 +128,13 @@ class Expenses extends Component
         $this->resetPage();
     }
 
+    public function updatedAccountFilter() { $this->resetPage(); }
+    public function updatedCategoryFilter() { $this->resetPage(); }
+    public function updatedStatusFilter() { $this->resetPage(); }
+    public function updatedDateFrom() { $this->resetPage(); }
+    public function updatedDateTo() { $this->resetPage(); }
+    public function updatedSupplierFilter() { $this->resetPage(); }
+
     public function render()
     {
         $query = Transaction::query()
@@ -131,9 +144,21 @@ class Expenses extends Component
             $query->where('user_id', auth()->id());
         }
         
-        if ($this->search) {
-            $query->where('description', 'like', '%' . $this->search . '%');
-        }
+        $query->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))
+               ->when($this->categoryFilter, fn($q) => $q->where('category_id', $this->categoryFilter))
+               ->when($this->statusFilter, fn($q) => $q->where('status', $this->statusFilter))
+               ->when($this->dateFrom, fn($q) => $q->whereDate('date', '>=', $this->dateFrom))
+               ->when($this->dateTo, fn($q) => $q->whereDate('date', '<=', $this->dateTo))
+               ->when($this->supplierFilter, fn($q) => $q->where('fornecedor', 'like', "%{$this->supplierFilter}%"));
+        
+        $query->when($this->search, function($q) {
+            $q->where(function($qq) {
+                $qq->where('description', 'like', "%{$this->search}%")
+                   ->orWhere('fornecedor', 'like', "%{$this->search}%")
+                   ->orWhereHas('category', fn($c) => $c->where('name', 'like', "%{$this->search}%"))
+                   ->orWhereHas('account', fn($c) => $c->where('name', 'like', "%{$this->search}%"));
+            });
+        });
         
         if ($this->month && $this->year) {
             $query->whereMonth('date', $this->month)
@@ -155,6 +180,8 @@ class Expenses extends Component
             'transactions' => $transactions,
             'total' => $total,
             'totalPending' => $totalPending,
+            'accounts' => Account::where('active', true)->get(),
+            'categories' => Category::where('type', 'expense')->get(),
             'sortField' => $this->sortField,
             'sortDirection' => $this->sortDirection,
             'isAdmin' => $this->isAdmin,
@@ -162,5 +189,24 @@ class Expenses extends Component
             'year' => $this->year,
             'month' => $this->month,
         ]);
+    }
+
+    // ATENÇÃO: Filtros de transações implementados via solicitação do usuário. Não modificar sem autorização explícita.
+    /**
+     * Reseta todos os filtros para valores iniciais e volta à página 1
+     */
+    public function resetFilters()
+    {
+        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'supplierFilter']);
+        $this->resetPage();
+    }
+
+    // ATENÇÃO: Filtros de transações implementados via solicitação do usuário. Não modificar sem autorização explícita.
+    /**
+     * Aplica os filtros manualmente e reseta a paginação
+     */
+    public function applyFilters()
+    {
+        $this->resetPage();
     }
 }

@@ -42,6 +42,10 @@ Os seguintes arquivos contêm configurações críticas relacionadas ao cálculo
 - `resources/views/dashboard.blade.php`: Exibição do saldo total
 - `resources/views/accounts/index.blade.php`: Exibição dos saldos de contas
 - `app/Observers/AccountObserver.php`: Lógica de atualização automática de saldos
+- `app/Livewire/Transactions/Expenses.php`: Lógica dos filtros de transações de despesas
+- `resources/views/livewire/transactions/expenses.blade.php`: Interface de filtros de despesas
+- `app/Livewire/Transactions/Income.php`: Lógica dos filtros de transações de receitas
+- `resources/views/livewire/transactions/income.blade.php`: Interface de filtros de receitas
 
 ### Implicações de Modificações Incorretas
 
