@@ -883,7 +883,8 @@ class SettingsController extends Controller
         $siteTitle = Setting::get('site_title', config('app.name'));
         $siteFavicon = Setting::get('site_favicon', 'favicon.ico');
         $siteTheme = Setting::get('site_theme', 'light');
-        return view('settings.appearance', compact('siteTitle', 'siteFavicon', 'siteTheme'));
+        $siteLogo = Setting::get('site_logo', null);
+        return view('settings.appearance', compact('siteTitle', 'siteFavicon', 'siteTheme', 'siteLogo'));
     }
 
     /**
@@ -896,11 +897,16 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'site_title' => 'required|string|max:255',
+            'site_logo' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
             'site_favicon' => 'nullable|image|mimes:png,ico,svg|max:1024',
             'site_theme' => 'required|in:light,dark',
         ]);
         Setting::set('site_title', $data['site_title']);
         Setting::set('site_theme', $data['site_theme']);
+        if ($request->hasFile('site_logo')) {
+            $pathLogo = $request->file('site_logo')->store('site-logos', 'public');
+            Setting::set('site_logo', 'storage/' . $pathLogo);
+        }
         if ($request->hasFile('site_favicon')) {
             $path = $request->file('site_favicon')->store('favicons', 'public');
             Setting::set('site_favicon', 'storage/' . $path);

@@ -35,94 +35,79 @@
         <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10">
             <div class="container-app">
                 <div class="flex items-center justify-between h-16">
-                    <!-- Logo -->
-                    <div class="flex-shrink-0">
-                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Onlifin</h1>
-                    </div>
-
-                    <!-- Main Navigation -->
-                    <div class="hidden md:block main-menu">
-                        <div class="menu-container bg-gray-50 rounded-lg p-1">
+                    <!-- Desktop Main Navigation with Logo -->
+                    <div class="hidden md:block main-menu w-full">
+                        <div class="menu-container bg-gray-50 dark:bg-gray-700 rounded-lg p-1 w-full">
+                            <!-- Logo highlighted in menu -->
+                            <div class="flex-shrink-0 ml-4">
+                                <a href="{{ route('dashboard') }}">
+                                    <x-application-logo class="h-8 w-auto text-gray-800 dark:text-gray-100" />
+                                </a>
+                            </div>
                             <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                                 <i class="ri-dashboard-line mr-2 text-lg"></i>
                                 Dashboard
                             </a>
-
                             <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
                                 <i class="ri-exchange-line mr-2 text-lg"></i>
                                 Transações
                             </a>
-
                             <a href="{{ route('transactions.income') }}" class="menu-item {{ request()->routeIs('transactions.income') ? 'active' : '' }}">
                                 <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
                                 Receitas
                             </a>
-
                             <a href="{{ route('transactions.expenses') }}" class="menu-item {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}">
                                 <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
                                 Despesas
                             </a>
-
                             <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
                                 <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                                 Categorias
                             </a>
-
                             <a href="{{ route('accounts.index') }}" class="menu-item {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                                 <i class="ri-bank-line mr-2 text-lg"></i>
                                 Contas
                             </a>
-
-                            @if(auth()->check())
-                                <a href="{{ route('settings.index') }}" class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                                    <i class="ri-settings-3-line mr-2 text-lg"></i>
-                                    Configurações
-                                </a>
+                            @if(auth()->user()->isAdmin())
+                            <div class="relative group">
+                                <button class="menu-item flex items-center">
+                                    <i class="ri-shield-user-line mr-2 text-lg"></i>
+                                    Administrador
+                                    <i class="ri-arrow-down-s-line ml-1"></i>
+                                </button>
+                                <div class="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
+                                    <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
+                                        Configurações
+                                    </a>
+                                </div>
+                            </div>
                             @endif
-                        </div>
-                    </div>
-
-                    <!-- Wrapper para IA Status e User Dropdown -->
-                    <div class="hidden sm:flex items-center ml-6 space-x-4"> 
-                         <!-- **** Exibir Status da IA (Estilo da Imagem) **** -->
-                        <div class="text-sm text-gray-600 dark:text-white flex items-center space-x-2"> 
-                            @if($aiConfig['is_configured'])
-                                <i class="ri-robot-line text-lg text-blue-600"></i>
-                                <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>
-                                <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-blue-600" title="Configurar IA">
-                                    <i class="ri-settings-3-line text-lg"></i>
-                                </a>
-                            @else
-                                <i class="ri-refresh-line text-lg text-yellow-600"></i> {{-- Ícone da imagem --}}
-                                <span class="whitespace-nowrap">IA não configurada</span>
-                                <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-yellow-600" title="Configurar IA">
-                                   <i class="ri-settings-3-line text-lg"></i> {{-- Ícone de engrenagem como link --}}
-                                </a>
-                            @endif
-                        </div>
-                        <!-- --------------------------------------------- -->
-
-                        <!-- User Dropdown -->
-                        <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                            <button @click="open = !open" class="flex items-center text-sm font-medium text-gray-700 dark:text-white hover:text-gray-900 dark:hover:text-white focus:outline-none transition duration-150 ease-in-out">
-                                <span>{{ auth()->user()->name }}</span>
-                                <i class="ri-arrow-down-s-line ml-1"></i>
-                            </button>
-
-                            <div x-show="open" x-cloak class="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5">
-                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Perfil
-                                </a>
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Sair
-                                    </button>
-                                </form>
+                            <!-- IA Icon inside main menu -->
+                            <a href="{{ route('openrouter-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
+                                <i class="ri-robot-line text-lg"></i>
+                            </a>
+                            <!-- Profile dropdown inside main menu -->
+                            <div class="relative group">
+                                <button class="menu-item flex items-center">
+                                    @if(auth()->user()->profile_photo)
+                                        <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}" class="h-6 w-6 rounded-full object-cover">
+                                    @else
+                                        <i class="ri-user-line text-lg"></i>
+                                    @endif
+                                    <i class="ri-arrow-down-s-line ml-1"></i>
+                                </button>
+                                <div class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
+                                            Sair
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Mobile menu button -->
                     <div class="md:hidden">
                         <button type="button" onclick="toggleMobileMenu()" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
@@ -134,21 +119,11 @@
 
             <!-- Mobile Navigation -->
             <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-200 py-2 px-4">
-                <!-- **** Status da IA no menu mobile (Estilo da Imagem) **** -->
-                 <div class="text-sm text-gray-600 dark:text-white my-2 flex items-center justify-center space-x-2"> 
-                    @if($aiConfig['is_configured'])
-                        <i class="ri-robot-line text-lg text-blue-600"></i>
-                        <span class="whitespace-nowrap">IA Ativa: <strong>{{ $aiConfig['provider'] ?? 'N/D' }}</strong></span>
-                        <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-blue-600" title="Configurar IA">
-                           <i class="ri-settings-3-line text-lg"></i>
-                        </a>
-                    @else
-                        <i class="ri-refresh-line text-lg text-yellow-600"></i>
-                        <span class="whitespace-nowrap">IA não configurada</span>
-                         <a href="{{ route('openrouter-config.index') }}" class="text-gray-500 hover:text-yellow-600" title="Configurar IA">
-                           <i class="ri-settings-3-line text-lg"></i>
-                        </a>
-                    @endif
+                <!-- **** Status da IA no menu mobile como ícone **** -->
+                <div class="my-2 flex items-center justify-center">
+                    <a href="{{ route('openrouter-config.index') }}" class="{{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
+                        <i class="ri-robot-line text-lg"></i>
+                    </a>
                 </div>
                 <!-- ------------------------------------------------------- -->
                 <div class="space-y-2">
@@ -176,16 +151,19 @@
                         <i class="ri-bank-line mr-2 text-lg"></i>
                         Contas
                     </a>
-                    @if(auth()->check())
-                        <a href="{{ route('settings.index') }}" class="mobile-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                            <i class="ri-settings-3-line mr-2 text-lg"></i>
-                            Configurações
-                        </a>
+                    @if(auth()->user()->isAdmin())
+                    <div x-data="{ open: false }" class="space-y-1">
+                        <button @click="open = !open" class="mobile-nav-link flex items-center justify-between">
+                            <span><i class="ri-shield-user-line mr-2 text-lg"></i> Administrador</span>
+                            <i :class="open ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
+                        </button>
+                        <div x-show="open" class="ml-4 space-y-1">
+                            <a href="{{ route('settings.index') }}" class="mobile-nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                                Configurações
+                            </a>
+                        </div>
+                    </div>
                     @endif
-                    <a href="{{ route('profile.edit') }}" class="mobile-nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
-                        <i class="ri-user-line mr-2 text-lg"></i>
-                        Perfil
-                    </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="mobile-nav-link w-full text-left">

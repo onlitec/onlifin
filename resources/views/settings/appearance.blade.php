@@ -31,6 +31,16 @@
                                value="{{ old('site_title', $siteTitle) }}" required>
                     </div>
                     <div class="mb-6">
+                        <label for="site_logo" class="block text-sm font-medium text-gray-700 mb-1">Logo do Site</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="file" name="site_logo" id="site_logo" accept="image/*">
+                            @if($siteLogo)
+                                <img src="{{ asset($siteLogo) }}" alt="Logo Atual" class="h-12">
+                            @endif
+                        </div>
+                        <p class="mt-1 text-sm text-gray-500">Deixe em branco para manter o logo atual.</p>
+                    </div>
+                    <div class="mb-6">
                         <label for="site_favicon" class="block text-sm font-medium text-gray-700 mb-1">Favicon</label>
                         <div class="flex items-center space-x-4">
                             <input type="file" name="site_favicon" id="site_favicon" accept="image/png,image/x-icon,image/svg+xml">

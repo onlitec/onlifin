@@ -29,7 +29,14 @@ class ProfileController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'profile_photo' => ['nullable', 'image', 'max:2048'],
         ]);
+
+        // Handle profile photo upload
+        if ($request->hasFile('profile_photo')) {
+            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            $user->profile_photo = $path;
+        }
 
         $user->name = $request->name;
         $user->email = $request->email;

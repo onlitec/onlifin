@@ -13,7 +13,7 @@
 
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 bg-white border-b border-gray-200">
-                <form method="POST" action="{{ route('profile.update') }}">
+                <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -31,6 +31,23 @@
                         <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}" 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                         @error('email')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="profile_photo" class="block text-sm font-medium text-gray-700">Foto de Perfil</label>
+                        <div class="mt-1 flex items-center">
+                            @if($user->profile_photo_url)
+                                <img src="{{ $user->profile_photo_url }}" alt="Foto de Perfil" class="h-10 w-10 rounded-full object-cover">
+                            @else
+                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                                    <i class="ri-user-line text-xl"></i>
+                                </div>
+                            @endif
+                            <input type="file" name="profile_photo" id="profile_photo" accept="image/*" class="ml-4">
+                        </div>
+                        @error('profile_photo')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>

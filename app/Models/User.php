@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -17,6 +18,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'profile_photo',
         'is_admin',
         'phone',
         'is_active',
@@ -141,5 +143,15 @@ class User extends Authenticatable
     public function shouldReceiveWhatsApp()
     {
         return $this->whatsapp_notifications && !empty($this->phone);
+    }
+
+    /**
+     * Get the URL of the user's profile photo or default placeholder.
+     */
+    public function getProfilePhotoUrlAttribute()
+    {
+        return $this->profile_photo
+            ? Storage::url($this->profile_photo)
+            : asset('assets/svg/default-avatar.svg');
     }
 }
