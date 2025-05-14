@@ -16,8 +16,8 @@
                 @endif
 
                 <div class="mb-6">
-                    <p class="text-gray-900 dark:text-gray-100"><strong>Versão Local:</strong> {{ $localVersion }}</p>
-                    <p class="text-gray-900 dark:text-gray-100"><strong>Versão Remota:</strong> {{ $remoteVersion }}</p>
+                    <p class="text-gray-900 dark:text-white"><strong>Versão Local:</strong> {{ $localVersion }}</p>
+                    <p class="text-gray-900 dark:text-white"><strong>Versão Remota:</strong> {{ $remoteVersion }}</p>
                     @if($isUpToDate)
                         <p class="text-green-600 font-semibold">Plataforma está atualizada.</p>
                     @else
