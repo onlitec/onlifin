@@ -156,6 +156,26 @@
                 </div>
             </div>
 
+            <!-- Aparência -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                <i class="ri-brush-line text-2xl text-gray-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Aparência</h3>
+                                <p class="text-sm text-gray-500">Personalizar título e favicon</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="<?php echo e(route('settings.appearance')); ?>" class="btn btn-secondary w-full">
+                        Aparência
+                    </a>
+                </div>
+            </div>
+
             <!-- Inteligência Artificial -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
