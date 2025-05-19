@@ -3,45 +3,55 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class AccountController extends Controller
 {
     public function index()
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Query base
+        $user = Auth::user();
         $query = Account::orderBy('name');
-        
-        // Se não for admin, filtra por usuário
-        if (!$isAdmin) {
-            $query->where('user_id', auth()->id());
+
+        if (!$user->hasPermission('view_all_accounts')) {
+            if ($user->hasPermission('view_own_accounts')) {
+                $query->where('user_id', $user->id);
+            } else {
+                abort(403, 'Você não tem permissão para visualizar contas.');
+            }
         }
         
         $accounts = $query->get();
+        $isAdminView = $user->hasRole('Administrador');
         
-        return view('accounts.index', compact('accounts', 'isAdmin'));
+        return view('accounts.index', compact('accounts', 'isAdminView'));
     }
 
     public function create()
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se for admin, obtém lista de usuários para associar conta
-        if ($isAdmin) {
-            $users = \App\Models\User::orderBy('name')->get();
-            return view('accounts.create', compact('isAdmin', 'users'));
+        $user = Auth::user();
+        if (!$user->hasPermission('create_accounts')) {
+            abort(403, 'Você não tem permissão para criar contas.');
         }
         
-        return view('accounts.create', compact('isAdmin'));
+        $isAdminView = $user->hasRole('Administrador');
+        $usersForSelect = null;
+        if ($isAdminView) {
+            $usersForSelect = User::orderBy('name')->get();
+        }
+        
+        return view('accounts.create', compact('isAdminView', 'usersForSelect'));
     }
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+        if (!$user->hasPermission('create_accounts')) {
+            abort(403, 'Você não tem permissão para criar contas.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string',
@@ -51,20 +61,15 @@ class AccountController extends Controller
             'user_id' => 'sometimes|exists:users,id',
         ]);
 
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se for admin e tiver informado user_id, usa o valor informado
-        if ($isAdmin && isset($validated['user_id'])) {
-            // Mantém o user_id enviado
+        if ($user->hasRole('Administrador') && isset($validated['user_id'])) {
+            // Keep $validated['user_id']
         } else {
-            // Caso contrário, usa o ID do usuário autenticado
-            $validated['user_id'] = auth()->id();
+            $validated['user_id'] = $user->id;
         }
         
         $validated['current_balance'] = $validated['initial_balance'];
 
-        $account = Account::create($validated);
+        Account::create($validated);
 
         return redirect()->route('accounts.index')
             ->with('success', 'Conta criada com sucesso!');
@@ -72,31 +77,31 @@ class AccountController extends Controller
 
     public function edit(Account $account)
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin e a conta não pertencer ao usuário, aborta
-        if (!$isAdmin && $account->user_id !== auth()->id()) {
-            abort(403);
+        $user = Auth::user();
+        $canEditAll = $user->hasPermission('edit_all_accounts');
+        $canEditOwn = $user->hasPermission('edit_own_accounts');
+
+        if (!($canEditAll || ($canEditOwn && $account->user_id === $user->id))) {
+            abort(403, 'Você não tem permissão para editar esta conta.');
         }
         
-        // Se for admin, obtém lista de usuários para associar conta
-        if ($isAdmin) {
-            $users = \App\Models\User::orderBy('name')->get();
-            return view('accounts.edit', compact('account', 'isAdmin', 'users'));
+        $isAdminView = $user->hasRole('Administrador');
+        $usersForSelect = null;
+        if ($isAdminView) {
+            $usersForSelect = User::orderBy('name')->get();
         }
         
-        return view('accounts.edit', compact('account', 'isAdmin'));
+        return view('accounts.edit', compact('account', 'isAdminView', 'usersForSelect'));
     }
 
     public function update(Request $request, Account $account)
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin e a conta não pertencer ao usuário, aborta
-        if (!$isAdmin && $account->user_id !== auth()->id()) {
-            abort(403);
+        $user = Auth::user();
+        $canEditAll = $user->hasPermission('edit_all_accounts');
+        $canEditOwn = $user->hasPermission('edit_own_accounts');
+
+        if (!($canEditAll || ($canEditOwn && $account->user_id === $user->id))) {
+            abort(403, 'Você não tem permissão para atualizar esta conta.');
         }
         
         $validationRules = [
@@ -107,13 +112,16 @@ class AccountController extends Controller
             'color' => 'nullable|string|max:7',
         ];
         
-        // Adiciona a validação de user_id apenas para admins
-        if ($isAdmin) {
+        if ($user->hasRole('Administrador')) {
             $validationRules['user_id'] = 'sometimes|exists:users,id';
         }
         
         $validated = $request->validate($validationRules);
         
+        if (!$user->hasRole('Administrador') && isset($validated['user_id'])) {
+            unset($validated['user_id']);
+        }
+
         $account->update($validated);
 
         return redirect()->route('accounts.index')
@@ -122,25 +130,19 @@ class AccountController extends Controller
 
     public function destroy(Account $account)
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin e a conta não pertencer ao usuário, aborta
-        if (!$isAdmin && $account->user_id !== auth()->id()) {
-            abort(403);
+        $user = Auth::user();
+        $canDeleteAll = $user->hasPermission('delete_all_accounts');
+        $canDeleteOwn = $user->hasPermission('delete_own_accounts');
+
+        if (!($canDeleteAll || ($canDeleteOwn && $account->user_id === $user->id))) {
+            abort(403, 'Você não tem permissão para excluir esta conta.');
         }
         
-        // Verificar se a conta tem transações
         $hasTransactions = $account->transactions()->count() > 0;
-        
-        // Verificar se é a última conta do usuário
         $userAccountsCount = Account::where('user_id', $account->user_id)->count();
         $isLastAccount = $userAccountsCount <= 1;
-        
-        // Verificar se é a "Conta Principal" criada automaticamente
         $isMainAccount = $account->name === 'Conta Principal';
         
-        // Não permitir excluir a última conta ou a Conta Principal
         if ($isLastAccount) {
             return redirect()->route('accounts.index')
                 ->with('error', 'Não é possível excluir a última conta do usuário.');
@@ -156,7 +158,7 @@ class AccountController extends Controller
             return redirect()->route('accounts.index')
                 ->with('success', 'Conta excluída com sucesso.');
         } catch (\Exception $e) {
-            \Log::error('Erro ao excluir conta: ' . $e->getMessage());
+            Log::error('Erro ao excluir conta: ' . $e->getMessage());
             return redirect()->route('accounts.index')
                 ->with('error', 'Não foi possível excluir a conta. Verifique se há transações ou outros registros associados.');
         }

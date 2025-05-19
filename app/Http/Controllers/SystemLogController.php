@@ -137,51 +137,22 @@ class SystemLogController extends Controller
     /**
      * Mostrar o conteúdo de um arquivo de log
      */
-    public function view(Request $request, $type, $filename)
+    public function view($log)
     {
-        $filePath = '';
-        $content = '';
-        $entries = [];
+        $filePath = storage_path('logs/' . $log);
         
-        if ($type === 'api') {
-            $filePath = storage_path('logs/api_monitor/' . $filename);
-            
-            if (File::exists($filePath)) {
-                $content = File::get($filePath);
-                
-                // Processar entradas de log de API
-                $rawEntries = explode("---END-CALL---\n", $content);
-                foreach ($rawEntries as $entry) {
-                    $entry = trim($entry);
-                    if (empty($entry)) continue;
-                    
-                    try {
-                        $data = json_decode($entry, true);
-                        if ($data) {
-                            $entries[] = $data;
-                        }
-                    } catch (\Exception $e) {
-                        // Ignora entradas com formato inválido
-                    }
-                }
-            }
-        } elseif ($type === 'laravel') {
-            $filePath = storage_path('logs/' . $filename);
-            if (File::exists($filePath)) {
-                $content = File::get($filePath);
-            }
-        }
-        
-        if (empty($filePath) || !File::exists($filePath)) {
-            return redirect()->route('settings.logs.index', ['tab' => $type])
+        if (!File::exists($filePath)) {
+            return redirect()->route('settings.logs.index', ['tab' => 'laravel'])
                 ->with('error', 'Arquivo de log não encontrado');
         }
         
+        $content = File::get($filePath);
+        
         return view('settings.logs.view', [
-            'type' => $type,
-            'filename' => $filename,
+            'type' => 'laravel',
+            'filename' => $log,
             'content' => $content,
-            'entries' => $entries
+            'entries' => []
         ]);
     }
     

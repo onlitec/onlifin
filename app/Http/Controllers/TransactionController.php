@@ -6,6 +6,9 @@ use App\Models\Transaction;
 use App\Models\Category;
 use App\Models\Account;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Services\TransactionAIService;
+use App\Services\FinanceSummaryAIService;
 
 /*
  * ATENÇÃO: CORREÇÕES CRÍTICAS nas funções create(), edit() e no endpoint de categorias.
@@ -16,21 +19,23 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        // Filter and sorting parameters
+        $user = Auth::user();
         $filter = $request->query('filter', 'all');
         $sort = $request->query('sort', 'date');
         $direction = $request->query('direction', 'desc');
         $query = Transaction::with(['category', 'account']);
 
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin, filtra pelas transações do próprio usuário
-        if (!$isAdmin) {
-            $query->where('user_id', auth()->id());
+        if (!$user->hasPermission('view_all_transactions')) {
+            if ($user->hasPermission('view_own_transactions')) {
+                $query->where('user_id', $user->id);
+            } else {
+                abort(403, 'Você não tem permissão para visualizar transações.');
+            }
         }
         
-        // Continua com os filtros
+        // isAdmin variable for the view, if needed for UI elements not strictly for data access
+        $isAdminView = $user->hasRole('Administrador'); 
+
         if ($filter === 'income') {
             $query->where('type', 'income');
         } elseif ($filter === 'expense') {
@@ -41,7 +46,6 @@ class TransactionController extends Controller
             $query->where('status', 'pending');
         }
         
-        // Ensure sort field and direction are valid
         $allowedSorts = ['date', 'description', 'amount'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'date';
@@ -53,39 +57,37 @@ class TransactionController extends Controller
         $transactions = $query->paginate(10)
             ->appends(['filter' => $filter, 'sort' => $sort, 'direction' => $direction]);
 
-        return view('transactions.index', compact('transactions', 'filter', 'isAdmin', 'sort', 'direction'));
+        return view('transactions.index', compact('transactions', 'filter', 'isAdminView', 'sort', 'direction'));
     }
 
     public function create(Request $request)
     {
-        // Determina o tipo de transação padrão com base no parâmetro da URL
-        $type = $request->type ?? 'expense';
-        
-        // Carrega todas as categorias pelo tipo
-        $categories = Category::where('type', $type)
-            ->orderBy('name')
-            ->get();
-        
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se for admin, mostra todas as contas ativas; senão, filtra por usuário
-        if ($isAdmin) {
-            $accounts = Account::where('active', true)
-                ->orderBy('name')
-                ->get();
-        } else {
-            $accounts = Account::where('active', true)
-                ->where('user_id', auth()->id())
-                ->orderBy('name')
-                ->get();
+        $user = Auth::user();
+        if (!$user->hasPermission('create_transactions')) {
+            abort(403, 'Você não tem permissão para criar transações.');
         }
+
+        $type = $request->type ?? 'expense';
+        $categories = Category::where('type', $type)->orderBy('name')->get();
         
-        return view('transactions.create', compact('categories', 'accounts', 'type', 'isAdmin'));
+        $accountsQuery = Account::where('active', true);
+        if (!$user->hasPermission('view_all_accounts')) { // Assuming admin can see all accounts for selection
+            $accountsQuery->where('user_id', $user->id);
+        }
+        $accounts = $accountsQuery->orderBy('name')->get();
+        
+        $isAdminView = $user->hasRole('Administrador');
+        
+        return view('transactions.create', compact('categories', 'accounts', 'type', 'isAdminView'));
     }
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+        if (!$user->hasPermission('create_transactions')) {
+            abort(403, 'Você não tem permissão para criar transações.');
+        }
+
         // Log do request para debug
         \Log::info('Request completo:', $request->all());
 
@@ -107,27 +109,19 @@ class TransactionController extends Controller
                 'fornecedor' => 'nullable|string|max:255',
             ]);
 
-            // Debug: Verificar o valor recebido
-            \Log::info('Valor amount recebido: ' . $validated['amount']);
-
-            // O valor já está corretamente formatado do frontend
             $amount = $validated['amount'];
             
-            // Debug: Verificar o valor final
-            \Log::info('Valor amount a ser salvo: ' . $amount);
-
             if (($validated['type'] ?? null) === 'income') {
                 $validated['cliente'] = $request->input('cliente', null);
-                $validated['fornecedor'] = null; // Garantir que seja nulo para despesas
+                $validated['fornecedor'] = null;
             } elseif (($validated['type'] ?? null) === 'expense') {
                 $validated['fornecedor'] = $request->input('fornecedor', null);
-                $validated['cliente'] = null; // Garantir que seja nulo para receitas
+                $validated['cliente'] = null;
             } else {
                 $validated['cliente'] = null;
                 $validated['fornecedor'] = null;
             }
 
-            // Preparar dados da transação
             $transactionData = [
                 'type' => $validated['type'],
                 'status' => $validated['status'],
@@ -139,10 +133,9 @@ class TransactionController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'cliente' => $validated['cliente'],
                 'fornecedor' => $validated['fornecedor'],
-                'user_id' => auth()->id(),
+                'user_id' => $user->id, // Assign to current user
             ];
 
-            // Adicionar campos de recorrência se aplicável
             if (isset($validated['recurrence_type']) && $validated['recurrence_type'] !== 'none') {
                 $transactionData['recurrence_type'] = $validated['recurrence_type'];
                 $transactionData['next_date'] = $validated['next_date'];
@@ -168,42 +161,38 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin e a transação não pertencer ao usuário, aborta
-        if (!$isAdmin && $transaction->user_id !== auth()->id()) {
-            abort(403);
+        $user = Auth::user();
+        $canEditAll = $user->hasPermission('edit_all_transactions');
+        $canEditOwn = $user->hasPermission('edit_own_transactions');
+
+        if (!($canEditAll || ($canEditOwn && $transaction->user_id === $user->id))) {
+            abort(403, 'Você não tem permissão para editar esta transação.');
         }
 
-        // Carrega todas as categorias pelo tipo
-        $categories = Category::where('type', $transaction->type)
-            ->orderBy('name')
-            ->get();
+        $categories = Category::where('type', $transaction->type)->orderBy('name')->get();
         
-        // Se for admin, mostra todas as contas ativas; senão, filtra por usuário
-        if ($isAdmin) {
-            $accounts = Account::where('active', true)
-                ->orderBy('name')
-                ->get();
-        } else {
-            $accounts = Account::where('active', true)
-                ->where('user_id', auth()->id())
-                ->orderBy('name')
-                ->get();
+        $accountsQuery = Account::where('active', true);
+        // If user can't view all accounts, restrict to their own, or if the transaction's account is theirs.
+        // This logic might need refinement based on whether admin editing another user's transaction should see all accounts or just the target user's accounts.
+        // For now, if admin, show all. If not admin, show own.
+        if (!$user->hasPermission('view_all_accounts')) { 
+            $accountsQuery->where('user_id', $user->id);
         }
+        $accounts = $accountsQuery->orderBy('name')->get();
+        
+        $isAdminView = $user->hasRole('Administrador');
 
-        return view('transactions.edit', compact('transaction', 'categories', 'accounts', 'isAdmin'));
+        return view('transactions.edit', compact('transaction', 'categories', 'accounts', 'isAdminView'));
     }
 
     public function update(Request $request, Transaction $transaction)
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin e a transação não pertencer ao usuário, aborta
-        if (!$isAdmin && $transaction->user_id !== auth()->id()) {
-            abort(403);
+        $user = Auth::user();
+        $canEditAll = $user->hasPermission('edit_all_transactions');
+        $canEditOwn = $user->hasPermission('edit_own_transactions');
+
+        if (!($canEditAll || ($canEditOwn && $transaction->user_id === $user->id))) {
+            abort(403, 'Você não tem permissão para atualizar esta transação.');
         }
 
         $validatedData = $request->validate([
@@ -232,41 +221,24 @@ class TransactionController extends Controller
             $validatedData['fornecedor'] = null;
         }
 
-        // Log do valor que está sendo enviado para debug
-        \Log::info('Valor amount original na transação: ' . $transaction->amount);
-        \Log::info('Valor amount recebido no update: ' . $validatedData['amount']);
-
-        /**
-         * ATENÇÃO: CONFIGURAÇÃO CRÍTICA - NÃO MODIFICAR
-         * ===============================================
-         * 1. VALORES DEVEM SER PRESERVADOS EM CENTAVOS
-         * 2. EXEMPLO: R$ 400,00 = 40000 CENTAVOS
-         * 3. NUNCA ALTERAR ESTA REGRA
-         * 4. Ver FINANCIAL_RULES.md para mais detalhes
-         * 
-         * Alterações neste código podem causar inconsistências financeiras em todo o sistema.
-         */
-        
-        // Preserva o valor exato da transação sem manipulá-lo
-        // O valor já deve estar em centavos (R$ 400,00 = 40000)
         $amount = $validatedData['amount'];
         
-        // Atualiza manualmente um por um para evitar problemas
         $transaction->type = $validatedData['type'];
         $transaction->status = $validatedData['status'];
         $transaction->date = $validatedData['date'];
         $transaction->description = $validatedData['description'];
-        $transaction->amount = $amount; // Usa o valor exato em centavos
+        $transaction->amount = $amount;
         $transaction->category_id = $validatedData['category_id'];
         $transaction->account_id = $validatedData['account_id'];
         $transaction->notes = $validatedData['notes'] ?? null;
         $transaction->cliente = $validatedData['cliente'];
         $transaction->fornecedor = $validatedData['fornecedor'];
         
+        // user_id is not changed on update by default unless specifically handled for admins re-assigning transactions.
+        // For now, we assume user_id remains the same.
+
         $transaction->save();
         
-        \Log::info('Valor amount após update: ' . $transaction->amount);
-
         $redirectRoute = $validatedData['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
         return redirect()->route($redirectRoute)
             ->with('success', 'Transação atualizada com sucesso!');
@@ -274,11 +246,11 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction)
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin e a transação não pertencer ao usuário, aborta
-        if (!$isAdmin && $transaction->user_id !== auth()->id()) {
+        $user = Auth::user();
+        $canDeleteAll = $user->hasPermission('delete_all_transactions');
+        $canDeleteOwn = $user->hasPermission('delete_own_transactions');
+
+        if (!($canDeleteAll || ($canDeleteOwn && $transaction->user_id === $user->id))) {
             abort(403, 'Você não tem permissão para excluir esta transação.');
         }
 
@@ -300,12 +272,12 @@ class TransactionController extends Controller
      */
     public function markAsPaid(Transaction $transaction)
     {
-        // Verifica se o usuário é administrador - com verificação segura
-        $isAdmin = auth()->check() && auth()->user()->is_admin;
-        
-        // Se não for admin e a transação não pertencer ao usuário, aborta
-        if (!$isAdmin && $transaction->user_id !== auth()->id()) {
-            abort(403, 'Você não tem permissão para alterar esta transação.');
+        $user = Auth::user();
+        $canMarkAll = $user->hasPermission('mark_as_paid_all_transactions');
+        $canMarkOwn = $user->hasPermission('mark_as_paid_own_transactions');
+
+        if (!($canMarkAll || ($canMarkOwn && $transaction->user_id === $user->id))) {
+            abort(403, 'Você não tem permissão para alterar o status desta transação.');
         }
         
         $transaction->status = 'paid';
@@ -316,45 +288,42 @@ class TransactionController extends Controller
 
     public function showIncome()
     {
+        if (!Auth::user()->hasPermission('view_own_transactions') && !Auth::user()->hasPermission('view_all_transactions')) {
+            abort(403, 'Acesso negado.');
+        }
         return view('transactions.income');
     }
 
     public function showExpenses()
     {
+        if (!Auth::user()->hasPermission('view_own_transactions') && !Auth::user()->hasPermission('view_all_transactions')) {
+            abort(403, 'Acesso negado.');
+        }
         return view('transactions.expenses');
     }
 
     public function createNext(Transaction $transaction)
     {
-        // Verificar se o usuário tem permissão para criar a próxima transação
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
+        $user = Auth::user();
+        // Only the owner of the transaction should be able to create a recurring one from it.
+        // And they need create_transactions permission.
+        if (!($user->hasPermission('create_transactions') && $transaction->user_id === $user->id)) {
+            abort(403, 'Você não tem permissão para criar uma transação recorrente a partir desta.');
         }
 
-        // Verificar se a transação tem recorrência
         if (!$transaction->hasRecurrence() || !$transaction->next_date) {
             return back()->with('error', 'Esta transação não possui configuração de recorrência válida.');
         }
 
-        // Criar a próxima transação com base na atual
         $newTransaction = $transaction->replicate();
-        
-        // Definir a data da nova transação como a próxima data da transação atual
         $newTransaction->date = $transaction->next_date;
-        
-        // Calcular a próxima data para a transação atual (um mês após a próxima data atual)
         $nextDate = (clone $transaction->next_date)->addMonth();
         
-        // Se for uma transação parcelada, incrementar o número da parcela
         if ($transaction->isInstallmentRecurrence()) {
-            // Verificar se já atingiu o número máximo de parcelas
             if ($transaction->installment_number >= $transaction->total_installments) {
                 return back()->with('error', 'Todas as parcelas desta transação já foram criadas.');
             }
-            
             $newTransaction->installment_number = $transaction->installment_number + 1;
-            
-            // Se for a última parcela, remover a recorrência
             if ($newTransaction->installment_number >= $newTransaction->total_installments) {
                 $newTransaction->recurrence_type = 'none';
                 $newTransaction->next_date = null;
@@ -362,26 +331,55 @@ class TransactionController extends Controller
                 $newTransaction->next_date = $nextDate;
             }
         } else {
-            // Para recorrência fixa, apenas atualizar a próxima data
             $newTransaction->next_date = $nextDate;
         }
         
-        // Definir o status como pendente para a nova transação
         $newTransaction->status = 'pending';
-        
-        // Salvar a nova transação
+        $newTransaction->user_id = $user->id; // Ensure new transaction is owned by current user
         $newTransaction->save();
         
-        // Atualizar a próxima data da transação original
         $transaction->next_date = null;
-        
-        // Se for uma transação parcelada e já atingiu o número máximo de parcelas, remover a recorrência
         if ($transaction->isInstallmentRecurrence() && $newTransaction->installment_number >= $transaction->total_installments) {
             $transaction->recurrence_type = 'none';
         }
-        
         $transaction->save();
         
         return back()->with('success', 'Próxima transação recorrente criada com sucesso!');
+    }
+
+    /**
+     * Endpoint para sugerir categoria de transação via IA
+     */
+    public function suggestCategory(Request $request, TransactionAIService $aiService)
+    {
+        $request->validate([
+            'description' => 'required|string|min:3',
+        ]);
+        $category = $aiService->suggestCategory($request->description);
+        return response()->json([
+            'suggested_category' => $category
+        ]);
+    }
+
+    /**
+     * Exibe painel de resumo inteligente de despesas/receitas.
+     */
+    public function dashboardSummary(FinanceSummaryAIService $aiService)
+    {
+        $user = auth()->user();
+        $transactions = $user->transactions()->select('description', 'amount', 'category_id', 'date')
+            ->with('category:id,name')
+            ->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])
+            ->get()
+            ->map(function($t) {
+                return [
+                    'descricao' => $t->description,
+                    'valor' => $t->amount / 100,
+                    'categoria' => $t->category ? $t->category->name : null,
+                    'data' => $t->date->format('Y-m-d'),
+                ];
+            })->toArray();
+        $summary = $aiService->generateSummary($transactions);
+        return view('transactions.summary', compact('summary'));
     }
 } 

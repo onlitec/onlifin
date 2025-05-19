@@ -23,27 +23,32 @@ class AIConfigService
             'has_api_key' => false
         ];
         
-        // Verificar ReplicateSetting
-        if (class_exists('\App\Models\ReplicateSetting')) {
+        // Buscar apenas o provedor que está ativo/configurado
+        // Prioridade: Replicate, depois OpenRouter
+        if (class_exists('\\App\\Models\\ReplicateSetting')) {
             $settings = \App\Models\ReplicateSetting::getActive();
             if ($settings && $settings->isConfigured()) {
+                Log::info('Usando configuração do Replicate:', [
+                    'provider' => $settings->provider,
+                    'model' => $settings->model_version
+                ]);
                 $config['is_configured'] = true;
                 $config['provider'] = $settings->provider;
                 $config['model'] = $settings->model_version;
-                $config['api_key'] = $settings->api_token; // Adicionado a chave da API
-                $config['model_name'] = $settings->model_version; // Adicionado nome do modelo
-                $config['system_prompt'] = $settings->system_prompt; // Adicionado o prompt do sistema
+                $config['api_key'] = $settings->api_token;
+                $config['model_name'] = $settings->model_version;
+                $config['system_prompt'] = $settings->system_prompt;
                 $config['has_api_key'] = !empty($settings->api_token);
-                
                 return $config;
             }
         }
-        
-        // Verificar OpenRouterConfig se não encontrou em ReplicateSetting
-        if (class_exists('\App\Models\OpenRouterConfig')) {
-            $openRouterConfig = \App\Models\OpenRouterConfig::first(); // Pega a primeira configuração
-            
+        if (class_exists('\\App\\Models\\OpenRouterConfig')) {
+            $openRouterConfig = \App\Models\OpenRouterConfig::first();
             if ($openRouterConfig && !empty($openRouterConfig->api_key)) {
+                Log::info('Usando configuração do OpenRouter:', [
+                    'provider' => $openRouterConfig->provider,
+                    'model' => $openRouterConfig->model
+                ]);
                 $config['is_configured'] = true;
                 $config['provider'] = $openRouterConfig->provider;
                 $config['model'] = $openRouterConfig->model === 'custom' ? $openRouterConfig->custom_model : $openRouterConfig->model;
@@ -51,11 +56,10 @@ class AIConfigService
                 $config['model_name'] = $openRouterConfig->model;
                 $config['system_prompt'] = $openRouterConfig->system_prompt;
                 $config['has_api_key'] = true;
-                
                 return $config;
             }
         }
-        
+        // Não logar warning para provedores não utilizados
         return $config;
     }
     

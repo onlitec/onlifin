@@ -19,6 +19,7 @@ use App\Models\Account;
 use App\Models\Category;
 use Illuminate\Support\Facades\Http;
 use App\Models\Setting;
+use App\Services\FinancialReportAIService;
 
 class SettingsController extends Controller
 {
@@ -263,8 +264,8 @@ class SettingsController extends Controller
         $currentMonthEnd = Carbon::now()->endOfMonth();
 
         // 1. Despesas por Categoria (Mês Atual)
-        $expensesByCategory = Transaction::where('user_id', $userId)
-            ->where('type', 'expense')
+        $expensesByCategory = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'expense')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->join('categories', 'transactions.category_id', '=', 'categories.id')
             ->select('categories.name as category_name', DB::raw('SUM(transactions.amount) as total_amount'))
@@ -277,8 +278,8 @@ class SettingsController extends Controller
         $categoryData = $expensesByCategory->pluck('total_amount')->map(fn($amount) => $amount / 100); // Convert cents to currency unit
 
         // 2. Despesas por Conta (Mês Atual)
-        $expensesByAccount = Transaction::where('user_id', $userId)
-            ->where('type', 'expense')
+        $expensesByAccount = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'expense')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->join('accounts', 'transactions.account_id', '=', 'accounts.id')
             ->select('accounts.name as account_name', DB::raw('SUM(transactions.amount) as total_amount'))
@@ -955,5 +956,28 @@ class SettingsController extends Controller
             }
         }
         return redirect()->route('settings.system')->with('success','Atualizado com sucesso!');
+    }
+
+    /**
+     * Gera e exibe relatório financeiro detalhado com insights e explicações.
+     */
+    public function financialReport(FinancialReportAIService $aiService, Request $request)
+    {
+        $user = auth()->user();
+        $periodo = $request->input('periodo', 'mensal');
+        $transactions = $user->transactions()->select('description', 'amount', 'category_id', 'date')
+            ->with('category:id,name')
+            ->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])
+            ->get()
+            ->map(function($t) {
+                return [
+                    'descricao' => $t->description,
+                    'valor' => $t->amount / 100,
+                    'categoria' => $t->category ? $t->category->name : null,
+                    'data' => $t->date->format('Y-m-d'),
+                ];
+            })->toArray();
+        $report = $aiService->generateReport($transactions, $periodo);
+        return view('settings.reports.financial', compact('report', 'periodo'));
     }
 }

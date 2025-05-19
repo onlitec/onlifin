@@ -60,6 +60,10 @@
                             <input type="text" name="description" id="description" 
                                 class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 value="{{ old('description') }}" placeholder="Ex: Salário, Aluguel, etc">
+                            <div id="suggested-category-container" class="mt-2 text-xs text-primary-700 hidden">
+                                <span class="font-semibold">Sugestão de categoria:</span> <span id="suggested-category"></span>
+                                <button type="button" id="accept-suggestion" class="ml-2 px-2 py-1 bg-primary-100 text-primary-700 rounded hover:bg-primary-200 transition">Aceitar</button>
+                            </div>
                             @error('description')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -413,5 +417,56 @@ function toggleRecurrenceFields() {
         nextDateField.style.display = 'none';
     }
 }
+
+// Integração com IA para sugestão de categoria
+const descriptionInput = document.getElementById('description');
+const suggestedCategoryContainer = document.getElementById('suggested-category-container');
+const suggestedCategorySpan = document.getElementById('suggested-category');
+const acceptSuggestionBtn = document.getElementById('accept-suggestion');
+const categorySelect = document.getElementById('category_id');
+
+let iaTimeout = null;
+descriptionInput.addEventListener('input', function() {
+    const desc = this.value;
+    if (iaTimeout) clearTimeout(iaTimeout);
+    if (desc.length < 3) {
+        suggestedCategoryContainer.classList.add('hidden');
+        return;
+    }
+    iaTimeout = setTimeout(() => {
+        fetch('/api/transactions/suggest-category', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            },
+            body: JSON.stringify({ description: desc })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.suggested_category) {
+                suggestedCategorySpan.textContent = data.suggested_category;
+                suggestedCategoryContainer.classList.remove('hidden');
+            } else {
+                suggestedCategoryContainer.classList.add('hidden');
+            }
+        })
+        .catch(() => suggestedCategoryContainer.classList.add('hidden'));
+    }, 600); // debounce
+});
+
+acceptSuggestionBtn.addEventListener('click', function() {
+    const suggestion = suggestedCategorySpan.textContent;
+    if (!suggestion) return;
+    // Procurar a opção no select e selecionar
+    for (let opt of categorySelect.options) {
+        if (opt.textContent.trim().toLowerCase() === suggestion.trim().toLowerCase()) {
+            categorySelect.value = opt.value;
+            break;
+        }
+    }
+    suggestedCategoryContainer.classList.add('hidden');
+});
 </script>
 </x-app-layout>

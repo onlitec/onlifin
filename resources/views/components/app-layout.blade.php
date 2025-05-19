@@ -60,6 +60,10 @@
                                 <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
                                 Despesas
                             </a>
+                            <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}">
+                                <i class="ri-bar-chart-line mr-2 text-lg"></i>
+                                Relatórios
+                            </a>
                             <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
                                 <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                                 Categorias
@@ -69,18 +73,10 @@
                                 Contas
                             </a>
                             @if(auth()->user()->isAdmin())
-                            <div class="relative group">
-                                <button class="menu-item flex items-center">
-                                    <i class="ri-shield-user-line mr-2 text-lg"></i>
-                                    Administrador
-                                    <i class="ri-arrow-down-s-line ml-1"></i>
-                                </button>
-                                <div class="absolute left-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
-                                    <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
-                                        Configurações
+                            <a href="{{ route('settings.index') }}" class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                                <i class="ri-settings-3-line mr-2"></i>
+                                Configurações
                             </a>
-                        </div>
-                    </div>
                             @endif
                             <!-- IA Icon inside main menu -->
                             <a href="{{ route('openrouter-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
@@ -203,6 +199,12 @@
             </div>
         </footer>
     </div>
+
+    <!-- Botão flutuante do Chatbot -->
+    <a href="{{ route('chatbot.index') }}" target="_blank" title="Assistente Financeiro" class="fixed z-50 bottom-6 right-6 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center w-16 h-16 transition-all duration-200">
+        <i class="ri-chat-3-line text-3xl"></i>
+        <span class="sr-only">Abrir Chatbot</span>
+    </a>
 
     @livewireScripts
     @stack('scripts')

@@ -30,7 +30,7 @@
                         <tr>
                             <td>{{ $role->name }}</td>
                             <td>{{ $role->description }}</td>
-                            <td>{{ $role->permissions->pluck('name')->implode(', ') }}</td>
+                            <td>{{ $role->permissions->pluck('display_name')->implode(', ') }}</td>
                             <td>
                                 <div class="flex space-x-2">
                                     <a href="{{ route('settings.roles.edit', $role->id) }}" class="text-blue-600 hover:text-blue-800">

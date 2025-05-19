@@ -73,11 +73,54 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class);
     }
 
+    /**
+     * Verifica se o usuário possui todas as permissões-chave para acesso total.
+     */
+    public function isSuperUser(): bool
+    {
+        $requiredPermissions = [
+            'view_users', 'create_users', 'edit_users', 'delete_users',
+            'view_roles', 'manage_roles',
+            'view_all_transactions', 'view_own_transactions', 'create_transactions',
+            'edit_all_transactions', 'edit_own_transactions',
+            'delete_all_transactions', 'delete_own_transactions',
+            'mark_as_paid_all_transactions', 'mark_as_paid_own_transactions',
+            'view_all_accounts', 'view_own_accounts', 'create_accounts',
+            'edit_all_accounts', 'edit_own_accounts',
+            'delete_all_accounts', 'delete_own_accounts',
+            'view_all_categories', 'view_own_categories', 'create_categories',
+            'edit_all_categories', 'edit_own_categories',
+            'delete_all_categories', 'delete_own_categories',
+            'view_reports', 'manage_backups', 'manage_settings',
+        ];
+        foreach ($requiredPermissions as $perm) {
+            if (!$this->hasPermission($perm)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Ajustar o método hasPermission para super usuário
     public function hasPermission($permission): bool
     {
-        return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
+        // Permissões dos perfis do usuário
+        $hasRolePermission = $this->roles()->whereHas('permissions', function ($query) use ($permission) {
             $query->where('name', $permission);
         })->exists();
+
+        // Permissões dos perfis dos grupos do usuário
+        $hasGroupRolePermission = $this->groups()
+            ->whereHas('roles.permissions', function ($query) use ($permission) {
+                $query->where('name', $permission);
+            })->exists();
+
+        return $hasRolePermission || $hasGroupRolePermission;
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        return $this->roles->contains('name', $roleName);
     }
 
     /**
@@ -153,5 +196,10 @@ class User extends Authenticatable
         return $this->profile_photo
             ? Storage::url($this->profile_photo)
             : asset('assets/svg/default-avatar.svg');
+    }
+
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class);
     }
 }

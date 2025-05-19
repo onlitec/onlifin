@@ -235,6 +235,11 @@
                                 Relatórios
                             </a>
 
+                            <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                                <i class="ri-folders-line mr-2"></i>
+                                Categorias
+                            </a>
+
                             <a href="{{ route('accounts.index') }}" class="menu-item {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                                 <i class="ri-bank-line mr-2"></i>
                                 Contas
@@ -417,6 +422,12 @@
             </div>
         </footer>
     </div>
+
+    <!-- Botão flutuante do Chatbot -->
+    <a href="{{ route('chatbot.index') }}" target="_blank" title="Assistente Financeiro" class="fixed z-50 bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center w-16 h-16 transition-all duration-200">
+        <i class="ri-chat-3-line text-3xl"></i>
+        <span class="sr-only">Abrir Chatbot</span>
+    </a>
 
     <script>
         function toggleMobileMenu() {

@@ -1,8 +1,10 @@
 @php
     use App\Models\ReplicateSetting;
+    use App\Models\OpenRouterConfig;
     
     // Busca as configurações ativas da IA
-    $aiSettings = ReplicateSetting::getActive();
+    $replicateSettings = ReplicateSetting::getActive();
+    $openRouterConfig = OpenRouterConfig::first();
     
     // Define ícones para cada provedor
     $providerIcons = [
@@ -39,17 +41,25 @@
         'deepseek' => 'Deepseek',
         'openrouter' => 'OpenRouter'
     ];
+
+    // Determina qual configuração está ativa
+    $activeConfig = null;
+    if ($replicateSettings && $replicateSettings->is_active) {
+        $activeConfig = $replicateSettings;
+    } elseif ($openRouterConfig) {
+        $activeConfig = $openRouterConfig;
+    }
 @endphp
 
-@if($aiSettings && $aiSettings->is_active)
+@if($activeConfig)
     <div class="ai-status-component">
         <div class="flex items-center gap-2">
-            <div class="rounded-full p-1 {{ $providerColors[$aiSettings->provider] ?? 'bg-gray-100 text-gray-800' }} flex items-center justify-center">
-                <i class="{{ $providerIcons[$aiSettings->provider] ?? 'ri-ai-generate' }} text-sm"></i>
+            <div class="rounded-full p-1 {{ $providerColors[$activeConfig->provider] ?? 'bg-gray-100 text-gray-800' }} flex items-center justify-center">
+                <i class="{{ $providerIcons[$activeConfig->provider] ?? 'ri-ai-generate' }} text-sm"></i>
             </div>
             <div class="text-xs font-medium">
-                <span>IA: {{ $providerNames[$aiSettings->provider] ?? 'Desconhecido' }}</span>
-                <span class="text-gray-500 ml-1">{{ $aiSettings->model_version }}</span>
+                <span>IA: {{ $providerNames[$activeConfig->provider] ?? 'Desconhecido' }}</span>
+                <span class="text-gray-500 ml-1">{{ $activeConfig->model ?? $activeConfig->model_version }}</span>
             </div>
             <a href="{{ route('openrouter-config.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
                 <i class="ri-settings-3-line"></i>

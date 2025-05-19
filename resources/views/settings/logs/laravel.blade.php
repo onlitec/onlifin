@@ -52,7 +52,7 @@
                                         <td class="py-2 px-4 border-b">{{ $file['modified'] }}</td>
                                         <td class="py-2 px-4 border-b">{{ number_format($file['size'] / 1024, 2) }} KB</td>
                                         <td class="py-2 px-4 border-b">
-                                            <a href="{{ route('settings.logs.view', ['type' => 'laravel', 'filename' => $file['name']]) }}" 
+                                            <a href="{{ route('settings.logs.view', ['log' => $file['name']]) }}" 
                                                 class="text-blue-600 hover:text-blue-800 mr-2">
                                                 Visualizar
                                             </a>

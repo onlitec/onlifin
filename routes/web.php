@@ -25,6 +25,8 @@ use App\Http\Controllers\TransactionExportController;
 use App\Http\Controllers\ModelApiKeyController;
 use App\Http\Controllers\OpenRouterConfigController;
 use App\Http\Controllers\TempStatementImportController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\ChatbotController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,13 +64,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     
     // Logs do sistema
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::middleware(['auth'])->group(function () {
-            Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
-            Route::get('/logs/export', [SystemLogController::class, 'export'])->name('logs.export');
-            Route::get('/logs/view/{type}/{filename}', [SystemLogController::class, 'view'])->name('logs.view');
-            Route::get('/logs/{log}', [SystemLogController::class, 'show'])->name('logs.show');
-        });
+    Route::prefix('settings')->name('settings.')->middleware(['auth'])->group(function () {
+        Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
+        Route::get('/logs/files', [SystemLogController::class, 'files'])->name('logs.files');
+        Route::get('/logs/{log}', [SystemLogController::class, 'show'])->name('logs.show');
+        Route::get('/logs/view/{log}', [SystemLogController::class, 'view'])->name('logs.view');
     });
     
     // Perfil do usuário
@@ -185,10 +185,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/permissions/delete/{permission}', [SettingsController::class, 'deletePermission'])->name('permissions.delete');
 
         // Rotas de logs do sistema
-        Route::get('/settings/logs', [SystemLogController::class, 'index'])->name('logs.index');
-        Route::get('/settings/logs/export', [SystemLogController::class, 'export'])->name('logs.export');
-        Route::get('/settings/logs/files', [SystemLogController::class, 'files'])->name('logs.files');
-        Route::get('/transactions/export', [TransactionExportController::class, 'export'])->name('transactions.export');
+        Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
+        Route::get('/logs/files', [SystemLogController::class, 'files'])->name('logs.files');
+        Route::get('/logs/{log}', [SystemLogController::class, 'show'])->name('logs.show');
+        Route::get('/logs/view/{log}', [SystemLogController::class, 'view'])->name('logs.view');
         
         // ****** Mover a rota para cá ******
         Route::delete('/users/delete-data', [SettingsController::class, 'deleteUserData'])->name('deleteUserData'); 
@@ -264,6 +264,29 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/{openRouterConfig}', [OpenRouterConfigController::class, 'update'])->name('update');
         Route::delete('/{openRouterConfig}', [OpenRouterConfigController::class, 'destroy'])->name('destroy');
         Route::post('/test', [OpenRouterConfigController::class, 'testConnection'])->name('test');
+    });
+
+    // Grupos de usuários
+    Route::get('/groups', [\App\Http\Controllers\GroupController::class, 'index'])->name('groups.index');
+    Route::get('/groups/create', [\App\Http\Controllers\GroupController::class, 'create'])->name('groups.create');
+    Route::post('/groups', [\App\Http\Controllers\GroupController::class, 'store'])->name('groups.store');
+    Route::get('/groups/{group}/edit', [\App\Http\Controllers\GroupController::class, 'edit'])->name('groups.edit');
+    Route::put('/groups/{group}', [\App\Http\Controllers\GroupController::class, 'update'])->name('groups.update');
+    Route::delete('/groups/{group}', [\App\Http\Controllers\GroupController::class, 'destroy'])->name('groups.destroy');
+
+    // Sugestão de categoria por IA
+    Route::post('/api/transactions/suggest-category', [\App\Http\Controllers\TransactionController::class, 'suggestCategory'])->middleware('auth');
+
+    // Painel de resumo inteligente de despesas/receitas
+    Route::get('/transactions/summary', [\App\Http\Controllers\TransactionController::class, 'dashboardSummary'])->middleware('auth')->name('transactions.summary');
+
+    // Relatório financeiro detalhado com insights
+    Route::get('/settings/reports/financial', [\App\Http\Controllers\SettingsController::class, 'financialReport'])->middleware('auth')->name('settings.reports.financial');
+
+    // Rotas do Chatbot Financeiro
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/chatbot', [App\Http\Controllers\ChatbotController::class, 'index'])->name('chatbot.index');
+        Route::post('/chatbot/ask', [App\Http\Controllers\ChatbotController::class, 'ask'])->name('chatbot.ask');
     });
 
 });
