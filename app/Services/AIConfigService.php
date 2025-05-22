@@ -345,29 +345,30 @@ class AIConfigService
     }
 
     /**
-     * Retorna todas as configurações de IA em ordem de fallback.
+     * Retorna apenas a configuração do Google para implantação dedicada.
      *
      * @return array
      */
     public function getAllAIConfigs(): array
     {
-        // Verificar se há múltiplos provedores configurados em config/ai.php
-        $providersConfig = Config::get('ai.providers');
-        if (Config::get('ai.enabled', false) && is_array($providersConfig)) {
-            $all = [];
-            foreach ($providersConfig as $prov) {
-                if (!empty($prov['provider']) && !empty($prov['api_key'])) {
-                    $all[] = [
-                        'provider'      => $prov['provider'],
-                        'model'         => $prov['model'] ?? null,
-                        'api_key'       => $prov['api_key'],
-                        'system_prompt' => $prov['system_prompt'] ?? null,
-                    ];
-                }
-            }
-            return $all;
+        // Uso exclusivo de Google para implantação
+        if (!Config::get('ai.enabled', false)) {
+            return [];
         }
-        // Fallback para configuração única
-        return [$this->getAIConfig()];
+        $provider = 'google';
+        $apiKey = Config::get("ai.{$provider}.api_key");
+        $model  = Config::get("ai.{$provider}.model");
+        $prompt = Config::get("ai.{$provider}.system_prompt");
+
+        if (!$provider || !$apiKey) {
+            // Nenhuma configuração Google válida
+            return [];
+        }
+        return [[
+            'provider'      => $provider,
+            'model'         => $model,
+            'api_key'       => $apiKey,
+            'system_prompt' => $prompt,
+        ]];
     }
 }
