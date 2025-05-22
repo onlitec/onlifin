@@ -16,6 +16,7 @@ use DateTime;
 use App\Models\AiCallLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use App\Services\AIService;
 
 class TempStatementImportController extends Controller
 {
@@ -418,7 +419,7 @@ class TempStatementImportController extends Controller
     /**
      * Analisa as transações usando IA com a configuração do banco de dados
      */
-    private function analyzeTransactionsWithAI($transactions)
+    public function analyzeTransactionsWithAI($transactions)
     {
         // Tempo de início da operação para medir performance
         $startTime = microtime(true);
@@ -443,6 +444,12 @@ class TempStatementImportController extends Controller
             'exemplo_transacao' => isset($transactions[0]) ? json_encode($transactions[0]) : null
         ]);
         
+        // Se o número de transações for grande, usar o processamento em lotes
+        if (count($transactions) > 25) {
+            Log::info('🔄 Usando processamento em lotes para ' . count($transactions) . ' transações');
+            return $this->processTransactionsInBatches($transactions);
+        }
+
         // Verificar se a IA está configurada no banco de dados
         $aiConfigService = new AIConfigService();
         if (!$aiConfigService->isAIConfigured()) {
@@ -459,7 +466,7 @@ class TempStatementImportController extends Controller
             // Obter a chave da API, modelo e prompt do banco de dados
             $apiKey = $aiConfig['api_key'] ?? '';
             $modelName = $aiConfig['model_name'] ?? '';
-            $promptTemplate = $aiConfig['system_prompt'] ?? ''; // Usar system_prompt em vez de prompt_template
+            $promptTemplate = $aiConfig['system_prompt'] ?? '';
 
             // Verificar se a chave da API existe (verificação essencial)
             if (empty($apiKey)) {
@@ -467,10 +474,10 @@ class TempStatementImportController extends Controller
                 return $this->getMockAIResponse($transactions);
             }
             
-            // **** Verificar prompt (adiantado para evitar chamadas desnecessárias) ****
+            // **** Verificar prompt (usar padrão caso ausente) ****
             if (empty($promptTemplate)) {
-                Log::error('❗ Erro: Template do prompt não encontrado no banco de dados para o provedor: ' . $aiProvider);
-                return $this->getMockAIResponse($transactions); // Ou retornar null?
+                Log::warning('⚠️ Template do prompt não encontrado no banco de dados para o provedor: ' . $aiProvider . '. Usando prompt padrão.');
+                $promptTemplate = 'Você é um assistente financeiro inteligente. Responda em português, utilizando Markdown para formatação e, ao retornar dados JSON, coloque-os em um bloco de código usando ```json ...```.';
             }
 
             // Criar a configuração para a IA - Incluir prompt
@@ -493,6 +500,7 @@ class TempStatementImportController extends Controller
             Log::info('💬 Iniciando roteamento para análise de transações com ' . $aiProvider);
 
             switch ($aiProvider) {
+                case 'google':
                 case 'gemini':
                     try {
                         $resultado = $this->analyzeTransactionsWithGemini($transactions, $config);
@@ -506,11 +514,9 @@ class TempStatementImportController extends Controller
                         $resultado = $this->getMockAIResponse($transactions);
                     }
                     break;
-                
                 case 'grok':
                     $resultado = $this->analyzeTransactionsWithGrok($transactions, $config);
                     break;
-                    
                 case 'openrouter':
                     try {
                         $resultado = $this->analyzeTransactionsWithOpenRouter($transactions, $config);
@@ -524,7 +530,6 @@ class TempStatementImportController extends Controller
                         $resultado = $this->getMockAIResponse($transactions);
                     }
                     break;
-
                 default:
                     Log::error('❗ Provedor de IA configurado ("' . $aiProvider . '") não é suportado ou não possui método de análise implementado. Usando mock.');
                     $resultado = $this->getMockAIResponse($transactions);
@@ -562,560 +567,203 @@ class TempStatementImportController extends Controller
             return null;
         }
     }
+
+    /**
+     * Processa transações em lotes menores para evitar exceder limites da API Gemini
+     * 
+     * @param array $transactions Lista completa de transações a serem analisadas
+     * @param int $batchSize Tamanho de cada lote (recomendado: 20-25)
+     * @return array Resultados combinados de todos os lotes
+     */
+    private function processTransactionsInBatches(array $transactions, int $batchSize = 20)
+    {
+        Log::info('🔄 Iniciando processamento em lotes', [
+            'total_transacoes' => count($transactions), 
+            'tamanho_lote' => $batchSize,
+            'total_lotes' => ceil(count($transactions) / $batchSize)
+        ]);
+        
+        // Resultado final combinado
+        $finalResult = [
+            'transactions' => []
+        ];
+        
+        // Dividir transações em lotes menores
+        $batches = array_chunk($transactions, $batchSize);
+        
+        foreach ($batches as $index => $batch) {
+            Log::info('🔄 Processando lote ' . ($index + 1) . ' de ' . count($batches), [
+                'transacoes_no_lote' => count($batch)
+            ]);
+            
+            // Chamar a função existente para analisar apenas este lote
+            // Chamamos recursivamente, mas sem passar pelo processamento em lotes novamente
+            $batchResults = $this->analyzeTransactionsWithAIMini($batch);
+            
+            if ($batchResults && isset($batchResults['transactions']) && !empty($batchResults['transactions'])) {
+                // Adicionar os resultados deste lote ao resultado final
+                $finalResult['transactions'] = array_merge(
+                    $finalResult['transactions'],
+                    $batchResults['transactions']
+                );
+                
+                Log::info('✅ Lote ' . ($index + 1) . ' processado com sucesso', [
+                    'resultados_no_lote' => count($batchResults['transactions'])
+                ]);
+            } else {
+                Log::warning('⚠️ Falha no processamento do lote ' . ($index + 1), [
+                    'batch_index' => $index
+                ]);
+                
+                // Em caso de falha, usar mock para este lote
+                $mockResults = $this->getMockAIResponse($batch);
+                $finalResult['transactions'] = array_merge(
+                    $finalResult['transactions'],
+                    $mockResults['transactions']
+                );
+            }
+            
+            // Pequena pausa entre lotes para evitar problemas de rate limiting
+            if ($index < count($batches) - 1) {
+                Log::debug('Pausa entre lotes para evitar rate limiting');
+                sleep(1);
+            }
+        }
+        
+        Log::info('✅ Processamento em lotes concluído', [
+            'total_resultados' => count($finalResult['transactions']),
+            'total_transacoes_originais' => count($transactions)
+        ]);
+        
+        return $finalResult;
+    }
     
     /**
-     * Método específico para análise com Gemini
+     * Versão do analyzeTransactionsWithAI para chamadas internas em lotes
+     * Evita recursão infinita quando chamado pelo processTransactionsInBatches
+     */
+    private function analyzeTransactionsWithAIMini($transactions)
+    {
+        // Verificar se a IA está configurada no banco de dados
+        $aiConfigService = new AIConfigService();
+        if (!$aiConfigService->isAIConfigured()) {
+            return $this->getMockAIResponse($transactions);
+        }
+        
+        try {
+            // Obter configurações da IA do banco de dados
+            $aiConfig = $aiConfigService->getAIConfig();
+            $aiProvider = $aiConfig['provider'];
+            $apiKey = $aiConfig['api_key'] ?? '';
+            $modelName = $aiConfig['model_name'] ?? '';
+            $promptTemplate = $aiConfig['system_prompt'] ?? '';
+
+            if (empty($apiKey)) {
+                return $this->getMockAIResponse($transactions);
+            }
+            
+            // Criar a configuração para a IA
+            $config = new \stdClass();
+            $config->api_key = $apiKey;
+            $config->model = $modelName;
+            $config->provider = $aiProvider;
+            $config->system_prompt = $promptTemplate;
+
+            // Roteamento baseado no provedor
+            $resultado = null;
+            switch ($aiProvider) {
+                case 'google':
+                case 'gemini':
+                    try {
+                        $resultado = $this->analyzeTransactionsWithGemini($transactions, $config);
+                    } catch (\Exception $e) {
+                        $resultado = $this->getMockAIResponse($transactions);
+                    }
+                    break;
+                case 'openrouter':
+                    try {
+                        $resultado = $this->analyzeTransactionsWithOpenRouter($transactions, $config);
+                    } catch (\Exception $e) {
+                        $resultado = $this->getMockAIResponse($transactions);
+                    }
+                    break;
+                default:
+                    $resultado = $this->getMockAIResponse($transactions);
+                    break;
+            }
+            
+            return $resultado;
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Exceção ao processar lote de transações', [
+                'mensagem' => $e->getMessage()
+            ]);
+            return $this->getMockAIResponse($transactions);
+        }
+    }
+
+    /**
+     * Analisa transações utilizando o Gemini
      */
     private function analyzeTransactionsWithGemini($transactions, $apiConfig)
     {
         $startTime = microtime(true);
-        $logData = [
-            'user_id' => auth()->id(),
-            'provider' => $apiConfig->provider ?? 'gemini',
-            'model' => $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro'),
-            'error_message' => null,
-            'status_code' => null,
-            'duration_ms' => null,
-            'prompt_preview' => null,
-            'response_preview' => null,
-        ];
-
-        try {
-            // Preparar as transações para análise (formato JSON)
-            $transactionDescriptions = [];
-            foreach ($transactions as $index => $transaction) {
-                $transactionDescriptions[] = [
-                    'id' => $index,
-                    'date' => $transaction['date'] ?? '',
-                    'description' => $transaction['description'] ?? '',
-                    'amount' => $transaction['amount'] ?? 0,
-                    'type' => $transaction['type'] ?? ''
-                ];
-            }
-            $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-            // Obter categories do usuário para treinamento da IA
-            $categories = Category::where('user_id', auth()->id())
-                ->orderBy('name')
-                ->get();
-
-            // Formatar categorias para o prompt
-            $categoriesFormatted = [];
-            foreach ($categories as $category) {
-                $categoriesFormatted[] = [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'type' => $category->type,
-                    'icon' => $category->icon ?? ''
-                ];
-            }
-            $categoriesByType = [
-                'income' => [],
-                'expense' => []
-            ];
-            foreach ($categoriesFormatted as $category) {
-                $type = $category['type'] == 'income' ? 'income' : 'expense';
-                $categoriesByType[$type][] = $category;
-            }
-            $categoriesJson = json_encode($categoriesByType, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-            Log::info('🔎 Usando categorias para prompt Gemini', [
-                'total_categorias' => count($categoriesFormatted),
-                'receitas' => count($categoriesByType['income']),
-                'despesas' => count($categoriesByType['expense'])
-            ]);
-
-            // Obter configurações da IA (incluindo o prompt)
-            $apiKey = $apiConfig->api_key ?? env('GEMINI_API_KEY');
-            $model = $apiConfig->model ?? env('GEMINI_MODEL', 'gemini-1.5-pro');
-            $promptTemplate = $apiConfig->prompt;
-
-            // Validar chave API
-            if (empty($apiKey)) {
-                Log::error('❌ Chave API para Gemini está vazia');
-                return null;
-            }
-
-            // Definir endpoint da API com base nas configurações
-            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
-
-            // Substituir placeholders com dados reais (assumindo que os dados estejam disponíveis)
-            $finalPrompt = str_replace(
-                ['{{transactions}}', '{{categories}}', '{{observations}}', '{{cliente}}', '{{fornecedor}}', '{{data}}'],
-                [$transactionsJson, $categoriesJson, json_encode($observations ?? 'null', JSON_PRETTY_PRINT), json_encode($cliente ?? 'null', JSON_PRETTY_PRINT), json_encode($fornecedor ?? 'null', JSON_PRETTY_PRINT), json_encode($data ?? 'null', JSON_PRETTY_PRINT)],
-                $promptTemplate
-            );
-
-            Log::debug('Preview do prompt DINÂMICO para ' . ($apiConfig->provider ?? 'IA'), [
-                'prompt_preview' => substr($finalPrompt, 0, 500) . '... (truncado)'
-            ]);
-
-            // **** REGISTRAR INÍCIO DA CHAMADA NO LOG ****
-            $logData['prompt_preview'] = substr($finalPrompt, 0, 1000); // Limitar tamanho do preview
-            $logData['model'] = $model; // Atualiza o modelo caso tenha pego do env
-            
-            // Preparar o payload para a API Gemini usando o prompt dinâmico
-            $data = [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $finalPrompt] // <-- Usar o prompt final
-                        ]
-                    ]
-                ],
-                'generationConfig' => [
-                    'temperature' => 0.2,
-                    'maxOutputTokens' => 4096
-                ]
-            ];
-            
-            // Usar a classe Http do Laravel para fazer a requisição
-            Log::info('▶️ Enviando requisição para API ' . ($apiConfig->provider ?? 'IA') . ': ' . $endpoint);
-            
-            // Inicializar $apiError e $result
-            $apiError = null;
-            $result = null;
-
-            try {
-                $response = \Illuminate\Support\Facades\Http::withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
-                ])
-                ->timeout(60)
-                ->post($endpoint, $data);
-                
-                $statusCode = $response->status();
-                $logData['status_code'] = $statusCode;
-
-                if ($response->successful()) {
-                    Log::info('✅ Requisição HTTP bem-sucedida', [
-                        'status' => $statusCode,
-                        'size' => strlen($response->body())
-                    ]);
-                    $result = $response->body();
-                    $logData['response_preview'] = substr($result, 0, 1000); // Limitar tamanho
-                } else {
-                    $apiError = 'Erro HTTP: ' . $statusCode . ' - ' . $response->body();
-                    $logData['error_message'] = substr($apiError, 0, 1000);
-                    $logData['response_preview'] = substr($response->body(), 0, 1000);
-                    Log::error('❗ Erro na requisição HTTP', ['status' => $statusCode, 'body' => $response->body()]);
-                }
-                
-            } catch (\Exception $e) {
-                $apiError = 'Exceção na chamada HTTP: ' . $e->getMessage();
-                $logData['error_message'] = substr($apiError, 0, 1000);
-                Log::error('❌ ERRO AO CHAMAR API GEMINI', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
-            }
-
-            // **** REGISTRAR RESULTADO FINAL NO LOG (APÓS A CHAMADA) ****
-            $logData['duration_ms'] = (int) round((microtime(true) - $startTime) * 1000);
-            AiCallLog::create($logData);
-
-            // Se houve erro na API, agora retorna null
-            if ($apiError) {
-                return null;
-            }
-            if (!$result) {
-                 Log::error('Nenhum resultado retornado da API ' . ($apiConfig->provider ?? 'IA') . ' (pós-log)');
-                 return null;
-            }
-
-            // Processar a resposta
-            $responseData = json_decode($result, true);
-            if (!$responseData || !isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
-                Log::error('Formato de resposta Gemini inválido', [
-                    'response' => substr($result, 0, 500) . '... (truncado)'
-                ]);
-                return null;
-            }
-
-            return $this->extractGeminiJsonOutput($responseData['candidates'][0]['content']['parts'][0]['text'], $transactions);
-            
-        } catch (\Exception $e) {
-            Log::error('❌ Exceção geral no método analyzeTransactionsWithGemini', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            $logData['error_message'] = substr($e->getMessage(), 0, 1000);
-            $logData['duration_ms'] = isset($logData['duration_ms']) ? $logData['duration_ms'] : (int) round((microtime(true) - $startTime) * 1000);
-            // Tenta salvar o log mesmo com a exceção geral
-            try { AiCallLog::create($logData); } catch (\Exception $logEx) { Log::error('Falha ao salvar log de erro da IA', ['log_exception' => $logEx->getMessage()]); }
-            return null;
-        }
-    }
-
-    /**
-     * Analisa transações usando o OpenRouter
-     * 
-     * @param array $transactions Transações a serem analisadas
-     * @param object $config Configuração da IA
-     * @return array Transações categorizadas
-     */
-    private function analyzeTransactionsWithOpenRouter($transactions, $config)
-    {
-        $startTime = microtime(true);
-        Log::info('🔍 Iniciando análise com OpenRouter...');
+        Log::info('🔍 Iniciando análise com Google Gemini...');
         
         try {
-            $requestUrl = !empty($config->endpoint) ? rtrim($config->endpoint, '/') : 'https://openrouter.ai/api/v1/chat/completions';
+            // Criar uma instância do AIService especificando que é para importação
+            $aiService = new AIService('gemini', $apiConfig->model, $apiConfig->api_key, 'import');
             
-            // Usar o modelo diretamente sem verificar se é personalizado
-            $modelName = $config->model ?? 'anthropic/claude-3-haiku';
+            // Processar transações em lotes para evitar exceder o limite de tokens
+            $batchSize = 30; // Tamanho máximo para evitar exceder limite de tokens
+            $batches = array_chunk($transactions, $batchSize);
             
-            // Prepara os dados para a requisição
-            $requestData = [
-                'model' => $modelName,
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => $config->system_prompt ?? 'Você é um assistente especializado em análise financeira, categorização de transações bancárias.'
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => $this->prepareOpenRouterPrompt($transactions)
-                    ]
-                ],
-                'temperature' => 0.2,
-                'max_tokens' => 4000
-            ];
+            $allResults = [];
             
-            Log::debug('🔍 Detalhes da requisição para OpenRouter', [
-                'model' => $requestData['model'],
-                'endpoint' => $requestUrl,
-                'temperature' => $requestData['temperature'],
-                'max_tokens' => $requestData['max_tokens'],
-                'system_prompt_length' => strlen($requestData['messages'][0]['content']),
-                'system_prompt_preview' => substr($requestData['messages'][0]['content'], 0, 100) . '...',
-                'user_prompt_preview' => substr($requestData['messages'][1]['content'], 0, 100) . '...'
-            ]);
-            
-            // Obtém a chave da API do objeto config, 
-            // Usando nome correto do campo conforme o banco de dados
-            $apiKey = $config->api_key ?? '';
-            
-            // Adicionar log para debugar o valor da chave
-            Log::debug('🔑 Verificando chave API: ' . (!empty($apiKey) ? 'Encontrada' : 'Não encontrada') . ', primeiros caracteres: ' . substr($apiKey, 0, 5) . '...');
-            
-            if (empty($apiKey)) {
-                Log::error('❌ API Key para OpenRouter não foi encontrada. Usando mock.', [
-                    'config_dump' => print_r((array)$config, true)
-                ]);
-                $endTime = microtime(true);
-                $executionTime = round($endTime - $startTime, 2);
-                Log::info('⏱️ Tempo de execução (mock): ' . $executionTime . 's');
-                return $this->getMockAIResponse($transactions);
-            }
-            
-            $response = Http::timeout(60)->withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => config('app.url'), // Origem da requisição
-                'X-Title' => 'Onlifin - Análise Financeira' // Nome do aplicativo
-            ])->post($requestUrl, $requestData);
-            
-            if ($response->failed()) {
-                Log::error('❌ Falha na requisição para OpenRouter', [
-                    'status_code' => $response->status(),
-                    'reason' => $response->reason(),
-                    'body' => $response->body()
-                ]);
-                $endTime = microtime(true);
-                $executionTime = round($endTime - $startTime, 2);
-                Log::info('⏱️ Tempo de execução (falha): ' . $executionTime . 's');
-                return $this->getMockAIResponse($transactions);
-            }
-            
-            $responseData = $response->json();
-            $fullContent = $responseData['choices'][0]['message']['content'] ?? '';
-            Log::debug('🔍 Resposta recebida do OpenRouter com sucesso', [
-                'content_length' => strlen($fullContent),
-                'usage' => $responseData['usage'] ?? null,
-                'provider' => $responseData['provider'] ?? 'desconhecido',
-                'model_usado' => $responseData['model'] ?? 'desconhecido'
-            ]);
-            
-            if (empty($fullContent)) {
-                Log::error('❌ Resposta vazia do OpenRouter');
-                $endTime = microtime(true);
-                $executionTime = round($endTime - $startTime, 2);
-                Log::info('⏱️ Tempo de execução (resposta vazia): ' . $executionTime . 's');
-                return $this->getMockAIResponse($transactions);
-            }
-            
-            // Processar saída
-            $categorizedTransactions = $this->extractOpenRouterJsonOutput($fullContent, $transactions);
-            
-            // Verificar se o resultado está no formato esperado (com transactions)
-            if (empty($categorizedTransactions)) {
-                Log::error('❌ Falha ao extrair JSON da resposta do OpenRouter');
-                $endTime = microtime(true);
-                $executionTime = round($endTime - $startTime, 2);
-                Log::info('⏱️ Tempo de execução (falha no JSON): ' . $executionTime . 's');
-                return $this->getMockAIResponse($transactions);
-            }
-            
-            // Garantir que o resultado está no formato {'transactions': [...]}
-            if (!isset($categorizedTransactions['transactions'])) {
-                // Se já é um array de transações, envolva-o no formato esperado
-                if (is_array($categorizedTransactions) && !empty($categorizedTransactions) && isset($categorizedTransactions[0])) {
-                    $categorizedTransactions = ['transactions' => $categorizedTransactions];
-                    Log::info('⚠️ Convertido array de transações para formato {"transactions": [...]}');
-                } else {
-                    // Se o formato não for reconhecido, use o mock
-                    Log::error('❌ Formato de resposta do OpenRouter não compatível com o esperado');
-                    return $this->getMockAIResponse($transactions);
-                }
-            }
-            
-            $endTime = microtime(true);
-            $executionTime = round($endTime - $startTime, 2);
-            
-            Log::info('⏱️ Análise com OpenRouter concluída com sucesso', [
-                'tempo_execucao' => $executionTime . 's',
-                'total_transacoes_analisadas' => count($categorizedTransactions['transactions']),
-                'provider' => $responseData['provider'] ?? 'desconhecido',
-                'model' => $responseData['model'] ?? 'desconhecido'
-            ]);
-            
-            // Verificar se o formato da resposta é consistente com o que analyzeTransactionsWithAI espera
-            Log::debug('DEBUG: Resultado final OpenRouter', ['format' => json_encode(array_keys($categorizedTransactions))]);
-            
-            return $categorizedTransactions;
-            
-        } catch (\Exception $e) {
-            Log::error('❌ Exceção durante análise com OpenRouter', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            $endTime = microtime(true);
-            $executionTime = round($endTime - $startTime, 2);
-            Log::info('⏱️ Tempo de execução (exceção): ' . $executionTime . 's');
-            return $this->getMockAIResponse($transactions);
-        }
-    }
-    
-    /**
-     * Prepara o prompt para o OpenRouter
-     * 
-     * @param array $transactions Transações a serem analisadas
-     * @return string Prompt formatado
-     */
-    private function prepareOpenRouterPrompt($transactions)
-    {
-        $transactionsJson = json_encode(array_slice($transactions, 0, 100), JSON_PRETTY_PRINT);
-        
-        // Separar cada transação em linhas para análise individual
-        $transactionsFormatted = [];
-        foreach ($transactions as $index => $transaction) {
-            $transactionsFormatted[] = sprintf(
-                "Transação %d: %s - R$ %.2f - %s", 
-                $index + 1,
-                $transaction['description'],
-                $transaction['amount'],
-                $transaction['type'] == 'income' ? 'Receita' : 'Despesa'
-            );
-        }
-        
-        $transactionsText = implode("\n\n", $transactionsFormatted);
-        
-        // Prompt unificado que funciona melhor com as instruções do system prompt
-        return <<<EOT
-Analise as seguintes transações bancárias e aplique as instruções do prompt do sistema. 
-Para cada transação, extraia as informações solicitadas seguindo o formato especificado.
-
-TRANSAÇÕES PARA ANÁLISE:
-$transactionsText
-
-Para cada transação, retorne um array JSON seguindo exatamente este formato:
-[
-  {
-    "id": 0,
-    "type": "expense ou income",
-    "category_id": null,
-    "suggested_category": "Nome da categoria sugerida"
-  },
-  ...
-]
-
-Mantenha o formato JSON exato conforme solicitado, apenas com os campos acima.
-EOT;
-    }
-    
-    /**
-     * Extrai o JSON da saída do OpenRouter
-     * 
-     * @param string $output Saída da IA
-     * @param array $transactions Transações originais
-     * @return array Transações categorizadas
-     */
-    private function extractOpenRouterJsonOutput($output, $transactions)
-    {
-        // Logar a resposta bruta para análise
-        Log::debug('Resposta bruta do OpenRouter', [
-            'output_preview' => substr($output, 0, 1000) . (strlen($output) > 1000 ? '...' : '')
-        ]);
-        
-        // Primeiro, verificar se a resposta contém dados estruturados como "Nome:", "Categoria:", etc.
-        if (preg_match_all('/Nome:\s*([^\n]+)\s*Categoria:\s*([^\n]+)\s*Observações:\s*([^\n]+)/i', $output, $matches, PREG_SET_ORDER)) {
-            Log::info('✅ Detectado formato estruturado na resposta da IA');
-            
-            // Transformar os dados estruturados em formato JSON
-            $result = [];
-            foreach ($matches as $index => $match) {
-                if ($index >= count($transactions)) break;
+            foreach ($batches as $batchIndex => $batch) {
+                Log::info("🔢 Processando lote {$batchIndex} com " . count($batch) . " transações");
                 
-                $nome = trim($match[1]);
-                $categoria = trim($match[2]);
-                $observacoes = trim($match[3]);
+                // Preparar os dados para o prompt
+                $prompt = $this->prepareGeminiPrompt($batch);
                 
-                // Determinar o tipo com base no conteúdo da categoria
-                $tipo = 'expense'; // Padrão é despesa
-                if (stripos($categoria, 'receita') !== false || 
-                    stripos($categoria, 'salário') !== false || 
-                    stripos($categoria, 'transferência recebida') !== false ||
-                    stripos($categoria, 'recebimento') !== false) {
-                    $tipo = 'income';
-                }
+                // Fazer a chamada à API
+                $result = $aiService->analyze($prompt);
                 
-                $result[] = [
-                    'id' => $index,
-                    'type' => $tipo,
-                    'category_id' => null,
-                    'suggested_category' => $categoria,
-                    'name' => $nome,
-                    'notes' => $observacoes
-                ];
-            }
-            
-            // Se conseguimos extrair pelo menos algumas transações
-            if (!empty($result)) {
-                return ['transactions' => $result];
-            }
-        }
-        
-        // Se não conseguiu extrair no formato estruturado, continua com a extração de JSON
-        
-        // Tentar extrair apenas o JSON da resposta
-        $pattern = '/\[\s*\{.*?\}\s*\]/s';
-        if (preg_match($pattern, $output, $matches)) {
-            $jsonStr = $matches[0];
-            Log::debug('JSON extraído com regex do OpenRouter', [
-                'json_preview' => substr($jsonStr, 0, 500) . (strlen($jsonStr) > 500 ? '...' : '')
-            ]);
-        } else {
-            // Tentar usar a resposta completa como JSON
-            $jsonStr = $output;
-            Log::debug('Usando resposta completa do OpenRouter como JSON');
-        }
-        
-        // Limpar caracteres problemáticos e tentar decodificar
-        $jsonStr = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonStr);
-        
-        // Verificar se a resposta começa com ``` ou termina com ```
-        $jsonStr = preg_replace('/^```(?:json)?\s*|\s*```$/s', '', $jsonStr);
-        
-        $decoded = json_decode($jsonStr, true);
-        
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            Log::error('❌ Erro ao decodificar JSON da resposta do OpenRouter', [
-                'error' => json_last_error_msg(),
-                'json_extract' => substr($jsonStr, 0, 500) . (strlen($jsonStr) > 500 ? '...' : '')
-            ]);
-            
-            // Tentar processar formatos alternativos
-            // Algumas vezes, o modelo pode retornar um objeto com uma propriedade "transactions"
-            if (strpos($jsonStr, '"transactions"') !== false) {
-                $pattern = '/"transactions"\s*:\s*(\[.*?\])/s';
-                if (preg_match($pattern, $jsonStr, $matches)) {
-                    $transactionsJson = $matches[1];
-                    $decoded = json_decode($transactionsJson, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        Log::info('✅ Extraído com sucesso o array de transactions de um objeto JSON');
-                        return ['transactions' => $decoded];
+                // Extrair os resultados
+                $batchResults = $this->extractGeminiJsonOutput($result, $batch);
+                
+                // Mesclar com resultados anteriores
+                if (is_array($batchResults)) {
+                    if (isset($batchResults['transactions']) && is_array($batchResults['transactions'])) {
+                        $allResults = array_merge($allResults, $batchResults['transactions']);
+                    } else {
+                        $allResults = array_merge($allResults, $batchResults);
                     }
                 }
             }
             
-            // Se ainda não conseguiu decodificar, converter o resultado para o formato esperado
-            return $this->getMockAIResponse($transactions);
-        }
-        
-        // Verificar se o resultado já está no formato esperado (array com chave 'transactions')
-        if (isset($decoded['transactions']) && is_array($decoded['transactions'])) {
-            Log::info('✅ Resultado do OpenRouter já está no formato esperado');
-            return $decoded;
-        }
-        
-        // Verificar se temos um array simples de transações
-        if (is_array($decoded) && !empty($decoded) && !isset($decoded['transactions'])) {
-            // Verificar se o primeiro elemento tem as chaves esperadas
-            $firstItem = reset($decoded);
-            if (is_array($firstItem) && (
-                isset($firstItem['id']) || 
-                isset($firstItem['type']) || 
-                isset($firstItem['suggested_category'])
-            )) {
-                Log::info('✅ Convertendo array de transações para o formato esperado');
-                return ['transactions' => $decoded];
-            }
-        }
-        
-        // Se chegou aqui, o formato não é reconhecido
-        Log::error('❌ Formato de resposta do OpenRouter não reconhecido');
-        return $this->getMockAIResponse($transactions);
-    }
-    
-    /**
-     * Extrai JSON do output do Gemini
-     * @param string $output
-     * @param array $transactions
-     * @return array
-     */
-    private function extractGeminiJsonOutput($output, $transactions)
-    {
-        // Try to extract just the JSON part
-        $pattern = '/\[\s*\{.*?\}\s*\]/s';
-        if (preg_match($pattern, $output, $matches)) {
-            $jsonStr = $matches[0];
-        } else {
-            $jsonStr = $output; // Try with the full response
-        }
-
-        // Clean up and decode
-        $jsonStr = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonStr);
-        $decoded = json_decode($jsonStr, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            Log::error('Error decoding JSON from Gemini: ' . json_last_error_msg(), [
-                'json_extract' => substr($jsonStr, 0, 500) . (strlen($jsonStr) > 500 ? '...' : '')
-            ]);
-            return [];
-        }
-
-        // Ensure we have categories for all transactions
-        if (empty($decoded) || !is_array($decoded)) {
-            Log::error('Invalid response format from Gemini (not an array)');
-            return [];
-        }
-
-        // If we have fewer categories than transactions, fill with mock
-        if (count($decoded) < count($transactions)) {
-            Log::warning('Gemini returned fewer categories than transactions', [
-                'expected' => count($transactions),
-                'received' => count($decoded)
+            $endTime = microtime(true);
+            $executionTime = round($endTime - $startTime, 2);
+            
+            Log::info("✅ Análise com Gemini concluída em {$executionTime}s", [
+                'transações_analisadas' => count($allResults)
             ]);
             
-            // Fill the rest with default categories
-            $mockResponse = $this->getMockAIResponse(array_slice($transactions, count($decoded)));
-            $decoded = array_merge($decoded, $mockResponse);
+            // Garantir que o resultado está no formato esperado
+            return ['transactions' => $allResults];
+            
+        } catch (\Exception $e) {
+            // Em caso de erro, retornar a resposta simulada
+            Log::error('❌ Erro ao processar com Gemini: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            $endTime = microtime(true);
+            $executionTime = round($endTime - $startTime, 2);
+            Log::info("⏱️ Tempo de execução (falha): {$executionTime}s");
+            
+            return $this->getMockAIResponse($transactions);
         }
-
-        return $decoded;
     }
 
     /**
@@ -1386,7 +1034,7 @@ EOT;
     /**
      * Analisa as transações e sugere categorias
      */
-    private function analyzeTransactions($transactions)
+    public function analyzeTransactions($transactions)
     {
         $analysis = [
             'income' => [],
@@ -1744,6 +1392,8 @@ EOT;
                     $transaction = new Transaction();
                     $transaction->user_id = auth()->id();
                     $transaction->account_id = $account->id;
+                    // Associa a transação à empresa atual do usuário
+                    $transaction->company_id = auth()->user()->currentCompany?->id;
                     $transaction->date = $transactionData['date'];
                     $transaction->description = $transactionData['description'];
                     $transaction->amount = $amountCents; 
@@ -1865,7 +1515,7 @@ EOT;
      * @param array|null $aiAnalysisResult Resultado da análise da IA
      * @return array Transações com categorias aplicadas
      */
-    private function applyCategorizationToTransactions(array $transactions, ?array $aiAnalysisResult): array
+    public function applyCategorizationToTransactions(array $transactions, ?array $aiAnalysisResult): array
     {
         if (empty($aiAnalysisResult) || !isset($aiAnalysisResult['transactions']) || !is_array($aiAnalysisResult['transactions'])) {
             Log::info('Nenhum resultado de análise IA para aplicar.');
@@ -1900,19 +1550,25 @@ EOT;
                 }
                 
                 // Aplicar category_id sugerido pela IA (pode ser null)
-                 $transaction['category_id'] = $aiData['category_id'] ?? null;
-                 
-                 // Aplicar suggested_category (nome para nova categoria)
-                 $transaction['suggested_category'] = $aiData['suggested_category'] ?? null;
+                $transaction['category_id'] = $aiData['category_id'] ?? null;
 
-                 // Logar aplicação
-                 if ($transaction['category_id'] || $transaction['suggested_category']) {
-                     Log::debug('Categoria IA aplicada', [
-                         'index' => $index, 
-                         'category_id' => $transaction['category_id'], 
-                         'suggested' => $transaction['suggested_category']
-                     ]);
-                 }
+                // Aplicar suggested_category (nome para nova categoria)
+                $transaction['suggested_category'] = $aiData['suggested_category'] ?? null;
+
+                // Se não houver category_id mas houver suggested_category, marque como nova categoria
+                if ($transaction['category_id'] === null && !empty($transaction['suggested_category'])) {
+                    // Prefixo 'new_' indicará criação de nova categoria no saveTransactions
+                    $transaction['category_id'] = 'new_' . str_replace(' ', '_', $transaction['suggested_category']);
+                }
+
+                // Logar aplicação
+                if ($transaction['category_id'] || $transaction['suggested_category']) {
+                    Log::debug('Categoria IA aplicada', [
+                        'index' => $index, 
+                        'category_id' => $transaction['category_id'], 
+                        'suggested' => $transaction['suggested_category']
+                    ]);
+                }
             } else {
                  Log::warning('Resultado da IA não encontrado para transação', ['index' => $index]);
                  // Manter transação sem categoria ou com tipo original
@@ -1945,5 +1601,211 @@ EOT;
         ]);
         Log::info('Resposta da API Gemini: ' . $response->body());
         return response()->json(['status' => 'Test completed', 'response' => $response->json()]);
+    }
+
+    /**
+     * Analisa transações usando o OpenRouter
+     * 
+     * @param array $transactions Transações a serem analisadas
+     * @param object $config Configuração da IA
+     * @return array Transações categorizadas
+     */
+    private function analyzeTransactionsWithOpenRouter($transactions, $config)
+    {
+        $startTime = microtime(true);
+        Log::info('🔍 Iniciando análise com OpenRouter...');
+        
+        try {
+            $requestUrl = !empty($config->endpoint) ? rtrim($config->endpoint, '/') : 'https://openrouter.ai/api/v1/chat/completions';
+            
+            // Usar o modelo diretamente sem verificar se é personalizado
+            $modelName = $config->model ?? 'anthropic/claude-3-haiku';
+            
+            // Criar uma instância do AIService especificando que é para importação
+            $aiService = new AIService('openrouter', $modelName, $config->api_key, 'import');
+            
+            // Processar transações em lotes para evitar exceder o limite de tokens
+            $batchSize = 20; // Tamanho máximo para evitar exceder limite de tokens
+            $batches = array_chunk($transactions, $batchSize);
+            
+            $allResults = [];
+            
+            foreach ($batches as $batchIndex => $batch) {
+                Log::info("🔢 Processando lote {$batchIndex} com " . count($batch) . " transações");
+                
+                // Preparar os dados para o prompt
+                $prompt = $this->prepareOpenRouterPrompt($batch);
+                
+                // Fazer a chamada à API
+                $result = $aiService->analyze($prompt);
+                
+                // Extrair os resultados
+                $batchResults = $this->extractOpenRouterJsonOutput($result, $batch);
+                
+                // Mesclar com resultados anteriores
+                if (is_array($batchResults)) {
+                    if (isset($batchResults['transactions']) && is_array($batchResults['transactions'])) {
+                        $allResults = array_merge($allResults, $batchResults['transactions']);
+                    } else {
+                        $allResults = array_merge($allResults, $batchResults);
+                    }
+                }
+            }
+            
+            $endTime = microtime(true);
+            $executionTime = round($endTime - $startTime, 2);
+            
+            Log::info("✅ Análise com OpenRouter concluída em {$executionTime}s", [
+                'transações_analisadas' => count($allResults),
+                'modelo_usado' => $modelName
+            ]);
+            
+            // Garantir que o resultado está no formato esperado
+            return ['transactions' => $allResults];
+            
+        } catch (\Exception $e) {
+            // Em caso de erro, retornar a resposta simulada
+            Log::error('❌ Erro ao processar com OpenRouter: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            $endTime = microtime(true);
+            $executionTime = round($endTime - $startTime, 2);
+            Log::info("⏱️ Tempo de execução (falha): {$executionTime}s");
+            
+            return $this->getMockAIResponse($transactions);
+        }
+    }
+    
+    /**
+     * Prepara o prompt para o OpenRouter
+     * 
+     * @param array $transactions Transações a serem analisadas
+     * @return string Prompt formatado
+     */
+    private function prepareOpenRouterPrompt($transactions)
+    {
+        // Obter categorias do usuário para treinamento da IA
+        $categories = Category::where('user_id', auth()->id())->orderBy('name')->get();
+        $categoriesFormatted = [];
+        foreach ($categories as $category) {
+            $categoriesFormatted[] = [
+                'id' => $category->id,
+                'name' => $category->name,
+                'type' => $category->type,
+                'icon' => $category->icon ?? ''
+            ];
+        }
+        
+        // Separar categorias por tipo
+        $categoriesByType = [
+            'income' => [],
+            'expense' => []
+        ];
+        foreach ($categoriesFormatted as $category) {
+            $type = $category['type'] == 'income' ? 'income' : 'expense';
+            $categoriesByType[$type][] = $category;
+        }
+        
+        // Preparar transações para o prompt
+        $transactionDescriptions = [];
+        foreach ($transactions as $index => $transaction) {
+            $transactionDescriptions[] = [
+                'id' => $index,
+                'date' => $transaction['date'] ?? '',
+                'description' => $transaction['description'] ?? '',
+                'amount' => $transaction['amount'] ?? 0,
+                'type' => $transaction['type'] ?? ''
+            ];
+        }
+        
+        // Converter para JSON
+        $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $categoriesJson = json_encode($categoriesFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        
+        // Construir o prompt
+        return <<<EOT
+Você é uma IA especializada em categorização de transações financeiras.
+
+Analise as seguintes transações e sugira a categoria mais adequada para cada uma com base nas categorias disponíveis do usuário.
+
+TRANSAÇÕES:
+$transactionsJson
+
+CATEGORIAS DISPONÍVEIS:
+$categoriesJson
+
+Responda APENAS com um array JSON contendo objetos com:
+- id: ID da transação
+- type: Tipo da transação (income/expense)
+- category_id: ID da categoria sugerida (null se não encontrar correspondência)
+- suggested_category: Nome da categoria sugerida
+
+Formato da resposta:
+[
+  {
+    "id": 0,
+    "type": "expense",
+    "category_id": 5,
+    "suggested_category": "Alimentação"
+  },
+  ...
+]
+
+NÃO inclua nenhum texto explicativo, apenas o array JSON.
+EOT;
+    }
+    
+    /**
+     * Extrai o JSON da saída do OpenRouter
+     * 
+     * @param string $output Saída da IA
+     * @param array $transactions Transações originais
+     * @return array Transações categorizadas
+     */
+    private function extractOpenRouterJsonOutput($output, $transactions)
+    {
+        // Tentar extrair apenas o JSON da resposta
+        $pattern = '/\[\s*\{.*?\}\s*\]/s';
+        if (preg_match($pattern, $output, $matches)) {
+            $jsonStr = $matches[0];
+        } else {
+            // Tentar usar a resposta completa como JSON
+            $jsonStr = $output;
+        }
+        
+        // Limpar caracteres problemáticos e tentar decodificar
+        $jsonStr = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonStr);
+        $decoded = json_decode($jsonStr, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('❌ Erro ao decodificar JSON da resposta do OpenRouter', [
+                'error' => json_last_error_msg(),
+                'json_extract' => substr($jsonStr, 0, 500) . (strlen($jsonStr) > 500 ? '...' : '')
+            ]);
+            return [];
+        }
+        
+        // Validar e garantir que temos categorias para todas as transações
+        if (empty($decoded) || !is_array($decoded)) {
+            Log::error('❌ Formato de resposta do OpenRouter inválido (não é array)');
+            return [];
+        }
+        
+        // Se temos menos categorias que transações, completar com mock
+        if (count($decoded) < count($transactions)) {
+            Log::warning('⚠️ OpenRouter retornou menos categorias que transações', [
+                'expected' => count($transactions),
+                'received' => count($decoded)
+            ]);
+            
+            // Completar o restante com categorias padrão
+            $mockResponse = $this->getMockAIResponse(array_slice($transactions, count($decoded)));
+            if (isset($mockResponse['transactions']) && is_array($mockResponse['transactions'])) {
+                $decoded = array_merge($decoded, $mockResponse['transactions']);
+            }
+        }
+        
+        return ['transactions' => $decoded];
     }
 }

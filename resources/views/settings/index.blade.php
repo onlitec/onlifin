@@ -26,6 +26,88 @@
                 </div>
             </div>
 
+            <!-- Empresas - Visível para todos -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <i class="ri-building-line text-2xl text-blue-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Empresas</h3>
+                                <p class="text-sm text-gray-500">Gerenciar empresas</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('companies.index') }}" class="btn btn-secondary w-full">
+                        Gerenciar Empresas
+                    </a>
+                </div>
+            </div>
+
+            <!-- Relatórios - Visível para todos -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                                <i class="ri-file-chart-line text-2xl text-green-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Relatórios</h3>
+                                <p class="text-sm text-gray-500">Configurar relatórios</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.reports') }}" class="btn btn-secondary w-full">
+                        Configurar Relatórios
+                    </a>
+                </div>
+            </div>
+
+            <!-- Inteligência Artificial - Visível para todos -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                <i class="ri-brain-line text-2xl text-indigo-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Inteligência Artificial</h3>
+                                <p class="text-sm text-gray-500">Configurar integrações com IAs</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('openrouter-config.index') }}" class="btn btn-secondary w-full">
+                        Configurar IAs
+                    </a>
+                </div>
+            </div>
+
+            @if(auth()->user()->currentCompany && auth()->user()->currentCompany->profile->chatbot_enabled)
+            <!-- Chatbot Financeiro -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center">
+                                <i class="ri-chat-3-line text-2xl text-teal-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Chatbot Financeiro</h3>
+                                <p class="text-sm text-gray-500">Converse com o assistente financeiro</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('chatbot.index') }}" class="btn btn-secondary w-full">
+                        Abrir Chatbot
+                    </a>
+                </div>
+            </div>
+            @endif
+
             @if($isAdmin)
             <!-- Usuários - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
@@ -63,26 +145,6 @@
                     </div>
                     <a href="{{ route('settings.roles') }}" class="btn btn-secondary w-full">
                         Gerenciar Perfis
-                    </a>
-                </div>
-            </div>
-
-            <!-- Relatórios - Apenas para Administradores -->
-            <div class="card hover:shadow-md transition-shadow">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                                <i class="ri-file-chart-line text-2xl text-green-600"></i>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-medium text-gray-900">Relatórios</h3>
-                                <p class="text-sm text-gray-500">Configurar relatórios</p>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="{{ route('settings.reports') }}" class="btn btn-secondary w-full">
-                        Configurar Relatórios
                     </a>
                 </div>
             </div>
@@ -143,26 +205,6 @@
                     </div>
                     <a href="{{ route('settings.appearance') }}" class="btn btn-secondary w-full">
                         Aparência
-                    </a>
-                </div>
-            </div>
-
-            <!-- Inteligência Artificial -->
-            <div class="card hover:shadow-md transition-shadow">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
-                                <i class="ri-brain-line text-2xl text-indigo-600"></i>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-medium text-gray-900">Inteligência Artificial</h3>
-                                <p class="text-sm text-gray-500">Configurar integrações com IAs</p>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="{{ route('openrouter-config.index') }}" class="btn btn-secondary w-full">
-                        Configurar IAs
                     </a>
                 </div>
             </div>

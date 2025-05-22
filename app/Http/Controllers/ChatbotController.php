@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * ATENÇÃO: CORREÇÃO CRÍTICA no ChatbotController.
+ * NÃO ALTERAR ESTE CÓDIGO SEM AUTORIZAÇÃO EXPLÍCITA.
+ */
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -8,6 +13,9 @@ use App\Services\AIConfigService;
 use Illuminate\Support\Facades\Log;
 use App\Services\FinancialDataService;
 use Illuminate\Support\Facades\Auth;
+use App\Services\StatementImportService;
+use Illuminate\Http\UploadedFile;
+use App\Http\Controllers\TempStatementImportController;
 
 class ChatbotController extends Controller
 {
@@ -31,7 +39,11 @@ class ChatbotController extends Controller
      */
     public function index()
     {
-        return view('chatbot.index');
+        $config = $this->aiConfigService->getAIConfig();
+        // Obter contas bancárias ativas do usuário
+        $user = Auth::user();
+        $accounts = $user->accounts()->where('active', true)->orderBy('name')->get();
+        return view('chatbot.index', compact('config', 'accounts'));
     }
 
     /**
@@ -57,7 +69,7 @@ class ChatbotController extends Controller
 
         // Verificar se o usuário tem empresa associada
         $user = Auth::user();
-        if (!$user || !$user->company) {
+        if (!$user || !$user->currentCompany) {
             Log::warning('Usuário não tem empresa associada', ['user_id' => $user?->id]);
             return response()->json([
                 'error' => 'Você precisa ter uma empresa associada para usar o chatbot financeiro. Por favor, configure sua empresa primeiro.'
@@ -65,90 +77,51 @@ class ChatbotController extends Controller
         }
 
         try {
-            // Determinar o endpoint baseado no provedor
-            $endpoint = $this->getEndpoint($config['provider']);
-            Log::info('Endpoint da IA:', ['endpoint' => $endpoint]);
-            
-            // Preparar os headers baseados no provedor
-            $headers = $this->getHeaders($config['provider'], $config['api_key']);
-            Log::info('Headers da requisição:', ['headers' => array_keys($headers)]);
-            
-            // Preparar o payload baseado no provedor
-            $payload = $this->getPayload($config['provider'], $config['model'], $config['system_prompt'], $request->message);
-            Log::info('Payload da requisição:', ['payload' => $payload]);
-            
-            $response = Http::withHeaders($headers)
-                ->timeout(30)
-                ->post($endpoint, $payload);
-
-            Log::info('Resposta bruta da IA:', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-                'headers' => $response->headers(),
-                'endpoint' => $endpoint,
-                'payload' => $payload
-            ]);
-
-            if ($response->successful()) {
-                $responseData = $response->json();
-                Log::info('Resposta JSON da IA:', ['response' => $responseData]);
-                
-                // Verificar se há erro de rate limit
-                if (isset($responseData['error']) || isset($responseData['response']['error'])) {
-                    $error = $responseData['error'] ?? $responseData['response']['error'];
-                    if ($error['code'] === 429 || 
-                        (isset($error['metadata']['raw']) && strpos($error['metadata']['raw'], 'rate-limited') !== false)) {
-                        Log::warning('Rate limit atingido no OpenRouter:', $error);
-                        
-                        // Se já tentamos todas as opções, retorna erro amigável
-                        if ($this->retryCount >= $this->maxRetries) {
-                            $this->retryCount = 0;
-                            $this->lastRateLimitedModel = null;
-                            return response()->json([
-                                'error' => 'O serviço de IA está temporariamente indisponível devido ao limite de requisições diárias. Por favor, tente novamente amanhã ou entre em contato com o suporte para aumentar o limite.'
-                            ], 429);
-                        }
-                        
-                        // Incrementa contador de tentativas
-                        $this->retryCount++;
-                        
-                        // Armazena o modelo que atingiu o rate limit
-                        $this->lastRateLimitedModel = $payload['model'];
-                        
-                        // Tenta novamente com o próximo modelo
-                        return $this->ask($request);
+            // Tentar cada provedor de IA em ordem de fallback
+            $configs = $this->aiConfigService->getAllAIConfigs();
+            $errorMessages = [];
+            foreach ($configs as $cfg) {
+                Log::info('Tentando provedor de IA:', $cfg);
+                // Determinar endpoint e headers
+                $endpoint = $this->getEndpoint($cfg['provider'], $cfg['model']);
+                $headers  = $this->getHeaders($cfg['provider'], $cfg['api_key']);
+                Log::info('Endpoint da IA:', ['endpoint' => $endpoint]);
+                Log::info('Headers da requisição:', ['provider' => $cfg['provider'], 'headers' => array_keys($headers)]);
+                // Preparar payload para chat usando prompt configurado
+                $aiService = new \App\Services\AIService($cfg['provider'], $cfg['model'], $cfg['api_key'], 'chat');
+                if (!empty($cfg['system_prompt'])) {
+                    $aiService->setSystemPrompt($cfg['system_prompt']);
+                }
+                $chatPrompt = $aiService->getSystemPrompt();
+                $payload    = $this->getPayload($cfg['provider'], $cfg['model'], $chatPrompt, $request->message);
+                Log::info('Payload da requisição:', ['provider' => $cfg['provider'], 'payload' => $payload]);
+                // Enviar requisição
+                $response = Http::withHeaders($headers)
+                    ->timeout(30)
+                    ->post($endpoint, $payload);
+                // Avaliar resposta
+                if ($response->successful()) {
+                    $responseData = $response->json();
+                    $answer = $this->extractAnswer($cfg['provider'], $responseData);
+                    if ($answer) {
+                        return response()->json(['answer' => $answer]);
                     }
+                    $errorMessages[] = 'Resposta inválida de ' . $cfg['provider'];
+                    continue;
                 }
-                
-                // Reseta contadores em caso de sucesso
-                $this->retryCount = 0;
-                $this->lastRateLimitedModel = null;
-                
-                $answer = $this->extractAnswer($config['provider'], $responseData);
-                
-                if ($answer) {
-                    return response()->json(['answer' => $answer]);
-                } else {
-                    Log::error('Formato de resposta inválido:', [
-                        'provider' => $config['provider'],
-                        'response' => $responseData
-                    ]);
-                    return response()->json([
-                        'error' => 'Não foi possível processar a resposta da IA. Por favor, tente novamente.'
-                    ], 500);
+                $status = $response->status();
+                if ($status === 429) {
+                    Log::warning('Rate limit atingido em ' . $cfg['provider'], ['status' => $status]);
+                    $errorMessages[] = 'Rate limit em ' . $cfg['provider'];
+                    continue;
                 }
-            } else {
-                Log::error('Erro na resposta da IA:', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'headers' => $response->headers(),
-                    'endpoint' => $endpoint,
-                    'payload' => $payload
-                ]);
-                return response()->json([
-                    'error' => 'Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.'
-                ], 500);
+                $errorMessages[] = 'Erro ' . $status . ' em ' . $cfg['provider'];
+                continue;
             }
+            // Nenhum provedor funcionou
+            return response()->json([
+                'error' => 'Nenhum provedor de IA disponível: ' . implode('; ', $errorMessages)
+            ], 503);
         } catch (\Exception $e) {
             Log::error('Exceção ao processar pergunta do chatbot:', [
                 'error' => $e->getMessage(),
@@ -165,14 +138,14 @@ class ChatbotController extends Controller
     /**
      * Retorna o endpoint da API baseado no provedor
      */
-    private function getEndpoint($provider)
+    private function getEndpoint($provider, $model)
     {
         switch (strtolower($provider)) {
             case 'openrouter':
                 return 'https://openrouter.ai/api/v1/chat/completions';
             case 'google':
             case 'gemini':
-                return 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
+                return 'https://generativelanguage.googleapis.com/v1/models/' . $model . ':generateContent';
             case 'openai':
                 return 'https://api.openai.com/v1/chat/completions';
             case 'anthropic':
@@ -218,6 +191,36 @@ class ChatbotController extends Controller
     }
 
     /**
+     * Prepara payload para chat de texto (sem exigir JSON na saída).
+     */
+    private function getChatPayload($provider, $model, $message)
+    {
+        // Obter configuração da IA
+        $config = $this->aiConfigService->getAIConfig();
+        
+        // Usar o AIService com o tipo de prompt 'chat'
+        $aiService = new \App\Services\AIService($provider, $model, $config['api_key'], 'chat');
+        
+        // Injetar system_prompt configurado no AIService
+        if (!empty($config['system_prompt'])) {
+            $aiService->setSystemPrompt($config['system_prompt']);
+        }
+        
+        // Obter o prompt de chat adequado
+        $chatPrompt = $aiService->getSystemPrompt();
+        
+        // Log do prompt usado
+        Log::info('Usando prompt de chat:', [
+            'provider' => $provider,
+            'model' => $model,
+            'prompt_length' => strlen($chatPrompt),
+            'prompt_preview' => substr($chatPrompt, 0, 100) . (strlen($chatPrompt) > 100 ? '...' : '')
+        ]);
+        
+        return $this->getPayload($provider, $model, $chatPrompt, $message);
+    }
+
+    /**
      * Retorna o payload da requisição baseado no provedor
      */
     private function getPayload($provider, $model, $systemPrompt, $message)
@@ -225,8 +228,17 @@ class ChatbotController extends Controller
         // Obtém dados financeiros para incluir no contexto
         $financialContext = $this->getFinancialContext();
         
+        // Se não houver prompt configurado, usa um padrão com instruções de formatação
+        $basePrompt = $systemPrompt ?: 'Você é um assistente financeiro inteligente. Responda em português, utilizando Markdown para formatação. Quando voltar dados JSON, coloque-os em um bloco de código com ```json ...```.';
         // Adiciona o contexto financeiro ao prompt do sistema
-        $enhancedSystemPrompt = $systemPrompt . "\n\nContexto Financeiro Atual:\n" . $financialContext;
+        $enhancedSystemPrompt = $basePrompt . "\n\nContexto Financeiro Atual:\n" . $financialContext;
+
+        // Se a mensagem do usuário for um JSON de transações, adicionar instruções específicas
+        $decoded = json_decode($message, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $message = "As seguintes transações foram fornecidas em JSON:\n" . json_encode($decoded, JSON_UNESCAPED_UNICODE) .
+                       "\n\nPor favor, analise estas transações e informe qual categoria de despesa acumulou o maior valor, incluindo o valor total dessa categoria.";
+        }
 
         switch (strtolower($provider)) {
             case 'openrouter':
@@ -389,5 +401,59 @@ class ChatbotController extends Controller
             ]);
             return null;
         }
+    }
+
+    /**
+     * Endpoint para upload de extrato via chatbot
+     */
+    public function uploadStatement(Request $request)
+    {
+        $request->validate([
+            'statement_file' => 'required|file|mimes:csv,ofx,qfx,qif,pdf,txt,xls,xlsx|max:10240',
+            'account_id' => 'required|exists:accounts,id'
+        ]);
+
+        // Verifica conta bancária associada
+        $accountId = $request->input('account_id');
+        // TODO: validar se a conta pertence ao usuário autenticado
+
+        $file = $request->file('statement_file');
+        $service = new StatementImportService();
+        $result = $service->importAndAnalyze($file, $accountId);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Endpoint para processar e analisar o extrato enviado
+     */
+    public function processStatement(Request $request)
+    {
+        $request->validate([
+            'file_path'  => 'required|string',
+            'account_id' => 'required|integer',
+            'extension'  => 'nullable|string'
+        ]);
+
+        $filePath  = $request->input('file_path');
+        $accountId = $request->input('account_id');
+        $extension = $request->input('extension', pathinfo($filePath, PATHINFO_EXTENSION));
+
+        // Extrair, analisar e categorizar transações
+        $tempImport      = new TempStatementImportController();
+        $transactions    = $tempImport->extractTransactions($filePath, $extension);
+        $analysis        = $tempImport->analyzeTransactionsWithAI($transactions);
+        $categorized     = $tempImport->applyCategorizationToTransactions($transactions, $analysis);
+
+        // Montar sub-request para salvar as transações
+        $saveRequest = Request::create('', 'POST', [
+            'account_id'   => $accountId,
+            'file_path'    => $filePath,
+            'transactions' => $categorized
+        ]);
+        $saveRequest->headers->set('Accept', 'application/json');
+
+        // Executa salvamento e retorna resposta
+        return $tempImport->saveTransactions($saveRequest);
     }
 } 

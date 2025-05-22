@@ -1,5 +1,6 @@
 <x-app-layout>
-    <div class="container-app max-w-4xl mx-auto">
+    {{-- ATENÇÃO: CORREÇÃO CRÍTICA na edição de transações e máscara de valor; NÃO ALTERAR SEM AUTORIZAÇÃO EXPLÍCITA. --}}
+    <div class="container-app px-4 mx-auto">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
             <div>

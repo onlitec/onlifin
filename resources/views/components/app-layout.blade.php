@@ -48,31 +48,41 @@
                                 <i class="ri-dashboard-line mr-2 text-lg"></i>
                                 Dashboard
                             </a>
+                            @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
                             <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
                                 <i class="ri-exchange-line mr-2 text-lg"></i>
                                 Transações
                             </a>
+                            @endif
                             <a href="{{ route('transactions.income') }}" class="menu-item {{ request()->routeIs('transactions.income') ? 'active' : '' }}">
                                 <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
                                 Receitas
                             </a>
+                            @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
                             <a href="{{ route('transactions.expenses') }}" class="menu-item {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}">
                                 <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
                                 Despesas
                             </a>
+                            @endif
+                            @if(auth()->user()->hasPermission('view_reports'))
                             <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}">
                                 <i class="ri-bar-chart-line mr-2 text-lg"></i>
                                 Relatórios
                             </a>
+                            @endif
+                            @if(auth()->user()->hasPermission('view_own_categories') || auth()->user()->hasPermission('view_all_categories'))
                             <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
                                 <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                                 Categorias
                             </a>
+                            @endif
+                            @if(auth()->user()->hasPermission('view_own_accounts') || auth()->user()->hasPermission('view_all_accounts'))
                             <a href="{{ route('accounts.index') }}" class="menu-item {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                                 <i class="ri-bank-line mr-2 text-lg"></i>
                                 Contas
                             </a>
-                            @if(auth()->user()->isAdmin())
+                            @endif
+                            @if(auth()->user()->isAdmin() || auth()->user()->hasPermission('manage_settings'))
                             <a href="{{ route('settings.index') }}" class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
                                 <i class="ri-settings-3-line mr-2"></i>
                                 Configurações
@@ -127,27 +137,35 @@
                         <i class="ri-dashboard-line mr-2 text-lg"></i>
                         Dashboard
                     </a>
+                    @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
                     <a href="{{ route('transactions.index') }}" class="mobile-nav-link {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
                         <i class="ri-exchange-line mr-2 text-lg"></i>
                         Transações
                     </a>
+                    @endif
                     <a href="{{ route('transactions.income') }}" class="mobile-nav-link {{ request()->routeIs('transactions.income') ? 'active' : '' }}">
                         <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
                         Receitas
                     </a>
+                    @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
                     <a href="{{ route('transactions.expenses') }}" class="mobile-nav-link {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}">
                         <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
                         Despesas
                     </a>
+                    @endif
+                    @if(auth()->user()->hasPermission('view_own_categories') || auth()->user()->hasPermission('view_all_categories'))
                     <a href="{{ route('categories.index') }}" class="mobile-nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
                         <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                         Categorias
                     </a>
+                    @endif
+                    @if(auth()->user()->hasPermission('view_own_accounts') || auth()->user()->hasPermission('view_all_accounts'))
                     <a href="{{ route('accounts.index') }}" class="mobile-nav-link {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
                         <i class="ri-bank-line mr-2 text-lg"></i>
                         Contas
                     </a>
-                    @if(auth()->user()->isAdmin())
+                    @endif
+                    @if(auth()->user()->isAdmin() || auth()->user()->hasPermission('manage_settings'))
                     <div x-data="{ open: false }" class="space-y-1">
                         <button @click="open = !open" class="mobile-nav-link flex items-center justify-between">
                             <span><i class="ri-shield-user-line mr-2 text-lg"></i> Administrador</span>

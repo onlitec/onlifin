@@ -269,6 +269,9 @@
                                         <a href="{{ route('categories.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('categories.*') ? 'font-semibold text-blue-600' : '' }}">
                                             Categorias
                                         </a>
+                                        <a href="{{ route('companies.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('companies.*') ? 'font-semibold text-blue-600' : '' }}">
+                                            Empresas
+                                        </a>
                                         @if(auth()->user()->is_admin)
                                             <a href="{{ route('settings.users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.users*') ? 'font-semibold text-blue-600' : '' }}">
                                                 Usuários
@@ -379,6 +382,9 @@
                                 </a>
                                 <a href="{{ route('categories.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('categories.*') ? 'font-semibold text-blue-600' : '' }}">
                                     Categorias
+                                </a>
+                                <a href="{{ route('companies.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('companies.*') ? 'font-semibold text-blue-600' : '' }}">
+                                    Empresas
                                 </a>
                                 @if(auth()->user()->is_admin)
                                     <a href="{{ route('settings.users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.users*') ? 'font-semibold text-blue-600' : '' }}">

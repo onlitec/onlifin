@@ -32,7 +32,12 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                             @foreach($permissions as $permission)
                                 <label class="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 hover:bg-primary-50 transition cursor-pointer w-full">
-                                    <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" class="form-checkbox h-5 w-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" {{ in_array($permission->id, old('permissions', $role->permissions->pluck('id')->toArray())) ? 'checked' : '' }}>
+                                    @if($role->name === 'Administrador')
+                                        <input type="hidden" name="permissions[]" value="{{ $permission->id }}">
+                                        <input type="checkbox" value="{{ $permission->id }}" class="form-checkbox h-5 w-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" checked disabled>
+                                    @else
+                                        <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" class="form-checkbox h-5 w-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500" {{ in_array($permission->id, old('permissions', $role->permissions->pluck('id')->toArray())) ? 'checked' : '' }}>
+                                    @endif
                                     <span class="font-medium text-gray-700">{{ $permission->display_name }}</span>
                                 </label>
                             @endforeach

@@ -27,6 +27,7 @@ use App\Http\Controllers\OpenRouterConfigController;
 use App\Http\Controllers\TempStatementImportController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\CompanyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,16 +78,36 @@ Route::middleware(['auth'])->group(function () {
     
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {
-        Route::get('/', [TransactionController::class, 'index'])->name('index');
-        Route::get('/income', [TransactionController::class, 'showIncome'])->name('income');
-        Route::get('/expenses', [TransactionController::class, 'showExpenses'])->name('expenses');
-        Route::get('/create/{type?}', [TransactionController::class, 'create'])->name('create');
-        Route::post('/', [TransactionController::class, 'store'])->name('store');
-        Route::get('/{transaction}/edit', [TransactionController::class, 'edit'])->name('edit');
-        Route::put('/{transaction}', [TransactionController::class, 'update'])->name('update');
-        Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
-        Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])->name('mark-as-paid');
-        Route::post('/{transaction}/create-next', [TransactionController::class, 'createNext'])->name('create-next');
+        Route::get('/', [TransactionController::class, 'index'])
+            ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
+            ->name('index');
+        Route::get('/income', [TransactionController::class, 'showIncome'])
+            ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
+            ->name('income');
+        Route::get('/expenses', [TransactionController::class, 'showExpenses'])
+            ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
+            ->name('expenses');
+        Route::get('/create/{type?}', [TransactionController::class, 'create'])
+            ->middleware('permission:create_transactions')
+            ->name('create');
+        Route::post('/', [TransactionController::class, 'store'])
+            ->middleware('permission:create_transactions')
+            ->name('store');
+        Route::get('/{transaction}/edit', [TransactionController::class, 'edit'])
+            ->middleware('permission:edit_own_transactions|edit_all_transactions')
+            ->name('edit');
+        Route::put('/{transaction}', [TransactionController::class, 'update'])
+            ->middleware('permission:edit_own_transactions|edit_all_transactions')
+            ->name('update');
+        Route::delete('/{transaction}', [TransactionController::class, 'destroy'])
+            ->middleware('permission:delete_own_transactions|delete_all_transactions')
+            ->name('destroy');
+        Route::patch('/{transaction}/mark-as-paid', [TransactionController::class, 'markAsPaid'])
+            ->middleware('permission:mark_as_paid_own_transactions|mark_as_paid_all_transactions')
+            ->name('mark-as-paid');
+        Route::post('/{transaction}/create-next', [TransactionController::class, 'createNext'])
+            ->middleware('permission:create_transactions')
+            ->name('create-next');
     });
     
     // Importação Temporária (com Ajax e IA)
@@ -105,22 +126,46 @@ Route::middleware(['auth'])->group(function () {
     
     // Categorias
     Route::prefix('categories')->name('categories.')->group(function () {
-        Route::get('/', [CategoryController::class, 'index'])->name('index');
-        Route::get('/create', [CategoryController::class, 'create'])->name('create');
-        Route::post('/', [CategoryController::class, 'store'])->name('store');
-        Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('edit');
-        Route::put('/{category}', [CategoryController::class, 'update'])->name('update');
-        Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
+        Route::get('/', [CategoryController::class, 'index'])
+            ->middleware('permission:view_own_categories|view_all_categories')
+            ->name('index');
+        Route::get('/create', [CategoryController::class, 'create'])
+            ->middleware('permission:create_categories')
+            ->name('create');
+        Route::post('/', [CategoryController::class, 'store'])
+            ->middleware('permission:create_categories')
+            ->name('store');
+        Route::get('/{category}/edit', [CategoryController::class, 'edit'])
+            ->middleware('permission:edit_own_categories|edit_all_categories')
+            ->name('edit');
+        Route::put('/{category}', [CategoryController::class, 'update'])
+            ->middleware('permission:edit_own_categories|edit_all_categories')
+            ->name('update');
+        Route::delete('/{category}', [CategoryController::class, 'destroy'])
+            ->middleware('permission:delete_own_categories|delete_all_categories')
+            ->name('destroy');
     });
     
     // Contas
     Route::prefix('accounts')->name('accounts.')->group(function () {
-        Route::get('/', [AccountController::class, 'index'])->name('index');
-        Route::get('/create', [AccountController::class, 'create'])->name('create');
-        Route::post('/', [AccountController::class, 'store'])->name('store');
-        Route::get('/{account}/edit', [AccountController::class, 'edit'])->name('edit');
-        Route::put('/{account}', [AccountController::class, 'update'])->name('update');
-        Route::delete('/{account}', [AccountController::class, 'destroy'])->name('destroy');
+        Route::get('/', [AccountController::class, 'index'])
+            ->middleware('permission:view_own_accounts|view_all_accounts')
+            ->name('index');
+        Route::get('/create', [AccountController::class, 'create'])
+            ->middleware('permission:create_accounts')
+            ->name('create');
+        Route::post('/', [AccountController::class, 'store'])
+            ->middleware('permission:create_accounts')
+            ->name('store');
+        Route::get('/{account}/edit', [AccountController::class, 'edit'])
+            ->middleware('permission:edit_own_accounts|edit_all_accounts')
+            ->name('edit');
+        Route::put('/{account}', [AccountController::class, 'update'])
+            ->middleware('permission:edit_own_accounts|edit_all_accounts')
+            ->name('update');
+        Route::delete('/{account}', [AccountController::class, 'destroy'])
+            ->middleware('permission:delete_own_accounts|delete_all_accounts')
+            ->name('destroy');
     });
 
     // Configurações - página principal acessível a todos os usuários
@@ -132,18 +177,42 @@ Route::middleware(['auth'])->group(function () {
     
     // Configurações (protegidas por middleware admin)
     Route::prefix('settings')->name('settings.')->middleware(['auth'])->group(function () {
-        Route::get('/users', [SettingsController::class, 'users'])->name('users');
-        Route::get('/users/new', [SettingsController::class, 'createUser'])->name('users.new');
-        Route::post('/users/store', [SettingsController::class, 'storeUser'])->name('users.store');
-        Route::get('/users/edit/{user}', [SettingsController::class, 'editUser'])->name('users.edit');
-        Route::put('/users/update/{user}', [SettingsController::class, 'updateUser'])->name('users.update');
-        Route::get('/users/delete/{user}', [SettingsController::class, 'deleteUser'])->name('users.delete');
-        Route::get('/roles', [SettingsController::class, 'roles'])->name('roles');
-        Route::get('/roles/new', [SettingsController::class, 'createRole'])->name('roles.new');
-        Route::post('/roles/store', [SettingsController::class, 'storeRole'])->name('roles.store');
-        Route::get('/roles/edit/{role}', [SettingsController::class, 'editRole'])->name('roles.edit');
-        Route::put('/roles/update/{role}', [SettingsController::class, 'updateRole'])->name('roles.update');
-        Route::get('/roles/delete/{role}', [SettingsController::class, 'deleteRole'])->name('roles.delete');
+        Route::get('/users', [SettingsController::class, 'users'])
+            ->middleware('permission:view_users')
+            ->name('users');
+        Route::get('/users/new', [SettingsController::class, 'createUser'])
+            ->middleware('permission:create_users')
+            ->name('users.new');
+        Route::post('/users/store', [SettingsController::class, 'storeUser'])
+            ->middleware('permission:create_users')
+            ->name('users.store');
+        Route::get('/users/edit/{user}', [SettingsController::class, 'editUser'])
+            ->middleware('permission:edit_users')
+            ->name('users.edit');
+        Route::put('/users/update/{user}', [SettingsController::class, 'updateUser'])
+            ->middleware('permission:edit_users')
+            ->name('users.update');
+        Route::get('/users/delete/{user}', [SettingsController::class, 'deleteUser'])
+            ->middleware('permission:delete_users')
+            ->name('users.delete');
+        Route::get('/roles', [SettingsController::class, 'roles'])
+            ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_roles')
+            ->name('roles');
+        Route::get('/roles/new', [SettingsController::class, 'createRole'])
+            ->middleware('permission:manage_roles')
+            ->name('roles.new');
+        Route::post('/roles/store', [SettingsController::class, 'storeRole'])
+            ->middleware('permission:manage_roles')
+            ->name('roles.store');
+        Route::get('/roles/edit/{role}', [SettingsController::class, 'editRole'])
+            ->middleware('permission:manage_roles')
+            ->name('roles.edit');
+        Route::put('/roles/update/{role}', [SettingsController::class, 'updateRole'])
+            ->middleware('permission:manage_roles')
+            ->name('roles.update');
+        Route::get('/roles/delete/{role}', [SettingsController::class, 'deleteRole'])
+            ->middleware('permission:manage_roles')
+            ->name('roles.delete');
         
         // Relatórios
         Route::get('/reports', [SettingsController::class, 'reports'])->name('reports');
@@ -177,12 +246,24 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/model-keys/{modelKey}', [ModelApiKeyController::class, 'destroy'])->name('model-keys.destroy');
 
         // Permissões
-        Route::get('/permissions', [SettingsController::class, 'permissions'])->name('permissions');
-        Route::get('/permissions/new', [SettingsController::class, 'createPermission'])->name('permissions.new');
-        Route::post('/permissions/store', [SettingsController::class, 'storePermission'])->name('permissions.store');
-        Route::get('/permissions/edit/{permission}', [SettingsController::class, 'editPermission'])->name('permissions.edit');
-        Route::put('/permissions/update/{permission}', [SettingsController::class, 'updatePermission'])->name('permissions.update');
-        Route::get('/permissions/delete/{permission}', [SettingsController::class, 'deletePermission'])->name('permissions.delete');
+        Route::get('/permissions', [SettingsController::class, 'permissions'])
+            ->middleware('permission:manage_settings')
+            ->name('permissions');
+        Route::get('/permissions/new', [SettingsController::class, 'createPermission'])
+            ->middleware('permission:manage_settings')
+            ->name('permissions.new');
+        Route::post('/permissions/store', [SettingsController::class, 'storePermission'])
+            ->middleware('permission:manage_settings')
+            ->name('permissions.store');
+        Route::get('/permissions/edit/{permission}', [SettingsController::class, 'editPermission'])
+            ->middleware('permission:manage_settings')
+            ->name('permissions.edit');
+        Route::put('/permissions/update/{permission}', [SettingsController::class, 'updatePermission'])
+            ->middleware('permission:manage_settings')
+            ->name('permissions.update');
+        Route::get('/permissions/delete/{permission}', [SettingsController::class, 'deletePermission'])
+            ->middleware('permission:manage_settings')
+            ->name('permissions.delete');
 
         // Rotas de logs do sistema
         Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
@@ -285,9 +366,24 @@ Route::middleware(['auth'])->group(function () {
 
     // Rotas do Chatbot Financeiro
     Route::middleware(['auth'])->group(function () {
+        // Tela de chat
         Route::get('/chatbot', [App\Http\Controllers\ChatbotController::class, 'index'])->name('chatbot.index');
+        // Envios de mensagens de texto
         Route::post('/chatbot/ask', [App\Http\Controllers\ChatbotController::class, 'ask'])->name('chatbot.ask');
+        // Upload de arquivos de extrato via chatbot
+        Route::post('/chatbot/upload-statement', [App\Http\Controllers\ChatbotController::class, 'uploadStatement'])->name('chatbot.uploadStatement');
+        // Processamento e análise de extrato enviado
+        Route::post('/chatbot/process-statement', [App\Http\Controllers\ChatbotController::class, 'processStatement'])->name('chatbot.processStatement');
     });
+
+    // Rotas para gerenciamento de empresas
+    Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+    Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
+    Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+    Route::post('/companies/{company}/switch', [CompanyController::class, 'switch'])->name('companies.switch');
+    Route::get('/companies/{company}/edit', [CompanyController::class, 'edit'])->name('companies.edit');
+    Route::put('/companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
+    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');
 
 });
 

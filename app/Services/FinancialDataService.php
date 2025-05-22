@@ -58,6 +58,12 @@ class FinancialDataService
             return collect([]);
         }
 
+        // Se o modelo BankAccount não estiver disponível, retorna coleção vazia
+        if (! class_exists(BankAccount::class)) {
+            Log::warning('Classe BankAccount não encontrada para obter saldo bancário');
+            return collect([]);
+        }
+
         return BankAccount::with('account')
             ->where('company_id', $user->currentCompany->id)
             ->where('enabled', true)

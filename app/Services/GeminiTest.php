@@ -16,8 +16,9 @@ class GeminiTest
      * @param string $apiKey Chave API fornecida
      * @param string $model Nome do modelo Gemini a ser testado
      * @param bool $useModelSpecificKey Se deve verificar primeiro uma chave específica para o modelo
+     * @param string|null $systemPrompt Prompt do sistema a ser usado (opcional)
      */
-    public static function testConnection($apiKey, $model = 'gemini-2.0-flash', $useModelSpecificKey = true)
+    public static function testConnection($apiKey, $model = 'gemini-2.0-flash', $useModelSpecificKey = true, $systemPrompt = null)
     {
         // Se solicitado, verificar se existe uma chave específica para este modelo
         if ($useModelSpecificKey) {
@@ -30,6 +31,11 @@ class GeminiTest
                 if ($modelKey && !empty($modelKey->api_token)) {
                     Log::info("Usando chave API específica para o modelo {$model}");
                     $apiKey = $modelKey->api_token;
+                    
+                    // Usar o system prompt do modelo específico se disponível e não especificado explicitamente
+                    if (empty($systemPrompt) && !empty($modelKey->system_prompt)) {
+                        $systemPrompt = $modelKey->system_prompt;
+                    }
                 }
             } catch (\Exception $e) {
                 Log::warning("Erro ao verificar chave específica para o modelo: {$e->getMessage()}");
@@ -39,9 +45,15 @@ class GeminiTest
         // Garantir que estamos usando o modelo que sabemos que funciona
         $model = empty($model) ? 'gemini-2.0-flash' : $model;
         
+        // Usar prompt padrão se não for fornecido
+        $systemPrompt = $systemPrompt ?: 'Você é um assistente útil. Responda de forma concisa e clara.';
+        
         try {
             // Registrar início do teste
-            Log::info("Testando conexão com Gemini usando modelo {$model}");
+            Log::info("Testando conexão com Gemini usando modelo {$model}", [
+                'system_prompt_length' => strlen($systemPrompt),
+                'system_prompt_preview' => substr($systemPrompt, 0, 50) . '...'
+            ]);
             
             // Preparar a URL e payload exatamente conforme o teste bem-sucedido
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
@@ -49,7 +61,8 @@ class GeminiTest
                 'contents' => [
                     [
                         'parts' => [
-                            ['text' => 'Explain how AI works in one simple sentence']
+                            // Incluir o system prompt na mensagem
+                            ['text' => $systemPrompt . "\n\nExplain how AI works in one simple sentence"]
                         ]
                     ]
                 ]

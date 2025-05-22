@@ -105,7 +105,15 @@ class OpenRouterConfigController extends Controller
             'api_key' => 'required|string',
             'endpoint' => 'nullable|string|url',
             'system_prompt' => 'nullable|string',
+            'chat_prompt' => 'nullable|string',
+            'import_prompt' => 'nullable|string',
         ]);
+
+        // Se foi fornecido chat_prompt mas não system_prompt, copiar chat_prompt para system_prompt
+        // para compatibilidade com código legado
+        if (empty($validated['system_prompt']) && !empty($validated['chat_prompt'])) {
+            $validated['system_prompt'] = $validated['chat_prompt'];
+        }
 
         OpenRouterConfig::create($validated);
 
@@ -152,7 +160,15 @@ class OpenRouterConfigController extends Controller
             'api_key' => 'required|string',
             'endpoint' => 'nullable|string|url',
             'system_prompt' => 'nullable|string',
+            'chat_prompt' => 'nullable|string',
+            'import_prompt' => 'nullable|string',
         ]);
+
+        // Se foi fornecido chat_prompt mas não system_prompt, copiar chat_prompt para system_prompt
+        // para compatibilidade com código legado
+        if (empty($validated['system_prompt']) && !empty($validated['chat_prompt'])) {
+            $validated['system_prompt'] = $validated['chat_prompt'];
+        }
 
         $openRouterConfig->update($validated);
 
@@ -185,50 +201,77 @@ class OpenRouterConfigController extends Controller
         }
 
         try {
-            // Definir o endpoint correto
-            $endpoint = $request->endpoint ?: 'https://openrouter.ai/api/v1';
-            
-            // Usar o modelo diretamente da requisição
-            $model = $request->model;
-            
-            // Realizar um teste simples usando a API do OpenRouter
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $request->api_key,
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => config('app.url')
-            ])->post($endpoint . '/chat/completions', [
-                'model' => $model,
-                'messages' => [
-                    ['role' => 'system', 'content' => 'Você é um assistente útil.'],
-                    ['role' => 'user', 'content' => 'Olá! Este é um teste de conexão.']
-                ],
-                'max_tokens' => 10
-            ]);
+            switch (strtolower($request->provider)) {
+                case 'openrouter':
+                    // Teste original do OpenRouter
+                    $endpoint = $request->endpoint ?: 'https://openrouter.ai/api/v1';
+                    $model = $request->model;
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $request->api_key,
+                        'Content-Type' => 'application/json',
+                        'HTTP-Referer' => config('app.url')
+                    ])->post($endpoint . '/chat/completions', [
+                        'model' => $model,
+                        'messages' => [
+                            ['role' => 'system', 'content' => 'Você é um assistente útil.'],
+                            ['role' => 'user', 'content' => 'Olá! Este é um teste de conexão.']
+                        ],
+                        'max_tokens' => 10
+                    ]);
 
-            if ($response->successful()) {
-                Log::info('Teste de conexão com OpenRouter bem-sucedido', [
-                    'provider' => $request->provider,
-                    'model' => $model
-                ]);
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Conexão estabelecida com sucesso!'
-                ]);
-            } else {
-                $errorMessage = $response->json('error.message') ?? $response->body();
-                Log::error('Erro ao testar conexão com OpenRouter', [
-                    'status' => $response->status(),
-                    'error' => $errorMessage
-                ]);
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erro na resposta da API: ' . $errorMessage
-                ], 422);
+                    if ($response->successful()) {
+                        Log::info('Teste de conexão com OpenRouter bem-sucedido', [
+                            'provider' => $request->provider,
+                            'model' => $model
+                        ]);
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Conexão estabelecida com sucesso!'
+                        ]);
+                    }
+                    $errorMessage = $response->json('error.message') ?? $response->body();
+                    Log::error('Erro ao testar conexão com OpenRouter', [
+                        'status' => $response->status(),
+                        'error' => $errorMessage
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Erro na resposta da API: ' . $errorMessage
+                    ], 422);
+
+                default:
+                    // Teste genérico para outros provedores via AIService
+                    $aiProvider = strtolower($request->provider) === 'google' ? 'gemini' : $request->provider;
+                    $aiService = new AIService($aiProvider, $request->model, $request->api_key);
+                    try {
+                        $testResult = $aiService->test();
+                    } catch (\Exception $e) {
+                        Log::error("Erro ao testar conexão com {$request->provider}", ['error' => $e->getMessage()]);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Erro ao testar conexão: ' . $e->getMessage()
+                        ], 500);
+                    }
+                    if ($testResult === true) {
+                        Log::info("Teste de conexão com {$request->provider} bem-sucedido");
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Conexão estabelecida com sucesso!'
+                        ]);
+                    }
+                    if (is_array($testResult) && isset($testResult['message'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Erro ao testar conexão: ' . $testResult['message']
+                        ], 422);
+                    }
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Falha no teste de conexão.'
+                    ], 500);
             }
         } catch (\Exception $e) {
-            Log::error('Exceção ao testar conexão com OpenRouter', [
+            Log::error("Exceção ao testar conexão com {$request->provider}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

@@ -9,6 +9,9 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Company;
+use Illuminate\Support\Facades\Session;
+use App\Models\Account;
 
 class User extends Authenticatable
 {
@@ -198,8 +201,97 @@ class User extends Authenticatable
             : asset('assets/svg/default-avatar.svg');
     }
 
+    /**
+     * Relacionamento: Contas bancárias associadas ao usuário.
+     */
+    public function accounts()
+    {
+        return $this->hasMany(Account::class);
+    }
+
     public function groups()
     {
         return $this->belongsToMany(Group::class);
+    }
+
+    /**
+     * Usuário proprietário das empresas
+     */
+    public function ownedCompanies(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Company::class, 'owner_id');
+    }
+
+    /**
+     * Retorna todas as empresas associadas ao usuário
+     */
+    public function allCompanies(): \Illuminate\Support\Collection
+    {
+        return $this->ownedCompanies()->get();
+    }
+
+    /**
+     * Retorna a empresa pessoal do usuário, marcada como personal_company
+     */
+    public function personalCompany(): ?Company
+    {
+        return $this->ownedCompanies()->where('personal_company', true)->first();
+    }
+
+    /**
+     * Determine se o usuário pertence à empresa (é proprietário).
+     */
+    public function belongsToCompany(Company $company): bool
+    {
+        return $this->ownedCompanies()->where('id', $company->id)->exists();
+    }
+
+    /**
+     * Alterna a empresa atual do usuário (apenas em sessão).
+     */
+    public function switchCompany(Company $company): bool
+    {
+        if (! $this->belongsToCompany($company)) {
+            return false;
+        }
+
+        Session::put('current_company_id', $company->id);
+        $this->setRelation('currentCompany', $company);
+
+        return true;
+    }
+
+    /**
+     * Retorna a empresa atual do usuário, definida na sessão ou a empresa pessoal por padrão.
+     *
+     * @return Company|null
+     */
+    public function getCurrentCompanyAttribute(): ?Company
+    {
+        $companyId = Session::get('current_company_id');
+
+        if ($companyId) {
+            // Tenta carregar a empresa da sessão
+            $company = $this->ownedCompanies()->where('id', $companyId)->first();
+            if ($company) {
+                return $company;
+            }
+        }
+
+        // Fallback: retorna a empresa pessoal marcada
+        $personal = $this->personalCompany();
+        if ($personal) {
+            Session::put('current_company_id', $personal->id);
+            return $personal;
+        }
+
+        // Fallback adicional: retorna primeira empresa disponível
+        $firstCompany = $this->ownedCompanies()->first();
+        if ($firstCompany) {
+            Session::put('current_company_id', $firstCompany->id);
+            return $firstCompany;
+        }
+
+        return null;
     }
 }

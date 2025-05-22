@@ -28,6 +28,7 @@ class Transaction extends Model
         'amount',
         'category_id',
         'account_id',
+        'company_id',
         'user_id',
         'notes',
         'cliente', // Adicionado para transações de receita
@@ -46,6 +47,7 @@ class Transaction extends Model
         'amount' => 'integer',
         'installment_number' => 'integer',
         'total_installments' => 'integer',
+        'company_id' => 'integer',
     ];
 
     protected $rules = [

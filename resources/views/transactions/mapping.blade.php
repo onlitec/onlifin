@@ -238,9 +238,9 @@
                         <td class="px-3 py-3 text-sm" data-field="description">${transaction.description || 'N/A'}</td>
                         <td class="px-3 py-3 text-sm" data-field="amount">${formattedAmount}</td>
                         <td class="px-3 py-3 text-sm" data-field="type" class="${typeColor}">${typeText}</td>
+                        <td class="px-3 py-3 text-sm" data-field="categoria">${categoryName}</td>
                         <td class="px-3 py-3 text-sm" data-field="cliente">${transaction.cliente || 'N/A'}</td>
                         <td class="px-3 py-3 text-sm" data-field="fornecedor">${transaction.fornecedor || 'N/A'}</td>
-                        <td class="px-3 py-3 text-sm" data-field="categoria">${categoryName}</td>
                     `;
                     container.appendChild(row);
                 });

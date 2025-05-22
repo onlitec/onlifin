@@ -29,8 +29,8 @@ class CheckPermission
 
         $user = Auth::user();
         
-        // Administradores têm acesso total
-        if ($user->is_admin) {
+        // Superusuários têm acesso total
+        if ($user->isSuperUser()) {
             Log::info('CheckPermission: Administrador acessando recurso protegido', [
                 'user_id' => $user->id,
                 'permission' => $permission,

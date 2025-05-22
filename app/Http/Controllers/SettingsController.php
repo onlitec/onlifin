@@ -27,7 +27,9 @@ class SettingsController extends Controller
 
     public function index()
     {
-        $isAdmin = auth()->user()->is_admin ?? false;
+        $user = auth()->user();
+        $isAdmin = $user->isAdmin() || $user->hasPermission('manage_settings');
+
         \Illuminate\Support\Facades\Log::info('Acessando configurações', [
             'user_id' => auth()->id(),
             'is_admin' => $isAdmin,
@@ -36,8 +38,8 @@ class SettingsController extends Controller
             'request_url' => request()->url()
         ]);
         
-        // Passa a lista de usuários para a view, se for admin
-        $usersForDeletion = $isAdmin ? $this->usersForDeletion() : collect(); 
+        // Passa a lista de usuários para a view, se for admin ou tiver permissão
+        $usersForDeletion = $isAdmin ? $this->usersForDeletion() : collect();
         
         return view('settings.index', compact('isAdmin', 'usersForDeletion'));
     }

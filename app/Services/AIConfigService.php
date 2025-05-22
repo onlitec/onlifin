@@ -23,25 +23,7 @@ class AIConfigService
             'has_api_key' => false
         ];
         
-        // Buscar apenas o provedor que está ativo/configurado
-        // Prioridade: Replicate, depois OpenRouter
-        if (class_exists('\\App\\Models\\ReplicateSetting')) {
-            $settings = \App\Models\ReplicateSetting::getActive();
-            if ($settings && $settings->isConfigured()) {
-                Log::info('Usando configuração do Replicate:', [
-                    'provider' => $settings->provider,
-                    'model' => $settings->model_version
-                ]);
-                $config['is_configured'] = true;
-                $config['provider'] = $settings->provider;
-                $config['model'] = $settings->model_version;
-                $config['api_key'] = $settings->api_token;
-                $config['model_name'] = $settings->model_version;
-                $config['system_prompt'] = $settings->system_prompt;
-                $config['has_api_key'] = !empty($settings->api_token);
-                return $config;
-            }
-        }
+        // PRIORIDADE 1: Verificar OpenRouter primeiro
         if (class_exists('\\App\\Models\\OpenRouterConfig')) {
             $openRouterConfig = \App\Models\OpenRouterConfig::first();
             if ($openRouterConfig && !empty($openRouterConfig->api_key)) {
@@ -55,10 +37,70 @@ class AIConfigService
                 $config['api_key'] = $openRouterConfig->api_key;
                 $config['model_name'] = $openRouterConfig->model;
                 $config['system_prompt'] = $openRouterConfig->system_prompt;
+                $config['chat_prompt'] = $openRouterConfig->chat_prompt ?? $openRouterConfig->system_prompt;
+                $config['import_prompt'] = $openRouterConfig->import_prompt ?? '';
                 $config['has_api_key'] = true;
                 return $config;
             }
         }
+        
+        // PRIORIDADE 2: Verificar configuração em config/ai.php
+        if (Config::get('ai.enabled', false)) {
+            $provider = Config::get('ai.provider');
+            $apiKey = Config::get("ai.{$provider}.api_key");
+            $model = Config::get("ai.{$provider}.model");
+            if ($provider && $apiKey) {
+                Log::info('Usando configuração de config/ai.php:', ['provider' => $provider, 'model' => $model]);
+                $config['is_configured'] = true;
+                $config['provider'] = $provider;
+                $config['model'] = $model;
+                $config['api_key'] = $apiKey;
+                $config['model_name'] = $model;
+                $config['system_prompt'] = Config::get("ai.{$provider}.system_prompt");
+                $config['chat_prompt'] = Config::get("ai.{$provider}.chat_prompt");
+                $config['import_prompt'] = Config::get("ai.{$provider}.import_prompt");
+                $config['has_api_key'] = true;
+                return $config;
+            }
+        }
+        
+        // PRIORIDADE 3: Verificar se há chave de API por modelo ativa (ModelApiKey)
+        $activeKey = $this->getActiveModelKey();
+        if ($activeKey) {
+            Log::info('Usando configuração de ModelApiKey:', ['provider' => $activeKey->provider, 'model' => $activeKey->model]);
+            $config['is_configured'] = true;
+            $config['provider'] = $activeKey->provider;
+            $config['model'] = $activeKey->model;
+            $config['api_key'] = $activeKey->api_token;
+            $config['model_name'] = $activeKey->model;
+            $config['system_prompt'] = $activeKey->system_prompt;
+            $config['chat_prompt'] = $activeKey->chat_prompt ?? $activeKey->system_prompt;
+            $config['import_prompt'] = $activeKey->import_prompt ?? '';
+            $config['has_api_key'] = !empty($activeKey->api_token);
+            return $config;
+        }
+
+        // PRIORIDADE 4: Verificar ReplicateSetting
+        if (class_exists('\\App\\Models\\ReplicateSetting')) {
+            $settings = \App\Models\ReplicateSetting::getActive();
+            if ($settings && $settings->isConfigured()) {
+                Log::info('Usando configuração do Replicate:', [
+                    'provider' => $settings->provider,
+                    'model' => $settings->model_version
+                ]);
+                $config['is_configured'] = true;
+                $config['provider'] = $settings->provider;
+                $config['model'] = $settings->model_version;
+                $config['api_key'] = $settings->api_token;
+                $config['model_name'] = $settings->model_version;
+                $config['system_prompt'] = $settings->system_prompt;
+                $config['chat_prompt'] = $settings->chat_prompt ?? $settings->system_prompt;
+                $config['import_prompt'] = $settings->import_prompt ?? '';
+                $config['has_api_key'] = !empty($settings->api_token);
+                return $config;
+            }
+        }
+        
         // Não logar warning para provedores não utilizados
         return $config;
     }
@@ -300,5 +342,32 @@ class AIConfigService
         }
         
         return $transacoes;
+    }
+
+    /**
+     * Retorna todas as configurações de IA em ordem de fallback.
+     *
+     * @return array
+     */
+    public function getAllAIConfigs(): array
+    {
+        // Verificar se há múltiplos provedores configurados em config/ai.php
+        $providersConfig = Config::get('ai.providers');
+        if (Config::get('ai.enabled', false) && is_array($providersConfig)) {
+            $all = [];
+            foreach ($providersConfig as $prov) {
+                if (!empty($prov['provider']) && !empty($prov['api_key'])) {
+                    $all[] = [
+                        'provider'      => $prov['provider'],
+                        'model'         => $prov['model'] ?? null,
+                        'api_key'       => $prov['api_key'],
+                        'system_prompt' => $prov['system_prompt'] ?? null,
+                    ];
+                }
+            }
+            return $all;
+        }
+        // Fallback para configuração única
+        return [$this->getAIConfig()];
     }
 }

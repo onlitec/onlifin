@@ -63,10 +63,24 @@
                         <input type="url" name="endpoint" id="endpoint" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ old('endpoint', $config->endpoint ?? '') }}" placeholder="https://api.openrouter.ai/api/v1">
                     </div>
 
-                    <div class="mb-6">
-                        <label for="system_prompt" class="block text-gray-700 font-medium mb-2">Prompt do Sistema</label>
+                    <div class="mb-6 hidden">
+                        <label for="system_prompt" class="block text-gray-700 font-medium mb-2">Prompt do Sistema (Legado)</label>
                         <textarea name="system_prompt" id="system_prompt" rows="4" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('system_prompt', $config->system_prompt ?? '') }}</textarea>
-                        <p class="text-sm text-gray-500 mt-1">Instruções para o comportamento da IA</p>
+                        <p class="text-sm text-gray-500 mt-1">Campo mantido para compatibilidade com código existente</p>
+                    </div>
+
+                    <!-- Novo campo para o prompt do chatbot -->
+                    <div class="mb-6">
+                        <label for="chat_prompt" class="block text-gray-700 font-medium mb-2">Prompt do Chatbot</label>
+                        <textarea name="chat_prompt" id="chat_prompt" rows="6" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('chat_prompt', $config->chat_prompt ?? $config->system_prompt ?? '') }}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">Instruções para o comportamento da IA ao conversar com o usuário. Define como o assistente deve responder às perguntas gerais.</p>
+                    </div>
+
+                    <!-- Novo campo para o prompt de importação -->
+                    <div class="mb-6">
+                        <label for="import_prompt" class="block text-gray-700 font-medium mb-2">Prompt de Importação</label>
+                        <textarea name="import_prompt" id="import_prompt" rows="6" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('import_prompt', $config->import_prompt ?? '') }}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">Instruções específicas para a IA categorizar transações durante importação de extratos. Define como o assistente deve processar dados financeiros.</p>
                     </div>
 
                     <div class="flex justify-between">

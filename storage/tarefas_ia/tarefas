@@ -1,0 +1,4 @@
+Realizar testes de carga simulando centenas de transações por importação para validar limiares de batch e evitar timeouts.
+Planejar rollout em ambiente de staging com um pequeno grupo de usuários antes de liberar em produção.
+Revisar se é necessário implementar cache de prompts ou respostas estáticas para reduzir número de chamadas em cenários recorrentes.
+Documentar o processo de rotação de chaves de API e instruir a equipe de operações.

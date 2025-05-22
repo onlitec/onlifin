@@ -14,6 +14,7 @@ class AIService
     private $provider;
     private $model;
     private $systemPrompt;
+    private $promptType = 'chat'; // 'chat' ou 'import'
 
     // Lista de modelos disponíveis
     private const OPENAI_MODELS = [
@@ -34,15 +35,18 @@ class AIService
      * 2. Com parâmetros provider, model e apiToken fornecidos manualmente
      * 3. Com parâmetros provider e model, buscando a apiToken específica no banco
      */
-    public function __construct($providerOrSettings = null, $model = null, $apiToken = null)
+    public function __construct($providerOrSettings = null, $model = null, $apiToken = null, $promptType = 'chat')
     {
+        // Define o tipo de prompt (chat ou import)
+        $this->promptType = in_array($promptType, ['chat', 'import']) ? $promptType : 'chat';
+        
         // Modo 1: Compatibilidade com código existente
         if ($providerOrSettings instanceof ReplicateSetting) {
             $this->settings = $providerOrSettings;
             $this->provider = $providerOrSettings->provider;
             $this->apiToken = $providerOrSettings->api_token;
             $this->model = $this->validateModel($providerOrSettings->model_version);
-            $this->systemPrompt = $providerOrSettings->system_prompt;
+            $this->setSystemPrompt($providerOrSettings->system_prompt);
             return;
         }
         
@@ -63,6 +67,16 @@ class AIService
     }
     
     /**
+     * Define o prompt do sistema baseado no tipo (chat ou import)
+     *
+     * @param string|null $defaultPrompt Prompt padrão se nenhum for encontrado
+     */
+    public function setSystemPrompt($defaultPrompt = null)
+    {
+        $this->systemPrompt = $defaultPrompt;
+    }
+    
+    /**
      * Carrega a configuração geral do provedor
      */
     private function loadConfig()
@@ -78,6 +92,9 @@ class AIService
                 if (!$this->model) {
                     $this->model = $this->validateModel($settings->model_version);
                 }
+                
+                // Usar campo system_prompt da configuração, 
+                // Será tratado no método getSystemPrompt quando necessário
                 $this->systemPrompt = $settings->system_prompt;
                 
                 // Log para debug
@@ -85,7 +102,8 @@ class AIService
                     'provider' => $this->provider,
                     'model' => $this->model,
                     'prompt_length' => strlen($this->systemPrompt ?? ''),
-                    'prompt_preview' => substr($this->systemPrompt ?? '', 0, 100) . '...'
+                    'prompt_preview' => substr($this->systemPrompt ?? '', 0, 100) . '...',
+                    'prompt_type' => $this->promptType
                 ]);
             } else {
                 Log::warning("Configuração não encontrada para o provedor {$this->provider}", [
@@ -114,7 +132,20 @@ class AIService
             if ($modelKey) {
                 Log::info("Usando chave API específica para o modelo {$this->model}");
                 $this->apiToken = $modelKey->api_token;
-                $this->systemPrompt = $modelKey->system_prompt ?: ($this->systemPrompt ?? null);
+                
+                // Usar o prompt adequado ao tipo (chat ou import)
+                if ($this->promptType == 'chat' && !empty($modelKey->chat_prompt)) {
+                    $this->systemPrompt = $modelKey->chat_prompt;
+                    Log::debug('Usando chat_prompt da chave específica');
+                } else if ($this->promptType == 'import' && !empty($modelKey->import_prompt)) {
+                    $this->systemPrompt = $modelKey->import_prompt;
+                    Log::debug('Usando import_prompt da chave específica');
+                } else if (!empty($modelKey->system_prompt)) {
+                    // Fallback para prompt legado
+                    $this->systemPrompt = $modelKey->system_prompt;
+                    Log::debug('Usando system_prompt da chave específica (legado)');
+                }
+                
                 return true;
             }
             
@@ -123,6 +154,45 @@ class AIService
             Log::error("Erro ao carregar chave específica para o modelo: {$e->getMessage()}");
             return false;
         }
+    }
+    
+    /**
+     * Obtém o prompt adequado baseado no tipo (chat ou import)
+     * 
+     * @return string O prompt adequado ao contexto
+     */
+    public function getSystemPrompt()
+    {
+        // Se já tem um prompt definido, usar este
+        if (!empty($this->systemPrompt)) {
+            return $this->systemPrompt;
+        }
+        
+        // Tentar obter do settings
+        if (isset($this->settings)) {
+            if ($this->promptType == 'chat' && !empty($this->settings->chat_prompt)) {
+                return $this->settings->chat_prompt;
+            }
+            if ($this->promptType == 'import' && !empty($this->settings->import_prompt)) {
+                return $this->settings->import_prompt;
+            }
+            if (!empty($this->settings->system_prompt)) {
+                return $this->settings->system_prompt;
+            }
+        }
+        
+        // Tentar obter da configuração geral
+        $providerConfig = config("ai.{$this->provider}", []);
+        if ($this->promptType == 'chat' && !empty($providerConfig['chat_prompt'])) {
+            return $providerConfig['chat_prompt'];
+        }
+        if ($this->promptType == 'import' && !empty($providerConfig['import_prompt'])) {
+            return $providerConfig['import_prompt'];
+        }
+        
+        // Fallback para configuração legada
+        return $providerConfig['system_prompt'] ?? 
+            'Você é um assistente financeiro inteligente. Responda sempre em português, utilizando formatação Markdown para melhor legibilidade. Quando retornar dados em JSON, coloque-os em um bloco de código usando ```json ... ```.';
     }
 
     /**
@@ -151,13 +221,12 @@ class AIService
      */
     public function test()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         // Chamar o método de teste específico com base no provedor
         switch ($this->provider) {
@@ -202,13 +271,12 @@ class AIService
      */
     private function testOpenAI()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
             $response = Http::withHeaders([
@@ -242,13 +310,12 @@ class AIService
      */
     private function testAnthropic()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
             Log::info('Iniciando teste de conexão com Anthropic', [
@@ -314,13 +381,12 @@ class AIService
      */
     private function testGemini()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
             // Usar o modelo gemini 2.0 flash que sabemos que funciona 
@@ -329,12 +395,13 @@ class AIService
             // Log simplificado
             Log::info('Iniciando teste com Gemini usando classe especializada', [
                 'model' => $model,
-                'token_length' => strlen($this->apiToken)
+                'token_length' => strlen($this->apiToken),
+                'system_prompt_present' => !empty($this->systemPrompt)
             ]);
             
             // Usar a classe GeminiTest que implementa exatamente o mesmo código
-            // que testamos e funciona perfeitamente
-            return GeminiTest::testConnection($this->apiToken, $model);
+            // que testamos e funciona perfeitamente, agora passando o system_prompt
+            return GeminiTest::testConnection($this->apiToken, $model, true, $this->systemPrompt);
             
         } catch (\Exception $e) {
             Log::error('Falha ao testar Gemini: ' . $e->getMessage());
@@ -347,13 +414,12 @@ class AIService
      */
     private function testGrok()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
             Log::info('Iniciando teste de conexão com Grok', [
@@ -376,13 +442,12 @@ class AIService
      */
     private function testCopilot()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
             Log::info('Iniciando teste de conexão com Copilot', [
@@ -405,13 +470,12 @@ class AIService
      */
     private function testTongyi()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
             Log::info('Iniciando teste de conexão com Tongyi', [
@@ -450,13 +514,12 @@ class AIService
      */
     private function testDeepseek()
     {
-        if (!ReplicateSetting::isConfigured() || empty($this->apiToken)) {
+        if (empty($this->apiToken)) {
             Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
                 'provider' => $this->provider,
-                'has_config' => false,
-                'reason' => 'Missing API key or inactive setting'
+                'has_api_token' => false
             ]);
-            return ['status' => 'error', 'message' => 'Configuração não encontrada. Verifique as configurações.'];
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
             Log::info('Iniciando teste de conexão com Deepseek', [
@@ -494,8 +557,14 @@ class AIService
      */
     private function analyzeWithOpenAI($text)
     {
-        $systemPrompt = $this->settings->system_prompt ?? 
-            'Você é um assistente especializado em análise de extratos bancários e transações financeiras.';
+        $systemPrompt = $this->getSystemPrompt();
+
+        // Log do prompt escolhido
+        Log::info('Prompt escolhido para OpenAI', [
+            'length' => strlen($systemPrompt),
+            'preview' => substr($systemPrompt, 0, 100) . (strlen($systemPrompt) > 100 ? '...' : ''),
+            'prompt_type' => $this->promptType
+        ]);
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiToken,
@@ -522,8 +591,14 @@ class AIService
      */
     private function analyzeWithAnthropic($text)
     {
-        $systemPrompt = $this->settings->system_prompt ?? 
-            'Você é um assistente especializado em análise de extratos bancários e transações financeiras.';
+        $systemPrompt = $this->getSystemPrompt();
+
+        // Log do prompt escolhido
+        Log::info('Prompt escolhido para Anthropic', [
+            'length' => strlen($systemPrompt),
+            'preview' => substr($systemPrompt, 0, 100) . (strlen($systemPrompt) > 100 ? '...' : ''),
+            'prompt_type' => $this->promptType
+        ]);
 
         $response = Http::withHeaders([
             'x-api-key' => $this->apiToken,
@@ -550,8 +625,15 @@ class AIService
      */
     private function analyzeWithGemini($text)
     {
-        $systemPrompt = $this->settings->system_prompt ?? 
-            'Você é um assistente especializado em análise de extratos bancários e transações financeiras.';
+        // Obter o prompt adequado baseado no tipo (chat ou import)
+        $systemPrompt = $this->getSystemPrompt();
+        
+        // Log do prompt escolhido
+        Log::info('Prompt escolhido para Gemini', [
+            'length' => strlen($systemPrompt),
+            'preview' => substr($systemPrompt, 0, 100) . (strlen($systemPrompt) > 100 ? '...' : ''),
+            'prompt_type' => $this->promptType
+        ]);
 
         // Combina o prompt do sistema com o texto do usuário
         $fullPrompt = $systemPrompt . "\n\n" . $text;

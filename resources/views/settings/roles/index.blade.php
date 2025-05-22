@@ -36,9 +36,13 @@
                                     <a href="{{ route('settings.roles.edit', $role->id) }}" class="text-blue-600 hover:text-blue-800">
                                         <i class="ri-pencil-line"></i>
                                     </a>
-                                    <a href="{{ route('settings.roles.delete', $role->id) }}" class="text-red-600 hover:text-red-800" onclick="return confirm('Tem certeza que deseja excluir este perfil?')">
-                                        <i class="ri-delete-bin-line"></i>
-                                    </a>
+                                    @if($role->name !== 'Administrador')
+                                        <a href="{{ route('settings.roles.delete', $role->id) }}" class="text-red-600 hover:text-red-800" onclick="return confirm('Tem certeza que deseja excluir este perfil?')">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </a>
+                                    @else
+                                        <span class="text-gray-400" title="Permissões fixas"><i class="ri-lock-line"></i></span>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

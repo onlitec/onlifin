@@ -110,12 +110,11 @@ class TransactionObserver
     {
         $account = $transaction->account;
         
-        // Se a transação for uma despesa, subtrai do saldo
-        // Se for uma receita, adiciona ao saldo
-        $amount = $transaction->type === 'expense' ? -$transaction->amount : $transaction->amount;
+        // Convertendo de centavos para reais e aplicando sinal
+        $amountReais = ($transaction->type === 'expense' ? -$transaction->amount : $transaction->amount) / 100;
         
-        DB::transaction(function () use ($account, $amount) {
-            $account->current_balance = $account->current_balance + $amount;
+        DB::transaction(function () use ($account, $amountReais) {
+            $account->current_balance = $account->current_balance + $amountReais;
             $account->save();
         });
     }
@@ -124,11 +123,11 @@ class TransactionObserver
     {
         $account = $transaction->account;
         
-        // Faz o oposto da operação original
-        $amount = $transaction->type === 'expense' ? $transaction->amount : -$transaction->amount;
+        // Convertendo de centavos para reais e invertendo sinal
+        $amountReais = ($transaction->type === 'expense' ? $transaction->amount : -$transaction->amount) / 100;
         
-        DB::transaction(function () use ($account, $amount) {
-            $account->current_balance = $account->current_balance + $amount;
+        DB::transaction(function () use ($account, $amountReais) {
+            $account->current_balance = $account->current_balance + $amountReais;
             $account->save();
         });
     }

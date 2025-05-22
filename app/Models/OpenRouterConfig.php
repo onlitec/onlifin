@@ -14,5 +14,7 @@ class OpenRouterConfig extends Model
         'api_key',
         'endpoint',
         'system_prompt',
+        'chat_prompt',
+        'import_prompt',
     ];
 } 

@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="container-app max-w-4xl mx-auto">
+    <div class="container-app px-4 mx-auto">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
             <div>
@@ -16,6 +16,15 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <form action="/transactions" method="POST" id="transaction-form">
                 @csrf
+                @if ($errors->any())
+                    <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 
                 <div class="p-6 space-y-6">
                     <!-- Tipo e Data -->
@@ -115,7 +124,7 @@
                         </div>
                     @endif
 
-                    {{-- ATENÇÃO: Correção crítica - carregamento de todas as categorias implementado. NÃO ALTERAR sem autorização explícita. --}}
+                    {{-- ATENÇÃO: CORREÇÃO CRÍTICA no cadastro de transações e máscara de valor; NÃO ALTERAR SEM AUTORIZAÇÃO EXPLÍCITA. --}}
                     <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">
                         Categoria
                     </label>
@@ -313,11 +322,10 @@
                 return;
             }
             
-            // CORREÇÃO: Multiplicar por 100 para converter de reais para centavos
-            // REGRA: R$ 400,00 deve ser armazenado como 40000 (centavos)
-            const valueInCents = Math.round(parseFloat(value) * 100);
+            // O unmaskedValue já representa o valor em centavos devido ao scale:2
+            const valueInCents = parseInt(value, 10) || 0;
             amountHiddenInput.value = valueInCents;
-            console.log('Valor em reais:', value, 'Valor em centavos:', valueInCents);
+            console.log('Valor em centavos:', valueInCents);
         }
 
         // Definir valor inicial
@@ -467,6 +475,29 @@ acceptSuggestionBtn.addEventListener('click', function() {
         }
     }
     suggestedCategoryContainer.classList.add('hidden');
+});
+
+// Garantir atualização de amount hidden no submit do form
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('transaction-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            try {
+                e.preventDefault();
+                // Extrai apenas dígitos para centavos
+                const disp = this.querySelector('#amount_display');
+                const hid = this.querySelector('#amount');
+                if (disp && hid) {
+                    const digits = disp.value.replace(/[^0-9]/g, '') || '0';
+                    hid.value = digits;
+                    console.log('Hidden amount atualizado pelo fallback:', digits);
+                }
+            } catch (err) {
+                console.error('Erro no fallback de amount:', err);
+            }
+            this.submit();
+        });
+    }
 });
 </script>
 </x-app-layout>
