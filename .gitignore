@@ -25,3 +25,4 @@ yarn-error.log
 
 # Ignore Google Cloud credentials
 /storage/app/google-cloud-credentials.json
+.env
