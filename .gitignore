@@ -6,7 +6,6 @@
 /public/build/
 /public/hot/
 /public/storage/
-/.env
 /.env.backup
 /.env.production
 /.phpunit.result.cache
@@ -23,3 +22,6 @@ yarn-error.log
 /storage/framework/views/*
 
 /storage/archived_code/*
+
+# Ignore Google Cloud credentials
+/storage/app/google-cloud-credentials.json

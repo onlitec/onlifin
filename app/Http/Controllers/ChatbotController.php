@@ -51,87 +51,55 @@ class ChatbotController extends Controller
      */
     public function ask(Request $request)
     {
-        $request->validate([
-            'message' => 'required|string|min:2',
-        ]);
-
-        // Obter configuração da IA
-        $config = $this->aiConfigService->getAIConfig();
-        
-        Log::info('Configuração da IA:', $config);
-        
-        if (!$config['is_configured'] || !$config['has_api_key']) {
-            Log::error('Configuração da IA não encontrada ou inválida:', $config);
-            return response()->json([
-                'error' => 'Configuração da IA não encontrada. Por favor, configure a IA em Configurações > Modelos de IA.'
-            ], 400);
-        }
-
-        // Verificar se o usuário tem empresa associada
-        $user = Auth::user();
-        if (!$user || !$user->currentCompany) {
-            Log::warning('Usuário não tem empresa associada', ['user_id' => $user?->id]);
-            return response()->json([
-                'error' => 'Você precisa ter uma empresa associada para usar o chatbot financeiro. Por favor, configure sua empresa primeiro.'
-            ], 400);
-        }
-
         try {
-            // Tentar cada provedor de IA em ordem de fallback
-            $configs = $this->aiConfigService->getAllAIConfigs();
-            $errorMessages = [];
-            foreach ($configs as $cfg) {
-                Log::info('Tentando provedor de IA:', $cfg);
-                // Determinar endpoint e headers
-                $endpoint = $this->getEndpoint($cfg['provider'], $cfg['model']);
-                $headers  = $this->getHeaders($cfg['provider'], $cfg['api_key']);
-                Log::info('Endpoint da IA:', ['endpoint' => $endpoint]);
-                Log::info('Headers da requisição:', ['provider' => $cfg['provider'], 'headers' => array_keys($headers)]);
-                // Preparar payload para chat usando prompt configurado
-                $aiService = new \App\Services\AIService($cfg['provider'], $cfg['model'], $cfg['api_key'], 'chat');
-                if (!empty($cfg['system_prompt'])) {
-                    $aiService->setSystemPrompt($cfg['system_prompt']);
-                }
-                $chatPrompt = $aiService->getSystemPrompt();
-                $payload    = $this->getPayload($cfg['provider'], $cfg['model'], $chatPrompt, $request->message);
-                Log::info('Payload da requisição:', ['provider' => $cfg['provider'], 'payload' => $payload]);
-                // Enviar requisição
-                $response = Http::withHeaders($headers)
-                    ->timeout(30)
-                    ->post($endpoint, $payload);
-                // Avaliar resposta
-                if ($response->successful()) {
-                    $responseData = $response->json();
-                    $answer = $this->extractAnswer($cfg['provider'], $responseData);
-                    if ($answer) {
-                        return response()->json(['answer' => $answer]);
-                    }
-                    $errorMessages[] = 'Resposta inválida de ' . $cfg['provider'];
-                    continue;
-                }
-                $status = $response->status();
-                if ($status === 429) {
-                    Log::warning('Rate limit atingido em ' . $cfg['provider'], ['status' => $status]);
-                    $errorMessages[] = 'Rate limit em ' . $cfg['provider'];
-                    continue;
-                }
-                $errorMessages[] = 'Erro ' . $status . ' em ' . $cfg['provider'];
-                continue;
+            // Validação e configuração da IA
+            $request->validate(['message' => 'required|string|min:2']);
+            $config = $this->aiConfigService->getAIConfig();
+            Log::info('Configuração da IA:', $config);
+            if (!$config['is_configured'] || !$config['has_api_key']) {
+                Log::error('Configuração da IA inválida:', $config);
+                return response()->json(['error' => 'IA não configurada.'], 400);
             }
-            // Nenhum provedor funcionou
-            return response()->json([
-                'error' => 'Nenhum provedor de IA disponível: ' . implode('; ', $errorMessages)
-            ], 503);
+            $user = Auth::user();
+            if (!$user || !$user->currentCompany) {
+                Log::warning('Usuário sem empresa associada', ['user_id' => $user?->id]);
+                return response()->json(['error' => 'Empresa não associada.'], 400);
+            }
+            // Loop de fallback de provedores
+            $configs = $this->aiConfigService->getAllAIConfigs();
+            $errors = [];
+            foreach ($configs as $cfg) {
+                try {
+                    Log::info('Tentando IA:', $cfg);
+                    $endpoint = $this->getEndpoint($cfg['provider'], $cfg['model']);
+                    $headers = $this->getHeaders($cfg['provider'], $cfg['api_key']);
+                    $aiService = new \App\Services\AIService($cfg['provider'], $cfg['model'], $cfg['api_key'], 'chat');
+                    if (!empty($cfg['system_prompt'])) {
+                        $aiService->setSystemPrompt($cfg['system_prompt']);
+                    }
+                    $payload = $this->getPayload($cfg['provider'], $cfg['model'], $aiService->getSystemPrompt(), $request->message);
+                    $response = Http::withHeaders($headers)->timeout(30)->post($endpoint, $payload);
+                    if ($response->successful()) {
+                        $answer = $this->extractAnswer($cfg['provider'], $response->json());
+                        if ($answer) {
+                            return response()->json(['answer' => $answer]);
+                        }
+                    }
+                    $status = $response->status();
+                    if ($status === 429) {
+                        $errors[] = 'Rate limit em ' . $cfg['provider'];
+                        continue;
+                    }
+                    $errors[] = "Erro {$status} em {$cfg['provider']}";
+                } catch (\Exception $inner) {
+                    Log::warning('Erro no provedor ' . $cfg['provider'], ['error' => $inner->getMessage()]);
+                    $errors[] = 'Falha ' . $cfg['provider'];
+                }
+            }
+            return response()->json(['error' => 'Nenhum provedor disponível: ' . implode('; ', $errors)], 503);
         } catch (\Exception $e) {
-            Log::error('Exceção ao processar pergunta do chatbot:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'endpoint' => isset($endpoint) ? $endpoint : null,
-                'payload' => isset($payload) ? $payload : null
-            ]);
-            return response()->json([
-                'error' => 'Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.'
-            ], 500);
+            Log::error('Erro geral ChatbotController@ask', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Erro interno.'], 500);
         }
     }
 

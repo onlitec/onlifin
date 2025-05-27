@@ -28,6 +28,8 @@ use App\Http\Controllers\TempStatementImportController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\GoogleChatbotController;
+use App\Http\Controllers\FinancialReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -364,16 +366,11 @@ Route::middleware(['auth'])->group(function () {
     // Relatório financeiro detalhado com insights
     Route::get('/settings/reports/financial', [\App\Http\Controllers\SettingsController::class, 'financialReport'])->middleware('auth')->name('settings.reports.financial');
 
-    // Rotas do Chatbot Financeiro
+    // Rotas do Chatbot Financeiro via Google
     Route::middleware(['auth'])->group(function () {
-        // Tela de chat
-        Route::get('/chatbot', [App\Http\Controllers\ChatbotController::class, 'index'])->name('chatbot.index');
-        // Envios de mensagens de texto
-        Route::post('/chatbot/ask', [App\Http\Controllers\ChatbotController::class, 'ask'])->name('chatbot.ask');
-        // Upload de arquivos de extrato via chatbot
-        Route::post('/chatbot/upload-statement', [App\Http\Controllers\ChatbotController::class, 'uploadStatement'])->name('chatbot.uploadStatement');
-        // Processamento e análise de extrato enviado
-        Route::post('/chatbot/process-statement', [App\Http\Controllers\ChatbotController::class, 'processStatement'])->name('chatbot.processStatement');
+        // Tela de chat e interações com Dialogflow
+        Route::get('/chatbot', [GoogleChatbotController::class, 'index'])->name('chatbot.index');
+        Route::post('/chatbot/ask', [GoogleChatbotController::class, 'ask'])->name('chatbot.ask');
     });
 
     // Rotas para gerenciamento de empresas
@@ -384,6 +381,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/companies/{company}/edit', [CompanyController::class, 'edit'])->name('companies.edit');
     Route::put('/companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');
+
+    // Rotas para Relatórios Financeiros com Gráficos
+    Route::prefix('reports/financial')->name('reports.financial.')->middleware(['auth'])->group(function () {
+        Route::get('/', [FinancialReportController::class, 'index'])->name('index');
+        Route::get('/expenses-by-category', [FinancialReportController::class, 'expensesByCategory'])->name('expensesByCategory');
+        // Adicionar aqui outras rotas para diferentes tipos de gráficos/relatórios no futuro
+        // Ex: Route::get('/income-vs-expenses', [FinancialReportController::class, 'incomeVsExpenses'])->name('incomeVsExpenses');
+    });
 
 });
 

@@ -446,5 +446,6 @@
         }
     </script>
     @stack('scripts')
+    @include('chatbot._widget')
 </body>
 </html> 

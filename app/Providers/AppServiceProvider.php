@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use App\Models\User;
 use App\Models\Transaction;
@@ -74,18 +76,38 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Compartilhar título do site e favicon dinâmicos de configurações
-        $siteTitle = \App\Models\Setting::get('site_title', config('app.name'));
-        $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
-        \Illuminate\Support\Facades\View::share('siteTitle', $siteTitle);
-        \Illuminate\Support\Facades\View::share('siteFavicon', $siteFavicon);
-        // Compartilhar tema do site (claro/escuro)
-        $siteTheme = \App\Models\Setting::get('site_theme', 'light');
-        \Illuminate\Support\Facades\View::share('siteTheme', $siteTheme);
-        // Compartilhar tamanho base da fonte (px)
-        $rootFontSize = \App\Models\Setting::get('root_font_size', '16');
-        \Illuminate\Support\Facades\View::share('rootFontSize', $rootFontSize);
-        // Compartilhar tamanho da fonte dos cards
-        $cardFontSize = \App\Models\Setting::get('card_font_size', '2xl');
-        \Illuminate\Support\Facades\View::share('cardFontSize', $cardFontSize);
+        try {
+            // Garanta que o model Setting exista e o método get() esteja implementado corretamente.
+            // Exemplo: App\Models\Setting::get('key', 'default_value');
+            $siteTitle = \App\Models\Setting::get('site_title', config('app.name', 'Onlifin'));
+            $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
+            $siteTheme = \App\Models\Setting::get('site_theme', 'light'); // 'light' ou 'dark'
+            $rootFontSize = \App\Models\Setting::get('root_font_size', '16'); // valor numérico em px
+            $cardFontSize = \App\Models\Setting::get('card_font_size', '2xl'); // ex: 'xl', '2xl', '3xl' conforme Tailwind
+
+            View::share('siteTitle', $siteTitle);
+            View::share('siteFavicon', $siteFavicon);
+            View::share('siteTheme', $siteTheme);
+            View::share('rootFontSize', $rootFontSize); // Será usado como string no HTML, não precisa concatenar 'px' aqui
+            View::share('cardFontSize', $cardFontSize); // Passar como está, a view decidirá como usar (ex: text-{{ $cardFontSize }})
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::warning('AppServiceProvider: Não foi possível conectar ao banco de dados ou a tabela de configurações não foi encontrada durante o boot: ' . $e->getMessage());
+            // Compartilhar valores padrão para evitar que as views quebrem
+            View::share('siteTitle', config('app.name', 'Onlifin'));
+            View::share('siteFavicon', 'favicon.ico');
+            View::share('siteTheme', 'light');
+            View::share('rootFontSize', '16');
+            View::share('cardFontSize', '2xl');
+        } catch (\Exception $e) {
+            // Captura outras exceções genéricas que podem ocorrer ao buscar settings
+            Log::error('AppServiceProvider: Erro ao buscar configurações do site: ' . $e->getMessage());
+            // Compartilhar valores padrão para evitar que as views quebrem
+            View::share('siteTitle', config('app.name', 'Onlifin'));
+            View::share('siteFavicon', 'favicon.ico');
+            View::share('siteTheme', 'light');
+            View::share('rootFontSize', '16');
+            View::share('cardFontSize', '2xl');
+        }
     }
 }

@@ -53,4 +53,16 @@ return [
         'enabled' => env('PUSH_NOTIFICATIONS_ENABLED', false),
     ],
 
+    'tiktok' => [
+        'client_id' => env('TIKTOK_CLIENT_ID'),
+        'client_secret' => env('TIKTOK_CLIENT_SECRET'),
+        'redirect' => env('TIKTOK_REDIRECT_URI'),
+    ],
+
+    'gcp' => [
+        'project_id' => env('GOOGLE_CLOUD_PROJECT'),
+        'credentials' => env('GOOGLE_APPLICATION_CREDENTIALS'),
+        'document_ai_region' => env('GOOGLE_DOCUMENT_AI_REGION', 'us'), // 'us' é um valor padrão comum
+    ],
+
 ];
