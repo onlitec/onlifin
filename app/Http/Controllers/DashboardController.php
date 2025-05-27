@@ -375,7 +375,7 @@ class DashboardController extends Controller
          * ATENÇÃO: CONFIGURAÇÃO CRÍTICA - NÃO MODIFICAR
          * 
          * O código a seguir também recalcula os saldos das contas para exibição.
-         * Isto deve ser mantido para garantir consistência nos dados exibidos.
+         * Isto deve ser mantido para garantir consistências nos dados exibidos.
          */
         // Buscar contas do usuário - se for admin, mostra todas as contas
         $isAdmin = auth()->check() && auth()->user()->is_admin;
@@ -444,4 +444,4 @@ class DashboardController extends Controller
             'accounts'
         ));
     }
-} 
+}
