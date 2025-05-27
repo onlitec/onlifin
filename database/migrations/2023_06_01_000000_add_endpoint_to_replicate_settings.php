@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('replicate_settings', function (Blueprint $table) {
-            if (!Schema::hasColumn('replicate_settings', 'endpoint')) {
-                $table->string('endpoint')->nullable()->after('api_token');
-            }
-        });
+        if (Schema::hasTable('replicate_settings')) {
+            Schema::table('replicate_settings', function (Blueprint $table) {
+                $table->string('endpoint')->nullable();
+            });
+        }
     }
 
     /**
@@ -23,10 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('replicate_settings', function (Blueprint $table) {
-            if (Schema::hasColumn('replicate_settings', 'endpoint')) {
+        if (Schema::hasTable('replicate_settings')) {
+            Schema::table('replicate_settings', function (Blueprint $table) {
                 $table->dropColumn('endpoint');
-            }
-        });
+            });
+        }
     }
 }; 

@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="container-app">
+    <div class="container-app max-w-7xl mx-auto space-y-8 animate-fade-in">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Revisão e Confirmação</h1>
             <a href="{{ route('statements.import') }}" class="btn btn-secondary">
@@ -8,7 +8,7 @@
             </a>
         </div>
 
-        <div class="card">
+        <div class="card hover-scale">
             <div class="card-body">
                 <div class="mb-6">
                     <div class="flex items-center mb-2">

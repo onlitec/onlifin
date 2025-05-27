@@ -16,6 +16,7 @@ use App\Observers\AccountObserver;
 use App\Livewire\Transactions\Income;
 use App\Livewire\Transactions\Expenses;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -75,39 +76,32 @@ class AppServiceProvider extends ServiceProvider
             return new \App\Channels\WhatsAppChannel();
         });
 
-        // Compartilhar título do site e favicon dinâmicos de configurações
+        // Compartilhar configurações do site, verificando se a tabela existe e tratando exceções
         try {
-            // Garanta que o model Setting exista e o método get() esteja implementado corretamente.
-            // Exemplo: App\Models\Setting::get('key', 'default_value');
-            $siteTitle = \App\Models\Setting::get('site_title', config('app.name', 'Onlifin'));
-            $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
-            $siteTheme = \App\Models\Setting::get('site_theme', 'light'); // 'light' ou 'dark'
-            $rootFontSize = \App\Models\Setting::get('root_font_size', '16'); // valor numérico em px
-            $cardFontSize = \App\Models\Setting::get('card_font_size', '2xl'); // ex: 'xl', '2xl', '3xl' conforme Tailwind
-
-            View::share('siteTitle', $siteTitle);
-            View::share('siteFavicon', $siteFavicon);
-            View::share('siteTheme', $siteTheme);
-            View::share('rootFontSize', $rootFontSize); // Será usado como string no HTML, não precisa concatenar 'px' aqui
-            View::share('cardFontSize', $cardFontSize); // Passar como está, a view decidirá como usar (ex: text-{{ $cardFontSize }})
-
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::warning('AppServiceProvider: Não foi possível conectar ao banco de dados ou a tabela de configurações não foi encontrada durante o boot: ' . $e->getMessage());
-            // Compartilhar valores padrão para evitar que as views quebrem
-            View::share('siteTitle', config('app.name', 'Onlifin'));
-            View::share('siteFavicon', 'favicon.ico');
-            View::share('siteTheme', 'light');
-            View::share('rootFontSize', '16');
-            View::share('cardFontSize', '2xl');
+            if (Schema::hasTable('settings')) {
+                $siteTitle = \App\Models\Setting::get('site_title', config('app.name'));
+                $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
+                $siteTheme = \App\Models\Setting::get('site_theme', 'light');
+                $rootFontSize = \App\Models\Setting::get('root_font_size', '16');
+                $cardFontSize = \App\Models\Setting::get('card_font_size', '2xl');
+            } else {
+                $siteTitle = config('app.name');
+                $siteFavicon = 'favicon.ico';
+                $siteTheme = 'light';
+                $rootFontSize = '16';
+                $cardFontSize = '2xl';
+            }
         } catch (\Exception $e) {
-            // Captura outras exceções genéricas que podem ocorrer ao buscar settings
-            Log::error('AppServiceProvider: Erro ao buscar configurações do site: ' . $e->getMessage());
-            // Compartilhar valores padrão para evitar que as views quebrem
-            View::share('siteTitle', config('app.name', 'Onlifin'));
-            View::share('siteFavicon', 'favicon.ico');
-            View::share('siteTheme', 'light');
-            View::share('rootFontSize', '16');
-            View::share('cardFontSize', '2xl');
+            $siteTitle = config('app.name');
+            $siteFavicon = 'favicon.ico';
+            $siteTheme = 'light';
+            $rootFontSize = '16';
+            $cardFontSize = '2xl';
         }
+        View::share('siteTitle', $siteTitle);
+        View::share('siteFavicon', $siteFavicon);
+        View::share('siteTheme', $siteTheme);
+        View::share('rootFontSize', $rootFontSize);
+        View::share('cardFontSize', $cardFontSize);
     }
 }

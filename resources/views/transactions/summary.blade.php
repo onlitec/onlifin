@@ -1,10 +1,5 @@
-@extends('layouts.app')
-
-@section('title', 'Resumo Inteligente')
-
-@section('content')
-<div class="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-10 px-0">
-    <div class="w-full px-4 md:px-8">
+<x-app-layout>
+    <div class="container-app max-w-7xl mx-auto space-y-8 animate-fade-in">
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-4xl font-extrabold text-gray-900 mb-1">Resumo Inteligente</h1>
@@ -16,11 +11,11 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div class="bg-white rounded-xl shadow p-6 flex flex-col justify-between">
+            <div class="card hover-scale p-6 flex flex-col justify-between">
                 <h2 class="text-xl font-bold text-primary-700 mb-2">Resumo</h2>
                 <p class="text-gray-700">{{ $summary['resumo'] ?? 'Sem dados.' }}</p>
             </div>
-            <div class="bg-white rounded-xl shadow p-6 flex flex-col justify-between">
+            <div class="card hover-scale p-6 flex flex-col justify-between">
                 <h2 class="text-xl font-bold text-primary-700 mb-2">Insights</h2>
                 <ul class="list-disc pl-5 text-gray-700">
                     @forelse($summary['insights'] ?? [] as $insight)
@@ -30,7 +25,7 @@
                     @endforelse
                 </ul>
             </div>
-            <div class="bg-white rounded-xl shadow p-6 flex flex-col justify-between">
+            <div class="card hover-scale p-6 flex flex-col justify-between">
                 <h2 class="text-xl font-bold text-primary-700 mb-2">Sugestões</h2>
                 <ul class="list-disc pl-5 text-gray-700">
                     @forelse($summary['sugestoes'] ?? [] as $sugestao)
@@ -42,5 +37,4 @@
             </div>
         </div>
     </div>
-</div>
-@endsection 
+</x-app-layout> 
