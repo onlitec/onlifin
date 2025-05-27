@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="container-app">
+    <div class="container-app max-w-7xl mx-auto space-y-8 animate-fade-in">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Configuração da IA para Análise de Extratos</h1>
             <a href="{{ route('settings.index') }}" class="btn btn-secondary">
@@ -8,11 +8,11 @@
             </a>
         </div>
 
-        <div class="card">
+        <div class="card hover-scale">
             <div class="card-header">
                 <h2 class="text-lg font-medium text-gray-900">API de Inteligência Artificial</h2>
             </div>
-            <div class="card-body">
+            <div class="card-body p-6 space-y-6">
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
                     <div class="flex">
                         <div class="flex-shrink-0">

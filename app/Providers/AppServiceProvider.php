@@ -14,6 +14,8 @@ use App\Observers\AccountObserver;
 use App\Livewire\Transactions\Income;
 use App\Livewire\Transactions\Expenses;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -73,19 +75,32 @@ class AppServiceProvider extends ServiceProvider
             return new \App\Channels\WhatsAppChannel();
         });
 
-        // Compartilhar título do site e favicon dinâmicos de configurações
-        $siteTitle = \App\Models\Setting::get('site_title', config('app.name'));
-        $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
-        \Illuminate\Support\Facades\View::share('siteTitle', $siteTitle);
-        \Illuminate\Support\Facades\View::share('siteFavicon', $siteFavicon);
-        // Compartilhar tema do site (claro/escuro)
-        $siteTheme = \App\Models\Setting::get('site_theme', 'light');
-        \Illuminate\Support\Facades\View::share('siteTheme', $siteTheme);
-        // Compartilhar tamanho base da fonte (px)
-        $rootFontSize = \App\Models\Setting::get('root_font_size', '16');
-        \Illuminate\Support\Facades\View::share('rootFontSize', $rootFontSize);
-        // Compartilhar tamanho da fonte dos cards
-        $cardFontSize = \App\Models\Setting::get('card_font_size', '2xl');
-        \Illuminate\Support\Facades\View::share('cardFontSize', $cardFontSize);
+        // Compartilhar configurações do site, verificando se a tabela existe e tratando exceções
+        try {
+            if (Schema::hasTable('settings')) {
+                $siteTitle = \App\Models\Setting::get('site_title', config('app.name'));
+                $siteFavicon = \App\Models\Setting::get('site_favicon', 'favicon.ico');
+                $siteTheme = \App\Models\Setting::get('site_theme', 'light');
+                $rootFontSize = \App\Models\Setting::get('root_font_size', '16');
+                $cardFontSize = \App\Models\Setting::get('card_font_size', '2xl');
+            } else {
+                $siteTitle = config('app.name');
+                $siteFavicon = 'favicon.ico';
+                $siteTheme = 'light';
+                $rootFontSize = '16';
+                $cardFontSize = '2xl';
+            }
+        } catch (\Exception $e) {
+            $siteTitle = config('app.name');
+            $siteFavicon = 'favicon.ico';
+            $siteTheme = 'light';
+            $rootFontSize = '16';
+            $cardFontSize = '2xl';
+        }
+        View::share('siteTitle', $siteTitle);
+        View::share('siteFavicon', $siteFavicon);
+        View::share('siteTheme', $siteTheme);
+        View::share('rootFontSize', $rootFontSize);
+        View::share('cardFontSize', $cardFontSize);
     }
 }

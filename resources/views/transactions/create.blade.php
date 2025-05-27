@@ -1,10 +1,22 @@
 <x-app-layout>
-    <div class="container-app px-4 mx-auto">
+    <div class="container-app space-y-4 animate-fade-in" style="max-width: 100%; overflow-x: hidden;">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Nova Transação</h1>
-                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Preencha os dados para registrar uma nova transação</p>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    @if(request()->has('is_transfer'))
+                        Nova Transferência
+                    @else
+                        Nova Transação
+                    @endif
+                </h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    @if(request()->has('is_transfer'))
+                        Preencha os dados para registrar uma nova transferência entre contas
+                    @else
+                        Preencha os dados para registrar uma nova transação
+                    @endif
+                </p>
             </div>
             <a href="{{ route('transactions.index') }}" class="btn btn-secondary">
                 <i class="ri-arrow-left-line mr-2"></i>
@@ -13,7 +25,7 @@
         </div>
 
         <!-- Card do Formulário -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="card" style="width: 100%; max-width: 100%; overflow: visible; position: relative;">
             <form action="/transactions" method="POST" id="transaction-form">
                 @csrf
                 @if ($errors->any())
@@ -26,27 +38,35 @@
                     </div>
                 @endif
                 
-                <div class="p-6 space-y-6">
+                <div class="card-body p-4 space-y-4" style="width: 100%; overflow-x: hidden; overflow-y: visible;">
                     <!-- Tipo e Data -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Tipo de Transação -->
-                        <div class="form-group">
+                        <div class="form-group" @if(request()->has('is_transfer')) style="display: none;" @endif>
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">
                                 Tipo de Transação
                             </label>
                             <select name="type" id="type"
                                    class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
-                                   onchange="updateCategories(this.value)">
+                                   onchange="updateCategoriesAndFields(this.value)">
                                 <option value="income" {{ old('type', $type ?? '') == 'income' ? 'selected' : '' }}>Receita</option>
                                 <option value="expense" {{ old('type', $type ?? '') == 'expense' ? 'selected' : '' }}>Despesa</option>
+                                <option value="transfer" {{ old('type', $type ?? '') == 'transfer' || request()->has('is_transfer') ? 'selected' : '' }}>Transferência</option>
                             </select>
                             @error('type')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
+                        <!-- Campo oculto para tipo em caso de transferência -->
+                        @if(request()->has('is_transfer'))
+                            <input type="hidden" name="type" value="transfer">
+                        @endif
+
+                        <!-- Campo oculto para marcar transferência se tipo for transferência -->
+                        <input type="hidden" name="is_transfer" id="is_transfer_hidden" value="{{ old('is_transfer') || request()->has('is_transfer') || old('type') == 'transfer' ? '1' : '0' }}">
 
                         <!-- Data -->
-                        <div class="form-group">
+                        <div class="form-group @if(request()->has('is_transfer')) col-span-2 @endif">
                             <label for="date" class="block text-sm font-medium text-gray-700 mb-1">
                                 Data
                             </label>
@@ -60,7 +80,7 @@
                     </div>
 
                     <!-- Descrição e Valor -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Descrição -->
                         <div class="form-group">
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
@@ -141,10 +161,38 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
 
+                    <!-- Adicionar campo oculto para marcar transferência se vier da URL -->
+                    @if(request()->has('is_transfer'))
+                        <input type="hidden" name="is_transfer" value="1">
+                    @endif
+                    
+                    <div class="form-group" id="transfer-to-account-group" 
+                         style="display: {{ old('is_transfer') || request()->has('is_transfer') || old('type') == 'transfer' ? 'block' : 'none' }};">
+                        <label for="transfer_to_account_id" class="block text-sm font-medium text-gray-700 mb-1">Conta de Destino</label>
+                        <select name="transfer_to_account_id" id="transfer_to_account_id"
+                               class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
+                            <option value="">Selecione uma conta de destino</option>
+                            @foreach($accounts ?? [] as $account)
+                                <option value="{{ $account->id }}" {{ old('transfer_to_account_id') == $account->id ? 'selected' : '' }}>
+                                    {{ $account->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('transfer_to_account_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Conta -->
                     <div class="form-group">
                         <label for="account_id" class="block text-sm font-medium text-gray-700 mb-1">
-                            Conta
+                            <span id="account_label">
+                                @if(request()->has('is_transfer') || old('type') == 'transfer')
+                                    Conta de Origem
+                                @else
+                                    Conta
+                                @endif
+                            </span>
                         </label>
                         <select name="account_id" id="account_id"
                                class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
@@ -199,7 +247,7 @@
                     </div>
 
                     <!-- Campos para parcelamento (visíveis apenas quando recurrence_type = "installment") -->
-                    <div id="installment-fields" class="grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
+                    <div id="installment-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display: none;">
                         <div class="form-group">
                             <label for="installment_number" class="block text-sm font-medium text-gray-700 mb-1">
                                 Número da Parcela
@@ -245,259 +293,136 @@
     </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const typeSelect = document.getElementById('type');
-        const clienteField = document.querySelector('.cliente-field');
-        const fornecedorField = document.querySelector('.fornecedor-field');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar o campo de valor com máscara monetária
+        const amountDisplay = document.getElementById('amount_display');
+        const amountHidden = document.getElementById('amount');
         
-        if (typeSelect && clienteField && fornecedorField) {
-            // Definir estado inicial com base no valor atual do select
-            const initialType = typeSelect.value;
-            updateFields(initialType);
-            
-            // Adicionar listener para mudanças de tipo
-            typeSelect.addEventListener('change', (e) => {
-                updateFields(e.target.value);
-                updateCategories(e.target.value);
+        // ATENÇÃO: CONFIGURAÇÃO CRÍTICA - NÃO MODIFICAR
+        // A máscara de valores monetários é essencial para o correto 
+        // processamento financeiro das transações.
+        const maskOptions = {
+            prefix: 'R$ ',
+            thousands: '.',
+            decimal: ',',
+            precision: 2,
+            allowNegative: false
+        };
+        
+        const mask = IMask(amountDisplay, maskOptions);
+        
+        // Recuperar valor salvo (se houver)
+        const oldAmount = "{{ old('amount') }}";
+        if (oldAmount) {
+            // Convertemos para o formato de exibição (com vírgula)
+            const formattedAmount = (parseFloat(oldAmount) / 100).toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             });
+            mask.value = formattedAmount;
         }
         
-        function updateFields(type) {
-            if (type === 'income') {
-                clienteField.style.display = 'block';
-                fornecedorField.style.display = 'none';
-            } else if (type === 'expense') {
-                clienteField.style.display = 'none';
-                fornecedorField.style.display = 'block';
+        // Quando o valor for atualizado, guardar no campo hidden
+        amountDisplay.addEventListener('input', function() {
+            // Valor sem máscara (números apenas)
+            const numericValue = mask.unmaskedValue;
+            if (numericValue) {
+                // Converter para centavos e guardar
+                const amountInCents = Math.round(parseFloat(numericValue) * 100);
+                amountHidden.value = amountInCents;
             } else {
-                clienteField.style.display = 'none';
-                fornecedorField.style.display = 'none';
+                amountHidden.value = '';
+            }
+        });
+        
+        // Detectar parâmetros da URL para pré-selecionar a conta
+        const urlParams = new URLSearchParams(window.location.search);
+        const accountId = urlParams.get('account_id');
+        
+        if (accountId) {
+            const accountSelect = document.getElementById('account_id');
+            if (accountSelect) {
+                accountSelect.value = accountId;
+            }
+        }
+        
+        // Inicializar os campos corretamente com base no tipo selecionado
+        const typeSelect = document.getElementById('type');
+        if (typeSelect) {
+            // Usando a nova função para inicializar todos os campos
+            updateCategoriesAndFields(typeSelect.value);
+        } else {
+            // Se estamos no modo transferência via URL
+            if ("{{ request()->has('is_transfer') }}" === "1") {
+                updateCategoriesAndFields('transfer');
+            } else {
+                updateCategoriesAndFields("{{ old('type', 'expense') }}");
             }
         }
     });
-
-    // Inicializar máscara monetária com IMask.js
-    const amountDisplayInput = document.getElementById('amount_display');
-    const amountHiddenInput = document.getElementById('amount');
     
-    if (amountDisplayInput && amountHiddenInput) {
-        // Configuração da máscara monetária
-        const maskOptions = {
-            mask: 'R$ num',
-            blocks: {
-                num: {
-                    mask: Number,
-                    scale: 2,
-                    thousandsSeparator: '.',
-                    padFractionalZeros: true,
-                    normalizeZeros: true,
-                    radix: ',',
-                    mapToRadix: ['.'],
-                    min: 0,
-                    max: 999999999.99,
-                    placeholderChar: '0'
-                }
-            }
-        };
-
-        // Inicializar a máscara
-        const mask = IMask(amountDisplayInput, maskOptions);
-
-        /**
-         * REGRA DE TRATAMENTO DE VALORES - OBRIGATÓRIO SEGUIR ESTE PADRÃO
-         * =============================================================
-         * 1. OS VALORES DEVEM SER PRESERVADOS EXATAMENTE COMO INSERIDOS
-         * 2. TODA TRANSAÇÃO FINANCEIRA É ARMAZENADA EM CENTAVOS (valor * 100)
-         * 3. NUNCA ALTERAR ESTA LÓGICA - ISSO CAUSARÁ INCONSISTÊNCIA NOS DADOS
-         * 4. EXEMPLO: R$ 400,00 -> 40000 CENTAVOS (NUNCA 400 CENTAVOS)
-         * 5. QUALQUER ALTERAÇÃO AQUI PODE CAUSAR PERDA FINANCEIRA
-         * =============================================================
-         */
-
-        // Função para atualizar o valor hidden
-        function updateHiddenValue() {
-            const value = mask.unmaskedValue;
-            if (!value) {
-                amountHiddenInput.value = '0';
-                return;
-            }
-            
-            // O unmaskedValue já representa o valor em centavos devido ao scale:2
-            const valueInCents = parseInt(value, 10) || 0;
-            amountHiddenInput.value = valueInCents;
-            console.log('Valor em centavos:', valueInCents);
-        }
-
-        // Definir valor inicial
-        if (amountHiddenInput.value) {
-            let initialValue = parseFloat(amountHiddenInput.value);
-            if (!isNaN(initialValue)) {
-                mask.value = initialValue.toString();
-            }
-        } else {
-            mask.value = '';
-        }
-
-        // Evento de submit - Garantir que o formulário é enviado com o valor correto
-        amountDisplayInput.form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevenir envio padrão
-            updateHiddenValue(); // Atualizar o valor oculto
-            console.log('Enviando formulário com valor:', amountHiddenInput.value);
-            this.submit(); // Enviar o formulário manualmente
-        });
-
-        // Eventos regulares
-        amountDisplayInput.addEventListener('blur', updateHiddenValue);
-        amountDisplayInput.addEventListener('input', updateHiddenValue);
-    }
-
-    // Inicializar filtro de categorias
-    const typeSelect = document.getElementById('type');
-    if (typeSelect) {
-        // Chamar a função ao carregar a página para garantir que as categorias
-        // correspondam ao tipo selecionado inicialmente
-        updateCategories(typeSelect.value);
-    }
-    
-    // Inicializar campos de recorrência
-    toggleRecurrenceFields();
-
-// Função para atualizar as categorias com base no tipo selecionado
-function updateCategories(type) {
-    // Buscar token CSRF da meta tag
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    
-    // Buscar categorias via AJAX
-    fetch(`/api/categories?type=${type}`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => {
-        if (!response.ok) {
-            if (response.status === 401) {
-                    // Redirecionar para login se necessário
-                window.location.href = '/login';
-                return;
-            }
-            return response.text().then(text => {
-                throw new Error(`Erro na API: ${response.status} ${response.statusText}. Resposta: ${text.substring(0, 100)}...`);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
+    function updateCategories(type) {
         const categorySelect = document.getElementById('category_id');
+        if (!categorySelect) return;
+        
+        const incomeCategories = {!! json_encode($incomeCategories ?? []) !!};
+        const expenseCategories = {!! json_encode($expenseCategories ?? []) !!};
+        
         categorySelect.innerHTML = '<option value="">Selecione uma categoria</option>';
-        data.forEach(category => {
+        
+        let categories = type === 'income' ? incomeCategories : expenseCategories;
+        
+        for (const category of categories) {
             const option = document.createElement('option');
             option.value = category.id;
             option.textContent = category.name;
-            categorySelect.appendChild(option);
-        });
-    })
-    .catch(error => {
-        console.error('Erro ao carregar categorias:', error);
-        const categorySelect = document.getElementById('category_id');
-        categorySelect.innerHTML = '<option value="">Erro ao carregar categorias</option>';
-    });
-}
-
-// Função para mostrar/ocultar campos de recorrência
-function toggleRecurrenceFields() {
-    const recurrenceType = document.getElementById('recurrence_type').value;
-    const installmentFields = document.getElementById('installment-fields');
-    const nextDateField = document.getElementById('next-date-field');
-    
-    if (recurrenceType === 'installment') {
-        installmentFields.style.display = 'grid';
-        nextDateField.style.display = 'block';
-    } else if (recurrenceType === 'fixed') {
-        installmentFields.style.display = 'none';
-        nextDateField.style.display = 'block';
-    } else {
-        installmentFields.style.display = 'none';
-        nextDateField.style.display = 'none';
-    }
-}
-
-// Integração com IA para sugestão de categoria
-const descriptionInput = document.getElementById('description');
-const suggestedCategoryContainer = document.getElementById('suggested-category-container');
-const suggestedCategorySpan = document.getElementById('suggested-category');
-const acceptSuggestionBtn = document.getElementById('accept-suggestion');
-const categorySelect = document.getElementById('category_id');
-
-let iaTimeout = null;
-descriptionInput.addEventListener('input', function() {
-    const desc = this.value;
-    if (iaTimeout) clearTimeout(iaTimeout);
-    if (desc.length < 3) {
-        suggestedCategoryContainer.classList.add('hidden');
-        return;
-    }
-    iaTimeout = setTimeout(() => {
-        fetch('/api/transactions/suggest-category', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            },
-            body: JSON.stringify({ description: desc })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.suggested_category) {
-                suggestedCategorySpan.textContent = data.suggested_category;
-                suggestedCategoryContainer.classList.remove('hidden');
-            } else {
-                suggestedCategoryContainer.classList.add('hidden');
+            
+            // Check if this option should be selected (from old input)
+            if (category.id.toString() === '{{ old('category_id') }}') {
+                option.selected = true;
             }
-        })
-        .catch(() => suggestedCategoryContainer.classList.add('hidden'));
-    }, 600); // debounce
-});
-
-acceptSuggestionBtn.addEventListener('click', function() {
-    const suggestion = suggestedCategorySpan.textContent;
-    if (!suggestion) return;
-    // Procurar a opção no select e selecionar
-    for (let opt of categorySelect.options) {
-        if (opt.textContent.trim().toLowerCase() === suggestion.trim().toLowerCase()) {
-            categorySelect.value = opt.value;
-            break;
+            
+            categorySelect.appendChild(option);
         }
     }
-    suggestedCategoryContainer.classList.add('hidden');
-});
-
-// Garantir atualização de amount hidden no submit do form
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('transaction-form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            try {
-                e.preventDefault();
-                // Extrai apenas dígitos para centavos
-                const disp = this.querySelector('#amount_display');
-                const hid = this.querySelector('#amount');
-                if (disp && hid) {
-                    const digits = disp.value.replace(/[^0-9]/g, '') || '0';
-                    hid.value = digits;
-                    console.log('Hidden amount atualizado pelo fallback:', digits);
+    
+    // Nova função que atualiza categorias e campos de transferência
+    function updateCategoriesAndFields(type) {
+        // Atualizar categorias primeiro (usando a função existente)
+        updateCategories(type === 'transfer' ? 'expense' : type);
+        
+        // Atualizar os campos relacionados à transferência
+        const transferToAccountGroup = document.getElementById('transfer-to-account-group');
+        const isTransferHidden = document.getElementById('is_transfer_hidden');
+        const accountLabel = document.getElementById('account_label');
+        const clienteField = document.querySelector('.cliente-field');
+        const fornecedorField = document.querySelector('.fornecedor-field');
+        
+        // Mostrar/esconder campo de conta de destino
+        if (type === 'transfer') {
+            transferToAccountGroup.style.display = 'block';
+            isTransferHidden.value = '1';
+            accountLabel.textContent = 'Conta de Origem';
+            
+            // Esconder campos de cliente e fornecedor para transferências
+            if (clienteField) clienteField.style.display = 'none';
+            if (fornecedorField) fornecedorField.style.display = 'none';
+        } else {
+            transferToAccountGroup.style.display = 'none';
+            isTransferHidden.value = '0';
+            accountLabel.textContent = 'Conta';
+            
+            // Mostrar campo apropriado para o tipo
+            if (clienteField && fornecedorField) {
+                if (type === 'income') {
+                    clienteField.style.display = 'block';
+                    fornecedorField.style.display = 'none';
+                } else {
+                    clienteField.style.display = 'none';
+                    fornecedorField.style.display = 'block';
                 }
-            } catch (err) {
-                console.error('Erro no fallback de amount:', err);
             }
-            this.submit();
-        });
+        }
     }
-});
 </script>
 </x-app-layout>

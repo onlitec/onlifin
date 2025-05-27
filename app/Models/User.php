@@ -107,6 +107,10 @@ class User extends Authenticatable
     // Ajustar o método hasPermission para super usuário
     public function hasPermission($permission): bool
     {
+        // Se for administrador global, permite tudo
+        if ($this->isAdmin()) {
+            return true;
+        }
         // Permissões dos perfis do usuário
         $hasRolePermission = $this->roles()->whereHas('permissions', function ($query) use ($permission) {
             $query->where('name', $permission);

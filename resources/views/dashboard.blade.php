@@ -1,6 +1,28 @@
 <x-app-layout>
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+<div class="w-full space-y-8">
     {{-- Incluir CDN do Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
+    <style>
+        /* Corrigir problema de rolagem nos grids e cards */
+        .grid {
+            overflow-y: hidden !important;
+            overflow-x: hidden !important;
+            width: 100% !important;
+            max-height: none !important;
+        }
+        
+        .card {
+            overflow: visible !important;
+        }
+        
+        /* Garantir que os tooltips apareçam corretamente */
+        .group:hover .group-hover\:block {
+            display: block !important;
+            z-index: 50 !important;
+        }
+    </style>
     
     <!-- Cabeçalho e Filtro de Período -->
     <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-start gap-4 md:gap-6">
@@ -35,9 +57,9 @@
     --}}
     
     <!-- Cards de Resumo -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
         <!-- Saldo Atual -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <div class="flex items-center mb-4">
                 <div class="relative group inline-block">
                 <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -61,7 +83,7 @@
         </div>
 
         <!-- Receitas (Período) -->
-        <div class="bg-white rounded-xl shadow-sm border border-green-100 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
                     <div class="relative group inline-block">
@@ -93,7 +115,7 @@
         </div>
 
         <!-- Despesas (Período) -->
-        <div class="bg-white rounded-xl shadow-sm border border-red-100 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
                     <div class="relative group inline-block">
@@ -126,7 +148,7 @@
         </div>
 
         <!-- Saldo (Período) -->
-        <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
                     <div class="relative group inline-block">
@@ -166,7 +188,7 @@
     Modificar este código pode causar problemas na exibição de saldos.
     Consulte FINANCIAL_RULES.md antes de qualquer alteração.
     --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+    <div class="card p-6 mb-8">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">
             Contas Bancárias <span class="text-sm text-gray-500">({{ $accounts->count() }} {{ $accounts->count() == 1 ? 'conta' : 'contas' }})</span>
         </h3>
@@ -204,6 +226,9 @@
                                     <i class="ri-delete-bin-line"></i> Excluir
                                 </button>
                             </form>
+                            <a href="{{ route('transactions.create', ['is_transfer' => true, 'account_id' => $account->id]) }}" class="text-indigo-600 hover:text-indigo-800">
+                                <i class="ri-exchange-funds-line"></i> Transferir
+                            </a>
                         </div>
                     </div>
                 @endforeach
@@ -220,10 +245,10 @@
         @endif
     </div>
 
-    <!-- NOVO: Seção de Transações Pendentes (Hoje e Amanhã) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <!-- Seção de Transações Pendentes (Hoje e Amanhã) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
         <!-- Despesas a Vencer -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-900">Despesas a Vencer</h2>
                 <p class="text-sm text-gray-600">Hoje e amanhã</p>
@@ -248,7 +273,7 @@
         </div>
         
          <!-- Receitas a Receber -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="card hover-scale p-6" style="overflow: visible;">
              <div class="px-6 py-4 border-b border-gray-200">
                  <h2 class="text-lg font-semibold text-gray-900">Receitas a Receber</h2>
                   <p class="text-sm text-gray-600">Hoje e amanhã</p>
@@ -274,9 +299,9 @@
     </div>
 
     <!-- Gráficos -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
         <!-- Gráfico de Despesas por Categoria -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Despesas por Categoria ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
             @if($expenseChartData->isNotEmpty())
                 <div class="relative h-64 md:h-80">
@@ -288,7 +313,7 @@
         </div>
 
         <!-- Gráfico de Receitas por Categoria -->
-         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+         <div class="card hover-scale p-6" style="overflow: visible;">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Receitas por Categoria ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
              @if($incomeChartData->isNotEmpty())
                 <div class="relative h-64 md:h-80">
@@ -301,9 +326,9 @@
     </div>
     
     <!-- NOVO: Gráficos de Despesas e Receitas por Conta Bancária -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
         <!-- Despesas por Conta Bancária -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Despesas por Conta Bancária ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
             @if(isset($accountExpenseData) && $accountExpenseData->isNotEmpty())
                 <div class="relative h-64 md:h-80">
@@ -314,7 +339,7 @@
             @endif
         </div>
         <!-- Receitas por Conta Bancária -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Receitas por Conta Bancária ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
             @if(isset($accountIncomeData) && $accountIncomeData->isNotEmpty())
                 <div class="relative h-64 md:h-80">
@@ -327,9 +352,9 @@
     </div>
     
     <!-- Grid com Saldo Atual e Previsão -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
         <!-- Gráfico de Saldo ao Longo do Tempo -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Saldo no Mês Atual</h3>
             @if(!empty($balanceOverTimeData))
                 <div class="relative h-64 md:h-80">
@@ -341,7 +366,7 @@
         </div>
 
         <!-- NOVO: Gráfico de Previsão de Saldo -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="card hover-scale p-6" style="overflow: visible;">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Previsão de Saldo (Próximos 30 dias)</h3>
             @if(isset($balanceForecastData) && !empty($balanceForecastData))
                 <div class="relative h-64 md:h-80">
@@ -354,7 +379,7 @@
     </div>
 
     <!-- NOVO: Gráfico de Receitas vs Despesas ao Longo do Período -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+    <div class="card hover-scale p-6 mb-8" style="overflow: visible;">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Receitas vs Despesas ({{ str_replace('_', ' ', $period) == 'current month' ? 'Este Mês' : 'Período' }})</h3>
         @if(!empty($incomeExpenseTrendLabels) && (!empty($incomeTrendData) || !empty($expenseTrendData)))
             <div class="relative h-64 md:h-80">
@@ -366,9 +391,9 @@
     </div>
 
     <!-- Listas de Transações (Hoje, Pendentes) - Opcional, pode simplificar -->
-     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
          <!-- Transações de Hoje -->
-         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+         <div class="card hover-scale p-6" style="overflow: visible;">
              <div class="px-6 py-4 border-b border-gray-200">
                  <h2 class="text-lg font-semibold text-gray-900">Transações de Hoje</h2>
              </div>
@@ -382,6 +407,14 @@
          </div>
      </div>
      
+</div>
+
+<!-- Botão flutuante para transferência rápida -->
+<div class="fixed bottom-6 right-6 flex flex-col space-y-4">
+    <a href="{{ route('transactions.create', ['is_transfer' => true]) }}" 
+       class="flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-all duration-200 transform hover:scale-105">
+        <i class="ri-exchange-funds-line text-2xl"></i>
+    </a>
 </div>
 
 <script>
@@ -786,4 +819,6 @@
         }
     });
 </script>
+</div>
+</div>
 </x-app-layout>

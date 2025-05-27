@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $siteTheme === 'dark' ? 'dark' : '' }}" style="--root-font-size: {{ $rootFontSize }}px">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $siteTheme === 'dark' ? 'dark' : '' }}" style="--root-font-size: {{ $rootFontSize }}px; overflow-x: hidden; width: 100%;">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $siteTitle }}</title>
@@ -22,79 +22,171 @@
     @livewireStyles
 
     <script src="//unpkg.com/imask"></script>
+
+    <style>
+        /* Correção crítica para layout */
+        html, body {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+            width: 100% !important;
+            position: relative;
+        }
+        
+        * {
+            max-width: 100vw;
+            box-sizing: border-box;
+        }
+        
+        .container-app {
+            width: 100% !important;
+            max-width: 100vw !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            overflow-x: clip !important;
+        }
+        
+        .card, .table, form, input, select, textarea {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+        
+        /* Correção para efeitos hover que causam barras de rolagem */
+        .hover-scale, .card, [class*="hover-"] {
+            overflow: visible !important;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hover-scale:hover, .card:hover {
+            overflow: visible !important;
+        }
+        
+        /* Fixar o problema de rolagem em elementos que expandem no hover */
+        .card-body, form, .grid, .form-group {
+            overflow-y: visible !important;
+        }
+        
+        /* Correção específica para o menu */
+        .main-menu {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .main-menu::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
+        }
+        
+        .menu-container {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            gap: 8px !important;
+            overflow-y: hidden !important;
+        }
+        
+        .menu-item {
+            font-size: 15px !important;
+            padding: 8px 10px !important;
+            white-space: nowrap !important;
+        }
+        
+        @media (max-width: 768px) {
+            .container-app {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            
+            .card {
+                border-radius: 0.5rem !important;
+            }
+            
+            .p-6 {
+                padding: 0.75rem !important;
+            }
+            
+            .gap-6, .gap-4 {
+                gap: 0.75rem !important;
+            }
+            
+            .space-y-6, .space-y-8 {
+                margin-top: 0.75rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+        }
+    </style>
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden" style="width: 100%; max-width: 100vw;">
     @inject('aiConfigService', 'App\\Services\\AIConfigService')
     @php
         $aiConfig = $aiConfigService->getAIConfig();
     @endphp
 
-    <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-800">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 flex flex-col dark:bg-gray-900 overflow-x-hidden" style="max-width: 100vw; width: 100%;">
         
         <!-- Top Navigation -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10">
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 w-full max-w-full">
             <div class="container-app">
                 <div class="flex items-center justify-between h-16">
                     <!-- Desktop Main Navigation with Logo -->
-                    <div class="hidden md:block main-menu w-full">
-                        <div class="menu-container bg-gray-50 dark:bg-gray-700 rounded-lg p-1 w-full">
+                    <div class="hidden md:block main-menu w-full" style="overflow-x: auto; overflow-y: hidden;">
+                        <div class="menu-container bg-gray-50 dark:bg-gray-700 rounded-lg p-1 w-full" style="display: flex; flex-wrap: nowrap; gap: 8px; overflow-y: hidden;">
                             <!-- Logo highlighted in menu -->
                             <div class="flex-shrink-0 ml-4">
                                 <a href="{{ route('dashboard') }}">
                                     <x-application-logo class="h-8 w-auto text-gray-800 dark:text-gray-100" />
                                 </a>
                             </div>
-                            <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                            <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-dashboard-line mr-2 text-lg"></i>
                                 Dashboard
                             </a>
                             @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
-                            <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
+                            <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.index') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-exchange-line mr-2 text-lg"></i>
                                 Transações
                             </a>
                             @endif
-                            <a href="{{ route('transactions.income') }}" class="menu-item {{ request()->routeIs('transactions.income') ? 'active' : '' }}">
+                            <a href="{{ route('transactions.income') }}" class="menu-item {{ request()->routeIs('transactions.income') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
                                 Receitas
                             </a>
                             @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
-                            <a href="{{ route('transactions.expenses') }}" class="menu-item {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}">
+                            <a href="{{ route('transactions.expenses') }}" class="menu-item {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
                                 Despesas
                             </a>
                             @endif
                             @if(auth()->user()->hasPermission('view_reports'))
-                            <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}">
+                            <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-bar-chart-line mr-2 text-lg"></i>
                                 Relatórios
                             </a>
                             @endif
                             @if(auth()->user()->hasPermission('view_own_categories') || auth()->user()->hasPermission('view_all_categories'))
-                            <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                            <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                                 Categorias
                             </a>
                             @endif
                             @if(auth()->user()->hasPermission('view_own_accounts') || auth()->user()->hasPermission('view_all_accounts'))
-                            <a href="{{ route('accounts.index') }}" class="menu-item {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
+                            <a href="{{ route('accounts.index') }}" class="menu-item {{ request()->routeIs('accounts.*') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-bank-line mr-2 text-lg"></i>
                                 Contas
                             </a>
                             @endif
                             @if(auth()->user()->isAdmin() || auth()->user()->hasPermission('manage_settings'))
-                            <a href="{{ route('settings.index') }}" class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                            <a href="{{ route('settings.index') }}" class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-settings-3-line mr-2"></i>
                                 Configurações
                             </a>
                             @endif
                             <!-- IA Icon inside main menu -->
-                            <a href="{{ route('openrouter-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
+                            <a href="{{ route('openrouter-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-robot-line text-lg"></i>
                             </a>
                             <!-- Profile dropdown inside main menu -->
                             <div class="relative group">
-                                <button class="menu-item flex items-center">
+                                <button class="menu-item flex items-center" style="font-size: 15px; padding: 8px 10px;">
                                     @if(auth()->user()->profile_photo)
                                         <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}" class="h-6 w-6 rounded-full object-cover">
                                     @else
@@ -190,8 +282,8 @@
         </header>
 
         <!-- Page Content -->
-        <main class="flex-1">
-            <div class="container-app py-6">
+        <main class="flex-grow container-app" style="max-width: 100%; overflow-x: hidden;">
+            <div class="w-full space-y-4 animate-fade-in" style="max-width: 100%; overflow-x: hidden;">
                 @if (session()->has('success'))
                     <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
                         <span class="block sm:inline">{{ session('success') }}</span>
@@ -209,7 +301,7 @@
         </main>
 
         <!-- Footer -->
-        <footer class="bg-white border-t border-gray-200 py-4">
+        <footer class="bg-white border-t border-gray-200 py-4 mt-auto">
             <div class="container-app">
                 <div class="text-center text-sm text-gray-500">
                     &copy; {{ date('Y') }} Onlifin. Todos os direitos reservados.
@@ -246,6 +338,13 @@
                 menu.classList.add('hidden');
             }
         }
+        
+        // Fixar layout
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.style.width = '100%';
+            document.body.style.maxWidth = '100vw';
+            document.body.style.overflowX = 'hidden';
+        });
     </script>
 </body>
 </html> 

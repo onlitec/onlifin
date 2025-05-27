@@ -31,19 +31,24 @@
             flex-direction: row;
             justify-content: center;
             width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
         
         .menu-container {
             display: flex;
             flex-direction: row;
             align-items: center;
-            gap: 24px;
+            gap: 12px;
+            flex-wrap: nowrap;
+            overflow-y: hidden;
+            padding: 0 4px;
         }
         
         .menu-item {
             display: inline-flex;
             align-items: center;
-            padding: 8px 12px;
+            padding: 8px 10px;
             font-size: 14px;
             font-weight: 500;
             color: #4B5563;

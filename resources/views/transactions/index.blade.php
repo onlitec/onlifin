@@ -1,11 +1,15 @@
 <x-app-layout>
-    <div class="container-app">
+    <div class="container-app max-w-7xl mx-auto space-y-8 animate-fade-in">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Transações</h1>
             <div class="flex gap-2">
                 <a href="{{ route('transactions.import') }}" class="btn btn-secondary">
                     <i class="ri-file-upload-line mr-2"></i>
                     Importar Extrato
+                </a>
+                <a href="{{ route('transactions.create', ['is_transfer' => true]) }}" class="btn btn-secondary">
+                    <i class="ri-exchange-funds-line mr-2"></i>
+                    Nova Transferência
                 </a>
                 <a href="{{ route('transactions.create') }}" class="btn btn-primary">
                     <i class="ri-add-line mr-2"></i>
@@ -22,10 +26,11 @@
                 <a href="{{ route('transactions.index', ['filter'=>'expense']) }}" class="pb-1 {{ $filter=='expense' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-white dark:hover:text-white">Despesas</a>
                 <a href="{{ route('transactions.index', ['filter'=>'paid']) }}" class="pb-1 {{ $filter=='paid' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-white dark:hover:text-white">Pagos</a>
                 <a href="{{ route('transactions.index', ['filter'=>'pending']) }}" class="pb-1 {{ $filter=='pending' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-white dark:hover:text-white">Pendentes</a>
+                <a href="{{ route('transactions.index', ['filter'=>'transfer']) }}" class="pb-1 {{ $filter=='transfer' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-gray-800' }} dark:text-white dark:hover:text-white">Transferências</a>
             </nav>
         </div>
 
-        <div class="card">
+        <div class="card hover-scale">
             <div class="card-body">
                 <div class="table-container overflow-x-auto">
                     <table class="table">

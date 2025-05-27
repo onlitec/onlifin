@@ -53,20 +53,25 @@
             flex-direction: row;
             justify-content: center;
             width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
         
         .menu-container {
             display: flex;
             flex-direction: row;
             align-items: center;
-            gap: 24px;
+            gap: 12px;
+            flex-wrap: nowrap;
+            overflow-y: hidden;
+            padding: 0 4px;
         }
         
         .menu-item {
             display: inline-flex;
             align-items: center;
-            padding: 8px 12px;
-            font-size: 18px;
+            padding: 8px 10px;
+            font-size: 16px;
             font-weight: 500;
             color: #4B5563;
             white-space: nowrap;
@@ -196,8 +201,8 @@
         }
     </style>
 </head>
-<body class="font-sans antialiased bg-gray-50">
-    <div class="min-h-screen flex flex-col">
+<body class="font-sans antialiased">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6 flex flex-col">
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm">
             <div class="w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -415,8 +420,10 @@
         </header>
 
         <!-- Page Content -->
-        <main class="flex-grow w-full py-8 px-4 sm:px-6 lg:px-8">
-            {{ $slot }}
+        <main class="flex-grow container-app">
+            <div class="max-w-7xl mx-auto space-y-8">
+                {{ $slot }}
+            </div>
         </main>
 
         <!-- Footer -->

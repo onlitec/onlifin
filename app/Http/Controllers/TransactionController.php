@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\TransactionAIService;
 use App\Services\FinanceSummaryAIService;
+use Illuminate\Support\Facades\DB;
 
 /*
  * ATENÇÃO: CORREÇÕES CRÍTICAS nas funções create(), edit() e no endpoint de categorias.
@@ -112,6 +113,7 @@ class TransactionController extends Controller
                 'amount' => 'required',
                 'category_id' => 'required|exists:categories,id',
                 'account_id' => 'required|exists:accounts,id',
+                'transfer_to_account_id' => 'nullable|exists:accounts,id|different:account_id',
                 'notes' => 'nullable|string',
                 'recurrence_type' => 'nullable|in:none,fixed,installment',
                 'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
@@ -161,8 +163,24 @@ class TransactionController extends Controller
                 $transactionData['recurrence_type'] = 'none';
             }
 
+            $transferToAccountId = $validated['transfer_to_account_id'] ?? null;
+            if ($transferToAccountId) {
+                DB::transaction(function () use ($transactionData, $transferToAccountId) {
+                    // Transação de débito (origem)
+                    $originData = $transactionData;
+                    $originData['type'] = 'expense';
+                    Transaction::create($originData);
+                    // Transação de crédito (destino)
+                    $destData = $transactionData;
+                    $destData['type'] = 'income';
+                    $destData['account_id'] = $transferToAccountId;
+                    $destData['fornecedor'] = null;
+                    Transaction::create($destData);
+                });
+                return redirect()->route('transactions.index')
+                    ->with('success', 'Transferência criada com sucesso!');
+            }
             $transaction = Transaction::create($transactionData);
-
             $redirectRoute = $validated['type'] === 'income' ? 'transactions.income' : 'transactions.expenses';
             return redirect()->route($redirectRoute)
                 ->with('success', 'Transação criada com sucesso!');

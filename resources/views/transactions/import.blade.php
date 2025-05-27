@@ -1,6 +1,6 @@
 <x-app-layout>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <div class="container-app">
+    <div class="container-app max-w-7xl mx-auto space-y-8 animate-fade-in">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Importação de Extratos</h1>
             <a href="{{ route('transactions.index') }}" class="btn btn-secondary">
@@ -9,8 +9,8 @@
             </a>
         </div>
 
-        <div class="card">
-            <div class="card-body">
+        <div class="card hover-scale">
+            <div class="card-body p-6 space-y-6">
                 <!-- Passo 1: Formulário de Upload -->
                 <div id="upload-step">
                     <div class="mb-6">

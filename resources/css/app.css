@@ -5,7 +5,46 @@
 /* Definir tamanho base da fonte via variável CSS */
 html { font-size: var(--root-font-size, 16px) !important; }
 
+/* Correção crítica para layout full width */
+*, *::before, *::after {
+    box-sizing: border-box;
+    word-wrap: break-word;
+}
+
+body, html {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+}
+
+.container-app, .card, main, div {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Prevenção global de barras de rolagem em hover */
+*:hover {
+    overflow-y: visible !important;
+}
+
+/* Regras para cards e outros elementos com efeitos de hover */
+.card, .hover-scale, [class*="hover-"] {
+    overflow: visible !important;
+    transform-origin: center center;
+    position: relative;
+}
+
+/* Conteúdo que pode gerar overflow em hover */
+.card-body, .card-content, .form-group {
+    overflow-y: visible !important;
+}
+
 @layer base {
+    html, body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
     body {
         @apply bg-gray-50 text-gray-800 font-['Inter'];
     }
@@ -26,7 +65,7 @@ html { font-size: var(--root-font-size, 16px) !important; }
 @layer components {
     /* Container para layout full width */
     .container-app {
-        @apply w-full px-4 sm:px-6 lg:px-8 mx-auto;
+        @apply w-full px-4 sm:px-6 lg:px-8;
     }
 
     /* Elementos fluidos com largura máxima para conteúdo */
@@ -86,7 +125,7 @@ html { font-size: var(--root-font-size, 16px) !important; }
     }
 
     .card {
-        @apply bg-white rounded-xl shadow-sm border border-gray-200;
+        @apply bg-white rounded-xl shadow-sm border border-gray-200 max-w-full overflow-hidden;
     }
 
     .card-header {
@@ -145,5 +184,52 @@ html { font-size: var(--root-font-size, 16px) !important; }
     .transaction-card.paid::before {
         content: '';
         @apply absolute left-0 top-0 h-full w-1 bg-green-400 rounded-l-lg;
+    }
+}
+
+@layer utilities {
+    /* Garantir que todas as grids e tabelas respeitem o contêiner pai */
+    .grid, .table, .flex {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* Animações personalizadas */
+    .animate-fade-in {
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    .hover-scale {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        overflow: visible !important;
+        transform-origin: center center;
+        margin-bottom: 8px;
+    }
+
+    .hover-scale:hover {
+        transform: scale(1.01);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Efeitos de hover para cards */
+    .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
 }

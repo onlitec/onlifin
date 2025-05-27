@@ -1,6 +1,6 @@
 <x-app-layout>
     {{-- ATENÇÃO: CORREÇÃO CRÍTICA na edição de transações e máscara de valor; NÃO ALTERAR SEM AUTORIZAÇÃO EXPLÍCITA. --}}
-    <div class="container-app px-4 mx-auto">
+    <div class="container-app max-w-7xl mx-auto space-y-8 animate-fade-in">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
             <div>
@@ -14,12 +14,12 @@
         </div>
 
         <!-- Card do Formulário -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="card hover-scale">
             <form action="{{ route('transactions.update', $transaction->id) }}" method="POST">
                 @csrf
                 @method('PUT')
                 
-                <div class="p-6 space-y-6">
+                <div class="card-body p-6 space-y-6">
                     <!-- Tipo e Data -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Tipo de Transação -->
