@@ -2,9 +2,9 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ isset($config) ? 'Editar' : 'Nova' }} Configuração do OpenRouter
+                {{ isset($config) ? 'Editar' : 'Nova' }} Configuração de Provedor de IA
             </h2>
-            <a href="{{ route('openrouter-config.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+            <a href="{{ route('iaprovider-config.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
                 <i class="fas fa-arrow-left"></i> Voltar
             </a>
         </div>
@@ -23,7 +23,7 @@
             @endif
 
             <div class="bg-white shadow-md rounded-lg p-6">
-                <form action="{{ isset($config) ? route('openrouter-config.update', $config->id) : route('openrouter-config.store') }}" 
+                <form action="{{ isset($config) ? route('iaprovider-config.update', $config->id) : route('iaprovider-config.store') }}" 
                       method="POST">
                     @csrf
                     @if(isset($config))
@@ -34,9 +34,9 @@
                         <label for="provider" class="block text-gray-700 font-medium mb-2">Provedor de IA</label>
                         <select name="provider" id="provider" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                             <option value="">Selecione um provedor</option>
-                            @foreach($providers as $key => $provider)
+                            @foreach($providers as $key => $name)
                                 <option value="{{ $key }}" {{ old('provider', $config->provider ?? '') == $key ? 'selected' : '' }}>
-                                    {{ $provider['name'] }}
+                                    {{ $name }}
                                 </option>
                             @endforeach
                         </select>
@@ -44,8 +44,10 @@
 
                     <div class="mb-6">
                         <label for="model" class="block text-gray-700 font-medium mb-2">Modelo</label>
-                        <input type="text" name="model" id="model" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required value="{{ old('model', $config->model ?? '') }}" placeholder="Ex: openai/gpt-4-turbo ou anthropic/claude-3-sonnet">
-                        <p class="text-sm text-gray-500 mt-1">Digite o modelo no formato "provedor/nome-do-modelo" (ex: openai/gpt-4-turbo)</p>
+                        <select name="model" id="model" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="">Selecione um modelo</option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-1">Os modelos disponíveis dependem do provedor selecionado</p>
                     </div>
 
                     <div class="mb-6">
@@ -106,6 +108,8 @@
         const testConnectionBtn = document.getElementById('testConnection');
 
         const providers = @json($providers);
+        const models = @json($models);
+        const currentModel = '{{ old('model', $config->model ?? '') }}';
 
         // Toggle visibilidade da chave de API
         toggleApiKey.addEventListener('click', function() {
@@ -129,7 +133,7 @@
             this.disabled = true;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testando...';
 
-            fetch('{{ route("openrouter-config.test") }}', {
+            fetch('{{ route("iaprovider-config.test") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,15 +163,35 @@
             });
         });
 
+        // Função para atualizar modelos baseado no provedor
+        function updateModels(selectedProvider) {
+            const modelSelect = document.getElementById('model');
+            modelSelect.innerHTML = '<option value="">Selecione um modelo</option>';
+            
+            if (selectedProvider && models[selectedProvider] && models[selectedProvider].models) {
+                const providerModels = models[selectedProvider].models;
+                for (const [modelKey, modelName] of Object.entries(providerModels)) {
+                    const option = document.createElement('option');
+                    option.value = modelKey;
+                    option.textContent = modelName;
+                    if (modelKey === currentModel) {
+                        option.selected = true;
+                    }
+                    modelSelect.appendChild(option);
+                }
+            }
+        }
+
+        // Atualizar modelos quando o provedor é alterado
+        providerSelect.addEventListener('change', function() {
+            updateModels(this.value);
+        });
+
         // Inicializar modelos se houver um provedor selecionado
         if (providerSelect.value) {
-            // Atualizar modelos quando o provedor é alterado
-            providerSelect.addEventListener('change', function() {
-                // Atualizar modelos quando o provedor é alterado
-                modelInput.value = '';
-            });
+            updateModels(providerSelect.value);
         }
     });
     </script>
     @endpush
-</x-app-layout> 
+</x-app-layout>

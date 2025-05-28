@@ -5,7 +5,7 @@
         
         <div class="flex justify-between items-center mb-4">
             <p class="text-gray-600">Configure as integrações com os principais provedores de IA do mercado.</p>
-            <a href="{{ route('openrouter-config.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <a href="{{ route('iaprovider-config.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                 <i class="ri-key-2-line mr-2"></i> Configurar Chaves por Modelo
             </a>
         </div>

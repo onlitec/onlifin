@@ -4,16 +4,27 @@ namespace App\Services;
 
 use App\Models\ReplicateSetting;
 use App\Models\ModelApiKey;
+use App\Models\OpenRouterConfig;
+use App\Services\AIConfigService;
+use App\Services\AIProviderService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 class AIService
 {
-    private $settings;
-    private $apiToken;
     private $provider;
     private $model;
+    private $apiKey;
+    private $endpoint;
     private $systemPrompt;
+    private $chatPrompt;
+    private $importPrompt;
+    private $modelName;
+    private $aiConfigService;
+    private $aiProviderService;
+    private $settings;
+    private $apiToken;
     private $promptType = 'chat'; // 'chat' ou 'import'
 
     // Lista de modelos disponíveis
@@ -29,40 +40,113 @@ class AIService
         'claude-3-haiku-20240307' => 'Claude 3 Haiku'
     ];
 
-    /**
-     * Construtor que suporta três formas de inicialização:
-     * 1. Com objeto ReplicateSetting (modo compatibilidade)
-     * 2. Com parâmetros provider, model e apiToken fornecidos manualmente
-     * 3. Com parâmetros provider e model, buscando a apiToken específica no banco
-     */
-    public function __construct($providerOrSettings = null, $model = null, $apiToken = null, $promptType = 'chat')
-    {
+    public function __construct(
+        $provider = null,
+        $model = null,
+        $apiKey = null,
+        $endpoint = null,
+        $systemPrompt = null,
+        $chatPrompt = null,
+        $importPrompt = null,
+        ReplicateSetting $replicateSetting = null,
+        $promptType = 'chat'
+    ) {
+        $this->aiConfigService = new AIConfigService();
+        $this->aiProviderService = new AIProviderService();
+        
         // Define o tipo de prompt (chat ou import)
         $this->promptType = in_array($promptType, ['chat', 'import']) ? $promptType : 'chat';
-        
-        // Modo 1: Compatibilidade com código existente
-        if ($providerOrSettings instanceof ReplicateSetting) {
-            $this->settings = $providerOrSettings;
-            $this->provider = $providerOrSettings->provider;
-            $this->apiToken = $providerOrSettings->api_token;
-            $this->model = $this->validateModel($providerOrSettings->model_version);
-            $this->setSystemPrompt($providerOrSettings->system_prompt);
-            return;
+
+        if ($replicateSetting) {
+            $this->initializeFromReplicateSetting($replicateSetting);
+        } elseif ($provider && $model && $apiKey) {
+            $this->initializeFromParameters($provider, $model, $apiKey, $endpoint, $systemPrompt, $chatPrompt, $importPrompt);
+        } else {
+            $this->initializeFromDatabase($provider, $model);
         }
-        
-        // Modo 2 e 3: Inicialização manual
-        $this->provider = $providerOrSettings ?: config('ai.provider', 'openai');
-        $this->model = $model ?: 'gemini-2.0-flash'; // Valor padrão
-        $this->apiToken = $apiToken;
-        
-        // Se não foi fornecida uma API token, tentar buscar uma específica para este modelo
-        if (!$this->apiToken) {
-            $this->loadModelSpecificToken();
+    }
+    
+    private function initializeFromReplicateSetting(ReplicateSetting $replicateSetting)
+    {
+        $this->settings = $replicateSetting;
+        $this->provider = $replicateSetting->provider;
+        $this->apiToken = $replicateSetting->api_token;
+        $this->apiKey = $replicateSetting->api_token;
+        $this->model = $this->validateModel($replicateSetting->model_version);
+        $this->setSystemPrompt($replicateSetting->system_prompt);
+        $this->setEndpointFromProvider();
+    }
+    
+    private function initializeFromParameters($provider, $model, $apiKey, $endpoint = null, $systemPrompt = null, $chatPrompt = null, $importPrompt = null)
+    {
+        $this->provider = $this->aiProviderService->normalizeProvider($provider);
+        $this->model = $model;
+        $this->apiKey = $apiKey;
+        $this->apiToken = $apiKey;
+        $this->endpoint = $endpoint;
+        $this->systemPrompt = $systemPrompt;
+        $this->chatPrompt = $chatPrompt;
+        $this->importPrompt = $importPrompt;
+        $this->modelName = $model;
+        $this->setEndpointFromProvider();
+    }
+    
+    private function initializeFromDatabase($provider = null, $model = null)
+    {
+        // Normalizar o provedor se fornecido
+        if ($provider) {
+            $provider = $this->aiProviderService->normalizeProvider($provider);
         }
-        
-        // Se ainda não tiver token, carregar da configuração geral
-        if (!$this->apiToken) {
-            $this->loadConfig();
+
+        // Primeiro tenta carregar token específico do modelo
+        if ($provider && $model) {
+            $modelSpecific = $this->loadModelSpecificToken($provider, $model);
+            if ($modelSpecific) {
+                $this->provider = $provider;
+                $this->model = $model;
+                $this->apiKey = $modelSpecific['api_key'];
+                $this->apiToken = $modelSpecific['api_key'];
+                $this->systemPrompt = $modelSpecific['system_prompt'];
+                $this->chatPrompt = $modelSpecific['chat_prompt'];
+                $this->importPrompt = $modelSpecific['import_prompt'];
+                $this->modelName = $model;
+                $this->setEndpointFromProvider();
+                return;
+            }
+        }
+
+        // Se não encontrou configuração específica, carrega configuração geral
+        $config = $this->loadConfig($provider);
+        if ($config) {
+            $this->provider = $config['provider'];
+            $this->model = $config['model'];
+            $this->apiKey = $config['api_key'];
+            $this->apiToken = $config['api_key'];
+            $this->endpoint = $config['endpoint'] ?? null;
+            $this->systemPrompt = $config['system_prompt'];
+            $this->chatPrompt = $config['chat_prompt'];
+            $this->importPrompt = $config['import_prompt'];
+            $this->modelName = $config['model_name'];
+            $this->setEndpointFromProvider();
+        } else {
+            // Fallback para método antigo
+            $this->provider = $provider ?: config('ai.provider', 'openai');
+            $this->model = $model ?: 'gemini-2.0-flash';
+            
+            if (!$this->apiToken) {
+                $this->loadModelSpecificTokenOld();
+            }
+            
+            if (!$this->apiToken) {
+                $this->loadConfigOld();
+            }
+        }
+    }
+    
+    private function setEndpointFromProvider()
+    {
+        if (!$this->endpoint) {
+            $this->endpoint = $this->aiProviderService->getEndpoint($this->provider);
         }
     }
     
@@ -76,10 +160,15 @@ class AIService
         $this->systemPrompt = $defaultPrompt;
     }
     
+    private function loadConfig($provider = null)
+    {
+        return $this->aiConfigService->getConfig($provider);
+    }
+    
     /**
-     * Carrega a configuração geral do provedor
+     * Carrega a configuração geral do provedor (método antigo para compatibilidade)
      */
-    private function loadConfig()
+    private function loadConfigOld()
     {
         try {
             $settings = ReplicateSetting::where('provider', $this->provider)
@@ -118,10 +207,15 @@ class AIService
         }
     }
     
+    private function loadModelSpecificToken($provider, $model)
+    {
+        return $this->aiConfigService->getModelSpecificConfig($provider, $model);
+    }
+    
     /**
-     * Carrega token específico para o modelo atual
+     * Carrega token específico para o modelo atual (método antigo para compatibilidade)
      */
-    private function loadModelSpecificToken()
+    private function loadModelSpecificTokenOld()
     {
         try {
             $modelKey = ModelApiKey::where('provider', $this->provider)
@@ -742,4 +836,4 @@ class AIService
 
         return $response->json('choices.0.message.content');
     }
-} 
+}

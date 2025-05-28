@@ -61,7 +61,7 @@
                 <span>IA: {{ $providerNames[$activeConfig->provider] ?? 'Desconhecido' }}</span>
                 <span class="text-gray-500 ml-1">{{ $activeConfig->model ?? $activeConfig->model_version }}</span>
             </div>
-            <a href="{{ route('openrouter-config.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
+            <a href="{{ route('iaprovider-config.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
                 <i class="ri-settings-3-line"></i>
             </a>
         </div>
@@ -75,7 +75,7 @@
             <div class="text-xs font-medium text-gray-500">
                 IA não configurada
             </div>
-            <a href="{{ route('openrouter-config.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
+            <a href="{{ route('iaprovider-config.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
                 <i class="ri-settings-3-line"></i>
             </a>
         </div>

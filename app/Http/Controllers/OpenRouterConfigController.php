@@ -2,152 +2,84 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB; // Para salvar em banco de dados, assumindo uma tabela 'config'
-use Illuminate\Support\Facades\Log;
-use App\Models\ReplicateSetting;
-use App\Services\AIService;
 use App\Models\OpenRouterConfig;
+use App\Services\AIProviderService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class OpenRouterConfigController extends Controller
 {
-    protected $aiService;
+    protected $aiProviderService;
 
-    public function __construct(AIService $aiService)
+    public function __construct(AIProviderService $aiProviderService)
     {
-        $this->aiService = $aiService;
+        $this->aiProviderService = $aiProviderService;
     }
-
-    // Middleware auth está definido nas rotas
 
     public function index()
     {
         $configs = OpenRouterConfig::all();
-        $providers = [
-            'openrouter' => [
-                'name' => 'OpenRouter',
-                'models' => [
-                    'openai/gpt-4-turbo-preview' => 'GPT-4 Turbo',
-                    'openai/gpt-4' => 'GPT-4',
-                    'openai/gpt-3.5-turbo' => 'GPT-3.5 Turbo',
-                    'anthropic/claude-3-opus' => 'Claude 3 Opus',
-                    'anthropic/claude-3-sonnet' => 'Claude 3 Sonnet',
-                    'anthropic/claude-2' => 'Claude 2',
-                    'google/gemini-pro' => 'Gemini Pro',
-                    'meta-llama/llama-2-70b-chat' => 'Llama 2 70B',
-                ]
-            ],
-            'openai' => [
-                'name' => 'OpenAI',
-                'models' => [
-                    'gpt-4-turbo-preview' => 'GPT-4 Turbo',
-                    'gpt-4' => 'GPT-4',
-                    'gpt-3.5-turbo' => 'GPT-3.5 Turbo',
-                ]
-            ],
-            'anthropic' => [
-                'name' => 'Anthropic',
-                'models' => [
-                    'claude-3-opus' => 'Claude 3 Opus',
-                    'claude-3-sonnet' => 'Claude 3 Sonnet',
-                    'claude-2' => 'Claude 2',
-                ]
-            ],
-            'google' => [
-                'name' => 'Google',
-                'models' => [
-                    'gemini-pro' => 'Gemini Pro',
-                ]
-            ],
-            'meta' => [
-                'name' => 'Meta',
-                'models' => [
-                    'llama-2-70b-chat' => 'Llama 2 70B',
-                ]
-            ]
-        ];
-
-        return view('settings.model-keys', compact('configs', 'providers'));
+        return view('open-router-configs.index', compact('configs'));
     }
 
     public function create()
     {
-        $providers = [
-            'openai' => [
-                'name' => 'OpenAI',
-                'models' => []
-            ],
-            'anthropic' => [
-                'name' => 'Anthropic',
-                'models' => []
-            ],
-            'google' => [
-                'name' => 'Google',
-                'models' => []
-            ],
-            'openrouter' => [
-                'name' => 'OpenRouter',
-                'models' => []
-            ]
-        ];
+        $providers = $this->aiProviderService->getProvidersForSelect();
+        $models = $this->aiProviderService->getProviders();
 
-        return view('open-router-configs.form', compact('providers'));
+        return view('open-router-configs.form', compact('providers', 'models'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'provider' => 'required|string',
-            'model' => 'required|string',
-            'api_key' => 'required|string',
-            'endpoint' => 'nullable|string|url',
+            'provider' => 'required|string|max:255',
+            'model' => 'required|string|max:255',
+            'api_key' => 'required|string|max:255',
+            'endpoint' => 'nullable|string|max:255',
             'system_prompt' => 'nullable|string',
             'chat_prompt' => 'nullable|string',
             'import_prompt' => 'nullable|string',
         ]);
 
-        // Se foi fornecido chat_prompt mas não system_prompt, copiar chat_prompt para system_prompt
-        // para compatibilidade com código legado
+        // Normalizar o provedor
+        $validated['provider'] = $this->aiProviderService->normalizeProvider($validated['provider']);
+
+        // Verificar se o provedor existe
+        if (!$this->aiProviderService->providerExists($validated['provider'])) {
+            return back()->withErrors(['provider' => 'Provedor não suportado.'])->withInput();
+        }
+
+        // Verificar se o modelo existe para o provedor (exceto OpenRouter)
+        if ($validated['provider'] !== 'openrouter' && !$this->aiProviderService->modelExists($validated['provider'], $validated['model'])) {
+            return back()->withErrors(['model' => 'Modelo não suportado para este provedor.'])->withInput();
+        }
+
+        // Se endpoint não foi fornecido, usar o padrão do provedor
+        if (empty($validated['endpoint'])) {
+            $validated['endpoint'] = $this->aiProviderService->getEndpoint($validated['provider']);
+        }
+
+        // Se system_prompt estiver vazio, copiar chat_prompt para ele (compatibilidade)
         if (empty($validated['system_prompt']) && !empty($validated['chat_prompt'])) {
             $validated['system_prompt'] = $validated['chat_prompt'];
         }
 
         OpenRouterConfig::create($validated);
 
-        return redirect()->route('openrouter-config.index')
-            ->with('success', 'Configuração criada com sucesso.');
+        return redirect()->route('iaprovider-config.index')
+            ->with('success', 'Configuração de IA criada com sucesso!');
     }
 
     public function edit($id)
     {
         $openRouterConfig = OpenRouterConfig::findOrFail($id);
-        
-        $providers = [
-            'openai' => [
-                'name' => 'OpenAI',
-                'models' => []
-            ],
-            'anthropic' => [
-                'name' => 'Anthropic',
-                'models' => []
-            ],
-            'google' => [
-                'name' => 'Google',
-                'models' => []
-            ],
-            'openrouter' => [
-                'name' => 'OpenRouter',
-                'models' => []
-            ]
-        ];
+        $providers = $this->aiProviderService->getProvidersForSelect();
+        $models = $this->aiProviderService->getProviders();
 
-        return view('open-router-configs.form', [
-            'config' => $openRouterConfig,
-            'providers' => $providers
-        ]);
+        return view('open-router-configs.form', compact('openRouterConfig', 'providers', 'models'));
     }
 
     public function update(Request $request, $id)
@@ -155,32 +87,49 @@ class OpenRouterConfigController extends Controller
         $openRouterConfig = OpenRouterConfig::findOrFail($id);
         
         $validated = $request->validate([
-            'provider' => 'required|string',
-            'model' => 'required|string',
-            'api_key' => 'required|string',
-            'endpoint' => 'nullable|string|url',
+            'provider' => 'required|string|max:255',
+            'model' => 'required|string|max:255',
+            'api_key' => 'required|string|max:255',
+            'endpoint' => 'nullable|string|max:255',
             'system_prompt' => 'nullable|string',
             'chat_prompt' => 'nullable|string',
             'import_prompt' => 'nullable|string',
         ]);
 
-        // Se foi fornecido chat_prompt mas não system_prompt, copiar chat_prompt para system_prompt
-        // para compatibilidade com código legado
+        // Normalizar o provedor
+        $validated['provider'] = $this->aiProviderService->normalizeProvider($validated['provider']);
+
+        // Verificar se o provedor existe
+        if (!$this->aiProviderService->providerExists($validated['provider'])) {
+            return back()->withErrors(['provider' => 'Provedor não suportado.'])->withInput();
+        }
+
+        // Verificar se o modelo existe para o provedor (exceto OpenRouter)
+        if ($validated['provider'] !== 'openrouter' && !$this->aiProviderService->modelExists($validated['provider'], $validated['model'])) {
+            return back()->withErrors(['model' => 'Modelo não suportado para este provedor.'])->withInput();
+        }
+
+        // Se endpoint não foi fornecido, usar o padrão do provedor
+        if (empty($validated['endpoint'])) {
+            $validated['endpoint'] = $this->aiProviderService->getEndpoint($validated['provider']);
+        }
+
+        // Se system_prompt estiver vazio, copiar chat_prompt para ele (compatibilidade)
         if (empty($validated['system_prompt']) && !empty($validated['chat_prompt'])) {
             $validated['system_prompt'] = $validated['chat_prompt'];
         }
 
         $openRouterConfig->update($validated);
 
-        return redirect()->route('openrouter-config.index')
-            ->with('success', 'Configuração atualizada com sucesso.');
+        return redirect()->route('iaprovider-config.index')
+            ->with('success', 'Configuração de IA atualizada com sucesso!');
     }
 
     public function destroy(OpenRouterConfig $openRouterConfig)
     {
         $openRouterConfig->delete();
 
-        return redirect()->route('openrouter-config.index')
+        return redirect()->route('iaprovider-config.index')
             ->with('success', 'Configuração excluída com sucesso.');
     }
 
@@ -220,7 +169,7 @@ class OpenRouterConfigController extends Controller
                     ]);
 
                     if ($response->successful()) {
-                        Log::info('Teste de conexão com OpenRouter bem-sucedido', [
+                        Log::info('Teste de conexão com provedor de IA bem-sucedido', [
                             'provider' => $request->provider,
                             'model' => $model
                         ]);
@@ -230,7 +179,7 @@ class OpenRouterConfigController extends Controller
                         ]);
                     }
                     $errorMessage = $response->json('error.message') ?? $response->body();
-                    Log::error('Erro ao testar conexão com OpenRouter', [
+                    Log::error('Erro ao testar conexão com provedor de IA', [
                         'status' => $response->status(),
                         'error' => $errorMessage
                     ]);
@@ -241,8 +190,16 @@ class OpenRouterConfigController extends Controller
 
                 default:
                     // Teste genérico para outros provedores via AIService
-                    $aiProvider = strtolower($request->provider) === 'google' ? 'gemini' : $request->provider;
-                    $aiService = new AIService($aiProvider, $request->model, $request->api_key);
+                    $normalizedProvider = $this->aiProviderService->normalizeProvider($request->provider);
+                    $aiService = new AIService(
+                        $normalizedProvider,
+                        $request->model,
+                        $request->api_key,
+                        $request->endpoint ?? null,
+                        null, // systemPrompt
+                        null, // chatPrompt
+                        null  // importPrompt
+                    );
                     try {
                         $testResult = $aiService->test();
                     } catch (\Exception $e) {

@@ -1,5 +1,20 @@
 <?php
 
+/*
+ * ========================================================================
+ * ARQUIVO PROTEGIDO - MODIFICAÇÕES REQUEREM AUTORIZAÇÃO EXPLÍCITA
+ * ========================================================================
+ * 
+ * ATENÇÃO: Este arquivo contém as rotas críticas do sistema.
+ * Qualquer modificação deve ser previamente autorizada e documentada.
+ * 
+ * Responsável: Equipe de Desenvolvimento
+ * Última modificação autorizada: 2025-05-28
+ * 
+ * Para solicitar modificações, entre em contato com a equipe responsável.
+ * ========================================================================
+ */
+
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
@@ -24,6 +39,7 @@ use App\Http\Controllers\SystemLogController;
 use App\Http\Controllers\TransactionExportController;
 use App\Http\Controllers\ModelApiKeyController;
 use App\Http\Controllers\OpenRouterConfigController;
+use App\Http\Controllers\AIProviderConfigController;
 use App\Http\Controllers\TempStatementImportController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ChatbotController;
@@ -329,7 +345,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/api-key/store', [App\Http\Controllers\ApiKeyController::class, 'store'])->name('api-key.store');
     });
 
-    // Adicionando rotas para chat com OpenRouter
+    // Adicionando rotas para chat com provedor de IA
     Route::middleware(['auth'])->group(function () {
         Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
         Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
@@ -338,15 +354,15 @@ Route::middleware(['auth'])->group(function () {
     // Adicionar nova rota para o método uploadAndAnalyze no controlador BankStatementController
     Route::post('/bank-statement-analyze', [App\Http\Controllers\BankStatementController::class, 'uploadAndAnalyze'])->name('bank-statement.analyze');
 
-    // Rotas para configuração do OpenRouter
-    Route::prefix('openrouter-config')->name('openrouter-config.')->group(function () {
-        Route::get('/', [OpenRouterConfigController::class, 'index'])->name('index');
-        Route::get('/create', [OpenRouterConfigController::class, 'create'])->name('create');
-        Route::post('/', [OpenRouterConfigController::class, 'store'])->name('store');
-        Route::get('/{openRouterConfig}/edit', [OpenRouterConfigController::class, 'edit'])->name('edit');
-        Route::put('/{openRouterConfig}', [OpenRouterConfigController::class, 'update'])->name('update');
-        Route::delete('/{openRouterConfig}', [OpenRouterConfigController::class, 'destroy'])->name('destroy');
-        Route::post('/test', [OpenRouterConfigController::class, 'testConnection'])->name('test');
+    // Rotas para configuração dos Provedores de IA
+    Route::prefix('iaprovider-config')->name('iaprovider-config.')->group(function () {
+        Route::get('/', [AIProviderConfigController::class, 'index'])->name('index');
+        Route::get('/create', [AIProviderConfigController::class, 'create'])->name('create');
+        Route::post('/', [AIProviderConfigController::class, 'store'])->name('store');
+        Route::get('/{config}/edit', [AIProviderConfigController::class, 'edit'])->name('edit');
+        Route::put('/{config}', [AIProviderConfigController::class, 'update'])->name('update');
+        Route::delete('/{config}', [AIProviderConfigController::class, 'destroy'])->name('destroy');
+        Route::post('/test', [AIProviderConfigController::class, 'testConnection'])->name('test');
     });
 
     // Grupos de usuários

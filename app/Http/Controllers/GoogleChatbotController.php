@@ -4,31 +4,23 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Google\Cloud\Dialogflow\V2\SessionsClient;
 use Google\Cloud\Storage\StorageClient;
 use App\Jobs\ProcessUploadedFinancialFile;
+use App\Services\AIService;
+use App\Services\AIConfigService;
+use Exception;
 
 class GoogleChatbotController extends Controller
 {
     /**
-     * Handle chat messages and file uploads via Dialogflow.
+     * Handle chat messages and file uploads using AI Service.
      */
     public function ask(Request $request)
     {
         try {
-            // Resolve GCP clients inside try to catch instantiation errors
-            $sessions = app(SessionsClient::class);
-            $storage = app(StorageClient::class);
             Log::info('GoogleChatbotController@ask iniciado', ['user_id' => auth()->id()]);
 
             $sessionId = session()->getId();
-            // Obter o projectId do arquivo de configuração, que já lê de .env ou gcp.php
-            $projectId = config('services.gcp.project_id');
-            if (!$projectId) {
-                Log::error('Google Cloud Project ID não configurado.');
-                return response()->json(['error' => 'Erro de configuração do servidor (Project ID).'], 500);
-            }
-            $sessionName = SessionsClient::sessionName($projectId, $sessionId);
 
             // Validação básica da requisição
             $validated = $request->validate([
@@ -38,6 +30,25 @@ class GoogleChatbotController extends Controller
 
             $messageText = $validated['message'] ?? '';
 
+            // Carregar configuração de IA dinâmica
+            $aiConfigService = new AIConfigService();
+            $config = $aiConfigService->getAIConfig();
+            
+            if (!$config || !$config['is_configured']) {
+                throw new Exception('Nenhuma configuração de IA encontrada. Configure um provedor de IA primeiro.');
+            }
+            
+            // Initialize AI Service with dynamic configuration
+            $aiService = new AIService(
+                $config['provider'],
+                $config['model'],
+                $config['api_key'],
+                $config['endpoint'] ?? null,
+                $config['system_prompt'] ?? null,
+                $config['chat_prompt'] ?? null,
+                $config['import_prompt'] ?? null
+            );
+
             // Se um arquivo foi enviado, processa-o primeiro
             if ($request->hasFile('file') && $request->file('file')->isValid()) {
                 $file = $request->file('file');
@@ -46,22 +57,21 @@ class GoogleChatbotController extends Controller
                 $gcsPath = 'uploads/' . uniqid() . '-' . $originalFileName;
 
                 try {
+                    // Resolve GCS client only if file upload is needed
+                    $storage = app(StorageClient::class);
                     $bucketName = config('filesystems.disks.gcs.bucket');
                     if (!$bucketName) {
-                        Log::error('Nome do bucket GCS não configurado.');
+                        Log::error('Bucket GCS não configurado.');
                         return response()->json(['error' => 'Erro de configuração do servidor (Bucket).'], 500);
                     }
                     $bucket = $storage->bucket($bucketName);
-                    
                     $object = $bucket->upload(
-                        fopen($file->getRealPath(), 'r'),
+                        fopen($file->getPathname(), 'r'),
                         ['name' => $gcsPath]
                     );
                     Log::info('Arquivo enviado ao GCS', ['path' => $object->name()]);
 
                     // Disparar o job de processamento
-                    // TODO: Considerar se account_id é realmente necessário aqui ou se o job pode inferir/obter de outra forma.
-                    // Por enquanto, vamos remover se não estiver vindo do request para evitar erros.
                     $accountId = $request->input('account_id'); 
                     ProcessUploadedFinancialFile::dispatch($object->name(), auth()->id(), $accountId);
 
@@ -69,7 +79,7 @@ class GoogleChatbotController extends Controller
                     if (empty($messageText)) {
                         return response()->json(['reply' => $fileReplyMessage], 200);
                     }
-                    // Se houver texto junto com o arquivo, anexa a mensagem de upload e continua para Dialogflow
+                    // Se houver texto junto com o arquivo, anexa a mensagem de upload e continua para análise
                     $messageText = $fileReplyMessage . "\n\n" . $messageText;
 
                 } catch (\Exception $e) {
@@ -85,18 +95,10 @@ class GoogleChatbotController extends Controller
                 return response()->json(['reply' => 'Por favor, envie uma mensagem ou um arquivo válido.'], 200);
             }
 
-            // Detectar intenção no Dialogflow para mensagens de texto
-            $queryInput = new \Google\Cloud\Dialogflow\V2\QueryInput([
-                'text' => [
-                    'text' => $messageText,
-                    'language_code' => 'pt-BR'
-                ]
-            ]);
+            // Analisar mensagem usando AI Service
+            $response = $aiService->analyze($messageText);
 
-            $response = $sessions->detectIntent($sessionName, $queryInput);
-            $fulfillment = $response->getQueryResult()->getFulfillmentText();
-
-            return response()->json(['reply' => $fulfillment]);
+            return response()->json(['reply' => $response]);
         } catch (\Throwable $e) {
             // Log any error or Throwable
             Log::error('Erro geral GoogleChatbotController@ask', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'exception_class' => get_class($e)]);
@@ -130,4 +132,4 @@ class GoogleChatbotController extends Controller
         // Se não houver view chatbot.index, redireciona para o dashboard como fallback
         return redirect()->route('dashboard')->with('info', 'O Chatbot está disponível no canto inferior direito.');
     }
-} 
+}

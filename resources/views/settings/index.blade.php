@@ -80,7 +80,7 @@
                             </div>
                         </div>
                     </div>
-                    <a href="{{ route('openrouter-config.index') }}" class="btn btn-secondary w-full">
+                    <a href="{{ route('iaprovider-config.index') }}" class="btn btn-secondary w-full">
                         Configurar IAs
                     </a>
                 </div>

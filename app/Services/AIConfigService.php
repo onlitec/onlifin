@@ -27,7 +27,7 @@ class AIConfigService
         if (class_exists('\\App\\Models\\OpenRouterConfig')) {
             $openRouterConfig = \App\Models\OpenRouterConfig::first();
             if ($openRouterConfig && !empty($openRouterConfig->api_key)) {
-                Log::info('Usando configuração do OpenRouter:', [
+                Log::info('Usando configuração de provedor de IA:', [
                     'provider' => $openRouterConfig->provider,
                     'model' => $openRouterConfig->model
                 ]);

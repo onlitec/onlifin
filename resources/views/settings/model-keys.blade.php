@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Configuração de IA
             </h2>
-            <a href="{{ route('openrouter-config.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out">
+            <a href="{{ route('iaprovider-config.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out">
                 <i class="fas fa-plus"></i> Nova Configuração
             </a>
         </div>
@@ -21,7 +21,7 @@
             @if($configs->isEmpty())
                 <div class="bg-white shadow-md rounded-lg p-6 text-center">
                     <p class="text-gray-500 mb-4">Nenhuma configuração de IA encontrada.</p>
-                    <a href="{{ route('openrouter-config.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md inline-block transition duration-150 ease-in-out">
+                    <a href="{{ route('iaprovider-config.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md inline-block transition duration-150 ease-in-out">
                         <i class="fas fa-plus"></i> Adicionar Nova Configuração
                     </a>
                 </div>
@@ -33,10 +33,10 @@
                             <p class="text-gray-600 mb-2">Modelo: @if($config->model === 'custom') Personalizado @else {{ $providers[$config->provider]['models'][$config->model] ?? $config->model }} @endif</p>
                             <p class="text-gray-600 mb-4">Modelo Personalizado: {{ $config->custom_model ?? '-' }}</p>
                             <div class="flex justify-between items-center">
-                                <a href="{{ route('openrouter-config.edit', $config) }}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                <a href="{{ route('iaprovider-config.edit', $config) }}" class="text-blue-600 hover:text-blue-800 font-medium">
                                     <i class="fas fa-edit"></i> Editar
                                 </a>
-                                <form action="{{ route('openrouter-config.destroy', $config) }}" method="POST" class="inline" onsubmit="return confirm('Tem certeza?')">
+                                <form action="{{ route('iaprovider-config.destroy', $config) }}" method="POST" class="inline" onsubmit="return confirm('Tem certeza?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:text-red-800 font-medium">
@@ -73,7 +73,7 @@
                     <div class="border p-4 rounded-lg">
                         <h3 class="font-medium text-lg mb-2">Rota Global</h3>
                         <p class="text-gray-600 mb-4">Configure uma única chave de API para processar solicitações de vários modelos.</p>
-                        <a href="{{ route('openrouter-config.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block">
+                        <a href="{{ route('iaprovider-config.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block">
                             <i class="fas fa-plus mr-1"></i> Nova Configuração OpenRouter
                         </a>
                     </div>

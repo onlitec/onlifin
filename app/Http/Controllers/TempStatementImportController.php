@@ -526,7 +526,7 @@ class TempStatementImportController extends Controller
                             'arquivo' => $e->getFile(),
                             'linha' => $e->getLine()
                         ]);
-                        // Fallback para mock em caso de erro com OpenRouter
+                        // Fallback para mock em caso de erro com provedor de IA
                         $resultado = $this->getMockAIResponse($transactions);
                     }
                     break;
@@ -708,11 +708,21 @@ class TempStatementImportController extends Controller
     private function analyzeTransactionsWithGemini($transactions, $apiConfig)
     {
         $startTime = microtime(true);
-        Log::info('🔍 Iniciando análise com Google Gemini...');
+        Log::info('🔍 Iniciando análise com IA...');
         
         try {
             // Criar uma instância do AIService especificando que é para importação
-            $aiService = new AIService('gemini', $apiConfig->model, $apiConfig->api_key, 'import');
+            $aiService = new AIService(
+                'gemini',
+                $apiConfig->model,
+                $apiConfig->api_key,
+                null, // endpoint
+                null, // systemPrompt
+                null, // chatPrompt
+                null, // importPrompt
+                null, // replicateSetting
+                'import' // promptType
+            );
             
             // Processar transações em lotes para evitar exceder o limite de tokens
             $batchSize = 30; // Tamanho máximo para evitar exceder limite de tokens
@@ -1613,7 +1623,7 @@ class TempStatementImportController extends Controller
     private function analyzeTransactionsWithOpenRouter($transactions, $config)
     {
         $startTime = microtime(true);
-        Log::info('🔍 Iniciando análise com OpenRouter...');
+        Log::info('🔍 Iniciando análise com provedor de IA...');
         
         try {
             $requestUrl = !empty($config->endpoint) ? rtrim($config->endpoint, '/') : 'https://openrouter.ai/api/v1/chat/completions';
@@ -1622,7 +1632,17 @@ class TempStatementImportController extends Controller
             $modelName = $config->model ?? 'anthropic/claude-3-haiku';
             
             // Criar uma instância do AIService especificando que é para importação
-            $aiService = new AIService('openrouter', $modelName, $config->api_key, 'import');
+            $aiService = new AIService(
+                'openrouter',
+                $modelName,
+                $config->api_key,
+                null, // endpoint
+                null, // systemPrompt
+                null, // chatPrompt
+                null, // importPrompt
+                null, // replicateSetting
+                'import' // promptType
+            );
             
             // Processar transações em lotes para evitar exceder o limite de tokens
             $batchSize = 20; // Tamanho máximo para evitar exceder limite de tokens
@@ -1655,7 +1675,7 @@ class TempStatementImportController extends Controller
             $endTime = microtime(true);
             $executionTime = round($endTime - $startTime, 2);
             
-            Log::info("✅ Análise com OpenRouter concluída em {$executionTime}s", [
+            Log::info("✅ Análise com provedor de IA concluída em {$executionTime}s", [
                 'transações_analisadas' => count($allResults),
                 'modelo_usado' => $modelName
             ]);
@@ -1665,7 +1685,7 @@ class TempStatementImportController extends Controller
             
         } catch (\Exception $e) {
             // Em caso de erro, retornar a resposta simulada
-            Log::error('❌ Erro ao processar com OpenRouter: ' . $e->getMessage(), [
+            Log::error('❌ Erro ao processar com provedor de IA: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             

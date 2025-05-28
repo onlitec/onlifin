@@ -45,7 +45,7 @@
                                     Não foi possível obter sugestões da IA. As transações podem estar sem categoria ou com uma categoria padrão.
                                 </p>
                                 <p class="text-sm mt-2">
-                                    Você pode verificar as configurações de IA em <a href="{{ route('openrouter-config.index') }}" class="underline hover:text-purple-800">Configurações > IA</a>.
+                                    Você pode verificar as configurações de IA em <a href="{{ route('iaprovider-config.index') }}" class="underline hover:text-purple-800">Configurações > IA</a>.
                                 </p>
                             @endif
                         </div>
@@ -430,4 +430,4 @@
         <p>Contagem de transações (PHP): {{ count($extractedTransactions ?? []) }}</p>
     </div> --}}
     
-</x-app-layout> 
+</x-app-layout>

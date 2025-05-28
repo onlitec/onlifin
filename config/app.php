@@ -1,5 +1,20 @@
 <?php
 
+/*
+ * ========================================================================
+ * ARQUIVO PROTEGIDO - MODIFICAÇÕES REQUEREM AUTORIZAÇÃO EXPLÍCITA
+ * ========================================================================
+ * 
+ * ATENÇÃO: Este arquivo contém configurações críticas da aplicação.
+ * Qualquer modificação deve ser previamente autorizada e documentada.
+ * 
+ * Responsável: Equipe de Desenvolvimento
+ * Última modificação autorizada: 2025-05-28
+ * 
+ * Para solicitar modificações, entre em contato com a equipe responsável.
+ * ========================================================================
+ */
+
 return [
 
     /*
@@ -164,7 +179,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\MCPServiceProvider::class,
         App\Providers\SessionServiceProvider::class,
-        // App\Providers\GcpServiceProvider::class,  // Temporarily disabled
+        App\Providers\GcpServiceProvider::class,
     ],
 
 ];

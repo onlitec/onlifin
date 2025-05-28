@@ -37,7 +37,7 @@ export default defineConfig({
     server: {
         host: true,
         hmr: {
-            host: 'localhost'
+            host: 'dev.onlifin.onlitec.com.br'
         }
     },
     base: '/',

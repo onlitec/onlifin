@@ -173,7 +173,15 @@ class ModelApiKeyController extends Controller
         
         try {
             // Instanciar serviço de IA com o provedor e modelo específicos
-            $aiService = new AIService($validated['provider'], $validated['model'], $validated['api_token']);
+            $aiService = new AIService(
+                $validated['provider'],
+                $validated['model'],
+                $validated['api_token'],
+                null, // endpoint
+                null, // systemPrompt
+                null, // chatPrompt
+                null  // importPrompt
+            );
             
             // Testar conexão
             $success = $aiService->test();

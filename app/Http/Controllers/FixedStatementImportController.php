@@ -108,13 +108,21 @@ class FixedStatementImportController extends Controller
             $geminiConfig = $activeModels->firstWhere('provider', 'gemini');
             
             if ($geminiConfig) {
-                Log::info('Usando configuração Gemini para categorização', [
+                Log::info('Usando configuração de IA para categorização', [
                     'provider' => $geminiConfig->provider,
                     'model' => $geminiConfig->model
                 ]);
                 
                 // Criar instância do serviço de IA com as configurações do banco de dados
-                $aiService = new AIService($geminiConfig->provider, $geminiConfig->model, $geminiConfig->api_token);
+                $aiService = new AIService(
+                    $geminiConfig->provider,
+                    $geminiConfig->model,
+                    $geminiConfig->api_token,
+                    null, // endpoint
+                    null, // systemPrompt
+                    null, // chatPrompt
+                    null  // importPrompt
+                );
                 
                 // Preparar dados para análise
                 $transactionsData = [];

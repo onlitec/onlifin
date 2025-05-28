@@ -73,10 +73,17 @@ class ChatbotController extends Controller
                     Log::info('Tentando IA:', $cfg);
                     $endpoint = $this->getEndpoint($cfg['provider'], $cfg['model']);
                     $headers = $this->getHeaders($cfg['provider'], $cfg['api_key']);
-                    $aiService = new \App\Services\AIService($cfg['provider'], $cfg['model'], $cfg['api_key'], 'chat');
-                    if (!empty($cfg['system_prompt'])) {
-                        $aiService->setSystemPrompt($cfg['system_prompt']);
-                    }
+                    $aiService = new \App\Services\AIService(
+                        $cfg['provider'],
+                        $cfg['model'],
+                        $cfg['api_key'],
+                        null, // endpoint
+                        $cfg['system_prompt'] ?? null,
+                        $cfg['chat_prompt'] ?? null,
+                        $cfg['import_prompt'] ?? null,
+                        null, // replicateSetting
+                        'chat' // promptType
+                    );
                     $payload = $this->getPayload($cfg['provider'], $cfg['model'], $aiService->getSystemPrompt(), $request->message);
                     $response = Http::withHeaders($headers)->timeout(30)->post($endpoint, $payload);
                     if ($response->successful()) {
@@ -167,12 +174,17 @@ class ChatbotController extends Controller
         $config = $this->aiConfigService->getAIConfig();
         
         // Usar o AIService com o tipo de prompt 'chat'
-        $aiService = new \App\Services\AIService($provider, $model, $config['api_key'], 'chat');
-        
-        // Injetar system_prompt configurado no AIService
-        if (!empty($config['system_prompt'])) {
-            $aiService->setSystemPrompt($config['system_prompt']);
-        }
+        $aiService = new \App\Services\AIService(
+            $provider,
+            $model,
+            $config['api_key'],
+            null, // endpoint
+            $config['system_prompt'] ?? null,
+            $config['chat_prompt'] ?? null,
+            $config['import_prompt'] ?? null,
+            null, // replicateSetting
+            'chat' // promptType
+        );
         
         // Obter o prompt de chat adequado
         $chatPrompt = $aiService->getSystemPrompt();
@@ -424,4 +436,4 @@ class ChatbotController extends Controller
         // Executa salvamento e retorna resposta
         return $tempImport->saveTransactions($saveRequest);
     }
-} 
+}

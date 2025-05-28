@@ -181,7 +181,7 @@
                             </a>
                             @endif
                             <!-- IA Icon inside main menu -->
-                            <a href="{{ route('openrouter-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA" style="font-size: 15px; padding: 8px 10px;">
+                            <a href="{{ route('iaprovider-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-robot-line text-lg"></i>
                             </a>
                             <!-- Profile dropdown inside main menu -->
@@ -219,7 +219,7 @@
             <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-gray-200 py-2 px-4">
                 <!-- **** Status da IA no menu mobile como ícone **** -->
                 <div class="my-2 flex items-center justify-center">
-                    <a href="{{ route('openrouter-config.index') }}" class="{{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
+                    <a href="{{ route('iaprovider-config.index') }}" class="{{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA">
                         <i class="ri-robot-line text-lg"></i>
                         </a>
                 </div>
@@ -347,4 +347,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Editar Configuração de IA
             </h2>
-            <a href="{{ route('openrouter-config.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+            <a href="{{ route('iaprovider-config.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
                 Voltar
             </a>
         </div>
@@ -25,7 +25,7 @@
             @endif
 
             <div class="bg-white shadow-md rounded-lg p-6">
-                <form action="{{ route('openrouter-config.update', $setting->id) }}" method="POST">
+                <form action="{{ route('iaprovider-config.update', $setting->id) }}" method="POST">
                     @csrf
                     @method('PUT')
                     
@@ -174,7 +174,7 @@
             this.disabled = true;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testando...';
 
-            fetch('{{ route("openrouter-config.test") }}', {
+            fetch('{{ route("iaprovider-config.test") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

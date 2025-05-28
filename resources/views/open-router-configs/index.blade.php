@@ -2,9 +2,9 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Configurações do OpenRouter
+                Configurações dos Provedores de IA
             </h2>
-            <a href="{{ route('openrouter-config.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+            <a href="{{ route('iaprovider-config.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
                 <i class="fas fa-plus"></i> Nova Configuração
             </a>
         </div>
@@ -40,11 +40,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $config->model }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $config->custom_model ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="{{ route('openrouter-config.edit', $config) }}" 
+                                        <a href="{{ route('iaprovider-config.edit', $config) }}" 
                                            class="text-blue-600 hover:text-blue-900 mr-3">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form action="{{ route('openrouter-config.destroy', $config) }}" 
+                                        <form action="{{ route('iaprovider-config.destroy', $config) }}" 
                                               method="POST" 
                                               class="inline"
                                               onsubmit="return confirm('Tem certeza que deseja excluir esta configuração?')">
@@ -63,4 +63,4 @@
             @endif
         </div>
     </div>
-</x-app-layout> 
+</x-app-layout>
