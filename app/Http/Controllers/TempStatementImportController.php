@@ -1,5 +1,20 @@
 <?php
 
+/*
+ * ========================================================================
+ * ARQUIVO PROTEGIDO - MODIFICAÇÕES REQUEREM AUTORIZAÇÃO EXPLÍCITA
+ * ========================================================================
+ * 
+ * ATENÇÃO: Este arquivo contém código crítico para o funcionamento do sistema.
+ * Qualquer modificação deve ser previamente autorizada e documentada.
+ * 
+ * Responsável: Equipe de Desenvolvimento
+ * Última modificação autorizada: 2025-05-31
+ * 
+ * Para solicitar modificações, entre em contato com a equipe responsável.
+ * ========================================================================
+ */
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -418,6 +433,11 @@ class TempStatementImportController extends Controller
 
     /**
      * Analisa as transações usando IA com a configuração do banco de dados
+     * 
+     * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     * @version 2.0
      */
     public function analyzeTransactionsWithAI($transactions)
     {
@@ -704,6 +724,11 @@ class TempStatementImportController extends Controller
 
     /**
      * Analisa transações utilizando o Gemini
+     * 
+     * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     * @version 2.0
      */
     private function analyzeTransactionsWithGemini($transactions, $apiConfig)
     {
@@ -729,6 +754,8 @@ class TempStatementImportController extends Controller
             $batches = array_chunk($transactions, $batchSize);
             
             $allResults = [];
+            $usedFallback = false;
+            $fallbackProvider = null;
             
             foreach ($batches as $batchIndex => $batch) {
                 Log::info("🔢 Processando lote {$batchIndex} com " . count($batch) . " transações");
@@ -736,18 +763,37 @@ class TempStatementImportController extends Controller
                 // Preparar os dados para o prompt
                 $prompt = $this->prepareGeminiPrompt($batch);
                 
-                // Fazer a chamada à API
-                $result = $aiService->analyze($prompt);
-                
-                // Extrair os resultados
-                $batchResults = $this->extractGeminiJsonOutput($result, $batch);
-                
-                // Mesclar com resultados anteriores
-                if (is_array($batchResults)) {
-                    if (isset($batchResults['transactions']) && is_array($batchResults['transactions'])) {
-                        $allResults = array_merge($allResults, $batchResults['transactions']);
-                    } else {
-                        $allResults = array_merge($allResults, $batchResults);
+                try {
+                    // Fazer a chamada à API
+                    $result = $aiService->analyze($prompt);
+                    
+                    // Verificar se o AIService usou fallback (verificando o provider atual)
+                    if ($aiService->getProvider() !== 'gemini') {
+                        $usedFallback = true;
+                        $fallbackProvider = $aiService->getProvider();
+                        Log::info("🔄 Usando fallback para {$fallbackProvider} devido a sobrecarga do Gemini");
+                    }
+                    
+                    // Extrair os resultados
+                    $batchResults = $this->extractGeminiJsonOutput($result, $batch);
+                    
+                    // Mesclar com resultados anteriores
+                    if (is_array($batchResults)) {
+                        if (isset($batchResults['transactions']) && is_array($batchResults['transactions'])) {
+                            $allResults = array_merge($allResults, $batchResults['transactions']);
+                        } else {
+                            $allResults = array_merge($allResults, $batchResults);
+                        }
+                    }
+                } catch (\Exception $batchError) {
+                    // Log do erro específico do lote
+                    Log::error("❌ Erro ao processar lote {$batchIndex}: " . $batchError->getMessage());
+                    
+                    // Continuar com o próximo lote em vez de falhar completamente
+                    // Adicionar resultados simulados para este lote
+                    $mockResults = $this->getMockAIResponse($batch);
+                    if (isset($mockResults['transactions']) && is_array($mockResults['transactions'])) {
+                        $allResults = array_merge($allResults, $mockResults['transactions']);
                     }
                 }
             }
@@ -755,9 +801,18 @@ class TempStatementImportController extends Controller
             $endTime = microtime(true);
             $executionTime = round($endTime - $startTime, 2);
             
-            Log::info("✅ Análise com Gemini concluída em {$executionTime}s", [
-                'transações_analisadas' => count($allResults)
-            ]);
+            $logInfo = [
+                'transações_analisadas' => count($allResults),
+                'tempo_execução' => "{$executionTime}s"
+            ];
+            
+            if ($usedFallback) {
+                $logInfo['fallback_usado'] = true;
+                $logInfo['fallback_provider'] = $fallbackProvider;
+                Log::info("✅ Análise concluída usando fallback para {$fallbackProvider} em {$executionTime}s", $logInfo);
+            } else {
+                Log::info("✅ Análise com Gemini concluída em {$executionTime}s", $logInfo);
+            }
             
             // Garantir que o resultado está no formato esperado
             return ['transactions' => $allResults];
@@ -868,24 +923,59 @@ class TempStatementImportController extends Controller
      */
     private function getMockAIResponse($transactions)
     {
-        // Implementação do método para gerar respostas simuladas de IA
-        // Este é um placeholder - a implementação real dependeria do formato esperado
-        
-        $response = ['transactions' => []];
+        $mockResponses = [];
         
         foreach ($transactions as $index => $transaction) {
-            $amount = $transaction['amount'] ?? 0;
+            // Determinar informações básicas
             $type = $transaction['type'] ?? 'expense';
+            $description = $transaction['description'] ?? 'Transação sem descrição';
+            $amount = $transaction['amount'] ?? 0;
+            $date = $transaction['date'] ?? date('Y-m-d');
             
-            $response['transactions'][] = [
-                'id' => $index,
+            // Determinar categoria sugerida com base no tipo
+            $suggestedCategory = $type == 'income' ? 'Receita Geral' : 'Despesa Geral';
+            
+            // Detectar cliente ou fornecedor a partir da descrição
+            $cliente = null;
+            $fornecedor = null;
+            
+            if ($type == 'income') {
+                if (preg_match('/(de|from|pix\s+de)\s+([A-Za-z\s]+)/i', $description, $matches)) {
+                    $cliente = trim($matches[2]);
+                }
+            } else {
+                if (preg_match('/(para|to|em|at|pix\s+para)\s+([A-Za-z\s]+)/i', $description, $matches)) {
+                    $fornecedor = trim($matches[2]);
+                } else {
+                    // Extrair nome do estabelecimento da descrição
+                    $words = explode(' ', $description);
+                    if (count($words) > 0) {
+                        // Usar as primeiras 3 palavras como nome do fornecedor
+                        $fornecedor = implode(' ', array_slice($words, 0, min(3, count($words))));
+                    }
+                }
+            }
+            
+            $mockResponse = [
+                'id' => $index, // Adicionar ID explícito para cada transação simulada
                 'type' => $type,
-                'category_id' => null,
-                'suggested_category' => $type == 'income' ? 'Receita Diversa' : 'Despesa Diversa'
+                'date' => $date,
+                'description' => $description,
+                'amount' => $amount,
+                'category_id' => null, // Como é mock, não selecionamos categorias existentes
+                'suggested_category' => $suggestedCategory,
+                'cliente' => $type == 'income' ? $cliente : null,
+                'fornecedor' => $type == 'expense' ? $fornecedor : null,
+                'status' => 'paid',  // Sempre 'paid' para importações
+                'notes' => 'Categorização automática (fallback)',
+                'is_recurring_payment' => false,
+                'related_recurring_id' => null
             ];
+            
+            $mockResponses[] = $mockResponse;
         }
         
-        return $response;
+        return ['transactions' => $mockResponses];
     }
 
     /**
@@ -1388,13 +1478,49 @@ class TempStatementImportController extends Controller
             $failedCount = 0;
             $createdCategoryIds = []; // Rastrear novas categorias criadas
             
+            // Criar categorias primeiro
+            $categories = [];
+            foreach ($request->transactions as $index => $transactionData) {
+                $categoryId = $transactionData['category_id'] ?? null;
+                if ($categoryId !== null && $categoryId !== '' && is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
+                    $categoryName = $transactionData['suggested_category'] ?? null;
+                    if (empty($categoryName)) {
+                        $categoryName = str_replace('_', ' ', substr($categoryId, 4));
+                    }
+                    $categoryName = trim(ucfirst($categoryName));
+                    
+                    if (!empty($categoryName)) {
+                        $type = $transactionData['type'] ?? 'expense';
+                        $categories[$categoryName.'-'.$type] = [
+                            'name' => $categoryName,
+                            'type' => $type
+                        ];
+                    }
+                }
+            }
+            
+            // Criar todas as categorias novas de uma vez
+            foreach ($categories as $key => $categoryData) {
+                $existingCategory = Category::firstOrCreate(
+                    [
+                        'user_id' => auth()->id(),
+                        'name' => $categoryData['name'],
+                        'type' => $categoryData['type']
+                    ],
+                    [
+                        'system' => false 
+                    ]
+                );
+                $categories[$key]['id'] = $existingCategory->id;
+                if ($existingCategory->wasRecentlyCreated) {
+                    $createdCategoryIds[] = $existingCategory->id;
+                }
+            }
+            
+            // Agora salvar as transações
             foreach ($request->transactions as $index => $transactionData) {
                 try {
-                    $transactionData = array_merge([
-                        'date' => null, 'description' => null, 'amount' => 0, 
-                        'type' => null, 'category_id' => null, 'suggested_category' => null
-                    ], $transactionData);
-
+                    $type = $transactionData['type'] ?? 'expense';
                     $amount = (float) $transactionData['amount'];
                     $amountCents = (int) round($amount * 100);
                     $amountCents = abs($amountCents); // Assumindo que o banco guarda valor absoluto
@@ -1402,52 +1528,33 @@ class TempStatementImportController extends Controller
                     $transaction = new Transaction();
                     $transaction->user_id = auth()->id();
                     $transaction->account_id = $account->id;
-                    // Associa a transação à empresa atual do usuário
                     $transaction->company_id = auth()->user()->currentCompany?->id;
                     $transaction->date = $transactionData['date'];
                     $transaction->description = $transactionData['description'];
                     $transaction->amount = $amountCents; 
-                    $transaction->type = $transactionData['type'];
+                    $transaction->type = $type;
                     $transaction->status = 'paid'; // Definir status como pago
                     
-                    $categoryId = $transactionData['category_id'];
-                    $newCategoryCreated = false;
+                    // Definir categoria
+                    $categoryId = $transactionData['category_id'] ?? null;
                     if ($categoryId !== null && $categoryId !== '') {
                         if (is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
-                            $categoryName = $transactionData['suggested_category'] ?? null;
-                            if (empty($categoryName)) {
-                                 $categoryName = str_replace('_', ' ', substr($categoryId, 4));
-                            }
+                            // Buscar categoria já criada
+                            $categoryName = $transactionData['suggested_category'] ?? str_replace('_', ' ', substr($categoryId, 4));
                             $categoryName = trim(ucfirst($categoryName));
-
-                            if (!empty($categoryName)) {
-                                $existingCategory = Category::firstOrCreate(
-                                    [
-                                        'user_id' => auth()->id(),
-                                        'name' => $categoryName,
-                                        'type' => $transactionData['type']
-                                    ],
-                                    [
-                                        'system' => false 
-                                    ]
-                                );
-                                $transaction->category_id = $existingCategory->id;
-                                if($existingCategory->wasRecentlyCreated) {
-                                     $newCategoryCreated = true;
-                                     $createdCategoryIds[] = $existingCategory->id;
-                                }
-                                Log::info('Usando/Criando categoria', [
-                                    'id' => $existingCategory->id, 'nome' => $categoryName, 'tipo' => $transactionData['type'], 'nova' => $newCategoryCreated
-                                ]);
+                            $key = $categoryName.'-'.$type;
+                            
+                            if (isset($categories[$key])) {
+                                $transaction->category_id = $categories[$key]['id'];
                             } else {
-                                 Log::warning('Nome de categoria sugerida vazio', ['index' => $index]);
                                 $transaction->category_id = null;
+                                Log::warning('Categoria não encontrada para transação', ['index' => $index, 'category' => $categoryName, 'type' => $type]);
                             }
                         } else {
                             $transaction->category_id = $categoryId;
                         }
                     } else {
-                         $transaction->category_id = null;
+                        $transaction->category_id = null;
                     }
                     
                     $transaction->save();
@@ -1458,7 +1565,7 @@ class TempStatementImportController extends Controller
                     Log::error('Erro ao salvar transação individual', [
                         'index' => $index,
                         'message' => $e->getMessage(),
-                        'trace_preview' => substr($e->getTraceAsString(), 0, 500), // Limitar trace no log
+                        'trace_preview' => substr($e->getTraceAsString(), 0, 500),
                         'transaction_data' => $transactionData 
                     ]);
                 }
@@ -1467,9 +1574,9 @@ class TempStatementImportController extends Controller
             $filePathToDelete = $request->file_path;
             if (Storage::exists($filePathToDelete)) {
                 Storage::delete($filePathToDelete);
-                 Log::info('Arquivo temporário deletado', ['path' => $filePathToDelete]);
+                Log::info('Arquivo temporário deletado', ['path' => $filePathToDelete]);
             } else {
-                 Log::warning('Arquivo temporário não encontrado para deletar', ['path' => $filePathToDelete]);
+                Log::warning('Arquivo temporário não encontrado para deletar', ['path' => $filePathToDelete]);
             }
             
             DB::commit();
@@ -1482,20 +1589,23 @@ class TempStatementImportController extends Controller
             
             $message = "Importação concluída! {$savedCount} transações foram importadas.";
             if ($failedCount > 0) {
-                 $message .= " {$failedCount} transações apresentaram erro.";
-                 $status = 'warning';
+                $message .= " {$failedCount} transações apresentaram erro.";
+                $status = 'warning';
             } else {
-                 $status = 'success';
+                $status = 'success';
             }
+            
+            // Recalcular saldo das contas
+            $account->recalculateBalance();
             
             // Retornar JSON para AJAX ou Redirect para requisição normal
             if ($request->wantsJson()) {
-                 return response()->json([
-                     'success' => true,
-                     'message' => $message,
-                     'status' => $status, // 'success' ou 'warning'
-                     'redirect_url' => route('transactions.index') // Informar URL para JS
-                 ]);
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'status' => $status,
+                    'redirect_url' => route('transactions.index')
+                ]);
             }
 
             return redirect()->route('transactions.index')->with($status, $message);
@@ -1509,9 +1619,9 @@ class TempStatementImportController extends Controller
             ]);
             
             $errorMessage = 'Erro geral ao salvar as transações: ' . $e->getMessage();
-             if ($request->wantsJson()) {
-                 return response()->json(['success' => false, 'message' => $errorMessage], 500);
-             }
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $errorMessage], 500);
+            }
              
             return redirect()->back()
                 ->with('error', $errorMessage)
@@ -1533,62 +1643,93 @@ class TempStatementImportController extends Controller
             return $transactions;
         }
 
-        Log::info('Aplicando categorização da IA', [
-            'transacoes_originais' => count($transactions),
-            'resultados_ia' => count($aiAnalysisResult['transactions'])
+        Log::info('Aplicando categorização da IA às transações', [
+            'total_categorias' => count($aiAnalysisResult['transactions']),
+            'total_transacoes' => count($transactions)
         ]);
 
-        // Mapear resultados da IA por ID para acesso rápido
-        $aiMap = [];
-        foreach ($aiAnalysisResult['transactions'] as $analyzed) { 
-             if (isset($analyzed['id'])) { // Usa o ID que a IA retornou (deve ser o índice original)
-                 $aiMap[$analyzed['id']] = $analyzed;
-             }
-        }
-
-        // Iterar sobre as transações extraídas e aplicar dados da IA
-        foreach ($transactions as $index => &$transaction) { // Usar referência (&) para modificar diretamente
-            if (isset($aiMap[$index])) {
-                $aiData = $aiMap[$index];
-                
-                // Aplicar tipo sugerido pela IA se diferente e válido
-                if (isset($transaction['type']) && isset($aiData['type']) && in_array($aiData['type'], ['income', 'expense']) && $aiData['type'] !== $transaction['type']) {
-                     Log::debug('Atualizando tipo da transação via IA', ['index' => $index, 'original' => $transaction['type'], 'novo' => $aiData['type']]);
-                    $transaction['type'] = $aiData['type'];
-                } elseif (!isset($transaction['type'])) {
-                    Log::warning('Chave [type] ausente na transação original ao aplicar categorização IA.', ['index' => $index, 'transaction_data' => $transaction]);
-                }
-                
-                // Aplicar category_id sugerido pela IA (pode ser null)
-                $transaction['category_id'] = $aiData['category_id'] ?? null;
-
-                // Aplicar suggested_category (nome para nova categoria)
-                $transaction['suggested_category'] = $aiData['suggested_category'] ?? null;
-
-                // Se não houver category_id mas houver suggested_category, marque como nova categoria
-                if ($transaction['category_id'] === null && !empty($transaction['suggested_category'])) {
-                    // Prefixo 'new_' indicará criação de nova categoria no saveTransactions
-                    $transaction['category_id'] = 'new_' . str_replace(' ', '_', $transaction['suggested_category']);
-                }
-
-                // Logar aplicação
-                if ($transaction['category_id'] || $transaction['suggested_category']) {
-                    Log::debug('Categoria IA aplicada', [
-                        'index' => $index, 
-                        'category_id' => $transaction['category_id'], 
-                        'suggested' => $transaction['suggested_category']
-                    ]);
-                }
-            } else {
-                 Log::warning('Resultado da IA não encontrado para transação', ['index' => $index]);
-                 // Manter transação sem categoria ou com tipo original
-                 $transaction['category_id'] = null;
-                 $transaction['suggested_category'] = null;
+        $result = [];
+        $aiCategorizations = $aiAnalysisResult['transactions'];
+        
+        // Usar um índice para acompanhar a posição atual em $aiCategorizations
+        $aiIndex = 0;
+        
+        foreach ($transactions as $index => $transaction) {
+            if ($aiIndex >= count($aiCategorizations)) {
+                // Se acabaram as categorizações da IA, manter a transação original
+                $result[] = $transaction;
+                continue;
             }
+            
+            // Obter o item de análise correspondente
+            // Primeiro tenta buscar pelo ID explícito, depois pelo índice
+            $aiItem = null;
+            foreach ($aiCategorizations as $item) {
+                if (isset($item['id']) && $item['id'] == $index) {
+                    $aiItem = $item;
+                    break;
+                }
+            }
+            
+            // Se não encontrou pelo ID explícito, usa o próximo disponível
+            if ($aiItem === null) {
+                $aiItem = $aiCategorizations[$aiIndex];
+                $aiIndex++; // Avança para o próximo
+            }
+            
+            // Copiar a transação original
+            $enrichedTransaction = $transaction;
+            
+            // Aplicar categoria da IA, se disponível
+            if (isset($aiItem['category_id'])) {
+                $enrichedTransaction['category_id'] = $aiItem['category_id'];
+            }
+            
+            // Aplicar sugestão de categoria, se disponível
+            if (isset($aiItem['suggested_category']) && $aiItem['suggested_category']) {
+                $enrichedTransaction['suggested_category'] = $aiItem['suggested_category'];
+            }
+            
+            // Aplicar cliente para transações de receita
+            if ($enrichedTransaction['type'] === 'income' && isset($aiItem['cliente']) && $aiItem['cliente']) {
+                $enrichedTransaction['cliente'] = $aiItem['cliente'];
+            }
+            
+            // Aplicar fornecedor para transações de despesa
+            if ($enrichedTransaction['type'] === 'expense' && isset($aiItem['fornecedor']) && $aiItem['fornecedor']) {
+                $enrichedTransaction['fornecedor'] = $aiItem['fornecedor'];
+            }
+            
+            // Aplicar observações se disponíveis
+            if (isset($aiItem['notes']) && $aiItem['notes']) {
+                $enrichedTransaction['notes'] = $aiItem['notes'];
+            }
+            
+            // Verificar se é um pagamento de fatura recorrente
+            if (isset($aiItem['is_recurring_payment']) && $aiItem['is_recurring_payment'] === true) {
+                $enrichedTransaction['is_recurring_payment'] = true;
+                
+                if (isset($aiItem['related_recurring_id']) && $aiItem['related_recurring_id']) {
+                    $enrichedTransaction['related_recurring_id'] = $aiItem['related_recurring_id'];
+                }
+            }
+            
+            // Melhorar a descrição se necessário
+            if (isset($aiItem['description']) && $aiItem['description'] && $aiItem['description'] !== $transaction['description']) {
+                // Verificar se a descrição sugerida pela IA é melhor (mais curta e mais clara)
+                $origLen = strlen($transaction['description']);
+                $newLen = strlen($aiItem['description']);
+                
+                // Se a descrição nova for pelo menos 20% mais curta ou tiver no máximo 30 caracteres
+                if ($newLen < $origLen * 0.8 || $newLen <= 30) {
+                    $enrichedTransaction['description'] = $aiItem['description'];
+                }
+            }
+            
+            $result[] = $enrichedTransaction;
         }
-        unset($transaction); // Quebrar referência do loop
 
-        return $transactions;
+        return $result;
     }
 
     /**
@@ -1619,6 +1760,11 @@ class TempStatementImportController extends Controller
      * @param array $transactions Transações a serem analisadas
      * @param object $config Configuração da IA
      * @return array Transações categorizadas
+     * 
+     * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     * @version 2.0
      */
     private function analyzeTransactionsWithOpenRouter($transactions, $config)
     {
@@ -1702,78 +1848,31 @@ class TempStatementImportController extends Controller
      * 
      * @param array $transactions Transações a serem analisadas
      * @return string Prompt formatado
+     * 
+     * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     * @version 2.0
      */
     private function prepareOpenRouterPrompt($transactions)
     {
         // Obter categorias do usuário para treinamento da IA
         $categories = Category::where('user_id', auth()->id())->orderBy('name')->get();
-        $categoriesFormatted = [];
-        foreach ($categories as $category) {
-            $categoriesFormatted[] = [
-                'id' => $category->id,
-                'name' => $category->name,
-                'type' => $category->type,
-                'icon' => $category->icon ?? ''
-            ];
-        }
         
-        // Separar categorias por tipo
-        $categoriesByType = [
-            'income' => [],
-            'expense' => []
-        ];
-        foreach ($categoriesFormatted as $category) {
-            $type = $category['type'] == 'income' ? 'income' : 'expense';
-            $categoriesByType[$type][] = $category;
-        }
+        // Obter transações recorrentes para identificação
+        $recurringTransactions = Transaction::where('user_id', auth()->id())
+            ->where(function($query) {
+                $query->where('recurrence_type', 'fixed')
+                    ->orWhere('recurrence_type', 'installment');
+            })
+            ->where('status', 'pending')
+            ->where('date', '>=', now()->startOfMonth())
+            ->where('date', '<=', now()->addMonths(1)->endOfMonth())
+            ->get();
         
-        // Preparar transações para o prompt
-        $transactionDescriptions = [];
-        foreach ($transactions as $index => $transaction) {
-            $transactionDescriptions[] = [
-                'id' => $index,
-                'date' => $transaction['date'] ?? '',
-                'description' => $transaction['description'] ?? '',
-                'amount' => $transaction['amount'] ?? 0,
-                'type' => $transaction['type'] ?? ''
-            ];
-        }
-        
-        // Converter para JSON
-        $transactionsJson = json_encode($transactionDescriptions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $categoriesJson = json_encode($categoriesFormatted, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        
-        // Construir o prompt
-        return <<<EOT
-Você é uma IA especializada em categorização de transações financeiras.
-
-Analise as seguintes transações e sugira a categoria mais adequada para cada uma com base nas categorias disponíveis do usuário.
-
-TRANSAÇÕES:
-$transactionsJson
-
-CATEGORIAS DISPONÍVEIS:
-$categoriesJson
-
-Responda APENAS com um array JSON contendo objetos com:
-- id: ID da transação
-- type: Tipo da transação (income/expense)
-- category_id: ID da categoria sugerida (null se não encontrar correspondência)
-- suggested_category: Nome da categoria sugerida
-
-Formato da resposta:
-[
-  {
-    "id": 0,
-    "type": "expense",
-    "category_id": 5,
-    "suggested_category": "Alimentação"
-  },
-  ...
-]
-
-NÃO inclua nenhum texto explicativo, apenas o array JSON.
-EOT;
+        // Usar o serviço AIConfigService para obter o prompt padronizado
+        $aiConfigService = new \App\Services\AIConfigService();
+        return $aiConfigService->getStandardImportPrompt($transactions, $categories, $recurringTransactions);
     }
     
     /**
@@ -1781,7 +1880,12 @@ EOT;
      * 
      * @param string $output Saída da IA
      * @param array $transactions Transações originais
-     * @return array Transações categorizadas
+     * @return array Transações categorizadas e enriquecidas
+     *
+     * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     * @version 2.0
      */
     private function extractOpenRouterJsonOutput($output, $transactions)
     {
@@ -1806,13 +1910,13 @@ EOT;
             return [];
         }
         
-        // Validar e garantir que temos categorias para todas as transações
+        // Validar e garantir que temos resultados para todas as transações
         if (empty($decoded) || !is_array($decoded)) {
             Log::error('❌ Formato de resposta do OpenRouter inválido (não é array)');
             return [];
         }
         
-        // Se temos menos categorias que transações, completar com mock
+        // Se temos menos resultados que transações, completar com mock
         if (count($decoded) < count($transactions)) {
             Log::warning('⚠️ OpenRouter retornou menos categorias que transações', [
                 'expected' => count($transactions),
@@ -1826,6 +1930,177 @@ EOT;
             }
         }
         
-        return ['transactions' => $decoded];
+        // Mapear para o formato esperado pelo método applyCategorizationToTransactions
+        $processedResults = [];
+        foreach ($decoded as $item) {
+            $processedResults[] = [
+                'id' => $item['id'] ?? null,
+                'type' => $item['type'] ?? null,
+                'date' => $item['date'] ?? null,
+                'description' => $item['description'] ?? null,
+                'amount' => $item['amount'] ?? null,
+                'category_id' => $item['category_id'] ?? null,
+                'suggested_category' => $item['suggested_category'] ?? null,
+                'cliente' => $item['cliente'] ?? null,
+                'fornecedor' => $item['fornecedor'] ?? null,
+                'status' => $item['status'] ?? 'paid',
+                'notes' => $item['notes'] ?? null,
+                'is_recurring_payment' => $item['is_recurring_payment'] ?? false,
+                'related_recurring_id' => $item['related_recurring_id'] ?? null
+            ];
+        }
+        
+        return ['transactions' => $processedResults];
+    }
+
+    /**
+     * Prepara o prompt para o Gemini com base nas transações
+     *
+     * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     * @version 2.0
+     */
+    private function prepareGeminiPrompt($transactions)
+    {
+        // Obter categorias do usuário para treinamento da IA
+        $categories = Category::where('user_id', auth()->id())->orderBy('name')->get();
+        
+        // Obter transações recorrentes para identificação
+        $recurringTransactions = Transaction::where('user_id', auth()->id())
+            ->where(function($query) {
+                $query->where('recurrence_type', 'fixed')
+                    ->orWhere('recurrence_type', 'installment');
+            })
+            ->where('status', 'pending')
+            ->where('date', '>=', now()->startOfMonth())
+            ->where('date', '<=', now()->addMonths(1)->endOfMonth())
+            ->get();
+        
+        // Usar o serviço AIConfigService para obter o prompt padronizado
+        $aiConfigService = new \App\Services\AIConfigService();
+        return $aiConfigService->getStandardImportPrompt($transactions, $categories, $recurringTransactions);
+    }
+    
+    /**
+     * Extrai o JSON da saída do Gemini
+     * 
+     * @param string $output Saída da IA
+     * @param array $transactions Transações originais
+     * @return array Transações categorizadas e enriquecidas
+     *
+     * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
+     * @author Equipe de Desenvolvimento 
+     * @since 2025-05-31
+     * @version 2.0
+     */
+    private function extractGeminiJsonOutput($output, $transactions)
+    {
+        // Primeiro, remover blocos de código markdown se existirem
+        $cleanOutput = $output;
+        
+        // Remover todos os tipos de blocos de código markdown
+        $cleanOutput = preg_replace('/```(?:json)?\s*/i', '', $cleanOutput);
+        $cleanOutput = preg_replace('/\s*```/', '', $cleanOutput);
+        
+        // Remover qualquer texto antes do primeiro '[' e depois do último ']'
+        if (preg_match('/\[.*\]/s', $cleanOutput, $matches)) {
+            $cleanOutput = $matches[0];
+        }
+        
+        // Tentar extrair apenas o JSON da resposta
+        // Primeiro tentar capturar um array JSON completo
+        $pattern = '/\[\s*\{[^\[\]]*\}(?:\s*,\s*\{[^\[\]]*\})*\s*\]/s';
+        if (preg_match($pattern, $cleanOutput, $matches)) {
+            $jsonStr = $matches[0];
+        } else {
+            // Tentar um padrão mais simples para arrays
+            $pattern2 = '/\[[\s\S]*\]/s';
+            if (preg_match($pattern2, $cleanOutput, $matches)) {
+                $jsonStr = $matches[0];
+            } else {
+                // Tentar usar a resposta limpa como JSON
+                $jsonStr = trim($cleanOutput);
+            }
+        }
+        
+        // Verificar se o JSON está completo (deve terminar com ']')
+        $jsonStr = trim($jsonStr);
+        if (!str_ends_with($jsonStr, ']') && !str_ends_with($jsonStr, '}')) {
+            Log::warning('⚠️ JSON da resposta do Gemini parece estar truncado', [
+                'json_length' => strlen($jsonStr),
+                'json_end' => substr($jsonStr, -50)
+            ]);
+            return [];
+        }
+        
+        // Limpar caracteres problemáticos de forma mais robusta
+        $jsonStr = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonStr);
+        $jsonStr = mb_convert_encoding($jsonStr, 'UTF-8', 'UTF-8');
+        
+        $decoded = json_decode($jsonStr, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('❌ Erro ao decodificar JSON da resposta do Gemini', [
+                'error' => json_last_error_msg(),
+                'json_length' => strlen($jsonStr),
+                'json_extract' => substr($jsonStr, 0, 500) . (strlen($jsonStr) > 500 ? '...' : ''),
+                'json_end' => substr($jsonStr, -100) // Últimos 100 caracteres para debug
+            ]);
+            return [];
+        }
+        
+        // Validar e garantir que temos resultados para todas as transações
+        if (empty($decoded) || !is_array($decoded)) {
+            Log::error('❌ Formato de resposta do Gemini inválido (não é array)');
+            return [];
+        }
+        
+        // Mapear os resultados para o formato esperado
+        $processedResults = [];
+        foreach ($decoded as $index => $item) {
+            // Verificar se temos um índice correspondente nas transações originais
+            if ($index >= count($transactions)) {
+                continue; // Ignorar resultados extras
+            }
+            
+            // Criar o objeto de resultado com dados completos
+            $processedResults[] = [
+                'id' => isset($item['id']) ? $item['id'] : $index,
+                'type' => $item['type'] ?? ($transactions[$index]['type'] ?? 'expense'),
+                'date' => $item['date'] ?? ($transactions[$index]['date'] ?? null),
+                'description' => $item['description'] ?? ($transactions[$index]['description'] ?? null),
+                'amount' => $item['amount'] ?? ($transactions[$index]['amount'] ?? null),
+                'category_id' => $item['category_id'] ?? null,
+                'suggested_category' => $item['suggested_category'] ?? null,
+                'cliente' => $item['cliente'] ?? null,
+                'fornecedor' => $item['fornecedor'] ?? null,
+                'status' => $item['status'] ?? 'paid',
+                'notes' => $item['notes'] ?? null,
+                'is_recurring_payment' => $item['is_recurring_payment'] ?? false,
+                'related_recurring_id' => $item['related_recurring_id'] ?? null
+            ];
+        }
+        
+        // Se temos menos resultados que transações, completar com mock
+        if (count($processedResults) < count($transactions)) {
+            Log::warning('⚠️ Gemini retornou menos categorias que transações', [
+                'expected' => count($transactions),
+                'received' => count($processedResults)
+            ]);
+            
+            // Completar o restante com categorias padrão e adicionar IDs
+            $mockResponse = $this->getMockAIResponse(array_slice($transactions, count($processedResults)));
+            if (isset($mockResponse['transactions']) && is_array($mockResponse['transactions'])) {
+                // Adicionar IDs aos resultados mock
+                foreach ($mockResponse['transactions'] as $mockIndex => $mockItem) {
+                    $realIndex = count($processedResults) + $mockIndex;
+                    $mockItem['id'] = $realIndex;
+                    $processedResults[] = $mockItem;
+                }
+            }
+        }
+        
+        return ['transactions' => $processedResults];
     }
 }

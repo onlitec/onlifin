@@ -1,5 +1,20 @@
 <?php
 
+/*
+ * ========================================================================
+ * ARQUIVO PROTEGIDO - MODIFICAÇÕES REQUEREM AUTORIZAÇÃO EXPLÍCITA
+ * ========================================================================
+ * 
+ * ATENÇÃO: Este arquivo contém código crítico para o funcionamento do sistema.
+ * Qualquer modificação deve ser previamente autorizada e documentada.
+ * 
+ * Responsável: Equipe de Desenvolvimento
+ * Última modificação autorizada: 2025-05-31
+ * 
+ * Para solicitar modificações, entre em contato com a equipe responsável.
+ * ========================================================================
+ */
+
 namespace App\Services;
 
 use App\Models\ModelApiKey;
@@ -370,5 +385,175 @@ class AIConfigService
             'api_key'       => $apiKey,
             'system_prompt' => $prompt,
         ]];
+    }
+
+    /**
+     * Retorna o prompt fixo padrão para análise de extratos bancários
+     * Este prompt deve ser usado por todas as IAs para garantir consistência na importação
+     * 
+     * @param array $transactions Transações a serem analisadas
+     * @param array $categories Categorias disponíveis no sistema
+     * @param array $recurringTransactions Transações recorrentes/fixas já cadastradas (opcional)
+     * @return string Prompt padronizado
+     * 
+     * @protected MODIFICAÇÃO PROTEGIDA - Qualquer alteração neste método requer autorização.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     */
+    public function getStandardImportPrompt($transactions, $categories, $recurringTransactions = [])
+    {
+        // Converter dados para JSON para inclusão no prompt
+        $transactionsJson = json_encode($transactions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $categoriesJson = json_encode($categories, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $recurringTransactionsJson = !empty($recurringTransactions) 
+            ? json_encode($recurringTransactions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+            : "[]";
+            
+        // Prompt fixo padronizado para todas as IAs
+        return <<<EOT
+Você é um especialista em análise financeira e categorização de transações bancárias.
+Sua tarefa é analisar transações de extratos bancários e prepará-las para importação no sistema financeiro.
+
+## DADOS DE ENTRADA
+
+### TRANSAÇÕES DO EXTRATO:
+$transactionsJson
+
+### CATEGORIAS DISPONÍVEIS:
+$categoriesJson
+
+### TRANSAÇÕES RECORRENTES EXISTENTES:
+$recurringTransactionsJson
+
+## NAMESPACE DOS CAMPOS
+
+1. **Transaction::class**
+   - `type`: Tipo da transação ('income' para receita, 'expense' para despesa)
+   - `date`: Data da transação no formato Y-m-d
+   - `description`: Descrição/título da transação
+   - `amount`: Valor em centavos (inteiro, já convertido de decimal)
+   - `category_id`: ID da categoria selecionada
+   - `account_id`: ID da conta bancária (já definido no sistema)
+   - `cliente`: Nome do cliente/pagador (apenas para transações tipo 'income')
+   - `fornecedor`: Nome do fornecedor (apenas para transações tipo 'expense')
+   - `notes`: Observações adicionais sobre a transação
+   - `status`: Status da transação (sempre "paid" para transações importadas)
+   - `recurrence_type`: Tipo de recorrência ('none', 'fixed', 'installment')
+   - `installment_number`: Número da parcela atual (para recorrências do tipo 'installment')
+   - `total_installments`: Total de parcelas (para recorrências do tipo 'installment')
+   - `next_date`: Data da próxima ocorrência (para recorrências do tipo 'fixed')
+
+2. **Category::class**
+   - `id`: ID da categoria existente
+   - `name`: Nome da categoria
+   - `type`: Tipo da categoria ('income' ou 'expense')
+   - `icon`: Ícone da categoria (opcional)
+   - `user_id`: ID do usuário proprietário (já definido no sistema)
+
+## INSTRUÇÕES DE PROCESSAMENTO
+
+1. **CATEGORIZAÇÃO**:
+   - Para cada transação, analise a descrição e valor para determinar a categoria mais adequada.
+   - Use as categorias existentes sempre que possível, consultando o campo `categoriesJson`.
+   - Se não existir uma categoria adequada, sugira uma nova no campo `suggested_category`.
+   - Estabeleça a categoria correta baseando-se na descrição da transação (ex: "Tenda Atacado" → categoria "Supermercado").
+
+2. **IDENTIFICAÇÃO DE TRANSAÇÕES RECORRENTES**:
+   - Compare as transações do extrato com as transações recorrentes existentes.
+   - Se encontrar uma correspondência por valor, data aproximada e descrição similar, marque como pagamento de fatura recorrente.
+   - Uma fatura recorrente identificada deve atualizar o status da cobrança futura para "paid".
+
+3. **IDENTIFICAÇÃO DE CLIENTES/FORNECEDORES**:
+   - Para receitas: Tente identificar o cliente/pagador na descrição.
+   - Para despesas: Tente identificar o fornecedor na descrição.
+
+4. **FORMATAÇÃO DE DESCRIÇÕES**:
+   - Mantenha o título original da transação como identificado no extrato.
+   - Remova códigos ou números desnecessários que não contribuem para identificação.
+   - Exemplo correto: "Tenda Atacado" (não "Compra em Tenda Atacado 29/05").
+
+## FORMATO DE RESPOSTA
+
+Responda APENAS com um array JSON contendo objetos com os seguintes campos:
+- `id`: ID da transação (use o mesmo do input)
+- `type`: 'income' ou 'expense'
+- `date`: Data no formato Y-m-d
+- `description`: Descrição formatada da transação
+- `amount`: Valor em centavos (inteiro)
+- `category_id`: ID da categoria existente ou null
+- `suggested_category`: Nome da nova categoria sugerida se category_id for null
+- `cliente`: Nome do cliente (apenas para 'income')
+- `fornecedor`: Nome do fornecedor (apenas para 'expense')
+- `status`: "paid" (sempre para importações)
+- `notes`: Observações adicionais (pode incluir detalhes extras identificados)
+- `is_recurring_payment`: Boolean indicando se é pagamento de uma fatura recorrente
+- `related_recurring_id`: ID da transação recorrente relacionada (se aplicável)
+
+Exemplo de resposta:
+```json
+[
+  {
+    "id": 0,
+    "type": "expense",
+    "date": "2023-05-15",
+    "description": "Tenda Atacado",
+    "amount": 15075,
+    "category_id": 5,
+    "suggested_category": null,
+    "fornecedor": "Tenda Atacado",
+    "cliente": null,
+    "status": "paid",
+    "notes": "Compra em supermercado",
+    "is_recurring_payment": false,
+    "related_recurring_id": null
+  },
+  {
+    "id": 1,
+    "type": "income",
+    "date": "2023-05-10",
+    "description": "Salário",
+    "amount": 350000,
+    "category_id": 1,
+    "suggested_category": null,
+    "cliente": "Empresa ABC",
+    "fornecedor": null,
+    "status": "paid",
+    "notes": "Salário mensal",
+    "is_recurring_payment": true,
+    "related_recurring_id": 42
+  }
+]
+```
+
+Retorne APENAS o JSON, sem explicações adicionais ou texto fora do formato JSON.
+EOT;
+    }
+
+    /**
+     * Modifica o prompt padrão para incluir instruções específicas
+     * 
+     * @param string $standardPrompt Prompt padrão base
+     * @param string $additionalInstructions Instruções adicionais específicas 
+     * @return string Prompt modificado
+     * 
+     * @protected MODIFICAÇÃO PROTEGIDA - Qualquer alteração neste método requer autorização.
+     * @author Equipe de Desenvolvimento
+     * @since 2025-05-31
+     */
+    public function customizeImportPrompt($standardPrompt, $additionalInstructions)
+    {
+        // Insere instruções adicionais antes da seção de formato de resposta
+        $insertPosition = strpos($standardPrompt, '## FORMATO DE RESPOSTA');
+        if ($insertPosition !== false) {
+            return substr_replace(
+                $standardPrompt, 
+                "## INSTRUÇÕES ESPECÍFICAS\n\n" . $additionalInstructions . "\n\n## FORMATO DE RESPOSTA", 
+                $insertPosition, 
+                strlen('## FORMATO DE RESPOSTA')
+            );
+        }
+        
+        // Fallback se não encontrar o ponto de inserção
+        return $standardPrompt . "\n\n## INSTRUÇÕES ESPECÍFICAS\n\n" . $additionalInstructions;
     }
 }
