@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use DateTime;
 use SimpleXMLElement;
 use App\Services\AIConfigService;
+use App\Services\StatementImportService;
 
 class StatementImportController extends Controller
 {
@@ -127,7 +128,7 @@ class StatementImportController extends Controller
         // Verifica se deve usar o controlador fixo
         if ($request->has('use_fixed_controller')) {
             // Redireciona para a página de mapeamento normal, mas com IA ativada
-            return redirect()->route('statements.mapping', [
+            return redirect()->route('mapping', [
                 'path' => $path, 
                 'account_id' => $account->id,
                 'extension' => $extension,
@@ -135,7 +136,7 @@ class StatementImportController extends Controller
             ])->with('success', 'Arquivo carregado com sucesso. Usando análise por IA.');
         } else {
             // Redireciona para a página de mapeamento manual original
-            return redirect()->route('statements.mapping', [
+            return redirect()->route('mapping', [
                 'path' => $path, 
                 'account_id' => $account->id,
                 'extension' => $extension,
@@ -1264,8 +1265,14 @@ private function extractTransactionsFromCSV($path)
             } 
             
             // Passo 2: Remover qualquer marcador Markdown restante
-            $cleaned = preg_replace('/```json\s*|```/', '', $cleaned);
+            $cleaned = preg_replace('/```(?:json)?\s*/i', '', $cleaned);
+            $cleaned = preg_replace('/\s*```/', '', $cleaned);
             $cleaned = trim($cleaned);
+            
+            // Remover qualquer texto antes do primeiro '{' ou '[' e depois do último '}' ou ']'
+            if (preg_match('/[\{\[].*[\}\]]/s', $cleaned, $matches)) {
+                $cleaned = $matches[0];
+            }
             
             // Passo 3: Se ainda não for um JSON válido, tenta extrair a primeira estrutura JSON válida
             if (json_decode($cleaned, true) === null) {
@@ -1825,53 +1832,43 @@ private function extractTransactionsFromCSV($path)
                 abort(403, 'Você não tem permissão para acessar esta conta.');
             }
 
-            $transactions = [];
-            foreach ($request->transactions as $transactionData) {
-                Log::info('Processando transação', [
-                    'date' => $transactionData['date'],
-                    'description' => $transactionData['description'],
-                    'amount' => $transactionData['amount'],
-                    'type' => $transactionData['type'],
-                    'category_id' => $transactionData['category_id']
+            // Usar o novo serviço para verificar duplicatas
+            $statementService = new StatementImportService();
+            
+            // Verificar duplicatas antes de salvar
+            $duplicateCheck = $statementService->checkForDuplicateTransactions($request->transactions, $request->account_id);
+            
+            if (!empty($duplicateCheck['duplicates'])) {
+                // Se há duplicatas, retornar dados para o modal
+                return response()->json([
+                    'duplicates_found' => true,
+                    'duplicates' => $duplicateCheck['duplicates'],
+                    'new_transactions' => $duplicateCheck['new_transactions'],
+                    'account_id' => $request->account_id
                 ]);
-
-                // Valida os dados da transação usando o modelo
-                $validator = Transaction::validate($transactionData);
-                if ($validator->fails()) {
-                    throw new \Exception('Dados inválidos para a transação: ' . implode(', ', $validator->errors()->all()));
+            }
+            
+            // Se não há duplicatas, processar normalmente
+            $result = $statementService->processApprovedTransactions($duplicateCheck['new_transactions'], $request->account_id);
+            
+            if ($result['success']) {
+                // Deleta o arquivo após processamento
+                if (isset($request->file_path) && Storage::exists($request->file_path)) {
+                    Storage::delete($request->file_path);
                 }
-
-                // Prepara os dados para criação
-                $transactions[] = [
-                    'date' => $transactionData['date'],
-                    'description' => $transactionData['description'],
-                    'amount' => $transactionData['amount'],
-                    'type' => $transactionData['type'],
-                    'status' => 'paid',
-                    'category_id' => $transactionData['category_id'],
-                    'account_id' => $account->id,
-                    'user_id' => auth()->id()
-                ];
+                
+                $message = "{$result['transactions_saved']} transações importadas com sucesso!";
+                if ($result['transactions_failed'] > 0) {
+                    $message .= " {$result['transactions_failed']} transações apresentaram erro.";
+                }
+                if ($result['categories_created'] > 0) {
+                    $message .= " {$result['categories_created']} novas categorias foram criadas.";
+                }
+                
+                return redirect()->route('transactions.index')->with('success', $message);
+            } else {
+                throw new \Exception($result['message'] ?? 'Erro ao processar transações.');
             }
-
-            Log::info('Tentando salvar transações', [
-                'transactions_count' => count($transactions)
-            ]);
-
-            // Salva todas as transações de uma vez usando createMany
-            $account->transactions()->createMany($transactions);
-
-            Log::info('Transações salvas com sucesso', [
-                'transactions_count' => count($transactions)
-            ]);
-
-            // Deleta o arquivo após processamento
-            if (isset($request->file_path) && Storage::exists($request->file_path)) {
-                Storage::delete($request->file_path);
-            }
-
-            return redirect()->route('transactions.index')
-                ->with('success', count($transactions) . ' transações importadas com sucesso!');
 
         } catch (\Exception $e) {
             Log::error('Erro ao salvar transações', [
@@ -1885,6 +1882,41 @@ private function extractTransactionsFromCSV($path)
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Erro ao salvar as transações: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Processa transações aprovadas pelo usuário após verificação de duplicatas
+     */
+    public function processApprovedTransactions(Request $request)
+    {
+        try {
+            $request->validate([
+                'approved_transactions' => 'required|array',
+                'account_id' => 'required|exists:accounts,id'
+            ]);
+            
+            $account = Account::findOrFail($request->account_id);
+            if ($account->user_id !== auth()->id()) {
+                abort(403, 'Você não tem permissão para acessar esta conta.');
+            }
+            
+            $statementService = new StatementImportService();
+            $result = $statementService->processApprovedTransactions($request->approved_transactions, $request->account_id);
+            
+            return response()->json($result);
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao processar transações aprovadas', [
+                'message' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'account_id' => $request->account_id
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao processar transações: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

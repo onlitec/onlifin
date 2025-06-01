@@ -20,6 +20,7 @@ use App\Models\Category;
 use Illuminate\Support\Facades\Http;
 use App\Models\Setting;
 use App\Services\FinancialReportAIService;
+use App\Services\FinancialDataService;
 
 class SettingsController extends Controller
 {
@@ -902,24 +903,45 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'site_title' => 'required|string|max:255',
-            'site_logo' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:2048',
+            'site_logo' => 'nullable|image|mimes:png,jpg,jpeg,svg|max:5120',
             'site_favicon' => 'nullable|image|mimes:png,ico,svg|max:1024',
             'site_theme' => 'required|in:light,dark',
             'root_font_size'  => 'required|in:14,16,18,20',
             'card_font_size'  => 'required|in:lg,xl,2xl,3xl',
         ]);
+        
         Setting::set('site_title', $data['site_title']);
         Setting::set('site_theme', $data['site_theme']);
         Setting::set('root_font_size', $data['root_font_size']);
         Setting::set('card_font_size', $data['card_font_size']);
+        
         if ($request->hasFile('site_logo')) {
-            $pathLogo = $request->file('site_logo')->store('site-logos', 'public');
+            $logoFile = $request->file('site_logo');
+            $extension = $logoFile->getClientOriginalExtension();
+            
+            // Se for PNG, salvamos diretamente para preservar transparência
+            if (strtolower($extension) === 'png') {
+                $fileName = 'logo-' . time() . '.png';
+                $pathLogo = $logoFile->storeAs('site-logos', $fileName, 'public');
+            } else {
+                // Para outros formatos, usamos o método padrão
+                $pathLogo = $logoFile->store('site-logos', 'public');
+            }
+            
             Setting::set('site_logo', 'storage/' . $pathLogo);
+            
+            // Verificar e corrigir permissões do arquivo
+            $fullPath = storage_path('app/public/' . $pathLogo);
+            if (file_exists($fullPath)) {
+                chmod($fullPath, 0644); // Garantir permissões de leitura
+            }
         }
+        
         if ($request->hasFile('site_favicon')) {
             $path = $request->file('site_favicon')->store('favicons', 'public');
             Setting::set('site_favicon', 'storage/' . $path);
         }
+        
         return redirect()->route('settings.appearance')->with('success', 'Configurações de aparência salvas com sucesso!');
     }
 
@@ -963,11 +985,13 @@ class SettingsController extends Controller
     /**
      * Gera e exibe relatório financeiro detalhado com insights e explicações.
      */
-    public function financialReport(FinancialReportAIService $aiService, Request $request)
+    public function financialReport(FinancialReportAIService $aiService, Request $request, FinancialDataService $financialDataService)
     {
         $user = auth()->user();
         $periodo = $request->input('periodo', 'mensal');
-        $transactions = $user->transactions()->select('description', 'amount', 'category_id', 'date')
+        
+        // Obtém transações do mês atual
+        $transactions = $user->transactions()->select('description', 'amount', 'category_id', 'date', 'type')
             ->with('category:id,name')
             ->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])
             ->get()
@@ -977,9 +1001,24 @@ class SettingsController extends Controller
                     'valor' => $t->amount / 100,
                     'categoria' => $t->category ? $t->category->name : null,
                     'data' => $t->date->format('Y-m-d'),
+                    'tipo' => $t->type, // Adicionando o tipo (income/expense)
                 ];
             })->toArray();
-        $report = $aiService->generateReport($transactions, $periodo);
+        
+        // Obtém dados financeiros adicionais
+        $dadosAdicionais = [
+            'contas_bancarias' => $financialDataService->getBankAccountsBalance()->toArray(),
+            'resumo_financeiro' => $financialDataService->getFinancialSummary(),
+            'transacoes_recentes' => $financialDataService->getRecentTransactions(10)->toArray(),
+        ];
+        
+        // Combina os dados para enviar à IA
+        $dadosCompletos = [
+            'transacoes' => $transactions,
+            'dados_adicionais' => $dadosAdicionais,
+        ];
+        
+        $report = $aiService->generateReport($dadosCompletos, $periodo);
         return view('settings.reports.financial', compact('report', 'periodo'));
     }
 }

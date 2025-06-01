@@ -162,7 +162,7 @@ class AIService
     
     private function loadConfig($provider = null)
     {
-        return $this->aiConfigService->getConfig($provider);
+        return $this->aiConfigService->getAIConfig($provider);
     }
     
     /**
@@ -743,12 +743,67 @@ class AIService
             ],
             'generationConfig' => [
                 'temperature' => 0.3,
-                'maxOutputTokens' => 500
+                'maxOutputTokens' => 4000 // Aumentado para permitir respostas JSON maiores
             ]
         ]);
 
         if (!$response->successful()) {
-            throw new \Exception('Erro ao analisar com Gemini: ' . ($response->json('error.message') ?? 'Erro desconhecido'));
+            $errorMessage = $response->json('error.message') ?? 'Erro desconhecido';
+            $errorCode = $response->json('error.code') ?? 0;
+            
+            // Verificar se o erro é de sobrecarga do modelo
+            if (strpos($errorMessage, 'overloaded') !== false || $errorCode == 429) {
+                Log::warning('Gemini sobrecarregado, tentando fallback para OpenAI', [
+                    'error' => $errorMessage,
+                    'code' => $errorCode
+                ]);
+                
+                // Tentar usar OpenAI como fallback
+                try {
+                    // Salvar configurações atuais
+                    $originalProvider = $this->provider;
+                    $originalModel = $this->model;
+                    $originalApiToken = $this->apiToken;
+                    
+                    // Configurar para OpenAI
+                    $this->provider = 'openai';
+                    $this->model = 'gpt-3.5-turbo'; // Modelo mais rápido e barato
+                    
+                    // Tentar carregar configuração da OpenAI
+                    $openAIConfig = $this->aiConfigService->getAIConfig('openai');
+                    if ($openAIConfig && !empty($openAIConfig->api_token)) {
+                        $this->apiToken = $openAIConfig->api_token;
+                        
+                        // Tentar analisar com OpenAI
+                        $result = $this->analyzeWithOpenAI($text);
+                        
+                        // Restaurar configurações originais
+                        $this->provider = $originalProvider;
+                        $this->model = $originalModel;
+                        $this->apiToken = $originalApiToken;
+                        
+                        Log::info('Análise realizada com sucesso usando OpenAI como fallback');
+                        return $result;
+                    } else {
+                        // Restaurar configurações originais
+                        $this->provider = $originalProvider;
+                        $this->model = $originalModel;
+                        $this->apiToken = $originalApiToken;
+                        
+                        Log::error('Não foi possível usar OpenAI como fallback: configuração não encontrada');
+                    }
+                } catch (\Exception $fallbackError) {
+                    // Restaurar configurações originais
+                    $this->provider = $originalProvider;
+                    $this->model = $originalModel;
+                    $this->apiToken = $originalApiToken;
+                    
+                    Log::error('Erro ao usar OpenAI como fallback: ' . $fallbackError->getMessage());
+                }
+            }
+            
+            // Se chegou aqui, o fallback falhou ou não foi possível usar
+            throw new \Exception('Erro ao analisar com Gemini: ' . $errorMessage);
         }
 
         return $response->json('candidates.0.content.parts.0.text');
@@ -835,5 +890,25 @@ class AIService
         }
 
         return $response->json('choices.0.message.content');
+    }
+    
+    /**
+     * Retorna o provedor atual
+     * 
+     * @return string Nome do provedor atual
+     */
+    public function getProvider()
+    {
+        return $this->provider;
+    }
+    
+    /**
+     * Retorna o modelo atual
+     * 
+     * @return string Nome do modelo atual
+     */
+    public function getModel()
+    {
+        return $this->model;
     }
 }

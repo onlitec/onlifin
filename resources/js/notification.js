@@ -107,6 +107,13 @@ function showNotification(title, body, icon = "/images/logo.png") {
 async function registerServiceWorker() {
     if ("serviceWorker" in navigator) {
         try {
+            // Verificar se já existe um service worker ativo para evitar conflitos
+            const existingRegistration = await navigator.serviceWorker.getRegistration();
+            if (existingRegistration && existingRegistration.scope !== window.location.origin + '/') {
+                console.log("Service Worker de outra origem detectado, evitando conflito");
+                return;
+            }
+            
             const registration = await navigator.serviceWorker.register("/sw.js");
             console.log("Service Worker registrado com sucesso:", registration);
             

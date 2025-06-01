@@ -51,6 +51,21 @@
                         </div>
                     @endif
                 </div>
+                
+                <!-- Barra de progresso para análise da IA -->
+                <div id="ai-analysis-progress-container" class="mb-6 bg-gray-50 p-4 rounded-lg hidden">
+                    <div class="flex items-center mb-2">
+                        <i class="ri-loader-4-line text-purple-600 text-xl mr-2 animate-spin"></i>
+                        <h3 class="text-lg font-medium text-gray-700">Progresso da Análise pela IA</h3>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                        <div id="ai-analysis-progress-bar" 
+                             class="bg-purple-600 h-4 rounded-full transition-all duration-500 ease-out" 
+                             style="width: 0%">
+                        </div>
+                    </div>
+                    <p id="ai-analysis-status-message" class="text-sm text-gray-600 text-center">Iniciando análise...</p>
+                </div>
 
                 <!-- Seção de filtros removida para evitar problemas de categorização -->
                 
@@ -99,6 +114,9 @@
         </div>
     </div>
 
+    <!-- Modal de Aprovação de Duplicatas -->
+    @livewire('transactions.duplicate-approval-modal')
+
     {{-- Adicionar div oculto para guardar os dados das transações --}}
     <div id="transaction-data" 
          style="display: none;" 
@@ -110,6 +128,7 @@
     <input type="hidden" id="account_id" value="{{ $account->id ?? request('account_id') }}">
     <input type="hidden" id="file_path" value="{{ $filePath ?? request('path') }}">
 
+    <script src="{{ asset('js/statement-analysis-progress.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('transactions-container');
@@ -117,6 +136,15 @@
             const accountIdInput = document.getElementById('account_id');
             const filePathInput = document.getElementById('file_path');
             const ajaxErrorMessage = document.getElementById('ajax-error-message');
+            
+            // Elementos da barra de progresso
+            const progressContainer = document.getElementById('ai-analysis-progress-container');
+            const progressBar = document.getElementById('ai-analysis-progress-bar');
+            const progressMessage = document.getElementById('ai-analysis-status-message');
+            
+            // Variáveis para controle da barra de progresso
+            let analysisProgressInterval = null;
+            const currentAnalysisKey = "{{ session('current_analysis_key') }}";
             
             // Dados passados pelo PHP via AJAX
             let transactions = [];
@@ -379,18 +407,18 @@
                             throw new Error(`Erro HTTP: ${response.status}`); 
                         });
                     }
-                    return response.json(); // Espera uma resposta JSON do controller (mesmo que seja só redirect info)
+                    return response.json();
                 })
                 .then(data => {
-                    // Assumindo que o controller retorna sucesso ou redireciona em caso de sucesso.
-                    // Se o saveTransactions retornar JSON com uma URL de redirecionamento:
-                    if (data.redirect_url) {
-                         window.location.href = data.redirect_url; // Idealmente, o controller redireciona via HTTP 302
+                    // Verificar se há duplicatas detectadas
+                    if (data.duplicates_found && data.duplicates && data.new_transactions) {
+                        hideLoading(confirmSaveButton);
+                        // Mostrar modal de aprovação de duplicatas
+                        showDuplicateApprovalModal(data.duplicates, data.new_transactions, accountId);
+                    } else if (data.redirect_url) {
+                         window.location.href = data.redirect_url;
                     } else {
-                         // Se não houver URL de redirect, assumir sucesso e redirecionar para o índice
-                         window.location.href = '{{ route("transactions.index") }}'; 
-                         // Nota: Mensagens flash (withSuccess) não funcionarão com redirect JS.
-                         // Seria melhor o controller retornar um redirect HTTP real.
+                         window.location.href = '{{ route("transactions.index") }}';
                     }
                 })
                 .catch(error => {
@@ -398,14 +426,27 @@
                     let errorMessage = 'Ocorreu um erro ao salvar as transações.';
                     if (error.data && error.data.message) {
                         errorMessage = error.data.message;
-                        // Se houver erros de validação específicos por campo (improvável aqui, mais no form original)
-                        // if(error.data.errors) { ... } 
                     } else if (error.message) {
                          errorMessage = error.message;
                     }
                     showAjaxError(errorMessage);
                     hideLoading(confirmSaveButton);
                 });
+            });
+
+            // Função para mostrar o modal de aprovação de duplicatas
+            function showDuplicateApprovalModal(duplicates, newTransactions, accountId) {
+                // Disparar evento Livewire para mostrar o modal
+                Livewire.dispatch('showApprovalModal', {
+                    duplicates: duplicates,
+                    newTransactions: newTransactions,
+                    accountId: accountId
+                });
+            }
+
+            // Escutar evento de transações importadas com sucesso
+            window.addEventListener('transactionsImported', function() {
+                window.location.href = '{{ route("transactions.index") }}';
             });
 
             // Função de filtragem removida, pois não é necessária nesta página
@@ -418,7 +459,18 @@
             @else
                 renderTransactions(); // Renderizar diretamente se não estiver usando AJAX
             @endif
-
+            
+            // Iniciar monitoramento de progresso se houver uma análise em andamento
+            if (currentAnalysisKey) {
+                const progressMonitor = new StatementAnalysisProgress(
+                    'ai-analysis-progress-container',
+                    'ai-analysis-progress-bar',
+                    'ai-analysis-status-message',
+                    currentAnalysisKey,
+                    "{{ route('statements.analysis.progress') }}"
+                );
+                progressMonitor.startMonitoring();
+            }
         });
     </script>
     

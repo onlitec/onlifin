@@ -18,6 +18,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OpenRouterConfig;
+use App\Models\ModelApiKey;
 use App\Services\AIProviderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -35,7 +36,28 @@ class AIProviderConfigController extends Controller
 
     public function index()
     {
-        $configs = OpenRouterConfig::all();
+        // Buscar configurações de ambas as tabelas e combinar os resultados
+        $openRouterConfigs = OpenRouterConfig::all();
+        $modelApiKeys = ModelApiKey::all();
+        
+        // Converter ModelApiKey para o formato compatível com OpenRouterConfig
+        $convertedModelApiKeys = $modelApiKeys->map(function ($item) {
+            return (object)[
+                'id' => $item->id,
+                'provider' => $item->provider,
+                'model' => $item->model,
+                'api_key' => $item->api_token,
+                'endpoint' => null, // ModelApiKey não tem endpoint
+                'system_prompt' => $item->system_prompt,
+                'chat_prompt' => $item->chat_prompt,
+                'import_prompt' => $item->import_prompt,
+                'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at
+            ];
+        });
+        
+        // Combinar as coleções
+        $configs = $openRouterConfigs->concat($convertedModelApiKeys);
         $providers = $this->aiProviderService->getProvidersForSelect();
         
         return view('ai-provider-configs.index', compact('configs', 'providers'));
@@ -161,11 +183,37 @@ class AIProviderConfigController extends Controller
 
     public function destroy($id)
     {
-        $config = OpenRouterConfig::findOrFail($id);
-        $config->delete();
-
-        return redirect()->route('iaprovider-config.index')
-            ->with('success', 'Configuração excluída com sucesso.');
+        try {
+            // Verificar se existe uma configuração do tipo OpenRouterConfig
+            $config = OpenRouterConfig::find($id);
+            
+            if ($config) {
+                $config->delete();
+                return redirect()->route('iaprovider-config.index')
+                    ->with('success', 'Configuração excluída com sucesso.');
+            }
+            
+            // Se não encontrou OpenRouterConfig, verificar se é ModelApiKey
+            $modelApiKey = ModelApiKey::find($id);
+            if ($modelApiKey) {
+                $modelApiKey->delete();
+                return redirect()->route('iaprovider-config.index')
+                    ->with('success', 'Configuração excluída com sucesso.');
+            }
+            
+            // Se não encontrou nenhum dos dois, retornar erro
+            return redirect()->route('iaprovider-config.index')
+                ->with('error', 'Configuração não encontrada.');
+        } catch (\Exception $e) {
+            Log::error('Erro ao excluir configuração de IA', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('iaprovider-config.index')
+                ->with('error', 'Erro ao excluir configuração: ' . $e->getMessage());
+        }
     }
 
     public function testConnection(Request $request)

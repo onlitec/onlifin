@@ -20,30 +20,11 @@ class GcpServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // Resolve credentials file path once and decode JSON credentials
-        $credEnv = config('services.gcp.credentials');
-        $credPath = $credEnv ? base_path($credEnv) : null;
-        
-        // Check if credentials file exists, but don't throw exception immediately
-        $hasCredentials = $credPath && file_exists($credPath) && is_readable($credPath);
+        // GCP services disabled - credentials not required
+        $hasCredentials = false;
         $credentialsArray = null;
-        
-        if ($hasCredentials) {
-            $credentialsArray = json_decode(file_get_contents($credPath), true);
-            Log::info('GCP credentials loaded successfully', ['path' => $credPath]);
-        } else {
-            Log::warning('GCP credentials file not found or unreadable. Some GCP services may not be available.', ['path' => $credPath]);
-        }
 
-        // Cloud Storage - only if credentials are available
-        if ($hasCredentials) {
-            $this->app->singleton(StorageClient::class, function () use ($credPath) {
-                return new StorageClient([
-                    'projectId' => config('services.gcp.project_id'),
-                    'keyFilePath' => $credPath,
-                ]);
-            });
-        }
+        // Cloud Storage - disabled (credentials not available)
 
         // Dialogflow Sessions client removido - usando AIService para chat
 
@@ -86,55 +67,7 @@ class GcpServiceProvider extends ServiceProvider
             });
         }
 
-        // BigQuery - only if credentials are available
-        if ($hasCredentials) {
-            $this->app->singleton(BigQueryClient::class, function ($app) {
-                $projectId = config('services.gcp.project_id');
-                $keyFilePath = config('services.gcp.credentials');
-                $keyFileFullPath = $keyFilePath ? base_path($keyFilePath) : null;
-
-                Log::info('GcpServiceProvider: Attempting to instantiate BigQueryClient using config.', [
-                    'config_project_id' => $projectId,
-                    'config_credentials_path' => $keyFilePath,
-                    'resolved_key_file_path' => $keyFileFullPath,
-                    'keyFileExists' => $keyFileFullPath ? file_exists($keyFileFullPath) : false,
-                    'keyFileIsReadable' => $keyFileFullPath ? is_readable($keyFileFullPath) : false,
-                ]);
-
-                if (!$projectId) {
-                    $errorMessage = 'GOOGLE_CLOUD_PROJECT (via config services.gcp.project_id) is not set or not loaded correctly.';
-                    Log::error('GcpServiceProvider: ' . $errorMessage);
-                    throw new \Exception($errorMessage);
-                }
-
-                if (!$keyFilePath) {
-                    $errorMessage = 'GOOGLE_APPLICATION_CREDENTIALS (via config services.gcp.credentials) is not set or not loaded correctly.';
-                    Log::error('GcpServiceProvider: ' . $errorMessage);
-                    throw new \Exception($errorMessage);
-                }
-
-                if (!$keyFileFullPath || !file_exists($keyFileFullPath)) {
-                    $errorMessage = 'Credentials file (via config services.gcp.credentials) does not exist at path: ' . $keyFileFullPath;
-                    Log::error('GcpServiceProvider: ' . $errorMessage);
-                    throw new \Exception($errorMessage);
-                }
-
-                try {
-                    return new BigQueryClient([
-                        'projectId' => $projectId,
-                        'keyFilePath' => $keyFileFullPath,
-                        'suppressKeyFileNotice' => true,
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('GcpServiceProvider: Error instantiating BigQueryClient: ' . $e->getMessage(), [
-                        'exception_class' => get_class($e),
-                        'exception_message' => $e->getMessage(),
-                        'exception_trace' => $e->getTraceAsString(),
-                    ]);
-                    throw $e;
-                }
-            });
-        }
+        // BigQuery - disabled (credentials not available)
     }
 
     public function boot()

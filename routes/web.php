@@ -76,6 +76,9 @@ Route::middleware('guest')->group(function () {
     Route::get('reset-password/{token}', \App\Livewire\Auth\ResetPassword::class)->name('password.reset');
 });
 
+// Remover a rota pública de upload de extratos
+// Route::post('/statements/upload', [App\Http\Controllers\TempStatementImportController::class, 'upload'])->name('statements.upload');
+
 // Rotas protegidas
 Route::middleware(['auth'])->group(function () {
     // Dashboard
@@ -132,18 +135,25 @@ Route::middleware(['auth'])->group(function () {
     // Rota de importação de transações para compatibilidade com views que usam transactions.import
     Route::get('/transactions/import', [TempStatementImportController::class, 'index'])->name('transactions.import');
     Route::get('/statements/import', [App\Http\Controllers\TempStatementImportController::class, 'index'])->name('statements.import');
-    Route::post('/statements/upload', [App\Http\Controllers\TempStatementImportController::class, 'upload'])->name('statements.upload'); // Rota do Ajax e fallback
+    // Restaurar a rota de upload dentro do middleware auth
+    Route::post('/statements/upload', [App\Http\Controllers\TempStatementImportController::class, 'upload'])->name('statements.upload');
     // Rota de Mapeamento agora usa TempStatementImportController
     Route::get('/mapping', [App\Http\Controllers\TempStatementImportController::class, 'showMapping'])->name('mapping'); 
-    Route::get('/statements/mapping', [App\Http\Controllers\TempStatementImportController::class, 'showMapping'])->name('statements.mapping'); // Adiciona rota statements.mapping
     // Rota para salvar as transações mapeadas (precisa ser POST)
     Route::post('/mapping/save', [App\Http\Controllers\TempStatementImportController::class, 'saveTransactions'])->name('statements.save'); // Nome da rota para salvar
+    
+    // Rota para processar transações aprovadas após verificação de duplicatas
+    Route::post('/transactions/process-approved', [App\Http\Controllers\StatementImportController::class, 'processApprovedTransactions'])->name('transactions.process-approved');
 
     // Rota antiga (comentada ou removida se não for mais usada)
     // Route::get('/mapping', [App\Http\Controllers\FixedStatementImportController::class, 'showMapping'])->name('mapping'); 
     
     // Categorias
+    // ROTAS DE CATEGORIAS COM SISTEMA DE AUTORIZAÇÃO HIERÁRQUICO
     Route::prefix('categories')->name('categories.')->group(function () {
+        // CORREÇÃO DE AUTORIZAÇÃO: Permite acesso com qualquer uma das duas permissões:
+        // - view_own_categories: Ver apenas categorias próprias + do sistema
+        // - view_all_categories: Ver todas as categorias (administradores)
         Route::get('/', [CategoryController::class, 'index'])
             ->middleware('permission:view_own_categories|view_all_categories')
             ->name('index');
@@ -406,6 +416,22 @@ Route::middleware(['auth'])->group(function () {
         // Ex: Route::get('/income-vs-expenses', [FinancialReportController::class, 'incomeVsExpenses'])->name('incomeVsExpenses');
     });
 
+    /*
+     * Importação de extratos
+     */
+    Route::middleware(['auth'])->prefix('statements')->group(function () {
+        Route::get('/import', [TempStatementImportController::class, 'index'])->name('transactions.import');
+        Route::post('/upload', [TempStatementImportController::class, 'upload'])->name('transactions.upload');
+        Route::get('/mapping', [TempStatementImportController::class, 'showMapping'])->name('mapping');
+        Route::get('/transactions', [TempStatementImportController::class, 'getTransactions'])->name('transactions.get');
+        Route::post('/save', [TempStatementImportController::class, 'saveTransactions'])->name('transactions.save');
+        Route::post('/analyze', [TempStatementImportController::class, 'analyze'])->name('transactions.analyze');
+        Route::post('/test-gemini', [TempStatementImportController::class, 'testGeminiAPI'])->name('test.gemini');
+        
+        // Rota para verificar o progresso da análise do extrato
+        Route::get('/analysis-progress', [TempStatementImportController::class, 'checkAnalysisProgress'])->name('statements.analysis.progress');
+    });
+
 });
 
 // Rota de logout
@@ -420,3 +446,6 @@ Route::post('/logout', function () {
 Route::get('/menu-test', function () {
     return view('menu-test');
 })->middleware(['auth'])->name('menu.test');
+
+// Incluir rotas para configurações múltiplas de IA
+require __DIR__.'/multiple-ai-config.php';

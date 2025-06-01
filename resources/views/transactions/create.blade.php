@@ -302,11 +302,18 @@
         // A máscara de valores monetários é essencial para o correto 
         // processamento financeiro das transações.
         const maskOptions = {
-            prefix: 'R$ ',
-            thousands: '.',
-            decimal: ',',
-            precision: 2,
-            allowNegative: false
+            mask: 'R$ num',
+            blocks: {
+                num: {
+                    mask: Number,
+                    thousandsSeparator: '.',
+                    radix: ',',
+                    scale: 2,
+                    signed: false,
+                    normalizeZeros: true,
+                    padFractionalZeros: true
+                }
+            }
         };
         
         const mask = IMask(amountDisplay, maskOptions);

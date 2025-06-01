@@ -27,9 +27,10 @@ class AIConfigService
     /**
      * Retorna as configurações da IA ativa do banco de dados
      * 
+     * @param string|null $filterProvider Filtra por provedor específico (opcional)
      * @return array
      */
-    public function getAIConfig()
+    public function getAIConfig($filterProvider = null)
     {
         $config = [
             'is_configured' => false,
@@ -42,45 +43,61 @@ class AIConfigService
         if (class_exists('\\App\\Models\\OpenRouterConfig')) {
             $openRouterConfig = \App\Models\OpenRouterConfig::first();
             if ($openRouterConfig && !empty($openRouterConfig->api_key)) {
-                Log::info('Usando configuração de provedor de IA:', [
-                    'provider' => $openRouterConfig->provider,
-                    'model' => $openRouterConfig->model
-                ]);
-                $config['is_configured'] = true;
-                $config['provider'] = $openRouterConfig->provider;
-                $config['model'] = $openRouterConfig->model === 'custom' ? $openRouterConfig->custom_model : $openRouterConfig->model;
-                $config['api_key'] = $openRouterConfig->api_key;
-                $config['model_name'] = $openRouterConfig->model;
-                $config['system_prompt'] = $openRouterConfig->system_prompt;
-                $config['chat_prompt'] = $openRouterConfig->chat_prompt ?? $openRouterConfig->system_prompt;
-                $config['import_prompt'] = $openRouterConfig->import_prompt ?? '';
-                $config['has_api_key'] = true;
-                return $config;
+                // Se temos um filtro de provedor e não corresponde, pular
+                if ($filterProvider && $openRouterConfig->provider != $filterProvider) {
+                    // Continuar para o próximo
+                } else {
+                    Log::info('Usando configuração de provedor de IA:', [
+                        'provider' => $openRouterConfig->provider,
+                        'model' => $openRouterConfig->model
+                    ]);
+                    $config['is_configured'] = true;
+                    $config['provider'] = $openRouterConfig->provider;
+                    $config['model'] = $openRouterConfig->model === 'custom' ? $openRouterConfig->custom_model : $openRouterConfig->model;
+                    $config['api_key'] = $openRouterConfig->api_key;
+                    $config['model_name'] = $openRouterConfig->model;
+                    $config['system_prompt'] = $openRouterConfig->system_prompt;
+                    $config['chat_prompt'] = $openRouterConfig->chat_prompt ?? $openRouterConfig->system_prompt;
+                    $config['import_prompt'] = $openRouterConfig->import_prompt ?? '';
+                    $config['has_api_key'] = true;
+                    return $config;
+                }
             }
         }
         
         // PRIORIDADE 2: Verificar configuração em config/ai.php
         if (Config::get('ai.enabled', false)) {
             $provider = Config::get('ai.provider');
-            $apiKey = Config::get("ai.{$provider}.api_key");
-            $model = Config::get("ai.{$provider}.model");
-            if ($provider && $apiKey) {
-                Log::info('Usando configuração de config/ai.php:', ['provider' => $provider, 'model' => $model]);
-                $config['is_configured'] = true;
-                $config['provider'] = $provider;
-                $config['model'] = $model;
-                $config['api_key'] = $apiKey;
-                $config['model_name'] = $model;
-                $config['system_prompt'] = Config::get("ai.{$provider}.system_prompt");
-                $config['chat_prompt'] = Config::get("ai.{$provider}.chat_prompt");
-                $config['import_prompt'] = Config::get("ai.{$provider}.import_prompt");
-                $config['has_api_key'] = true;
-                return $config;
+            
+            // Pular se temos filtro e o provedor não corresponde
+            if ($filterProvider && $provider != $filterProvider) {
+                // Continuar para o próximo
+            } else {
+                $apiKey = Config::get("ai.{$provider}.api_key");
+                $model = Config::get("ai.{$provider}.model");
+                if ($provider && $apiKey) {
+                    Log::info('Usando configuração de config/ai.php:', ['provider' => $provider, 'model' => $model]);
+                    $config['is_configured'] = true;
+                    $config['provider'] = $provider;
+                    $config['model'] = $model;
+                    $config['api_key'] = $apiKey;
+                    $config['model_name'] = $model;
+                    $config['system_prompt'] = Config::get("ai.{$provider}.system_prompt");
+                    $config['chat_prompt'] = Config::get("ai.{$provider}.chat_prompt");
+                    $config['import_prompt'] = Config::get("ai.{$provider}.import_prompt");
+                    $config['has_api_key'] = true;
+                    return $config;
+                }
             }
         }
         
         // PRIORIDADE 3: Verificar se há chave de API por modelo ativa (ModelApiKey)
-        $activeKey = $this->getActiveModelKey();
+        $activeKeyQuery = ModelApiKey::where('is_active', true);
+        if ($filterProvider) {
+            $activeKeyQuery->where('provider', $filterProvider);
+        }
+        $activeKey = $activeKeyQuery->first();
+        
         if ($activeKey) {
             Log::info('Usando configuração de ModelApiKey:', ['provider' => $activeKey->provider, 'model' => $activeKey->model]);
             $config['is_configured'] = true;
@@ -97,7 +114,15 @@ class AIConfigService
 
         // PRIORIDADE 4: Verificar ReplicateSetting
         if (class_exists('\\App\\Models\\ReplicateSetting')) {
-            $settings = \App\Models\ReplicateSetting::getActive();
+            $replicateQuery = \App\Models\ReplicateSetting::where('is_active', true);
+            
+            // Aplicar filtro por provedor, se fornecido
+            if ($filterProvider) {
+                $replicateQuery->where('provider', $filterProvider);
+            }
+            
+            $settings = $replicateQuery->first();
+            
             if ($settings && $settings->isConfigured()) {
                 Log::info('Usando configuração do Replicate:', [
                     'provider' => $settings->provider,
@@ -137,23 +162,8 @@ class AIConfigService
      */
     public function isAIConfigured()
     {
-        // Verificar primeiro em ReplicateSetting
-        if (class_exists('\App\Models\ReplicateSetting')) {
-            $settings = \App\Models\ReplicateSetting::getActive();
-            if ($settings && $settings->isConfigured()) {
-                return true;
-            }
-        }
-        
-        // Se não encontrou em ReplicateSetting, verificar em OpenRouterConfig
-        if (class_exists('\App\Models\OpenRouterConfig')) {
-            $openRouterConfig = \App\Models\OpenRouterConfig::first(); // Pega a primeira configuração
-            if ($openRouterConfig && !empty($openRouterConfig->api_key)) {
-                return true;
-            }
-        }
-        
-        return false;
+        $config = $this->getAIConfig();
+        return $config['is_configured'];
     }
     
     /**
@@ -555,5 +565,37 @@ EOT;
         
         // Fallback se não encontrar o ponto de inserção
         return $standardPrompt . "\n\n## INSTRUÇÕES ESPECÍFICAS\n\n" . $additionalInstructions;
+    }
+
+    /**
+     * Retorna configuração específica para um modelo
+     * 
+     * @param string $provider Nome do provedor 
+     * @param string $model Nome do modelo
+     * @return array|null Configuração específica ou null se não encontrada
+     */
+    public function getModelSpecificConfig($provider, $model)
+    {
+        // Buscar configuração de modelo específico
+        $modelConfig = ModelApiKey::where('provider', $provider)
+            ->where('model', $model)
+            ->where('is_active', true)
+            ->first();
+            
+        if ($modelConfig) {
+            return [
+                'provider' => $provider,
+                'model' => $model,
+                'api_key' => $modelConfig->api_token,
+                'model_name' => $model,
+                'system_prompt' => $modelConfig->system_prompt,
+                'chat_prompt' => $modelConfig->chat_prompt ?? $modelConfig->system_prompt,
+                'import_prompt' => $modelConfig->import_prompt ?? '',
+                'endpoint' => null,
+                'has_api_key' => !empty($modelConfig->api_token)
+            ];
+        }
+        
+        return null;
     }
 }

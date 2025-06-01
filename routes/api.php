@@ -48,3 +48,7 @@ Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
 // Documentação da API
 Route::get('/docs', [App\Http\Controllers\Api\DocumentationController::class, 'index']);
 Route::get('/docs/openapi', [App\Http\Controllers\Api\DocumentationController::class, 'openapi']);
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/chatbot/ask', [GoogleChatbotController::class, 'ask']);
+});

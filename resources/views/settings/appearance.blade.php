@@ -33,12 +33,27 @@
                     <div class="mb-6">
                         <label for="site_logo" class="block text-sm font-medium text-gray-700 mb-1">Logo do Site</label>
                         <div class="flex items-center space-x-4">
-                            <input type="file" name="site_logo" id="site_logo" accept="image/*">
+                            <div class="flex flex-col w-full">
+                                <input type="file" name="site_logo" id="site_logo" 
+                                       accept="image/png,.png,image/jpeg,.jpg,.jpeg,image/svg+xml,.svg"
+                                       class="block w-full text-sm text-gray-500
+                                       file:mr-4 file:py-2 file:px-4
+                                       file:rounded-md file:border-0
+                                       file:text-sm file:font-semibold
+                                       file:bg-blue-50 file:text-blue-700
+                                       hover:file:bg-blue-100">
+                                <p class="mt-1 text-sm text-gray-500">Formatos aceitos: PNG, JPG, JPEG, SVG</p>
+                            </div>
                             @if($siteLogo)
-                                <img src="{{ asset($siteLogo) }}" alt="Logo Atual" class="h-12">
+                                <div class="relative group">
+                                    <img src="{{ asset($siteLogo) }}" alt="Logo Atual" class="h-12 object-contain border border-gray-200 rounded p-1">
+                                    <div class="absolute inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
+                                        <span class="text-white text-xs">Logo atual</span>
+                                    </div>
+                                </div>
                             @endif
                         </div>
-                        <p class="mt-1 text-sm text-gray-500">Deixe em branco para manter o logo atual.</p>
+                        <p class="mt-1 text-sm text-gray-500">Deixe em branco para manter o logo atual. <strong>Recomendamos usar PNG com fundo transparente.</strong></p>
                     </div>
                     <div class="mb-6">
                         <label for="site_favicon" class="block text-sm font-medium text-gray-700 mb-1">Favicon</label>

@@ -35,6 +35,7 @@
     
     <!-- Scripts -->
     <script src="{{ asset('assets/js/sweetalert2.all.min.js') }}" defer></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     @livewireScripts
     @vite(['resources/js/app.js'])
     
@@ -454,5 +455,11 @@
     </script>
     @stack('scripts')
     @include('chatbot._widget')
+
+    @stack('modals')
+
+    @yield('scripts')
+
+    @livewireScripts
 </body>
-</html> 
+</html>

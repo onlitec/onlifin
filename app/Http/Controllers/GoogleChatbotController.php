@@ -77,7 +77,7 @@ class GoogleChatbotController extends Controller
 
                     $fileReplyMessage = 'Arquivo "' . $originalFileName . '" recebido e enviado para processamento.';
                     if (empty($messageText)) {
-                        return response()->json(['reply' => $fileReplyMessage], 200);
+                        return response()->json(['answer' => $fileReplyMessage], 200);
                     }
                     // Se houver texto junto com o arquivo, anexa a mensagem de upload e continua para análise
                     $messageText = $fileReplyMessage . "\n\n" . $messageText;
@@ -92,13 +92,13 @@ class GoogleChatbotController extends Controller
 
             // Se não houver mensagem de texto (e nenhum arquivo válido foi processado para gerar uma mensagem de texto)
             if (empty($messageText)) {
-                return response()->json(['reply' => 'Por favor, envie uma mensagem ou um arquivo válido.'], 200);
+                return response()->json(['answer' => 'Por favor, envie uma mensagem ou um arquivo válido.'], 200);
             }
 
             // Analisar mensagem usando AI Service
             $response = $aiService->analyze($messageText);
 
-            return response()->json(['reply' => $response]);
+            return response()->json(['answer' => $response]);
         } catch (\Throwable $e) {
             // Log any error or Throwable
             Log::error('Erro geral GoogleChatbotController@ask', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'exception_class' => get_class($e)]);

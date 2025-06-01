@@ -19,11 +19,21 @@ const urlsToCache = [
 // Instalação do service worker
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
+    // Verificar se a Cache API está disponível e não está sendo usada por extensões
+    (async () => {
+      try {
+        if (!self.caches) {
+          console.warn('Cache API não disponível');
+          return;
+        }
+        
+        const cache = await caches.open(CACHE_NAME);
         console.log('Cache aberto');
         return cache.addAll(urlsToCache);
-      })
+      } catch (error) {
+        console.warn('Erro ao abrir cache, possivelmente devido a conflito com extensão:', error);
+      }
+    })()
   );
 });
 
@@ -31,28 +41,48 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    (async () => {
+      try {
+        if (!self.caches) {
+          console.warn('Cache API não disponível durante ativação');
+          return;
+        }
+        
+        const cacheNames = await caches.keys();
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      } catch (error) {
+        console.warn('Erro ao gerenciar caches durante ativação:', error);
+      }
+    })()
   );
 });
 
 // Interceptação de requisições
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
+    (async () => {
+      try {
+        if (!self.caches) {
+          console.warn('Cache API não disponível para fetch');
+          return fetch(event.request);
+        }
+        
+        const response = await caches.match(event.request);
         if (response) {
           return response;
         }
         return fetch(event.request);
-      })
+      } catch (error) {
+        console.warn('Erro ao acessar cache durante fetch:', error);
+        return fetch(event.request);
+      }
+    })()
   );
 });
 

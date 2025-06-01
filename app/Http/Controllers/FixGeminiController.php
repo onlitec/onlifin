@@ -110,11 +110,35 @@ class FixGeminiController extends Controller
                 $text = $responseData['candidates'][0]['content']['parts'][0]['text'];
                 
                 // Extrair o JSON da resposta (pode estar envolto em markdown)
-                preg_match('/\{.*\}/s', $text, $matches);
-                $jsonContent = !empty($matches[0]) ? $matches[0] : $text;
+                $cleanText = $text;
+                
+                // Remover todos os tipos de blocos de código markdown
+                $cleanText = preg_replace('/```(?:json)?\s*/i', '', $cleanText);
+                $cleanText = preg_replace('/\s*```/', '', $cleanText);
+                
+                // Remover qualquer texto antes do primeiro '{' ou '[' e depois do último '}' ou ']'
+                if (preg_match('/[\{\[].*[\}\]]/s', $cleanText, $matches)) {
+                    $cleanText = $matches[0];
+                }
+                
+                // Tentar extrair JSON da resposta limpa
+                preg_match('/[\{\[].*[\}\]]/s', $cleanText, $matches);
+                $jsonContent = !empty($matches[0]) ? $matches[0] : trim($cleanText);
+                
+                // Limpar caracteres problemáticos
+                $jsonContent = preg_replace('/[\x00-\x1F\x7F]/u', '', $jsonContent);
                 
                 // Decodificar o JSON
                 $processedResponse = json_decode($jsonContent, true);
+                
+                // Log de erro se a decodificação falhar
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('❌ Erro ao decodificar JSON da resposta do Gemini no FixGeminiController', [
+                        'error' => json_last_error_msg(),
+                        'json_extract' => substr($jsonContent, 0, 500) . (strlen($jsonContent) > 500 ? '...' : '')
+                    ]);
+                    return null;
+                }
                 
                 if ($processedResponse && isset($processedResponse['transactions'])) {
                     Log::info('Análise com Gemini concluída com sucesso', [

@@ -40,6 +40,9 @@ Data da modificação: [DATA DA ALTERAÇÃO ATUAL]
                         R$ 0,00
                     @endif
                 </div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ $transactions->total() }} {{ $transactions->total() == 1 ? 'transação' : 'transações' }}
+                </div>
             </div>
         </div>
         <div class="card shadow">
@@ -237,4 +240,4 @@ Data da modificação: [DATA DA ALTERAÇÃO ATUAL]
         </div>
     </div>
     @endif
-</div> 
+</div>

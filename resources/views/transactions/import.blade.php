@@ -33,7 +33,8 @@
                         </div>
                     </div>
 
-                    <form action="{{ route('statements.upload') }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="import-form">
+                    @if (Route::has('transactions.upload'))
+                    <form action="{{ route('transactions.upload') }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="import-form">
                         @csrf
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -85,6 +86,7 @@
                             </button>
                         </div>
                     </form>
+                    @endif
                 </div>
 
                 <!-- Passo 2: Análise com IA (inicialmente oculto) -->
@@ -308,10 +310,15 @@
                     }
                     
                     // Construir a URL para a página de mapeamento
+                    @if (Route::has('mapping'))
                     const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}&use_ai=1`;
                     
                     // Redirecionar
                     window.location.href = mappingUrl;
+                    @else
+                    showAjaxError('Rota de mapeamento não encontrada. Entre em contato com o suporte.');
+                    hideLoading(this, 'Analisar com IA e Mapear Transações');
+                    @endif
                     
                     // O hideLoading não será chamado aqui pois a página será redirecionada
                 });
@@ -333,10 +340,15 @@
                      }
                      
                      // Construir a URL para a página de mapeamento SEM IA
+                     @if (Route::has('mapping'))
                      const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}&use_ai=0`;
                      
                      // Redirecionar
                      window.location.href = mappingUrl;
+                     @else
+                     showAjaxError('Rota de mapeamento não encontrada. Entre em contato com o suporte.');
+                     hideLoading(this, 'Mapear Transações Manualmente');
+                     @endif
                  });
              }
 

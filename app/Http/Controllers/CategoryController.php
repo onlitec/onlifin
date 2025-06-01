@@ -20,17 +20,22 @@ class CategoryController extends Controller
             $query->where('type', 'expense');
         }
         
+        // SISTEMA DE AUTORIZAÇÃO HIERÁRQUICO PARA CATEGORIAS:
+        // 1. view_all_categories: Administradores podem ver todas as categorias
+        // 2. view_own_categories: Usuários podem ver apenas suas próprias categorias + categorias do sistema
         if (!$user->hasPermission('view_all_categories')) {
             if ($user->hasPermission('view_own_categories')) {
+                // CORREÇÃO DE AUTORIZAÇÃO: Permite ver categorias próprias + categorias do sistema (user_id null)
                 $query->where(function($q) use ($user) {
-                    $q->where('user_id', $user->id)
-                      ->orWhereNull('user_id'); // Allows viewing system-wide (null user_id) categories
+                    $q->where('user_id', $user->id)  // Categorias do usuário
+                      ->orWhereNull('user_id');       // Categorias do sistema (compartilhadas)
                 });
             } else {
+                // SEGURANÇA: Bloqueia acesso se não tem nenhuma permissão de visualização
                 abort(403, 'Você não tem permissão para visualizar categorias.');
             }
         }
-        // Admins see all categories, including user-specific ones if they exist with user_id set.
+        // PERMISSÃO TOTAL: Administradores com 'view_all_categories' veem todas as categorias
         
         $categories = $query->paginate(10)->appends(['type' => $typeFilter]);
         $isAdminView = $user->hasRole('Administrador');
@@ -140,4 +145,4 @@ class CategoryController extends Controller
                 ->with('error', 'Não foi possível excluir esta categoria. Ela pode estar em uso em transações.');
         }
     }
-} 
+}

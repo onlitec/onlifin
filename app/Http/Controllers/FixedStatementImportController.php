@@ -245,7 +245,7 @@ class FixedStatementImportController extends Controller
             $extension = $request->file('statement_file')->getClientOriginalExtension();
             
             // Redirecionar para a página de mapeamento
-            return redirect()->route('statements.mapping', [
+            return redirect()->route('mapping', [
                 'path' => $path,
                 'account_id' => $request->account_id,
                 'extension' => $extension,

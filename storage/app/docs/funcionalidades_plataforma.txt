@@ -1,0 +1,54 @@
+Lista de Funcionalidades da Plataforma Onlifin
+
+## Módulos Principais
+
+1.  **Dashboard Principal**
+    *   Visualização geral do estado financeiro.
+    *   Resumos e gráficos principais.
+
+2.  **Gerenciamento de Transações**
+    *   Registro detalhado de todas as transações financeiras.
+    *   Filtros e busca avançada de transações.
+    *   Visualização e gestão de Receitas.
+    *   Visualização e gestão de Despesas.
+
+3.  **Gerenciamento de Categorias**
+    *   Criação, edição, e exclusão de categorias para classificar transações.
+    *   Organização hierárquica de categorias (se aplicável).
+
+4.  **Gerenciamento de Contas Financeiras**
+    *   Adição, edição e remoção de contas (bancárias, cartões, carteiras digitais, etc.).
+    *   Visualização de saldos e extratos por conta.
+
+5.  **Relatórios Financeiros**
+    *   Geração de relatórios periódicos (mensais, anuais, personalizados).
+    *   Relatórios de fluxo de caixa, despesas por categoria, receitas por fonte, etc.
+    *   Visualização gráfica dos dados.
+
+## Configurações e Administração
+
+6.  **Configurações Gerais da Aplicação**
+    *   Ajustes de preferências do usuário (tema, idioma, notificações, etc.).
+    *   Configurações do sistema (moeda padrão, formatos de data, etc.).
+
+7.  **Configuração de Inteligência Artificial (IA)**
+    *   Configuração do provedor de IA principal.
+    *   Gerenciamento de múltiplas configurações de IA para diferentes provedores e modelos.
+    *   Ajuste de prompts (sistema, chat, importação) para IA.
+
+8.  **Gerenciamento de Usuários e Permissões (para Administradores)**
+    *   Criação, edição e remoção de usuários.
+    *   Atribuição de papéis e permissões de acesso a funcionalidades específicas.
+
+## Ferramentas Adicionais
+
+9.  **Chatbot Assistente Financeiro**
+    *   Assistente virtual para responder dúvidas e auxiliar em tarefas financeiras.
+    *   Integração com as funcionalidades da plataforma para fornecer informações contextuais.
+
+## Autenticação
+
+10. **Sistema de Autenticação**
+    *   Login seguro de usuários.
+    *   Mecanismo de Logout.
+    *   Recuperação de senha (se implementado). 

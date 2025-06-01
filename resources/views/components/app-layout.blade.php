@@ -1,12 +1,26 @@
+<!-- Stub para API de Cache no browser para evitar ReferenceError em extensões -->
+<script>
+    if (typeof caches === 'undefined') {
+        window.caches = {
+            open: async () => Promise.reject('Cache API não disponível'),
+            match: async () => null,
+            delete: async () => false,
+            keys: async () => [],
+            has: async () => false,
+            set: async () => false
+        };
+    }
+</script>
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $siteTheme === 'dark' ? 'dark' : '' }}" style="--root-font-size: {{ $rootFontSize }}px; overflow-x: hidden; width: 100%;">
 <head>
+    <!-- Carregar stub de caches de forma síncrona como primeiro script -->
+    <script src="{{ asset('js/cache-stub.js') . '?v=' . time() }}" async="false"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $siteTitle }}</title>
-    <link rel="icon" href="{{ asset($siteFavicon) }}">
+    <link rel="icon" href="{{ asset($siteFavicon) . '?v=' . time() }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,14 +28,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Remix Icons -->
-    <link href="{{ asset('assets/css/remixicon.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets/fonts/remixicon.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/remixicon.css') . '?v=' . time() }}" rel="stylesheet">
+    <link href="{{ asset('assets/fonts/remixicon.css') . '?v=' . time() }}" rel="stylesheet">
     
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Incluir jQuery antes dos scripts que dependem dele -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Incluir Bootstrap JS para suportar modais -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @livewireStyles
 
-    <script src="//unpkg.com/imask"></script>
+
 
     <style>
         /* Correção crítica para layout */
@@ -140,22 +158,32 @@
                                 <i class="ri-dashboard-line mr-2 text-lg"></i>
                                 Dashboard
                             </a>
+                            @auth
                             @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
                             <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.index') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-exchange-line mr-2 text-lg"></i>
                                 Transações
                             </a>
                             @endif
+                            @endauth
+                            @guest
+                            <!-- Optionally, show a login link or nothing for guests -->
+                            @endguest
                             <a href="{{ route('transactions.income') }}" class="menu-item {{ request()->routeIs('transactions.income') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
                                 Receitas
                             </a>
+                            @auth
                             @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
                             <a href="{{ route('transactions.expenses') }}" class="menu-item {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
                                 Despesas
                             </a>
                             @endif
+                            @endauth
+                            @guest
+                            <!-- Optionally, show a login link or nothing for guests -->
+                            @endguest
                             @if(auth()->user()->hasPermission('view_reports'))
                             <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-bar-chart-line mr-2 text-lg"></i>

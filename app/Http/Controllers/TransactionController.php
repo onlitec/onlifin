@@ -69,7 +69,25 @@ class TransactionController extends Controller
         }
 
         $type = $request->type ?? 'expense';
-        $categories = Category::where('type', $type)->orderBy('name')->get();
+        
+        // CORREÇÃO DE AUTORIZAÇÃO: Carregar categorias separadamente por tipo para o JavaScript
+        // Esta correção resolve o problema onde apenas um tipo de categoria era carregado,
+        // mas o JavaScript precisava de ambos os tipos (income e expense) para funcionar corretamente
+        $categoriesQuery = Category::orderBy('name');
+        
+        // VERIFICAÇÃO DE PERMISSÃO: Se o usuário não tem permissão para ver todas as categorias,
+        // filtra apenas as categorias que pertencem ao usuário atual
+        if (!$user->hasPermission('view_all_categories')) {
+            $categoriesQuery->where('user_id', $user->id);
+        }
+        
+        // CORREÇÃO PRINCIPAL: Carregar ambos os tipos de categorias separadamente
+        // para que o JavaScript possa alternar entre eles dinamicamente
+        $incomeCategories = $categoriesQuery->clone()->where('type', 'income')->get();
+        $expenseCategories = $categoriesQuery->clone()->where('type', 'expense')->get();
+        
+        // Manter a variável $categories para compatibilidade com o select inicial
+        $categories = $type === 'income' ? $incomeCategories : $expenseCategories;
         
         $accountsQuery = Account::where('active', true);
         if (!$user->hasPermission('view_all_accounts')) { // Assuming admin can see all accounts for selection
@@ -79,7 +97,7 @@ class TransactionController extends Controller
         
         $isAdminView = $user->hasRole('Administrador');
         
-        return view('transactions.create', compact('categories', 'accounts', 'type', 'isAdminView'));
+        return view('transactions.create', compact('categories', 'incomeCategories', 'expenseCategories', 'accounts', 'type', 'isAdminView'));
     }
 
     /**
@@ -415,4 +433,4 @@ class TransactionController extends Controller
         $summary = $aiService->generateSummary($transactions);
         return view('transactions.summary', compact('summary'));
     }
-} 
+}

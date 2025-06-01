@@ -16,8 +16,6 @@
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
-
-    <script src="//unpkg.com/imask"></script>
     
     <style>
         /* Estilos básicos */
@@ -264,4 +262,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

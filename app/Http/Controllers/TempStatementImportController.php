@@ -58,6 +58,14 @@ class TempStatementImportController extends Controller
      */
     public function upload(Request $request)
     {
+        // Verificar se o usuário está autenticado
+        if (!Auth::check()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Você precisa estar autenticado para fazer upload de extratos.'], 401);
+            }
+            return redirect()->route('login');
+        }
+        
         // Ajuste: Log mais descritivo
         Log::info('Recebida requisição em /statements/upload', ['ajax' => $request->ajax(), 'method' => $request->method(), 'input' => $request->except('statement_file')]);
 
@@ -444,17 +452,25 @@ class TempStatementImportController extends Controller
         // Tempo de início da operação para medir performance
         $startTime = microtime(true);
         
+        // Gerar uma chave única para este processo de análise
+        $processKey = 'ai_analysis_' . auth()->id() . '_' . uniqid();
+        
+        // Inicializar progresso
+        $this->updateAnalysisProgress($processKey, 0, 'Iniciando análise de transações...', false);
+        
         // Diagnóstico extra
         Log::info('🔍 [DIAGNÓSTICO IA] Método analyzeTransactionsWithAI INICIADO', [
             'total_transacoes' => count($transactions ?? []),
             'usuario_id' => auth()->id(),
             'memory_usage' => memory_get_usage(true) / 1024 / 1024 . ' MB',
-            'exemplo_transacao' => isset($transactions[0]) ? json_encode($transactions[0]) : null
+            'exemplo_transacao' => isset($transactions[0]) ? json_encode($transactions[0]) : null,
+            'process_key' => $processKey
         ]);
         
         // Se não houver transações, retornar nulo imediatamente
         if (empty($transactions)) {
             Log::info('🚧 Nenhuma transação para analisar com IA');
+            $this->updateAnalysisProgress($processKey, 100, 'Nenhuma transação para analisar', true);
             return null;
         }
         
@@ -464,20 +480,48 @@ class TempStatementImportController extends Controller
             'exemplo_transacao' => isset($transactions[0]) ? json_encode($transactions[0]) : null
         ]);
         
+        $this->updateAnalysisProgress($processKey, 10, 'Preparando dados para análise...', false);
+        
         // Se o número de transações for grande, usar o processamento em lotes
         if (count($transactions) > 25) {
             Log::info('🔄 Usando processamento em lotes para ' . count($transactions) . ' transações');
-            return $this->processTransactionsInBatches($transactions);
+            
+            // Armazenar a chave do processo na sessão para uso pelo cliente
+            session(['current_analysis_key' => $processKey]);
+            
+            $this->updateAnalysisProgress($processKey, 15, 'Iniciando processamento em lotes...', false);
+            $result = $this->processTransactionsInBatches($transactions, 20, $processKey);
+            $this->updateAnalysisProgress($processKey, 95, 'Finalizando análise...', false);
+            
+            $duration = round(microtime(true) - $startTime, 2);
+            $this->updateAnalysisProgress($processKey, 100, 'Análise concluída em ' . $duration . 's', true);
+            
+            return $result;
         }
 
         // Verificar se a IA está configurada no banco de dados
         $aiConfigService = new AIConfigService();
         if (!$aiConfigService->isAIConfigured()) {
             Log::warning('⚠️ Nenhuma IA configurada no banco de dados - usando resposta simulada');
-            return $this->getMockAIResponse($transactions);
+            $this->updateAnalysisProgress($processKey, 50, 'Utilizando análise simulada...', false);
+            
+            // Simular um pequeno atraso para resposta simulada
+            sleep(1);
+            $result = $this->getMockAIResponse($transactions);
+            
+            $this->updateAnalysisProgress($processKey, 100, 'Análise simulada concluída', true);
+            // Armazenar a chave do processo na sessão para uso pelo cliente
+            session(['current_analysis_key' => $processKey]);
+            
+            return $result;
         }
         
+        // Armazenar a chave do processo na sessão para uso pelo cliente
+        session(['current_analysis_key' => $processKey]);
+        
         try {
+            $this->updateAnalysisProgress($processKey, 20, 'Obtendo configuração da IA...', false);
+            
             // Obter configurações da IA do banco de dados
             $aiConfig = $aiConfigService->getAIConfig();
             $aiProvider = $aiConfig['provider'];
@@ -491,9 +535,14 @@ class TempStatementImportController extends Controller
             // Verificar se a chave da API existe (verificação essencial)
             if (empty($apiKey)) {
                 Log::error('❗ Erro: Chave da API não encontrada no banco de dados para o provedor: ' . $aiProvider);
-                return $this->getMockAIResponse($transactions);
+                $this->updateAnalysisProgress($processKey, 30, 'Erro na configuração da IA, usando modo simulado...', false);
+                $result = $this->getMockAIResponse($transactions);
+                $this->updateAnalysisProgress($processKey, 100, 'Análise simulada concluída', true);
+                return $result;
             }
             
+            $this->updateAnalysisProgress($processKey, 30, 'Configurando IA para análise...', false);
+                
             // **** Verificar prompt (usar padrão caso ausente) ****
             if (empty($promptTemplate)) {
                 Log::warning('⚠️ Template do prompt não encontrado no banco de dados para o provedor: ' . $aiProvider . '. Usando prompt padrão.');
@@ -506,6 +555,7 @@ class TempStatementImportController extends Controller
             $config->model = $modelName;
             $config->provider = $aiProvider;
             $config->system_prompt = $promptTemplate; // Usar system_prompt em vez de prompt
+            $config->process_key = $processKey; // Passar a chave do processo
 
             // Adicionar log para diagnóstico
             Log::debug('🔧 Configuração para o provider ' . $aiProvider, [
@@ -515,6 +565,8 @@ class TempStatementImportController extends Controller
                 'system_prompt_length' => strlen($promptTemplate)
             ]);
 
+            $this->updateAnalysisProgress($processKey, 40, 'Enviando dados para análise...', false);
+                
             // **** ROTEAMENTO BASEADO NO PROVEDOR ****
             $resultado = null;
             Log::info('💬 Iniciando roteamento para análise de transações com ' . $aiProvider);
@@ -523,7 +575,9 @@ class TempStatementImportController extends Controller
                 case 'google':
                 case 'gemini':
                     try {
+                        $this->updateAnalysisProgress($processKey, 50, 'Analisando com Gemini...', false);
                         $resultado = $this->analyzeTransactionsWithGemini($transactions, $config);
+                        $this->updateAnalysisProgress($processKey, 90, 'Processando resultados do Gemini...', false);
                     } catch (\Exception $e) {
                         Log::error('❌ Erro no método analyzeTransactionsWithGemini', [
                             'mensagem' => $e->getMessage(),
@@ -531,15 +585,21 @@ class TempStatementImportController extends Controller
                             'linha' => $e->getLine()
                         ]);
                         // Fallback para mock em caso de erro DENTRO do método Gemini
+                        $this->updateAnalysisProgress($processKey, 60, 'Erro na análise, usando modo simulado...', false);
                         $resultado = $this->getMockAIResponse($transactions);
+                        $this->updateAnalysisProgress($processKey, 90, 'Processando resultados simulados...', false);
                     }
                     break;
                 case 'grok':
+                    $this->updateAnalysisProgress($processKey, 50, 'Analisando com xAI Grok...', false);
                     $resultado = $this->analyzeTransactionsWithGrok($transactions, $config);
+                    $this->updateAnalysisProgress($processKey, 90, 'Processando resultados do Grok...', false);
                     break;
                 case 'openrouter':
                     try {
+                        $this->updateAnalysisProgress($processKey, 50, 'Analisando com OpenRouter...', false);
                         $resultado = $this->analyzeTransactionsWithOpenRouter($transactions, $config);
+                        $this->updateAnalysisProgress($processKey, 90, 'Processando resultados do OpenRouter...', false);
                     } catch (\Exception $e) {
                         Log::error('❌ Erro no método analyzeTransactionsWithOpenRouter', [
                             'mensagem' => $e->getMessage(),
@@ -547,12 +607,16 @@ class TempStatementImportController extends Controller
                             'linha' => $e->getLine()
                         ]);
                         // Fallback para mock em caso de erro com provedor de IA
+                        $this->updateAnalysisProgress($processKey, 60, 'Erro na análise, usando modo simulado...', false);
                         $resultado = $this->getMockAIResponse($transactions);
+                        $this->updateAnalysisProgress($processKey, 90, 'Processando resultados simulados...', false);
                     }
                     break;
                 default:
                     Log::error('❗ Provedor de IA configurado ("' . $aiProvider . '") não é suportado ou não possui método de análise implementado. Usando mock.');
+                    $this->updateAnalysisProgress($processKey, 60, 'Provedor não suportado, usando modo simulado...', false);
                     $resultado = $this->getMockAIResponse($transactions);
+                    $this->updateAnalysisProgress($processKey, 90, 'Processando resultados simulados...', false);
                     break;
             }
             
@@ -571,19 +635,24 @@ class TempStatementImportController extends Controller
                     'total_transacoes_analisadas' => count($resultado['transactions']),
                     'exemplo_resultado' => isset($resultado['transactions'][0]) ? json_encode($resultado['transactions'][0]) : null
                 ]);
+                
+                $this->updateAnalysisProgress($processKey, 100, 'Análise concluída em ' . $duration . 's', true);
                 return $resultado;
             } else {
                 Log::warning('⚠️ Resposta vazia ou inválida do método de análise (incluindo mock). Nenhuma categorização será aplicada.', ['provedor' => $aiProvider]);
+                $this->updateAnalysisProgress($processKey, 100, 'Análise concluída sem resultados válidos', true);
                 return null; // Retornar null se nem o mock funcionou ou a análise falhou totalmente
             }
             
         } catch (\Exception $e) {
             // Logar exceção geral e registrar no banco se possível
-            Log::error('❌ Exceção GERAL ao processar requisição Gemini', ['mensagem' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            Log::error('❌ Exceção GERAL ao processar requisição ' . $aiProvider ?? 'IA', ['mensagem' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             $logData['error_message'] = 'Exceção Geral: ' . substr($e->getMessage(), 0, 800);
             $logData['duration_ms'] = isset($logData['duration_ms']) ? $logData['duration_ms'] : (int) round((microtime(true) - $startTime) * 1000);
             // Tenta salvar o log mesmo com a exceção geral
             try { AiCallLog::create($logData); } catch (\Exception $logEx) { Log::error('Falha ao salvar log de erro da IA', ['log_exception' => $logEx->getMessage()]); }
+            
+            $this->updateAnalysisProgress($processKey, 100, 'Erro na análise: ' . $e->getMessage(), true);
             return null;
         }
     }
@@ -593,9 +662,10 @@ class TempStatementImportController extends Controller
      * 
      * @param array $transactions Lista completa de transações a serem analisadas
      * @param int $batchSize Tamanho de cada lote (recomendado: 20-25)
+     * @param string|null $processKey Chave para acompanhamento do progresso
      * @return array Resultados combinados de todos os lotes
      */
-    private function processTransactionsInBatches(array $transactions, int $batchSize = 20)
+    private function processTransactionsInBatches(array $transactions, int $batchSize = 20, $processKey = null)
     {
         Log::info('🔄 Iniciando processamento em lotes', [
             'total_transacoes' => count($transactions), 
@@ -610,9 +680,21 @@ class TempStatementImportController extends Controller
         
         // Dividir transações em lotes menores
         $batches = array_chunk($transactions, $batchSize);
+        $totalBatches = count($batches);
         
         foreach ($batches as $index => $batch) {
-            Log::info('🔄 Processando lote ' . ($index + 1) . ' de ' . count($batches), [
+            // Calcular progresso baseado no lote atual
+            if ($processKey) {
+                $batchProgress = 20 + (70 * ($index / $totalBatches));
+                $this->updateAnalysisProgress(
+                    $processKey, 
+                    (int)$batchProgress, 
+                    'Processando lote ' . ($index + 1) . ' de ' . $totalBatches, 
+                    false
+                );
+            }
+            
+            Log::info('🔄 Processando lote ' . ($index + 1) . ' de ' . $totalBatches, [
                 'transacoes_no_lote' => count($batch)
             ]);
             
@@ -644,10 +726,14 @@ class TempStatementImportController extends Controller
             }
             
             // Pequena pausa entre lotes para evitar problemas de rate limiting
-            if ($index < count($batches) - 1) {
+            if ($index < $totalBatches - 1) {
                 Log::debug('Pausa entre lotes para evitar rate limiting');
                 sleep(1);
             }
+        }
+        
+        if ($processKey) {
+            $this->updateAnalysisProgress($processKey, 90, 'Todos os lotes processados, finalizando...', false);
         }
         
         Log::info('✅ Processamento em lotes concluído', [
@@ -2102,5 +2188,74 @@ class TempStatementImportController extends Controller
         }
         
         return ['transactions' => $processedResults];
+    }
+
+    /**
+     * Registra o progresso da análise de extrato
+     *
+     * @param string $key Chave única para identificar o processo
+     * @param int $progress Porcentagem de progresso (0-100)
+     * @param string $message Mensagem de status opcional
+     * @param bool $completed Flag indicando se o processo foi concluído
+     * @return void
+     */
+    private function updateAnalysisProgress($key, $progress, $message = null, $completed = false)
+    {
+        $progressData = [
+            'progress' => $progress,
+            'message' => $message ?: 'Analisando transações...',
+            'completed' => $completed,
+            'updated_at' => now()->timestamp
+        ];
+        
+        // Armazenar na sessão ou cache com TTL de 5 minutos
+        cache()->put('ai_analysis_progress_' . $key, $progressData, 300);
+        
+        Log::debug('💡 Progresso de análise atualizado', [
+            'key' => $key,
+            'progress' => $progress,
+            'message' => $progressData['message'],
+            'completed' => $completed
+        ]);
+    }
+
+    /**
+     * Retorna o progresso atual da análise
+     *
+     * @param string $key Chave única para identificar o processo
+     * @return array|null Dados do progresso ou null se não existir
+     */
+    public function getAnalysisProgress($key)
+    {
+        return cache()->get('ai_analysis_progress_' . $key);
+    }
+
+    /**
+     * Endpoint para consultar o progresso da análise via AJAX
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkAnalysisProgress(Request $request)
+    {
+        $key = $request->input('key');
+        
+        if (!$key) {
+            return response()->json([
+                'error' => 'Chave de processo não fornecida'
+            ], 400);
+        }
+        
+        $progress = $this->getAnalysisProgress($key);
+        
+        if (!$progress) {
+            return response()->json([
+                'progress' => 0,
+                'message' => 'Análise não iniciada ou expirada',
+                'completed' => false
+            ]);
+        }
+        
+        return response()->json($progress);
     }
 }

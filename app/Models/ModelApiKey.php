@@ -11,6 +11,8 @@ class ModelApiKey extends Model
         'model',
         'api_token',
         'system_prompt',
+        'chat_prompt',
+        'import_prompt',
         'is_active'
     ];
 

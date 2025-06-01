@@ -49,337 +49,310 @@ class ChatbotController extends Controller
     /**
      * Recebe uma mensagem do usuário e responde usando a IA.
      */
+    /**
+     * Processa a mensagem enviada pelo usuário e retorna a resposta da IA
+     */
     public function ask(Request $request)
     {
         try {
-            // Validação e configuração da IA
-            $request->validate(['message' => 'required|string|min:2']);
+            $message = $request->input('message');
+            
+            // Obter a configuração da IA
             $config = $this->aiConfigService->getAIConfig();
-            Log::info('Configuração da IA:', $config);
-            if (!$config['is_configured'] || !$config['has_api_key']) {
-                Log::error('Configuração da IA inválida:', $config);
-                return response()->json(['error' => 'IA não configurada.'], 400);
+            
+            if (!$config['is_configured']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A IA não está configurada. Por favor, configure-a nas configurações.'
+                ], 400);
             }
-            $user = Auth::user();
-            if (!$user || !$user->currentCompany) {
-                Log::warning('Usuário sem empresa associada', ['user_id' => $user?->id]);
-                return response()->json(['error' => 'Empresa não associada.'], 400);
+            
+            $provider = $config['provider'];
+            $model = $config['model'];
+            $apiKey = $config['api_key'];
+            
+            // Preparar o payload para a requisição
+            $payload = $this->getChatPayload($message, $provider);
+            
+            // Fazer a requisição para a API
+            $response = Http::withHeaders($this->getHeaders($provider, $apiKey))
+                ->timeout(60)
+                ->post($this->getEndpoint($provider, $model), $payload);
+            
+            if ($response->failed()) {
+                Log::error('Erro na API de IA', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'provider' => $provider
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao comunicar com a IA: ' . $response->status()
+                ], 500);
             }
-            // Loop de fallback de provedores
-            $configs = $this->aiConfigService->getAllAIConfigs();
-            $errors = [];
-            foreach ($configs as $cfg) {
-                try {
-                    Log::info('Tentando IA:', $cfg);
-                    $endpoint = $this->getEndpoint($cfg['provider'], $cfg['model']);
-                    $headers = $this->getHeaders($cfg['provider'], $cfg['api_key']);
-                    $aiService = new \App\Services\AIService(
-                        $cfg['provider'],
-                        $cfg['model'],
-                        $cfg['api_key'],
-                        null, // endpoint
-                        $cfg['system_prompt'] ?? null,
-                        $cfg['chat_prompt'] ?? null,
-                        $cfg['import_prompt'] ?? null,
-                        null, // replicateSetting
-                        'chat' // promptType
-                    );
-                    $payload = $this->getPayload($cfg['provider'], $cfg['model'], $aiService->getSystemPrompt(), $request->message);
-                    $response = Http::withHeaders($headers)->timeout(30)->post($endpoint, $payload);
-                    if ($response->successful()) {
-                        $answer = $this->extractAnswer($cfg['provider'], $response->json());
-                        if ($answer) {
-                            return response()->json(['answer' => $answer]);
-                        }
-                    }
-                    $status = $response->status();
-                    if ($status === 429) {
-                        $errors[] = 'Rate limit em ' . $cfg['provider'];
-                        continue;
-                    }
-                    $errors[] = "Erro {$status} em {$cfg['provider']}";
-                } catch (\Exception $inner) {
-                    Log::warning('Erro no provedor ' . $cfg['provider'], ['error' => $inner->getMessage()]);
-                    $errors[] = 'Falha ' . $cfg['provider'];
-                }
+            
+            // Extrair a resposta da IA
+            $answer = $this->extractAnswer($response->json(), $provider);
+            
+            // Adicionar a mensagem do usuário e a resposta ao histórico de mensagens
+            $history = session('chat_history', []);
+            $history[] = ['role' => 'user', 'content' => $message];
+            $history[] = ['role' => 'assistant', 'content' => $answer];
+            
+            // Limitar o histórico às últimas 10 mensagens (5 pares de perguntas/respostas)
+            if (count($history) > 10) {
+                $history = array_slice($history, -10);
             }
-            return response()->json(['error' => 'Nenhum provedor disponível: ' . implode('; ', $errors)], 503);
+            
+            // Salvar o histórico atualizado na sessão
+            session(['chat_history' => $history]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $answer
+            ]);
+            
         } catch (\Exception $e) {
-            Log::error('Erro geral ChatbotController@ask', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json(['error' => 'Erro interno.'], 500);
+            Log::error('Erro ao processar mensagem: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao processar sua mensagem: ' . $e->getMessage()
+            ], 500);
         }
     }
 
     /**
-     * Retorna o endpoint da API baseado no provedor
+     * Obtém o endpoint da API baseado no provedor e modelo
      */
-    private function getEndpoint($provider, $model)
+    private function getEndpoint(string $provider, string $model): string
     {
-        switch (strtolower($provider)) {
+        switch ($provider) {
             case 'openrouter':
                 return 'https://openrouter.ai/api/v1/chat/completions';
+                
             case 'google':
             case 'gemini':
-                return 'https://generativelanguage.googleapis.com/v1/models/' . $model . ':generateContent';
+                return 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
+                
             case 'openai':
                 return 'https://api.openai.com/v1/chat/completions';
+                
             case 'anthropic':
                 return 'https://api.anthropic.com/v1/messages';
+                
             default:
-                Log::error('Provedor de IA não suportado:', ['provider' => $provider]);
-                throw new \Exception('Provedor de IA não suportado: ' . $provider);
+                throw new \Exception("Provedor não suportado: {$provider}");
         }
     }
-
+    
     /**
-     * Retorna os headers da requisição baseados no provedor
+     * Obtém os headers para a requisição baseado no provedor
      */
-    private function getHeaders($provider, $apiKey)
+    private function getHeaders(string $provider, string $apiKey): array
     {
         $headers = [
-            'Content-Type' => 'application/json'
+            'Content-Type' => 'application/json',
         ];
-
-        switch (strtolower($provider)) {
+        
+        switch ($provider) {
             case 'openrouter':
-                $headers['Authorization'] = 'Bearer ' . $apiKey;
+                $headers['Authorization'] = "Bearer {$apiKey}";
                 $headers['HTTP-Referer'] = config('app.url');
-                $headers['X-Title'] = 'Onlifin - Chatbot Financeiro';
+                $headers['X-Title'] = config('app.name', 'OnliFinance');
                 break;
+                
             case 'google':
             case 'gemini':
                 $headers['x-goog-api-key'] = $apiKey;
                 break;
+                
             case 'openai':
-                $headers['Authorization'] = 'Bearer ' . $apiKey;
+                $headers['Authorization'] = "Bearer {$apiKey}";
                 break;
+                
             case 'anthropic':
                 $headers['x-api-key'] = $apiKey;
                 $headers['anthropic-version'] = '2023-06-01';
                 break;
+                
             default:
-                Log::error('Provedor de IA não suportado para headers:', ['provider' => $provider]);
-                throw new \Exception('Provedor de IA não suportado: ' . $provider);
+                throw new \Exception("Provedor não suportado: {$provider}");
         }
-
+        
         return $headers;
     }
 
     /**
-     * Prepara payload para chat de texto (sem exigir JSON na saída).
+     * Prepara o payload para a requisição de chat
      */
-    private function getChatPayload($provider, $model, $message)
+    private function getChatPayload(string $message, string $provider): array
     {
-        // Obter configuração da IA
-        $config = $this->aiConfigService->getAIConfig();
-        
-        // Usar o AIService com o tipo de prompt 'chat'
-        $aiService = new \App\Services\AIService(
-            $provider,
-            $model,
-            $config['api_key'],
-            null, // endpoint
-            $config['system_prompt'] ?? null,
-            $config['chat_prompt'] ?? null,
-            $config['import_prompt'] ?? null,
-            null, // replicateSetting
-            'chat' // promptType
-        );
-        
-        // Obter o prompt de chat adequado
-        $chatPrompt = $aiService->getSystemPrompt();
-        
-        // Log do prompt usado
-        Log::info('Usando prompt de chat:', [
-            'provider' => $provider,
-            'model' => $model,
-            'prompt_length' => strlen($chatPrompt),
-            'prompt_preview' => substr($chatPrompt, 0, 100) . (strlen($chatPrompt) > 100 ? '...' : '')
-        ]);
-        
-        return $this->getPayload($provider, $model, $chatPrompt, $message);
-    }
-
-    /**
-     * Retorna o payload da requisição baseado no provedor
-     */
-    private function getPayload($provider, $model, $systemPrompt, $message)
-    {
-        // Obtém dados financeiros para incluir no contexto
+        // Obter o contexto financeiro
         $financialContext = $this->getFinancialContext();
         
-        // Se não houver prompt configurado, usa um padrão com instruções de formatação
-        $basePrompt = $systemPrompt ?: 'Você é um assistente financeiro inteligente. Responda em português, utilizando Markdown para formatação. Quando voltar dados JSON, coloque-os em um bloco de código com ```json ...```.';
-        // Adiciona o contexto financeiro ao prompt do sistema
-        $enhancedSystemPrompt = $basePrompt . "\n\nContexto Financeiro Atual:\n" . $financialContext;
-
-        // Se a mensagem do usuário for um JSON de transações, adicionar instruções específicas
-        $decoded = json_decode($message, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            $message = "As seguintes transações foram fornecidas em JSON:\n" . json_encode($decoded, JSON_UNESCAPED_UNICODE) .
-                       "\n\nPor favor, analise estas transações e informe qual categoria de despesa acumulou o maior valor, incluindo o valor total dessa categoria.";
-        }
-
-        switch (strtolower($provider)) {
+        // Formatar o contexto financeiro como JSON para facilitar o acesso pela IA
+        $formattedContext = json_encode($financialContext, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        
+        // Obter o prompt do sistema
+        $systemPrompt = $this->aiConfigService->getSystemPrompt($provider);
+        
+        // Aprimorar o prompt do sistema com o contexto financeiro
+        $enhancedSystemPrompt = $systemPrompt . "\n\n" . 
+            "CONTEXTO FINANCEIRO ATUAL:\n```json\n" . $formattedContext . "\n```\n\n" .
+            "Use o contexto financeiro acima para responder às perguntas do usuário. " .
+            "A data atual é " . now()->translatedFormat('d \\d\\e F \\d\\e Y') . ". " .
+            "Não peça informações que já estão disponíveis no contexto.";
+        
+        // Recuperar o histórico de mensagens da sessão
+        $history = session('chat_history', []);
+        
+        // Preparar o payload baseado no provedor
+        switch ($provider) {
             case 'openrouter':
-                if (in_array($model, $this->rateLimitedModels)) {
-                    $model = $this->getNextAvailableModel($model);
-                    Log::info('Trocando para modelo alternativo:', ['model' => $model]);
+                return [
+                    'messages' => array_merge(
+                        [['role' => 'system', 'content' => $enhancedSystemPrompt]],
+                        $history
+                    ),
+                ];
+                
+            case 'google':
+            case 'gemini':
+                // Gemini tem uma estrutura diferente para mensagens
+                $geminiMessages = [];
+                
+                // Adicionar o prompt do sistema como primeira mensagem do usuário
+                $geminiMessages[] = [
+                    'role' => 'user',
+                    'parts' => [['text' => $enhancedSystemPrompt]]
+                ];
+                
+                // Adicionar uma resposta vazia do modelo para manter o padrão de alternância
+                $geminiMessages[] = [
+                    'role' => 'model',
+                    'parts' => [['text' => 'Entendido. Estou pronto para ajudar com suas finanças.']]
+                ];
+                
+                // Adicionar o restante do histórico no formato do Gemini
+                foreach ($history as $msg) {
+                    $role = $msg['role'] === 'assistant' ? 'model' : 'user';
+                    $geminiMessages[] = [
+                        'role' => $role,
+                        'parts' => [['text' => $msg['content']]]
+                    ];
                 }
                 
                 return [
-                    'model' => $model,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $enhancedSystemPrompt
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $message
-                        ]
-                    ],
-                    'temperature' => 0.7,
-                    'max_tokens' => 500,
-                    'route' => 'fallback'
-                ];
-            case 'google':
-            case 'gemini':
-                return [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => ($enhancedSystemPrompt ?? 'Você é um assistente financeiro inteligente. Responda em português, de forma clara e objetiva, com base nos dados do usuário e contexto financeiro.') . "\n\n" . $message]
-                            ]
-                        ]
-                    ],
+                    'contents' => $geminiMessages,
                     'generationConfig' => [
                         'temperature' => 0.7,
-                        'maxOutputTokens' => 500
+                        'topP' => 0.95,
+                        'topK' => 40,
+                        'maxOutputTokens' => 2048,
                     ]
                 ];
+                
             case 'openai':
                 return [
-                    'model' => $model,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $enhancedSystemPrompt
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $message
-                        ]
-                    ],
-                'temperature' => 0.7,
-                    'max_tokens' => 500
+                    'messages' => array_merge(
+                        [['role' => 'system', 'content' => $enhancedSystemPrompt]],
+                        $history
+                    ),
+                    'temperature' => 0.7,
+                    'max_tokens' => 2048,
                 ];
+                
             case 'anthropic':
                 return [
-                    'model' => $model,
-                    'messages' => [
-                        [
-                            'role' => 'user',
-                            'content' => $message
-                        ]
-                    ],
-                    'system' => $enhancedSystemPrompt,
-                    'max_tokens' => 500
+                    'messages' => array_merge(
+                        [['role' => 'system', 'content' => $enhancedSystemPrompt]],
+                        $history
+                    ),
+                    'temperature' => 0.7,
+                    'max_tokens' => 2048,
                 ];
+                
             default:
-                Log::error('Provedor de IA não suportado para payload:', ['provider' => $provider]);
-                throw new \Exception('Provedor de IA não suportado: ' . $provider);
+                return [
+                    'messages' => array_merge(
+                        [['role' => 'system', 'content' => $enhancedSystemPrompt]],
+                        $history
+                    ),
+                ];
         }
     }
 
     /**
      * Obtém o contexto financeiro atual para incluir no prompt
      */
-    private function getFinancialContext(): string
+    private function getFinancialContext()
     {
-        $transactions = $this->financialDataService->getRecentTransactions(5);
-        $accounts = $this->financialDataService->getBankAccountsBalance();
-        $summary = $this->financialDataService->getFinancialSummary();
-
-        $context = "Dados Financeiros Atuais:\n\n";
+        $financialDataService = new FinancialDataService();
+        $transactions = $financialDataService->getRecentTransactions(10);
+        $accounts = $financialDataService->getBankAccountsBalance();
+        $summary = $financialDataService->getFinancialSummary();
         
-        // Adiciona resumo financeiro
-        $context .= "Resumo dos Últimos 30 Dias:\n";
-        $context .= "- Receitas Totais: R$ " . number_format($summary['total_income'], 2, ',', '.') . "\n";
-        $context .= "- Despesas Totais: R$ " . number_format($summary['total_expenses'], 2, ',', '.') . "\n";
-        $context .= "- Resultado Líquido: R$ " . number_format($summary['net_income'], 2, ',', '.') . "\n\n";
-
-        // Adiciona saldos das contas
-        $context .= "Saldos das Contas:\n";
-        foreach ($accounts as $account) {
-            $context .= "- {$account['name']}: R$ " . number_format($account['balance'], 2, ',', '.') . "\n";
-        }
-        $context .= "\n";
-
-        // Adiciona transações recentes
-        $context .= "Transações Recentes:\n";
-        foreach ($transactions as $transaction) {
-            $context .= "- {$transaction['date']}: {$transaction['description']} - R$ " . 
-                       number_format($transaction['amount'], 2, ',', '.') . 
-                       " ({$transaction['type']})\n";
-        }
-
-        return $context;
+        // Adiciona a data atual ao contexto com mais detalhes
+        $currentDate = now();
+        $locale = app()->getLocale();
+        setlocale(LC_TIME, $locale . '_' . strtoupper($locale) . '.UTF-8');
+        
+        return [
+            'date' => [
+                'current_date' => $currentDate->format('d/m/Y'),
+                'current_month' => $currentDate->format('m'),
+                'current_month_name' => $currentDate->translatedFormat('F'),
+                'current_year' => $currentDate->format('Y'),
+                'current_day' => $currentDate->format('d'),
+                'current_day_name' => $currentDate->translatedFormat('l'),
+                'current_day_of_week' => $currentDate->format('N'),
+                'current_week_of_year' => $currentDate->format('W'),
+                'current_quarter' => $currentDate->format('Q'),
+                'formatted_date_long' => $currentDate->translatedFormat('d \\d\\e F \\d\\e Y'),
+                'timestamp' => $currentDate->timestamp,
+            ],
+            'transactions' => $transactions,
+            'accounts' => $accounts,
+            'summary' => $summary,
+            'instructions' => [
+                'IMPORTANTE: Você tem acesso direto aos dados financeiros do usuário através deste contexto.',
+                'Você DEVE usar a data atual fornecida no contexto para todas as referências temporais.',
+                'Quando o usuário perguntar sobre "mês atual", use o mês indicado em current_month_name, que é "' . $currentDate->translatedFormat('F') . '".',
+                'O ano atual é ' . $currentDate->format('Y') . ' e o mês atual é ' . $currentDate->translatedFormat('F') . '.',
+                'Você pode e deve acessar os dados de transações, contas e resumo financeiro diretamente.',
+                'Você pode gerar análises com base nos dados fornecidos sem pedir mais informações.',
+                'Não peça ao usuário dados que já estão disponíveis no contexto.',
+                'Se o usuário pedir um gráfico de gastos por categoria, você deve informar que ele pode visualizar esse gráfico no relatório financeiro.',
+                'Sempre que o usuário fizer perguntas sobre "este mês", "mês atual", "hoje", "agora", etc., use as informações de data fornecidas neste contexto.',
+            ]
+        ];
     }
 
     /**
-     * Extrai a resposta do payload baseado no provedor
+     * Extrai a resposta da IA do JSON retornado pela API
      */
-    private function extractAnswer($provider, $responseData)
+    private function extractAnswer(array $responseData, string $provider): string
     {
-        try {
-            Log::info('Extraindo resposta da IA:', [
-                'provider' => $provider,
-                'response' => $responseData
-            ]);
-
-            switch (strtolower($provider)) {
-                case 'openrouter':
-                    // Verificar se há erro de rate limit
-                    if (isset($responseData['error']) || isset($responseData['response']['error'])) {
-                        $error = $responseData['error'] ?? $responseData['response']['error'];
-                        if ($error['code'] === 429 || 
-                            (isset($error['metadata']['raw']) && strpos($error['metadata']['raw'], 'rate-limited') !== false)) {
-                            Log::warning('Rate limit atingido no OpenRouter:', $error);
-                            return null;
-                        }
-                    }
-                    
-                    // Tenta diferentes formatos de resposta do OpenRouter
-                    if (isset($responseData['choices'][0]['message']['content'])) {
-                        return $responseData['choices'][0]['message']['content'];
-                    }
-                    if (isset($responseData['data']['choices'][0]['message']['content'])) {
-                        return $responseData['data']['choices'][0]['message']['content'];
-                    }
-                    if (isset($responseData['data']['text'])) {
-                        return $responseData['data']['text'];
-                    }
-                    Log::error('Formato de resposta inválido do OpenRouter:', ['response' => $responseData]);
-                    return null;
-                case 'google':
-                case 'gemini':
-                    return $responseData['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                case 'openai':
-                    return $responseData['choices'][0]['message']['content'] ?? null;
-                case 'anthropic':
-                    return $responseData['content'][0]['text'] ?? null;
-                default:
-                    Log::error('Provedor de IA não suportado para extração de resposta:', ['provider' => $provider]);
-                    return null;
-            }
-        } catch (\Exception $e) {
-            Log::error('Erro ao extrair resposta da IA:', [
-                'provider' => $provider,
-                'error' => $e->getMessage(),
-                'response' => $responseData
-            ]);
-            return null;
+        switch ($provider) {
+            case 'openrouter':
+            case 'openai':
+                return $responseData['choices'][0]['message']['content'] ?? 'Não foi possível obter uma resposta.';
+                
+            case 'google':
+            case 'gemini':
+                return $responseData['candidates'][0]['content']['parts'][0]['text'] ?? 'Não foi possível obter uma resposta.';
+                
+            case 'anthropic':
+                return $responseData['content'][0]['text'] ?? 'Não foi possível obter uma resposta.';
+                
+            default:
+                Log::warning('Provedor desconhecido para extração de resposta:', ['provider' => $provider]);
+                return 'Não foi possível processar a resposta do provedor de IA.';
         }
     }
 

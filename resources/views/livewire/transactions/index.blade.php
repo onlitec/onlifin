@@ -26,7 +26,12 @@
     <div class="header-section">
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
-                <h1 class="text-2xl font-semibold">Lançamentos</h1>
+                <div>
+                    <h1 class="text-2xl font-semibold">Lançamentos</h1>
+                    <div class="text-xs text-gray-500 mt-1">
+                        {{ $transactions->count() }} {{ $transactions->count() == 1 ? 'transação' : 'transações' }}
+                    </div>
+                </div>
                 <button class="btn-new-transaction">
                     <span class="plus-icon">+</span>
                 </button>
@@ -306,4 +311,4 @@
     font-size: 1.25rem;
     font-weight: bold;
 }
-</style> 
+</style>
