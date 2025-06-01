@@ -1,145 +1,159 @@
 <!--
 --------------------------------------------------------------------------
-ATENÇÃO!
+ATENÇÃO! - MODIFICADO PELO ASSISTENTE AI
 --------------------------------------------------------------------------
-Este arquivo e seu conteúdo foram ajustados e corrigidos.
-Qualquer alteração subsequente deve ser feita com autorização explícita
-para evitar a quebra de funcionalidades implementadas.
+Este arquivo e seu conteúdo foram ajustados e corrigidos pelo Assistente AI.
+Qualquer alteração subsequente deve ser feita com AUTORIZAÇÃO EXPLÍCITA
+para evitar a quebra de funcionalidades implementadas ou a reversão das
+correções aplicadas.
 
-Última modificação por: Assistente AI
-Data da modificação: [DATA DA ALTERAÇÃO ATUAL]
+Consulte o log de interações com o Assistente AI para detalhes.
 --------------------------------------------------------------------------
 -->
 <div>
-    {{-- Care about people's approval and you will be their prisoner. --}}
-    <div class="mb-4">
-        <div class="flex items-center mb-3">
-            <button wire:click="previousMonth" class="btn btn-sm btn-outline">
-                <i class="ri-arrow-left-s-line"></i>
+    <div class="space-y-6">
+        <!-- Cabeçalho da página -->
+        <div class="flex items-center justify-between px-4">
+            <div class="flex items-center space-x-2">
+                <i class="ri-wallet-3-line text-3xl text-red-500"></i>
+                <h2 class="text-2xl font-bold text-gray-800">Despesas</h2>
+            </div>
+        </div>
+        
+        <!-- Seletor de mês -->
+        <div class="flex items-center justify-start space-x-3 px-4">
+            <button wire:click="previousMonth" class="p-2 bg-white rounded-full shadow hover:bg-gray-100">
+                <i class="ri-arrow-left-s-line text-gray-600"></i>
             </button>
-            <span class="mx-2 font-medium">
-                @if(isset($year) && isset($month))
-                    {{ \Carbon\Carbon::createFromDate($year, $month, 1)->format('F Y') }}
-                @else
-                    {{ \Carbon\Carbon::now()->format('F Y') }}
-                @endif
-            </span>
-            <button wire:click="nextMonth" class="btn btn-sm btn-outline">
-                <i class="ri-arrow-right-s-line"></i>
+            <span class="text-lg font-medium text-gray-700">{{ \Carbon\Carbon::createFromDate($year ?? now()->year, $month ?? now()->month, 1)->format('F Y') }}</span>
+            <button wire:click="nextMonth" class="p-2 bg-white rounded-full shadow hover:bg-gray-100">
+                <i class="ri-arrow-right-s-line text-gray-600"></i>
             </button>
         </div>
-    </div>
-
-    <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="card shadow">
-            <div class="card-body p-4">
-                <div class="text-sm text-gray-500">Total de Despesas</div>
-                <div class="text-2xl font-bold text-red-600">
-                    @if(isset($total))
-                        {{ 'R$ ' . number_format($total/100, 2, ',', '.') }}
-                    @else
-                        R$ 0,00
-                    @endif
+        
+        <!-- Cards de estatísticas -->
+        <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
+            <div class="bg-white rounded-lg p-4 shadow-sm border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm text-gray-500">Total de Despesas</div>
+                        <div class="text-xl font-bold text-red-600">
+                            @if(isset($total))
+                                {{ 'R$ ' . number_format($total/100, 2, ',', '.') }}
+                            @else
+                                R$ 0,00
+                            @endif
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {{ $transactionCount }} {{ $transactionCount == 1 ? 'transação' : 'transações' }}
+                        </div>
+                    </div>
+                    <div class="text-red-500">
+                        <i class="ri-wallet-3-line text-2xl"></i>
+                    </div>
                 </div>
-                <div class="text-xs text-gray-500 mt-1">
-                    {{ $transactions->total() }} {{ $transactions->total() == 1 ? 'transação' : 'transações' }}
+            </div>
+            <div class="bg-white rounded-lg p-4 shadow-sm border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm text-gray-500">Despesas Pendentes</div>
+                        <div class="text-xl font-bold text-gray-800">
+                            {{ 'R$ ' . number_format($totalPending/100, 2, ',', '.') }}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {{ $transactionCount }} {{ $transactionCount == 1 ? 'transação' : 'transações' }}
+                        </div>
+                    </div>
+                    <div class="text-gray-400">
+                        <i class="ri-time-line text-2xl"></i>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="card shadow">
-            <div class="card-body p-4">
-                <div class="text-sm text-gray-500">Despesas Pendentes</div>
-                <div class="text-2xl font-bold text-yellow-600">
-                    @if(isset($totalPending))
-                        {{ 'R$ ' . number_format($totalPending/100, 2, ',', '.') }}
-                    @else
-                        R$ 0,00
-                    @endif
+        
+        <!-- Botões de ação e Filtros -->
+        <div class="mb-4 px-4">
+            <div class="bg-white rounded-lg p-4 shadow-sm border">
+                <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
+                        <select wire:model="selectedAccount" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                            <option value="">Todas</option>
+                            @foreach($accounts as $account)
+                                <option value="{{ $account->id }}">{{ $account->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                        <select wire:model="selectedCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                            <option value="">Todas</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select wire:model="selectedStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                            <option value="">Todos</option>
+                            <option value="pending">Pendente</option>
+                            <option value="paid">Pago</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
+                        <input type="date" wire:model="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
+                        <input type="date" wire:model="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fornecedor</label>
+                        <input type="text" wire:model="supplierFilter" placeholder="Fornecedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                        <input type="text" wire:model="descriptionFilter" placeholder="Descrição" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div class="card shadow">
-            <div class="card-body p-4 flex items-center justify-end space-x-2">
-                <div class="input-group input-group-sm">
-                    <input type="text"
-                        wire:model.debounce.300ms="search"
-                        wire:keydown.enter="resetPage"
-                        placeholder="Buscar..."
-                        class="input input-bordered input-sm w-48"
-                    />
-                    <button type="button" wire:click="resetPage" class="btn btn-square btn-sm" title="Buscar">
-                        <i class="ri-search-line"></i>
-                    </button>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <button wire:click="clearFilters" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                            Limpar Filtros
+                        </button>
+                        <button wire:click="applyFilters" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg">
+                            Filtrar
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">Exibir:</span>
+                        <select wire:model.live="perPage" class="select-sm border border-gray-300 rounded px-2 py-1 text-sm w-auto max-w-20">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="text-sm text-gray-600">por página</span>
+                    </div>
                 </div>
-                <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="btn btn-primary btn-sm">
-                    <i class="ri-add-line mr-1"></i> Nova Despesa
-                </a>
             </div>
         </div>
     </div>
 
     <div class="card shadow">
         <div class="card-body overflow-x-auto">
-            <div class="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                <div>
-                    <label class="text-sm">Conta</label>
-                    <select wire:model="accountFilter" class="form-select w-full select-sm">
-                        <option value="">Todas</option>
-                        @foreach($accounts as $acc)
-                            <option value="{{ $acc->id }}">{{ $acc->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="text-sm">Categoria</label>
-                    <select wire:model="categoryFilter" class="form-select w-full select-sm">
-                        <option value="">Todas</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="text-sm">Status</label>
-                    <select wire:model="statusFilter" class="form-select w-full select-sm">
-                        <option value="">Todos</option>
-                        <option value="paid">Pago</option>
-                        <option value="pending">Pendente</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-sm">De</label>
-                    <input type="date" wire:model.lazy="dateFrom" class="input input-bordered w-full input-sm" />
-                </div>
-                <div>
-                    <label class="text-sm">Até</label>
-                    <input type="date" wire:model.lazy="dateTo" class="input input-bordered w-full input-sm" />
-                </div>
-                <div>
-                    <label class="text-sm">Fornecedor</label>
-                    <input type="text" wire:model.debounce.500ms="supplierFilter" placeholder="Fornecedor" class="input input-bordered w-full input-sm" />
-                </div>
-                <div>
-                    <label class="text-sm">Descrição</label>
-                    <input type="text" wire:model.debounce.500ms="search" placeholder="Descrição" class="input input-bordered w-full input-sm" />
-                </div>
-            </div>
-            <div class="mb-4 flex space-x-2">
-                <button wire:click="resetFilters" class="btn btn-sm btn-secondary">Limpar Filtros</button>
-                <button wire:click="applyFilters" class="btn btn-sm btn-primary">Filtrar</button>
-            </div>
-            <div class="mb-4 flex items-center justify-start">
-                <span class="text-sm text-gray-600 mr-2">Exibir:</span>
-                <select wire:model.live="perPage" class="select select-bordered select-sm">
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="200">200</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                </select>
-                <span class="text-sm text-gray-600 ml-2">por página</span>
+            <div class="mb-4 flex items-center justify-end space-x-2 px-4">
+                 <input wire:model.lazy="search" type="text" placeholder="Buscar Despesas..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                 <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm">
+                     <i class="ri-search-line mr-1"></i> Buscar
+                 </button>
+                 <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow">
+                    <i class="ri-add-line mr-2"></i> Nova Despesa
+                 </a>
             </div>
             <table class="table w-full">
                 <thead class="table-header">
