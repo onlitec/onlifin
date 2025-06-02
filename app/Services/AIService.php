@@ -40,6 +40,99 @@ class AIService
         'claude-3-haiku-20240307' => 'Claude 3 Haiku'
     ];
 
+    /**
+     * Detecta provedores de IA configurados no sistema
+     * 
+     * @return array Lista de provedores configurados
+     */
+    public function getConfiguredProviders(): array
+    {
+        $configuredProviders = [];
+        
+        // Verificar OpenRouter (Prioridade 1)
+        $openRouterConfig = OpenRouterConfig::first();
+        if ($openRouterConfig && !empty($openRouterConfig->api_key)) {
+            $configuredProviders[] = [
+                'provider' => 'openrouter',
+                'models' => ['openai/gpt-3.5-turbo', 'openai/gpt-4', 'anthropic/claude-3-sonnet'],
+                'priority' => 1
+            ];
+        }
+        
+        // Verificar configurações do arquivo config/ai.php (Prioridade 2)
+        $aiConfig = config('ai');
+        if ($aiConfig) {
+            foreach ($aiConfig as $provider => $config) {
+                if (isset($config['enabled']) && $config['enabled'] && !empty($config['api_key'])) {
+                    $configuredProviders[] = [
+                        'provider' => $provider,
+                        'models' => $config['models'] ?? [$config['model'] ?? 'default'],
+                        'priority' => 2
+                    ];
+                }
+            }
+        }
+        
+        // Verificar model_api_keys (Prioridade 3)
+        $modelApiKeys = ModelApiKey::whereNotNull('api_token')
+            ->where('api_token', '!=', '')
+            ->where('is_active', true)
+            ->get();
+            
+        foreach ($modelApiKeys as $apiKey) {
+            $configuredProviders[] = [
+                'provider' => $apiKey->provider,
+                'models' => [$apiKey->model],
+                'priority' => 3
+            ];
+        }
+        
+        // Verificar ReplicateSetting (Prioridade 4)
+        $replicateSettings = ReplicateSetting::whereNotNull('api_token')
+            ->where('api_token', '!=', '')
+            ->get();
+            
+        foreach ($replicateSettings as $setting) {
+            $configuredProviders[] = [
+                'provider' => $setting->provider ?? 'replicate',
+                'models' => [$setting->model_name ?? 'default'],
+                'priority' => 4
+            ];
+        }
+        
+        // Ordenar por prioridade
+        usort($configuredProviders, function($a, $b) {
+            return $a['priority'] <=> $b['priority'];
+        });
+        
+        return $configuredProviders;
+    }
+    
+    /**
+     * Obtém o próximo provedor disponível para fallback
+     * 
+     * @param string $currentProvider Provedor atual que falhou
+     * @return array|null Configuração do próximo provedor ou null se não houver
+     */
+    public function getNextAvailableProvider(string $currentProvider): ?array
+    {
+        $configuredProviders = $this->getConfiguredProviders();
+        $currentFound = false;
+        
+        foreach ($configuredProviders as $providerConfig) {
+            if ($currentFound) {
+                // Retorna o próximo provedor após o atual
+                return $providerConfig;
+            }
+            
+            if ($providerConfig['provider'] === $currentProvider) {
+                $currentFound = true;
+            }
+        }
+        
+        return null; // Não há mais provedores disponíveis
+    }
+
     public function __construct(
         $provider = null,
         $model = null,
@@ -330,6 +423,8 @@ class AIService
                 return $this->testAnthropic();
             case 'gemini':
                 return $this->testGemini();
+            case 'openrouter':
+                return $this->testOpenRouter();
             case 'grok':
                 return $this->testGrok();
             case 'copilot':
@@ -352,6 +447,7 @@ class AIService
             'openai' => $this->analyzeWithOpenAI($text),
             'anthropic' => $this->analyzeWithAnthropic($text),
             'gemini' => $this->analyzeWithGemini($text),
+            'openrouter' => $this->analyzeWithOpenRouter($text),
             'grok' => $this->analyzeWithGrok($text),
             'copilot' => $this->analyzeWithCopilot($text),
             'tongyi' => $this->analyzeWithTongyi($text),
@@ -500,6 +596,57 @@ class AIService
         } catch (\Exception $e) {
             Log::error('Falha ao testar Gemini: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Testa a conexão com o OpenRouter
+     */
+    private function testOpenRouter()
+    {
+        if (empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_api_token' => false
+            ]);
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
+        }
+        try {
+            Log::info('Iniciando teste de conexão com OpenRouter', [
+                'model' => $this->model
+            ]);
+
+            // Obter configuração do OpenRouter
+            $openRouterConfig = OpenRouterConfig::first();
+            $endpoint = $openRouterConfig && !empty($openRouterConfig->endpoint) 
+                ? $openRouterConfig->endpoint . '/chat/completions'
+                : 'https://openrouter.ai/api/v1/chat/completions';
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => config('app.url', 'http://localhost'),
+                'X-Title' => config('app.name', 'OnliFin')
+            ])->post($endpoint, [
+                'model' => $this->model,
+                'messages' => [
+                    ['role' => 'system', 'content' => 'Você é um assistente útil.'],
+                    ['role' => 'user', 'content' => 'Teste de conexão']
+                ],
+                'max_tokens' => 50
+            ]);
+
+            if (!$response->successful()) {
+                $error = $response->json('error.message') ?? 'Erro desconhecido';
+                throw new \Exception('Erro ao testar conexão com OpenRouter: ' . $error);
+            }
+
+            return true;  // Retorna true para indicar sucesso
+        } catch (\Exception $e) {
+            Log::error('Erro ao testar conexão com OpenRouter: ' . $e->getMessage(), [
+                'model' => $this->model
+            ]);
+            throw $e;  // Repassa o erro para o controller
         }
     }
 
@@ -715,6 +862,49 @@ class AIService
     }
     
     /**
+     * Analisa texto usando OpenRouter
+     */
+    private function analyzeWithOpenRouter($text)
+    {
+        $systemPrompt = $this->getSystemPrompt();
+
+        // Log do prompt escolhido
+        Log::info('Prompt escolhido para OpenRouter', [
+            'length' => strlen($systemPrompt),
+            'preview' => substr($systemPrompt, 0, 100) . (strlen($systemPrompt) > 100 ? '...' : ''),
+            'prompt_type' => $this->promptType
+        ]);
+
+        // Obter configuração do OpenRouter
+        $openRouterConfig = OpenRouterConfig::first();
+        $endpoint = $openRouterConfig && !empty($openRouterConfig->endpoint) 
+            ? $openRouterConfig->endpoint . '/chat/completions'
+            : 'https://openrouter.ai/api/v1/chat/completions';
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->apiToken,
+            'Content-Type' => 'application/json',
+            'HTTP-Referer' => config('app.url', 'http://localhost'),
+            'X-Title' => config('app.name', 'OnliFin')
+        ])->post($endpoint, [
+            'model' => $this->model,
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $text]
+            ],
+            'temperature' => 0.3,
+            'max_tokens' => 500
+        ]);
+
+        if (!$response->successful()) {
+            $errorMessage = $response->json('error.message') ?? 'Erro desconhecido';
+            throw new \Exception('Erro ao analisar com OpenRouter: ' . $errorMessage);
+        }
+
+        return $response->json('choices.0.message.content');
+    }
+    
+    /**
      * Analisa texto usando Google Gemini
      */
     private function analyzeWithGemini($text)
@@ -753,52 +943,77 @@ class AIService
             
             // Verificar se o erro é de sobrecarga do modelo
             if (strpos($errorMessage, 'overloaded') !== false || $errorCode == 429) {
-                Log::warning('Gemini sobrecarregado, tentando fallback para OpenAI', [
+                Log::warning('Gemini sobrecarregado, tentando fallback para próximo provedor configurado', [
                     'error' => $errorMessage,
                     'code' => $errorCode
                 ]);
                 
-                // Tentar usar OpenAI como fallback
-                try {
-                    // Salvar configurações atuais
-                    $originalProvider = $this->provider;
-                    $originalModel = $this->model;
-                    $originalApiToken = $this->apiToken;
-                    
-                    // Configurar para OpenAI
-                    $this->provider = 'openai';
-                    $this->model = 'gpt-3.5-turbo'; // Modelo mais rápido e barato
-                    
-                    // Tentar carregar configuração da OpenAI
-                    $openAIConfig = $this->aiConfigService->getAIConfig('openai');
-                    if ($openAIConfig && !empty($openAIConfig->api_token)) {
-                        $this->apiToken = $openAIConfig->api_token;
+                // Tentar usar próximo provedor configurado como fallback
+                $nextProvider = $this->getNextAvailableProvider('gemini');
+                
+                if ($nextProvider) {
+                    try {
+                        // Salvar configurações atuais
+                        $originalProvider = $this->provider;
+                        $originalModel = $this->model;
+                        $originalApiToken = $this->apiToken;
                         
-                        // Tentar analisar com OpenAI
-                        $result = $this->analyzeWithOpenAI($text);
+                        Log::info('Tentando fallback para provedor: ' . $nextProvider['provider']);
+                        
+                        // Configurar para o próximo provedor
+                        $this->provider = $nextProvider['provider'];
+                        $this->model = $nextProvider['models'][0]; // Usar o primeiro modelo disponível
+                        
+                        // Tentar carregar configuração do próximo provedor
+                        $providerConfig = $this->aiConfigService->getAIConfig($nextProvider['provider']);
+                        if ($providerConfig && !empty($providerConfig->api_token)) {
+                            $this->apiToken = $providerConfig->api_token;
+                            
+                            // Tentar analisar com o próximo provedor
+                            $result = null;
+                            switch ($nextProvider['provider']) {
+                                case 'openrouter':
+                                    $result = $this->analyzeWithOpenRouter($text);
+                                    break;
+                                case 'openai':
+                                    $result = $this->analyzeWithOpenAI($text);
+                                    break;
+                                case 'anthropic':
+                                    $result = $this->analyzeWithAnthropic($text);
+                                    break;
+                                default:
+                                    Log::warning('Provedor de fallback não suportado: ' . $nextProvider['provider']);
+                                    break;
+                            }
+                            
+                            if ($result) {
+                                // Restaurar configurações originais
+                                $this->provider = $originalProvider;
+                                $this->model = $originalModel;
+                                $this->apiToken = $originalApiToken;
+                                
+                                Log::info('Análise realizada com sucesso usando ' . $nextProvider['provider'] . ' como fallback');
+                                return $result;
+                            }
+                        } else {
+                            Log::error('Configuração não encontrada para provedor de fallback: ' . $nextProvider['provider']);
+                        }
                         
                         // Restaurar configurações originais
                         $this->provider = $originalProvider;
                         $this->model = $originalModel;
                         $this->apiToken = $originalApiToken;
                         
-                        Log::info('Análise realizada com sucesso usando OpenAI como fallback');
-                        return $result;
-                    } else {
+                    } catch (\Exception $fallbackError) {
                         // Restaurar configurações originais
                         $this->provider = $originalProvider;
                         $this->model = $originalModel;
                         $this->apiToken = $originalApiToken;
                         
-                        Log::error('Não foi possível usar OpenAI como fallback: configuração não encontrada');
+                        Log::error('Erro ao usar ' . $nextProvider['provider'] . ' como fallback: ' . $fallbackError->getMessage());
                     }
-                } catch (\Exception $fallbackError) {
-                    // Restaurar configurações originais
-                    $this->provider = $originalProvider;
-                    $this->model = $originalModel;
-                    $this->apiToken = $originalApiToken;
-                    
-                    Log::error('Erro ao usar OpenAI como fallback: ' . $fallbackError->getMessage());
+                } else {
+                    Log::warning('Nenhum provedor de fallback configurado disponível');
                 }
             }
             

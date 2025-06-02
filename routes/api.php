@@ -50,5 +50,5 @@ Route::get('/docs', [App\Http\Controllers\Api\DocumentationController::class, 'i
 Route::get('/docs/openapi', [App\Http\Controllers\Api\DocumentationController::class, 'openapi']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post('/chatbot/ask', [GoogleChatbotController::class, 'ask']);
+    Route::post('/chatbot/ask', [App\Http\Controllers\GoogleChatbotController::class, 'ask']);
 });

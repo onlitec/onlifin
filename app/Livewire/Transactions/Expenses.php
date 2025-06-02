@@ -144,6 +144,12 @@ class Expenses extends Component
             $query->where('user_id', auth()->id());
         }
         
+        // Filter by current company
+        $currentCompany = auth()->user()->currentCompany;
+        if ($currentCompany) {
+            $query->where('company_id', $currentCompany->id);
+        }
+        
         $query->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))
                ->when($this->categoryFilter, fn($q) => $q->where('category_id', $this->categoryFilter))
                ->when($this->statusFilter, fn($q) => $q->where('status', $this->statusFilter))
@@ -175,11 +181,15 @@ class Expenses extends Component
         
         $total = $totalQuery->sum('amount');
         $totalPending = $pendingQuery->sum('amount');
+        
+        // Calculate transaction count
+        $transactionCount = $query->count();
             
         return view('livewire.transactions.expenses', [
             'transactions' => $transactions,
             'total' => $total,
             'totalPending' => $totalPending,
+            'transactionCount' => $transactionCount,
             'accounts' => Account::where('active', true)->get(),
             'categories' => Category::where('type', 'expense')->get(),
             'sortField' => $this->sortField,

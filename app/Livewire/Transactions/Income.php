@@ -231,6 +231,12 @@ class Income extends TransactionBase
             $query->where('user_id', auth()->id());
         }
         
+        // Filter by current company
+        $currentCompany = auth()->user()->currentCompany;
+        if ($currentCompany) {
+            $query->where('company_id', $currentCompany->id);
+        }
+        
         $query->whereMonth('date', $this->month)
             ->whereYear('date', $this->year)
             ->when($this->accountFilter, fn($q) => $q->where('account_id', $this->accountFilter))
@@ -263,10 +269,14 @@ class Income extends TransactionBase
         $total = $totalQuery->sum('amount');
         $totalPending = $pendingQuery->sum('amount');
 
+        // Calculate transaction count
+        $transactionCount = $query->count();
+
         return view('livewire.transactions.income', [
             'transactions' => $transactions,
             'total' => $total,
             'totalPending' => $totalPending,
+            'transactionCount' => $transactionCount,
             'categories' => Category::where('type', 'income')->get(),
             'accounts' => Account::where('active', true)->get(),
             'isAdmin' => $this->isAdmin,
@@ -326,4 +336,4 @@ class Income extends TransactionBase
     {
         $this->resetPage();
     }
-} 
+}
