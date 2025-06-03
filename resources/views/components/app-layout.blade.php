@@ -185,13 +185,13 @@
                             <!-- Optionally, show a login link or nothing for guests -->
                             @endguest
                             @if(auth()->user()->hasPermission('view_reports'))
-                            <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
+                            <a href="/settings/reports" class="menu-item {{ request()->is('settings/reports') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-bar-chart-line mr-2 text-lg"></i>
                                 Relatórios
                             </a>
                             @endif
                             @if(auth()->user()->hasPermission('view_own_categories') || auth()->user()->hasPermission('view_all_categories'))
-                            <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
+                            <a href="/categories" class="menu-item {{ request()->is('categories*') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                                 Categorias
                             </a>
@@ -274,7 +274,7 @@
                     </a>
                     @endif
                     @if(auth()->user()->hasPermission('view_own_categories') || auth()->user()->hasPermission('view_all_categories'))
-                    <a href="{{ route('categories.index') }}" class="mobile-nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                    <a href="/categories" class="mobile-nav-link {{ request()->is('categories*') ? 'active' : '' }}">
                         <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                         Categorias
                     </a>
