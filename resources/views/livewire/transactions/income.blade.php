@@ -129,7 +129,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="text-sm text-gray-600">Exibir:</span>
-                        <select wire:model.live="perPage" class="select-sm border border-gray-300 rounded px-2 py-1 text-sm w-auto max-w-20">
+                        <select wire:model.live="perPage" class="border border-gray-300 rounded-lg px-1 py-1 text-sm w-16 focus:outline-none focus:ring-2 focus:ring-green-400">
                             <option value="10">10</option>
                             <option value="20">20</option>
                             <option value="25">25</option>
@@ -146,11 +146,11 @@ Consulte o log de interações com o Assistente AI para detalhes.
     <div class="card shadow">
         <div class="card-body overflow-x-auto">
             <div class="mb-4 flex items-center justify-end space-x-2 px-4">
-                 <input wire:model.lazy="search" type="text" placeholder="Buscar Receitas..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
-                 <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow text-sm">
+                 <input wire:model.lazy="search" type="text" placeholder="Buscar Receitas..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 w-64">
+                 <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                      <i class="ri-search-line mr-1"></i> Buscar
                  </button>
-                 <a href="{{ route('transactions.create', ['type' => 'income']) }}" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow">
+                 <a href="{{ route('transactions.create', ['type' => 'income']) }}" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow transition-colors duration-200">
                      <i class="ri-add-line mr-2"></i> Nova Receita
                  </a>
             </div>
