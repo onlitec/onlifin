@@ -88,10 +88,6 @@
                                 <input type="checkbox" name="due_date_notifications" class="sr-only peer" {{ $user->due_date_notifications ? 'checked' : '' }}>
                                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                             </label>
-                            <a href="{{ route('notifications.due-date.settings') }}" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center">
-                                <img src="{{ asset('assets/svg/svg_82a6e8d8470091c0115c28c426a1ff27.svg') }}" alt="" class=""/>
-                                Configurar
-                            </a>
                         </div>
                     </div>
                 </div>

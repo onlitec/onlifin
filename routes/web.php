@@ -200,9 +200,56 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('permission:delete_own_accounts|delete_all_accounts')
             ->name('destroy');
     });
-    
+
+    // Adiciono rotas de empresas
+    Route::prefix('companies')->name('companies.')->group(function () {
+        Route::get('/', [CompanyController::class, 'index'])->name('index');
+        Route::get('/create', [CompanyController::class, 'create'])->name('create');
+        Route::post('/', [CompanyController::class, 'store'])->name('store');
+        Route::post('/switch/{company}', [CompanyController::class, 'switch'])->name('switch');
+        Route::get('/{company}/edit', [CompanyController::class, 'edit'])->name('edit');
+        Route::put('/{company}', [CompanyController::class, 'update'])->name('update');
+        Route::delete('/{company}', [CompanyController::class, 'destroy'])->name('destroy');
+    });
+
     // Configurações - página principal acessível a todos os usuários
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    // Rotas de gerenciamento de usuários (Configurações)
+    Route::get('/settings/users', [SettingsController::class, 'users'])->name('settings.users');
+    Route::get('/settings/users/new', [SettingsController::class, 'createUser'])->name('settings.users.new');
+    Route::post('/settings/users', [SettingsController::class, 'storeUser'])->name('settings.users.store');
+    Route::get('/settings/users/{user}/edit', [SettingsController::class, 'editUser'])->name('settings.users.edit');
+    Route::put('/settings/users/{user}', [SettingsController::class, 'updateUser'])->name('settings.users.update');
+    Route::delete('/settings/users/{user}', [SettingsController::class, 'deleteUser'])->name('settings.users.delete');
+
+    // Rotas de perfis (Configurações)
+    Route::get('/settings/roles', [SettingsController::class, 'roles'])->name('settings.roles');
+
+    // Rotas de backup (Configurações)
+    Route::get('/settings/backup', [SettingsController::class, 'backup'])->name('settings.backup');
+    Route::post('/settings/backup/create', [SettingsController::class, 'createBackup'])->name('settings.backup.create');
+
+    // Rotas de sistema (Configurações)
+    Route::get('/settings/system', [SettingsController::class, 'system'])->name('settings.system');
+    Route::post('/settings/system/update', [SettingsController::class, 'updatePlatform'])->name('settings.system.update');
+
+    // Rotas de aparência (Configurações)
+    Route::get('/settings/appearance', [SettingsController::class, 'appearance'])->name('settings.appearance');
+    Route::post('/settings/appearance', [SettingsController::class, 'updateAppearance'])->name('settings.appearance.update');
+
+    // Rota para exclusão de dados financeiros de usuário (Configurações)
+    Route::delete('/settings/delete-user-data', [SettingsController::class, 'deleteUserData'])->name('settings.deleteUserData');
+
+    // Adiciono rotas de notificações
+    Route::prefix('settings/notifications')->name('settings.notifications.')->group(function () {
+        Route::get('/', [NotificationConfigController::class, 'index'])->name('index');
+        Route::get('/email', [NotificationConfigController::class, 'email'])->name('email');
+        Route::get('/whatsapp', [NotificationConfigController::class, 'whatsapp'])->name('whatsapp');
+        Route::get('/push', [NotificationConfigController::class, 'push'])->name('push');
+        Route::get('/templates', [NotificationConfigController::class, 'templates'])->name('templates');
+        Route::post('/', [NotificationConfigController::class, 'update'])->name('update');
+        Route::post('/test', [NotificationConfigController::class, 'sendTest'])->name('sendTest');
+    });
 });
 
 // Rota de logout
