@@ -27,6 +27,7 @@
         "livewire/livewire": "^3.6",
         "maatwebsite/excel": "^3.1",
         "moe-mizrak/laravel-openrouter": "^2.0",
+        "spatie/laravel-permission": "^6.20",
         "spiral/roadrunner-cli": "^2.6.0",
         "spiral/roadrunner-http": "^3.3.0",
         "wire-elements/modal": "^3.0"

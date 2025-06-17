@@ -223,12 +223,10 @@
                                 <i class="ri-arrow-down-s-line ml-1"></i>
                             </button>
                                 <div class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                        <button type="submit" class="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
-                                        Sair
-                                    </button>
-                                </form>
+                                <!-- Logout via hidden form -->
+                                <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
+                                    Sair
+                                </button>
                                 </div>
                             </div>
                         </div>
@@ -298,13 +296,11 @@
                         </div>
                     </div>
                     @endif
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="mobile-nav-link w-full text-left">
-                            <i class="ri-logout-box-line mr-2 text-lg"></i>
-                            Sair
-                        </button>
-                    </form>
+                    <!-- Mobile logout via hidden form -->
+                    <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="mobile-nav-link w-full text-left flex items-center">
+                        <i class="ri-logout-box-line mr-2 text-lg"></i>
+                        Sair
+                    </button>
                 </div>
             </div>
         </header>
@@ -374,5 +370,9 @@
             document.body.style.overflowX = 'hidden';
         });
     </script>
+    <!-- Formulário oculto de logout -->
+    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">
+        @csrf
+    </form>
 </body>
 </html>

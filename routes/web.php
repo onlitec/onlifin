@@ -224,6 +224,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Rotas de perfis (Configurações)
     Route::get('/settings/roles', [SettingsController::class, 'roles'])->name('settings.roles');
+    Route::get('/settings/roles/new', [SettingsController::class, 'createRole'])->name('settings.roles.new');
+    Route::post('/settings/roles', [SettingsController::class, 'storeRole'])->name('settings.roles.store');
+    Route::get('/settings/roles/{role}/edit', [SettingsController::class, 'editRole'])->name('settings.roles.edit');
+    Route::put('/settings/roles/{role}', [SettingsController::class, 'updateRole'])->name('settings.roles.update');
+    Route::delete('/settings/roles/{role}', [SettingsController::class, 'deleteRole'])->name('settings.roles.delete');
 
     // Rotas de backup (Configurações)
     Route::get('/settings/backup', [SettingsController::class, 'backup'])->name('settings.backup');

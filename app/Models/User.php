@@ -12,10 +12,11 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Company;
 use Illuminate\Support\Facades\Session;
 use App\Models\Account;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
     protected $fillable = [
         'name',
@@ -297,5 +298,15 @@ class User extends Authenticatable
         }
 
         return null;
+    }
+
+    public function companies()
+    {
+        return $this->belongsToMany(Company::class, 'company_user');
+    }
+
+    public function currentCompany()
+    {
+        return $this->belongsTo(Company::class, 'current_company_id');
     }
 }
