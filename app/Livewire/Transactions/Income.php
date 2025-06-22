@@ -37,6 +37,7 @@ class Income extends TransactionBase
     public $dateFrom = '';
     public $dateTo = '';
     public $clientFilter = '';
+    public $recurrenceFilter = '';
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $confirmingDeletion = false;
@@ -50,6 +51,7 @@ class Income extends TransactionBase
         'year' => ['except' => ''],
         'sortField' => ['except' => 'date'],
         'sortDirection' => ['except' => 'desc'],
+        'recurrenceFilter' => ['except' => ''],
     ];
 
     protected $listeners = [
@@ -60,11 +62,14 @@ class Income extends TransactionBase
         'transactionDeleted' => '$refresh'
     ];
 
-    public function mount()
+    public function mount($recurrence = null)
     {
         $this->month = $this->month ?: now()->month;
         $this->year = $this->year ?: now()->year;
         $this->isAdmin = auth()->check() && auth()->user()->is_admin;
+        if ($recurrence) {
+            $this->recurrenceFilter = $recurrence;
+        }
     }
 
     public function updatingSearch()
@@ -103,6 +108,11 @@ class Income extends TransactionBase
     }
 
     public function updatedClientFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedRecurrenceFilter()
     {
         $this->resetPage();
     }
@@ -258,6 +268,13 @@ class Income extends TransactionBase
                 });
             });
             
+        // Aplica filtro de Fatura (recorrência)
+        if ($this->recurrenceFilter === 'fixed') {
+            $query->where('recurrence_type', 'fixed');
+        } elseif ($this->recurrenceFilter === 'installment') {
+            $query->where('recurrence_type', 'installment');
+        }
+
         $transactions = $query->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
@@ -324,7 +341,7 @@ class Income extends TransactionBase
      */
     public function resetFilters()
     {
-        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'clientFilter']);
+        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'clientFilter', 'recurrenceFilter']);
         $this->resetPage();
     }
 
