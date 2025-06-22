@@ -74,49 +74,71 @@ Consulte o log de interações com o Assistente AI para detalhes.
         <!-- Botões de ação e Filtros -->
         <div class="mb-4 px-4">
             <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                    <!-- Filtro de Conta -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
-                        <select wire:model="selectedAccount" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <label for="accountFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Conta</label>
+                        <select wire:model.live="accountFilter" id="accountFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                             <option value="">Todas</option>
                             @foreach($accounts as $account)
                                 <option value="{{ $account->id }}">{{ $account->name }}</option>
                             @endforeach
                         </select>
                     </div>
+
+                    <!-- Filtro de Categoria -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                        <select wire:model="selectedCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <label for="categoryFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Categoria</label>
+                        <select wire:model.live="categoryFilter" id="categoryFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                             <option value="">Todas</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}">{{ $category->name }}</option>
                             @endforeach
                         </select>
                     </div>
+                    
+                    <!-- Filtro de Status -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select wire:model="selectedStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <label for="statusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Status</label>
+                        <select wire:model.live="statusFilter" id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                             <option value="">Todos</option>
+                            <option value="paid">Paga</option>
                             <option value="pending">Pendente</option>
-                            <option value="paid">Pago</option>
-                            <option value="cancelled">Cancelado</option>
                         </select>
                     </div>
+
+                    <!-- Filtro de Tipo de Fatura -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
-                        <input type="date" wire:model="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <label for="recurrenceFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Fatura</label>
+                        <select wire:model.live="recurrenceFilter" id="recurrenceFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                            <option value="">Todas</option>
+                            <option value="fixed">Fixa</option>
+                            <option value="installment">Parcelada</option>
+                        </select>
                     </div>
+
+                    <!-- Filtro de Data Início -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
-                        <input type="date" wire:model="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <label for="dateFrom" class="block text-sm font-medium text-gray-700 dark:text-gray-200">De</label>
+                        <input wire:model.live="dateFrom" id="dateFrom" type="date" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                     </div>
+
+                    <!-- Filtro de Data Fim -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fornecedor</label>
-                        <input type="text" wire:model="supplierFilter" placeholder="Fornecedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <label for="dateTo" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Até</label>
+                        <input wire:model.live="dateTo" id="dateTo" type="date" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                     </div>
+
+                    <!-- Filtro de Fornecedor -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                        <input type="text" wire:model="descriptionFilter" placeholder="Descrição" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <label for="supplierFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Fornecedor</label>
+                        <input wire:model.live="supplierFilter" id="supplierFilter" type="text" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    </div>
+
+                    <!-- Filtro de Descrição -->
+                    <div>
+                        <label for="descriptionFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Descrição</label>
+                        <input wire:model.live="descriptionFilter" id="descriptionFilter" type="text" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                     </div>
                 </div>
                 <div class="flex items-center justify-between">

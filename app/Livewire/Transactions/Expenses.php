@@ -38,14 +38,26 @@ class Expenses extends Component
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $isAdmin = false;
+    
+    // Filtro de recorrência vindo da URL (para o menu)
+    public $recurrence; 
+
+    // Filtro de recorrência da UI (dropdown)
+    public $recurrenceFilter = '';
+
     public $confirmingDeletion = false;
     public $transactionToDelete;
     
-    public function mount()
+    public function mount($recurrence = null)
     {
         $this->month = now()->month;
         $this->year = now()->year;
         $this->isAdmin = auth()->check() && auth()->user()->is_admin;
+        
+        // Se um filtro de recorrência for passado pela URL, aplica-o
+        if ($recurrence) {
+            $this->recurrenceFilter = $recurrence;
+        }
     }
     
     public function previousMonth()
@@ -134,12 +146,20 @@ class Expenses extends Component
     public function updatedDateFrom() { $this->resetPage(); }
     public function updatedDateTo() { $this->resetPage(); }
     public function updatedSupplierFilter() { $this->resetPage(); }
+    public function updatedRecurrenceFilter() { $this->resetPage(); }
 
     public function render()
     {
         $query = Transaction::query()
             ->where('type', 'expense');
             
+        // Aplica o filtro de recorrência a partir do dropdown da UI
+        if ($this->recurrenceFilter === 'fixed') {
+            $query->where('recurrence_type', 'fixed');
+        } elseif ($this->recurrenceFilter === 'installment') {
+            $query->where('recurrence_type', 'installment');
+        }
+        
         if (!$this->isAdmin) {
             $query->where('user_id', auth()->id());
         }
@@ -207,7 +227,7 @@ class Expenses extends Component
      */
     public function resetFilters()
     {
-        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'supplierFilter']);
+        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'supplierFilter', 'recurrenceFilter']);
         $this->resetPage();
     }
 

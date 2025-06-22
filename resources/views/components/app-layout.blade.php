@@ -39,8 +39,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @livewireStyles
 
-
-
     <style>
         /* Correção crítica para layout */
         html, body {
@@ -169,29 +167,43 @@
                             @guest
                             <!-- Optionally, show a login link or nothing for guests -->
                             @endguest
-                            <a href="{{ route('transactions.income') }}" class="menu-item {{ request()->routeIs('transactions.income') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
-                                <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
-                                Receitas
-                            </a>
-                            @auth
-                            @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
-                            <a href="{{ route('transactions.expenses') }}" class="menu-item {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
-                                <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
-                                Despesas
-                            </a>
-                            @endif
-                            @endauth
-                            @guest
-                            <!-- Optionally, show a login link or nothing for guests -->
-                            @endguest
+                            <!-- Submenu Receitas -->
+                            <div x-data="{ openReceitas: false }" @click.away="openReceitas = false" class="relative">
+                                <a href="{{ route('transactions.income') }}" class="menu-item flex items-center {{ request()->routeIs('transactions.income*') ? 'active' : '' }}">
+                                    <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
+                                    Receitas
+                                    <span @click.prevent.stop="openReceitas = !openReceitas" class="ml-auto pl-2 cursor-pointer">
+                                        <i class="ri-arrow-down-s-line"></i>
+                                    </span>
+                                </a>
+                                <div x-show="openReceitas" x-transition class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50" style="display: none;">
+                                    <a href="{{ route('transactions.income', ['recurrence' => 'fixed']) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600">Fixas</a>
+                                    <a href="{{ route('transactions.income', ['recurrence' => 'installment']) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600">Variáveis</a>
+                                </div>
+                            </div>
+                            
+                            <!-- Submenu Despesas -->
+                            <div x-data="{ openDespesas: false }" @click.away="openDespesas = false" class="relative">
+                                <a href="{{ route('transactions.expenses') }}" class="menu-item flex items-center {{ request()->routeIs('transactions.expenses*') ? 'active' : '' }}">
+                                    <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
+                                    Despesas
+                                    <span @click.prevent.stop="openDespesas = !openDespesas" class="ml-auto pl-2 cursor-pointer">
+                                        <i class="ri-arrow-down-s-line"></i>
+                                    </span>
+                                </a>
+                                <div x-show="openDespesas" x-transition class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50" style="display: none;">
+                                    <a href="{{ route('transactions.expenses', ['recurrence' => 'fixed']) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600">Fixas</a>
+                                    <a href="{{ route('transactions.expenses', ['recurrence' => 'installment']) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600">Variáveis</a>
+                                </div>
+                            </div>
                             @if(auth()->user()->hasPermission('view_reports'))
-                            <a href="/settings/reports" class="menu-item {{ request()->is('settings/reports') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
+                            <a href="{{ route('settings.reports') }}" class="menu-item {{ request()->routeIs('settings.reports') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-bar-chart-line mr-2 text-lg"></i>
                                 Relatórios
                             </a>
                             @endif
                             @if(auth()->user()->hasPermission('view_own_categories') || auth()->user()->hasPermission('view_all_categories'))
-                            <a href="/categories" class="menu-item {{ request()->is('categories*') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
+                            <a href="{{ route('categories.index') }}" class="menu-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                                 Categorias
                             </a>
@@ -261,18 +273,28 @@
                         Transações
                     </a>
                     @endif
-                    <a href="{{ route('transactions.income') }}" class="mobile-nav-link {{ request()->routeIs('transactions.income') ? 'active' : '' }}">
-                        <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
-                        Receitas
-                    </a>
-                    @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
-                    <a href="{{ route('transactions.expenses') }}" class="mobile-nav-link {{ request()->routeIs('transactions.expenses') ? 'active' : '' }}">
-                        <i class="ri-arrow-down-circle-line mr-2 text-lg"></i>
-                        Despesas
-                    </a>
-                    @endif
+                    <div x-data="{ openReceitas: false }" class="relative">
+                        <button @click="openReceitas = !openReceitas" @click.away="openReceitas = false" class="mobile-nav-link flex items-center justify-between">
+                            <span><i class="ri-arrow-up-circle-line mr-2 text-lg"></i> Receitas</span>
+                            <i :class="openReceitas ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
+                        </button>
+                        <div x-show="openReceitas" class="ml-4 space-y-1">
+                            <a href="{{ route('transactions.income', ['recurrence' => 'fixed']) }}" class="mobile-nav-link {{ request()->routeIs('transactions.income.fixed') ? 'active' : '' }}">Fixas</a>
+                            <a href="{{ route('transactions.income', ['recurrence' => 'installment']) }}" class="mobile-nav-link {{ request()->routeIs('transactions.income.variable') ? 'active' : '' }}">Variáveis</a>
+                        </div>
+                    </div>
+                    <div x-data="{ openDespesas: false }" class="relative">
+                        <button @click="openDespesas = !openDespesas" @click.away="openDespesas = false" class="mobile-nav-link flex items-center justify-between">
+                            <span><i class="ri-arrow-down-circle-line mr-2 text-lg"></i> Despesas</span>
+                            <i :class="openDespesas ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
+                        </button>
+                        <div x-show="openDespesas" class="ml-4 space-y-1">
+                            <a href="{{ route('transactions.expenses', ['recurrence' => 'fixed']) }}" class="mobile-nav-link {{ request()->routeIs('transactions.expenses.fixed') ? 'active' : '' }}">Fixas</a>
+                            <a href="{{ route('transactions.expenses', ['recurrence' => 'installment']) }}" class="mobile-nav-link {{ request()->routeIs('transactions.expenses.variable') ? 'active' : '' }}">Variáveis</a>
+                        </div>
+                    </div>
                     @if(auth()->user()->hasPermission('view_own_categories') || auth()->user()->hasPermission('view_all_categories'))
-                    <a href="/categories" class="mobile-nav-link {{ request()->is('categories*') ? 'active' : '' }}">
+                    <a href="{{ route('categories.index') }}" class="mobile-nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
                         <i class="ri-price-tag-3-line mr-2 text-lg"></i>
                         Categorias
                     </a>

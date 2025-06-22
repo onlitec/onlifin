@@ -43,6 +43,9 @@ class Income extends TransactionBase
     public $transactionToDelete;
     public $deleteWarning = '';
     public $isAdmin = false;
+    public $recurrenceType;
+    public $recurrence;
+    public $recurrenceFilter = '';
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -60,11 +63,16 @@ class Income extends TransactionBase
         'transactionDeleted' => '$refresh'
     ];
 
-    public function mount()
+    public function mount($recurrenceType = null, $recurrence = null)
     {
         $this->month = $this->month ?: now()->month;
         $this->year = $this->year ?: now()->year;
         $this->isAdmin = auth()->check() && auth()->user()->is_admin;
+        $this->recurrenceType = $recurrenceType;
+        
+        if ($recurrence) {
+            $this->recurrenceFilter = $recurrence;
+        }
     }
 
     public function updatingSearch()
@@ -103,6 +111,11 @@ class Income extends TransactionBase
     }
 
     public function updatedClientFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedRecurrenceFilter()
     {
         $this->resetPage();
     }
@@ -226,6 +239,11 @@ class Income extends TransactionBase
     {
         $query = Transaction::with(['category', 'account'])
             ->where('type', 'income');
+        if ($this->recurrenceFilter === 'fixed') {
+            $query->where('recurrence_type', 'fixed');
+        } elseif ($this->recurrenceFilter === 'installment') {
+            $query->where('recurrence_type', 'installment');
+        }
             
         if (!$this->isAdmin) {
             $query->where('user_id', auth()->id());
@@ -324,7 +342,7 @@ class Income extends TransactionBase
      */
     public function resetFilters()
     {
-        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'clientFilter']);
+        $this->reset(['search', 'accountFilter', 'categoryFilter', 'statusFilter', 'dateFrom', 'dateTo', 'clientFilter', 'recurrenceFilter']);
         $this->resetPage();
     }
 
