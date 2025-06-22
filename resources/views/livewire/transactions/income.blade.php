@@ -74,71 +74,48 @@ Consulte o log de interações com o Assistente AI para detalhes.
         <!-- Botões de ação e Filtros -->
         <div class="mb-4 px-4">
             <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-                    <!-- Filtro de Conta -->
+                <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-4">
                     <div>
-                        <label for="accountFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Conta</label>
-                        <select wire:model="accountFilter" id="accountFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
+                        <select wire:model="accountFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
                             <option value="">Todas</option>
-                            @foreach($accounts as $account)
-                                <option value="{{ $account->id }}">{{ $account->name }}</option>
+                            @foreach($accounts as $acc)
+                                <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                             @endforeach
                         </select>
                     </div>
-
-                    <!-- Filtro de Categoria -->
                     <div>
-                        <label for="categoryFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Categoria</label>
-                        <select wire:model="categoryFilter" id="categoryFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                        <select wire:model="categoryFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
                             <option value="">Todas</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                    
-                    <!-- Filtro de Status -->
                     <div>
-                        <label for="statusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Status</label>
-                        <select wire:model="statusFilter" id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select wire:model="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
                             <option value="">Todos</option>
-                            <option value="paid">Recebida</option>
+                            <option value="paid">Pago</option>
                             <option value="pending">Pendente</option>
                         </select>
                     </div>
-
-                    <!-- Filtro de Tipo de Fatura -->
                     <div>
-                        <label for="recurrenceFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Fatura</label>
-                        <select wire:model.live="recurrenceFilter" id="recurrenceFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                            <option value="">Todas</option>
-                            <option value="fixed">Fixa</option>
-                            <option value="installment">Parcelada</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
+                        <input type="date" wire:model.lazy="dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
-
-                    <!-- Filtro de Data Início -->
                     <div>
-                        <label for="dateFrom" class="block text-sm font-medium text-gray-700 dark:text-gray-200">De</label>
-                        <input wire:model="dateFrom" id="dateFrom" type="date" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
+                        <input type="date" wire:model.lazy="dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
-
-                    <!-- Filtro de Data Fim -->
                     <div>
-                        <label for="dateTo" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Até</label>
-                        <input wire:model="dateTo" id="dateTo" type="date" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+                        <input type="text" wire:model.debounce.500ms="clientFilter" placeholder="Cliente" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
-
-                    <!-- Filtro de Cliente -->
                     <div>
-                        <label for="clientFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Cliente</label>
-                        <input wire:model="clientFilter" id="clientFilter" type="text" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                    </div>
-
-                    <!-- Filtro de Descrição -->
-                    <div>
-                        <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Descrição</label>
-                        <input wire:model="search" id="search" type="text" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                        <input type="text" wire:model.debounce.500ms="search" placeholder="Descrição" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
                 </div>
                 <div class="flex items-center justify-between">

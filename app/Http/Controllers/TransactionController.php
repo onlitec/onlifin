@@ -347,8 +347,11 @@ class TransactionController extends Controller
 
     public function createNext(Transaction $transaction)
     {
-        if (!auth()->user()->hasPermission('create_transactions')) {
-            abort(403, 'Você não tem permissão para criar transações.');
+        $user = Auth::user();
+        // Only the owner of the transaction should be able to create a recurring one from it.
+        // And they need create_transactions permission.
+        if (!($user->hasPermission('create_transactions') && $transaction->user_id === $user->id)) {
+            abort(403, 'Você não tem permissão para criar uma transação recorrente a partir desta.');
         }
 
         if (!$transaction->hasRecurrence() || !$transaction->next_date) {
