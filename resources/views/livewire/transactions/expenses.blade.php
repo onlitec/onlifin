@@ -74,10 +74,10 @@ Consulte o log de interações com o Assistente AI para detalhes.
         <!-- Botões de ação e Filtros -->
         <div class="mb-4 px-4">
             <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
-                        <select wire:model="selectedAccount" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="accountFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             @foreach($accounts as $account)
                                 <option value="{{ $account->id }}">{{ $account->name }}</option>
@@ -86,7 +86,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                        <select wire:model="selectedCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="categoryFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -95,28 +95,35 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select wire:model="selectedStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todos</option>
+                            <option value="paid">Paga</option>
                             <option value="pending">Pendente</option>
-                            <option value="paid">Pago</option>
-                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fatura</label>
+                        <select wire:model.live="recurrenceFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                            <option value="">Todas</option>
+                            <option value="fixed">Fixa</option>
+                            <option value="installment">Parcelada</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
-                        <input type="date" wire:model="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="date" wire:model.live="dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
-                        <input type="date" wire:model="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="date" wire:model.live="dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fornecedor</label>
-                        <input type="text" wire:model="supplierFilter" placeholder="Fornecedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="text" wire:model.live="supplierFilter" placeholder="Fornecedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                        <input type="text" wire:model="descriptionFilter" placeholder="Descrição" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="text" wire:model.live="descriptionFilter" placeholder="Descrição" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                 </div>
                 <div class="flex items-center justify-between">

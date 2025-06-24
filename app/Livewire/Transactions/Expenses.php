@@ -35,17 +35,31 @@ class Expenses extends Component
     public $dateFrom = '';
     public $dateTo = '';
     public $supplierFilter = '';
+    
+    // Filtro de Fatura (recorrência)
+    public $recurrenceFilter = '';
+
     public $sortField = 'date';
     public $sortDirection = 'desc';
     public $isAdmin = false;
+    public $recurrenceType;
     public $confirmingDeletion = false;
     public $transactionToDelete;
-    
-    public function mount()
+
+    protected $queryString = [
+        'recurrenceFilter' => ['except' => ''],
+    ];
+
+    public function mount($recurrenceType = null)
     {
         $this->month = now()->month;
         $this->year = now()->year;
         $this->isAdmin = auth()->check() && auth()->user()->is_admin;
+        $this->recurrenceType = $recurrenceType;
+        // Inicializa filtro de recorrência a partir do parâmetro de rota, se existir
+        if ($recurrenceType) {
+            $this->recurrenceFilter = $recurrenceType;
+        }
     }
     
     public function previousMonth()
@@ -134,12 +148,20 @@ class Expenses extends Component
     public function updatedDateFrom() { $this->resetPage(); }
     public function updatedDateTo() { $this->resetPage(); }
     public function updatedSupplierFilter() { $this->resetPage(); }
+    public function updatedRecurrenceFilter() { $this->resetPage(); }
 
     public function render()
     {
         $query = Transaction::query()
             ->where('type', 'expense');
             
+        // Aplica filtro de Fatura (recorrência)
+        if ($this->recurrenceFilter === 'fixed') {
+            $query->where('recurrence_type', 'fixed');
+        } elseif ($this->recurrenceFilter === 'installment') {
+            $query->where('recurrence_type', 'installment');
+        }
+        
         if (!$this->isAdmin) {
             $query->where('user_id', auth()->id());
         }

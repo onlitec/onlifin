@@ -111,6 +111,15 @@ class TransactionController extends Controller
             abort(403, 'Você não tem permissão para criar transações.');
         }
 
+        // Cria empresa pessoal automaticamente caso o usuário não tenha empresa selecionada
+        if (!$user->currentCompany) {
+            $company = $user->ownedCompanies()->create([
+                'name' => $user->name . ' - Empresa Pessoal',
+                'personal_company' => true,
+            ]);
+            $user->switchCompany($company);
+        }
+
         // Log do request para debug
         \Log::info('Request completo:', $request->all());
 

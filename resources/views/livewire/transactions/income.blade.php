@@ -74,7 +74,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
         <!-- Botões de ação e Filtros -->
         <div class="mb-4 px-4">
             <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
                         <select wire:model="accountFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
@@ -97,21 +97,29 @@ Consulte o log de interações com o Assistente AI para detalhes.
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                         <select wire:model="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
                             <option value="">Todos</option>
-                            <option value="paid">Pago</option>
+                            <option value="paid">Recebida</option>
                             <option value="pending">Pendente</option>
                         </select>
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fatura</label>
+                        <select wire:model="recurrenceFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                            <option value="">Todas</option>
+                            <option value="fixed">Fixa</option>
+                            <option value="installment">Parcelada</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
-                        <input type="date" wire:model.lazy="dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
+                        <input wire:model.lazy="dateFrom" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
-                        <input type="date" wire:model.lazy="dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
+                        <input wire:model.lazy="dateTo" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                        <input type="text" wire:model.debounce.500ms="clientFilter" placeholder="Cliente" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
+                        <input wire:model.debounce.500ms="clientFilter" placeholder="Cliente" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
