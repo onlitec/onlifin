@@ -86,7 +86,7 @@
                 </div>
             </div>
 
-            @if(auth()->user()->currentCompany && auth()->user()->currentCompany->profile->chatbot_enabled)
+            @if(auth()->user()->currentCompany && auth()->user()->currentCompany->profile && auth()->user()->currentCompany->profile->chatbot_enabled)
             <!-- Chatbot Financeiro -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
