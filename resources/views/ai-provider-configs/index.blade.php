@@ -18,7 +18,7 @@
                         $activeConfig = $configs->first(); // Pega a primeira configuração (mais recente)
                     @endphp
                     <!-- Botão de Edição Principal -->
-                    <a href="{{ route('iaprovider-config.edit', $activeConfig) }}" 
+                    <a href="{{ route('iaprovider-config.edit', $activeConfig->id) }}" 
                        class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg flex items-center font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
                        title="Editar Configuração Ativa">
                         <i class="fas fa-edit mr-2 text-lg"></i> 

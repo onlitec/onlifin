@@ -292,3 +292,22 @@ window.confirmDelete = async (data) => {
         document.dispatchEvent(new CustomEvent('transaction-confirmed'));
     }
 };
+
+// Ignorar erros de scripts de extensões do Chrome
+window.addEventListener('error', event => {
+    if (event.filename && event.filename.startsWith('chrome-extension://')) {
+        console.log('Ignorando erro de extensão:', event.message);
+        event.preventDefault();
+        return true;
+    }
+});
+
+// Ignorar promessas rejeitadas de extensões do Chrome
+window.addEventListener('unhandledrejection', event => {
+    const reason = event.reason;
+    if (reason && typeof reason === 'object' && reason.stack && reason.stack.includes('chrome-extension://')) {
+        console.log('Ignorando unhandledrejection de extensão:', reason);
+        event.preventDefault();
+        return true;
+    }
+});
