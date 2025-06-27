@@ -12,60 +12,35 @@ Consulte o log de interações com o Assistente AI para detalhes.
 -->
 <div>
     <div class="space-y-6">
-        <!-- Cabeçalho da página -->
-        <div class="flex items-center justify-between px-4">
+        <!-- Cabeçalho compacto: título, mês e cards de total e pendentes em linha única -->
+        <div class="flex items-center justify-between px-4 space-x-4">
             <div class="flex items-center space-x-2">
                 <i class="ri-money-dollar-circle-line text-3xl text-green-500"></i>
                 <h2 class="text-2xl font-bold text-gray-800">Receitas</h2>
-            </div>
-        </div>
-        
-        <!-- Seletor de mês -->
-        <div class="flex items-center justify-start space-x-3 px-4">
-            <button wire:click="previousMonth" class="p-2 bg-white rounded-full shadow hover:bg-gray-100">
-                <i class="ri-arrow-left-s-line text-gray-600"></i>
-            </button>
-            <span class="text-lg font-medium text-gray-700">{{ \Carbon\Carbon::createFromDate($year ?? now()->year, $month ?? now()->month, 1)->format('F Y') }}</span>
-            <button wire:click="nextMonth" class="p-2 bg-white rounded-full shadow hover:bg-gray-100">
-                <i class="ri-arrow-right-s-line text-gray-600"></i>
-            </button>
-        </div>
-        
-        <!-- Cards de estatísticas -->
-        <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
-            <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm text-gray-500">Total de Receitas</div>
-                        <div class="text-xl font-bold text-green-600">
-                            @if(isset($total))
-                                {{ 'R$ ' . number_format($total/100, 2, ',', '.') }}
-                            @else
-                                R$ 0,00
-                            @endif
-                        </div>
-                        <div class="text-xs text-gray-500">
-                            {{ $transactionCount }} {{ $transactionCount == 1 ? 'transação' : 'transações' }}
-                        </div>
-                    </div>
-                    <div class="text-green-500">
-                        <i class="ri-money-dollar-circle-line text-2xl"></i>
-                    </div>
+                <div class="flex space-x-2">
+                    <select wire:model.live="month" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
+                        @foreach(range(1,12) as $m)
+                            <option value="{{ $m }}">{{ \Carbon\Carbon::createFromDate(2000, $m, 1)->format('F') }}</option>
+                        @endforeach
+                    </select>
+                    <select wire:model.live="year" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
+                        @foreach(range(date('Y') - 2, date('Y') + 2) as $y)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
-            <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm text-gray-500">Receitas Pendentes</div>
-                        <div class="text-xl font-bold text-gray-800">
-                            {{ 'R$ ' . number_format($totalPending/100, 2, ',', '.') }}
-                        </div>
-                        <div class="text-xs text-gray-500">
-                            {{ $transactionCount }} {{ $transactionCount == 1 ? 'transação' : 'transações' }}
-                        </div>
+            <div class="flex space-x-4">
+                <div class="bg-white rounded-lg p-4 shadow-sm border">
+                    <div class="flex flex-col items-end">
+                        <div class="text-xl font-bold text-green-600">{{ 'R$ ' . number_format($total/100, 2, ',', '.') }}</div>
+                        <div class="text-sm text-gray-500">Total de Receitas</div>
                     </div>
-                    <div class="text-gray-400">
-                        <i class="ri-time-line text-2xl"></i>
+                </div>
+                <div class="bg-white rounded-lg p-4 shadow-sm border">
+                    <div class="flex flex-col items-end">
+                        <div class="text-xl font-bold text-gray-800">{{ 'R$ ' . number_format($totalPending/100, 2, ',', '.') }}</div>
+                        <div class="text-sm text-gray-500">Receitas Pendentes</div>
                     </div>
                 </div>
             </div>

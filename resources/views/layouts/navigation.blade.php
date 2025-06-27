@@ -16,10 +16,6 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     
-                    <x-nav-link :href="route('transactions.index')" :active="request()->routeIs('transactions.*')">
-                        {{ __('Transações') }}
-                    </x-nav-link>
-                    
                     <x-nav-link :href="route('companies.index')" :active="request()->routeIs('companies.*')">
                         {{ __('Empresas') }}
                     </x-nav-link>
