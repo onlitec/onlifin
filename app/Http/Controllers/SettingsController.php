@@ -972,14 +972,27 @@ class SettingsController extends Controller
     {
         // Backup pré-atualização usando o sistema existente
         $this->createBackup();
-        foreach(["git pull origin main","composer install --no-interaction","php artisan migrate --force"] as $cmd){
+        // Determinar caminhos completos dos binários
+        $git = trim(shell_exec('which git'));
+        $composer = trim(shell_exec('which composer'));
+        $php = PHP_BINARY;
+        $commands = [
+            // Adicionar diretório ao safe.directory globalmente para o usuário do processo
+            "$git config --global --add safe.directory " . base_path() . " 2>&1",
+            // Atualizar código
+            "$git pull origin main 2>&1",
+            "$composer install --no-interaction 2>&1",
+            "$php artisan migrate --force 2>&1"
+        ];
+        foreach ($commands as $cmd) {
             exec("cd " . base_path() . " && $cmd", $out, $st);
-            if($st!==0) {
+            if ($st !== 0) {
+                $output = implode("\n", $out);
                 return redirect()->route('settings.system')
-                    ->with('error', "Erro ao executar: $cmd");
+                    ->with('error', "Erro ao executar: $cmd. Saída: $output");
             }
         }
-        return redirect()->route('settings.system')->with('success','Atualizado com sucesso!');
+        return redirect()->route('settings.system')->with('success', 'Atualizado com sucesso!');
     }
 
     /**

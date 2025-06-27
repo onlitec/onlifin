@@ -15,12 +15,14 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $siteTheme === 'dark' ? 'dark' : '' }}" style="--root-font-size: {{ $rootFontSize }}px; overflow-x: hidden; width: 100%;">
 <head>
     <!-- Carregar stub de caches de forma síncrona como primeiro script -->
-    <script src="{{ asset('js/cache-stub.js') . '?v=' . time() }}" async="false"></script>
+    <script src="{{ asset('js/cache-stub.js') }}" async="false"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $siteTitle }}</title>
-    <link rel="icon" href="{{ asset($siteFavicon) . '?v=' . time() }}">
+    <link rel="icon" href="{{ asset($siteFavicon) }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,8 +30,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Remix Icons -->
-    <link href="{{ asset('assets/css/remixicon.css') . '?v=' . time() }}" rel="stylesheet">
-    <link href="{{ asset('assets/fonts/remixicon.css') . '?v=' . time() }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/remixicon.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/fonts/remixicon.css') }}" rel="stylesheet">
     
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -158,14 +160,6 @@
                                 <i class="ri-dashboard-line mr-2 text-lg"></i>
                                 Dashboard
                             </a>
-                            @auth
-                            @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
-                            <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.index') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
-                                <i class="ri-exchange-line mr-2 text-lg"></i>
-                                Transações
-                            </a>
-                            @endif
-                            @endauth
                             @guest
                             <!-- Optionally, show a login link or nothing for guests -->
                             @endguest
@@ -212,23 +206,11 @@
                             <a href="{{ route('iaprovider-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-robot-line text-lg"></i>
                             </a>
-                            <!-- Profile dropdown inside main menu -->
-                            <div class="relative group">
-                                <button class="menu-item flex items-center" style="font-size: 15px; padding: 8px 10px;">
-                                    @if(auth()->user()->profile_photo)
-                                        <img src="{{ auth()->user()->profile_photo_url }}" alt="{{ auth()->user()->name }}" class="h-6 w-6 rounded-full object-cover">
-                                    @else
-                                        <i class="ri-user-line text-lg"></i>
-                                    @endif
-                                <i class="ri-arrow-down-s-line ml-1"></i>
+                            <!-- Logout direto (removido dropdown de perfil) -->
+                            <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="menu-item flex items-center" style="font-size: 15px; padding: 8px 10px;">
+                                <i class="ri-logout-box-line mr-2 text-lg"></i>
+                                Sair
                             </button>
-                                <div class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
-                                <!-- Logout via hidden form -->
-                                <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 hover:text-blue-600">
-                                    Sair
-                                </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                     
@@ -255,12 +237,6 @@
                         <i class="ri-dashboard-line mr-2 text-lg"></i>
                         Dashboard
                     </a>
-                    @if(auth()->user()->hasPermission('view_own_transactions') || auth()->user()->hasPermission('view_all_transactions'))
-                    <a href="{{ route('transactions.index') }}" class="mobile-nav-link {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
-                        <i class="ri-exchange-line mr-2 text-lg"></i>
-                        Transações
-                    </a>
-                    @endif
                     <a href="{{ route('transactions.income') }}" class="mobile-nav-link {{ request()->routeIs('transactions.income') ? 'active' : '' }}">
                         <i class="ri-arrow-up-circle-line mr-2 text-lg"></i>
                         Receitas

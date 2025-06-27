@@ -48,6 +48,8 @@ class Expenses extends Component
 
     protected $queryString = [
         'recurrenceFilter' => ['except' => ''],
+        'month' => ['except' => ''],
+        'year' => ['except' => ''],
     ];
 
     public function mount($recurrenceType = null)
@@ -149,6 +151,8 @@ class Expenses extends Component
     public function updatedDateTo() { $this->resetPage(); }
     public function updatedSupplierFilter() { $this->resetPage(); }
     public function updatedRecurrenceFilter() { $this->resetPage(); }
+    public function updatedMonth() { $this->resetPage(); }
+    public function updatedYear() { $this->resetPage(); }
 
     public function render()
     {

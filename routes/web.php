@@ -79,7 +79,9 @@ Route::middleware('guest')->group(function () {
 // Rotas protegidas
 Route::middleware(['auth'])->group(function () {
     // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    // Rota raiz exibindo o dashboard (sem nome, para evitar duplicação)
+    Route::get('/', [DashboardController::class, 'index']);
+    // Rota nomeada do dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     // Logs do sistema
@@ -125,9 +127,10 @@ Route::middleware(['auth'])->group(function () {
     
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {
-        Route::get('/', [TransactionController::class, 'index'])
-            ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
-            ->name('index');
+        // Rota de listagem geral de transações removida
+        // Route::get('/', [TransactionController::class, 'index'])
+        //     ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
+        //     ->name('index');
         Route::get('/income', [TransactionController::class, 'showIncome'])
             ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
             ->name('income');

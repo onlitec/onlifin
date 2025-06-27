@@ -18,7 +18,7 @@
                     @endif
                 </p>
             </div>
-            <a href="{{ route('transactions.index') }}" class="btn btn-secondary">
+            <a href="{{ $type === 'income' ? route('transactions.income') : route('transactions.expenses') }}" class="btn btn-secondary">
                 <i class="ri-arrow-left-line mr-2"></i>
                 Voltar
             </a>
@@ -280,7 +280,7 @@
 
                 <!-- Botões -->
                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3 rounded-b-xl">
-                    <a href="{{ route('transactions.index') }}" class="btn btn-secondary">
+                    <a href="{{ $type === 'income' ? route('transactions.income') : route('transactions.expenses') }}" class="btn btn-secondary">
                         Cancelar
                     </a>
                     <button type="submit" class="btn btn-primary">

@@ -117,6 +117,16 @@ class Income extends TransactionBase
         $this->resetPage();
     }
 
+    public function updatedMonth()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedYear()
+    {
+        $this->resetPage();
+    }
+
     public function previousMonth()
     {
         $date = Carbon::createFromDate($this->year, $this->month, 1)->subMonth();

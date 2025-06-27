@@ -119,8 +119,8 @@ class Account extends Model
      */
     public function getCurrentBalanceAttribute($value): float
     {
-        // Sempre recalcula o saldo, ignorando valor salvo no DB
-        return $this->recalculateBalance();
+        // Retornar o valor armazenado em DB sem recalcular automaticamente
+        return (float) $value;
     }
 
     /**

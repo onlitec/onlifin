@@ -12,60 +12,35 @@ Consulte o log de interações com o Assistente AI para detalhes.
 -->
 <div>
     <div class="space-y-6">
-        <!-- Cabeçalho da página -->
-        <div class="flex items-center justify-between px-4">
+        <!-- Cabeçalho compacto: título, mês e cards de total e pendentes em linha única -->
+        <div class="flex items-center justify-between px-4 space-x-4">
             <div class="flex items-center space-x-2">
                 <i class="ri-wallet-3-line text-3xl text-red-500"></i>
                 <h2 class="text-2xl font-bold text-gray-800">Despesas</h2>
-            </div>
-        </div>
-        
-        <!-- Seletor de mês -->
-        <div class="flex items-center justify-start space-x-3 px-4">
-            <button wire:click="previousMonth" class="p-2 bg-white rounded-full shadow hover:bg-gray-100">
-                <i class="ri-arrow-left-s-line text-gray-600"></i>
-            </button>
-            <span class="text-lg font-medium text-gray-700">{{ \Carbon\Carbon::createFromDate($year ?? now()->year, $month ?? now()->month, 1)->format('F Y') }}</span>
-            <button wire:click="nextMonth" class="p-2 bg-white rounded-full shadow hover:bg-gray-100">
-                <i class="ri-arrow-right-s-line text-gray-600"></i>
-            </button>
-        </div>
-        
-        <!-- Cards de estatísticas -->
-        <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
-            <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm text-gray-500">Total de Despesas</div>
-                        <div class="text-xl font-bold text-red-600">
-                            @if(isset($total))
-                                {{ 'R$ ' . number_format($total/100, 2, ',', '.') }}
-                            @else
-                                R$ 0,00
-                            @endif
-                        </div>
-                        <div class="text-xs text-gray-500">
-                            {{ $transactionCount }} {{ $transactionCount == 1 ? 'transação' : 'transações' }}
-                        </div>
-                    </div>
-                    <div class="text-red-500">
-                        <i class="ri-wallet-3-line text-2xl"></i>
-                    </div>
+                <div class="flex space-x-2">
+                    <select wire:model.live="month" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
+                        @foreach(range(1,12) as $m)
+                            <option value="{{ $m }}">{{ \Carbon\Carbon::createFromDate(2000, $m, 1)->format('F') }}</option>
+                        @endforeach
+                    </select>
+                    <select wire:model.live="year" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
+                        @foreach(range(date('Y') - 2, date('Y') + 2) as $y)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
-            <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm text-gray-500">Despesas Pendentes</div>
-                        <div class="text-xl font-bold text-gray-800">
-                            {{ 'R$ ' . number_format($totalPending/100, 2, ',', '.') }}
-                        </div>
-                        <div class="text-xs text-gray-500">
-                            {{ $transactionCount }} {{ $transactionCount == 1 ? 'transação' : 'transações' }}
-                        </div>
+            <div class="flex space-x-4">
+                <div class="bg-white rounded-lg p-4 shadow-sm border">
+                    <div class="flex flex-col items-end">
+                        <div class="text-xl font-bold text-red-600">{{ 'R$ ' . number_format($total/100, 2, ',', '.') }}</div>
+                        <div class="text-sm text-gray-500">Total de Despesas</div>
                     </div>
-                    <div class="text-gray-400">
-                        <i class="ri-time-line text-2xl"></i>
+                </div>
+                <div class="bg-white rounded-lg p-4 shadow-sm border">
+                    <div class="flex flex-col items-end">
+                        <div class="text-xl font-bold text-gray-800">{{ 'R$ ' . number_format($totalPending/100, 2, ',', '.') }}</div>
+                        <div class="text-sm text-gray-500">Despesas Pendentes</div>
                     </div>
                 </div>
             </div>
@@ -77,7 +52,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
-                        <select wire:model.live="accountFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="accountFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             @foreach($accounts as $account)
                                 <option value="{{ $account->id }}">{{ $account->name }}</option>
@@ -86,7 +61,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                        <select wire:model.live="categoryFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="categoryFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -95,7 +70,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select wire:model.live="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="statusFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todos</option>
                             <option value="paid">Paga</option>
                             <option value="pending">Pendente</option>
@@ -103,7 +78,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fatura</label>
-                        <select wire:model.live="recurrenceFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="recurrenceFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             <option value="fixed">Fixa</option>
                             <option value="installment">Parcelada</option>
@@ -111,19 +86,19 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
-                        <input type="date" wire:model.live="dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="date" wire:model.live="dateFrom" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
-                        <input type="date" wire:model.live="dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="date" wire:model.live="dateTo" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fornecedor</label>
-                        <input type="text" wire:model.live="supplierFilter" placeholder="Fornecedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="text" wire:model.live="supplierFilter" placeholder="Fornecedor" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                        <input type="text" wire:model.live="descriptionFilter" placeholder="Descrição" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="text" wire:model.live="descriptionFilter" placeholder="Descrição" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                 </div>
                 <div class="flex items-center justify-between">
@@ -158,7 +133,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                  <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                      <i class="ri-search-line mr-1"></i> Buscar
                  </button>
-                 <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow transition-colors duration-200">
+                 <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                     <i class="ri-add-line mr-2"></i> Nova Despesa
                  </a>
             </div>

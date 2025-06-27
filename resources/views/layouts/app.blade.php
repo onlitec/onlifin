@@ -312,24 +312,9 @@
 
                     <!-- User Dropdown -->
                     <div class="hidden sm:flex items-center">
-                        <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                            <button @click="open = !open" class="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none transition duration-150 ease-in-out">
-                                <span>{{ auth()->user()->name }}</span>
-                                <i class="ri-arrow-down-s-line ml-1"></i>
-                            </button>
-
-                            <div x-show="open" x-cloak class="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5">
-                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Perfil
-                                </a>
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Sair
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+                        <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none transition duration-150 ease-in-out">
+                            <i class="ri-logout-box-line mr-2"></i> Sair
+                        </button>
                     </div>
                 </div>
             </div>

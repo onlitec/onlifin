@@ -149,11 +149,11 @@ document.addEventListener('DOMContentLoaded', () => {
             target = target.parentElement;
         }
         
-        // Se é um botão dentro de uma célula de tabela
+        // Se é um botão dentro de uma célula de tabela, mas não for um botão marcado para ignorar remoção de popup
         if (target.tagName === 'BUTTON' && 
             target.closest('td') && 
-            target.closest('table')) {
-            
+            target.closest('table') && 
+            !target.classList.contains('no-remove-swal')) {
             // Limpar qualquer container SweetAlert2 após um pequeno atraso
             setTimeout(() => {
                 const containers = document.querySelectorAll('.swal2-container');

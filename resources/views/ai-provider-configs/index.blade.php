@@ -317,7 +317,7 @@
                                             @else
                                                 <!-- Exclusão para OpenRouterConfig -->
                                                 <button onclick="confirmDeleteConfig('{{ $config->id }}')"
-                                                        class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm flex items-center">
+                                                        class="no-remove-swal bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm flex items-center">
                                                     <i class="fas fa-trash mr-1"></i> Excluir
                                                 </button>
                                                 <form id="delete-form-{{ $config->id }}" action="{{ route('iaprovider-config.destroy', $config->id) }}" method="POST" class="hidden">
