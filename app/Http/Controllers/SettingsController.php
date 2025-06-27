@@ -260,11 +260,14 @@ class SettingsController extends Controller
         ];
     }
 
-    public function reports()
+    public function reports(Request $request)
     {
         $userId = auth()->id();
-        $currentMonthStart = Carbon::now()->startOfMonth();
-        $currentMonthEnd = Carbon::now()->endOfMonth();
+        // Obter limites de data a partir dos parâmetros ou mês atual
+        $startParam = $request->get('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endParam = $request->get('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        $currentMonthStart = Carbon::parse($startParam)->startOfDay();
+        $currentMonthEnd = Carbon::parse($endParam)->endOfDay();
 
         // 1. Despesas por Categoria (Mês Atual)
         $expensesByCategory = Transaction::where('transactions.user_id', $userId)
@@ -294,11 +297,24 @@ class SettingsController extends Controller
         $accountLabels = $expensesByAccount->pluck('account_name');
         $accountData = $expensesByAccount->pluck('total_amount')->map(fn($amount) => $amount / 100); // Convert cents to currency unit
 
+        // 3. Detalhamento de Despesas (últimas 50 no período)
+        $detailedExpenses = Transaction::where('user_id', $userId)
+            ->where('type', 'expense')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->with(['category', 'account'])
+            ->orderByDesc('date')
+            ->limit(50)
+            ->get();
+
+        // Retornar view com dados e filtros
         return view('settings.reports.index', compact(
+            'detailedExpenses',
             'categoryLabels',
             'categoryData',
             'accountLabels',
-            'accountData'
+            'accountData',
+            'startParam',
+            'endParam'
         ));
     }
 

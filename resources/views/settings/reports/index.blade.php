@@ -5,6 +5,21 @@
             <p class="mt-1 text-sm text-gray-600">Visualize gráficos e gere relatórios financeiros.</p>
         </div>
 
+        {{-- Filtros de Período --}}
+        <form method="GET" action="{{ route('settings.reports') }}" class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Data Inicial</label>
+                <input type="date" name="start_date" value="{{ request('start_date', \Carbon\Carbon::parse($startParam ?? null)->format('Y-m-d') ?? '') }}" class="form-input w-full">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Data Final</label>
+                <input type="date" name="end_date" value="{{ request('end_date', \Carbon\Carbon::parse($endParam ?? null)->format('Y-m-d') ?? '') }}" class="form-input w-full">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary w-full">Filtrar</button>
+            </div>
+        </form>
+
         {{-- Gráficos --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {{-- Gráfico de Despesas por Categoria --}}
@@ -68,6 +83,41 @@
             </div>
 
             <!-- Outros tipos de relatórios aqui -->
+        </div>
+
+        <!-- Detalhamento de Despesas -->
+        <div class="card mt-6">
+            <div class="card-body">
+                <h3 class="text-lg font-semibold mb-4">Detalhamento de Despesas</h3>
+                @if($detailedExpenses->isNotEmpty())
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conta</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($detailedExpenses as $expense)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ \Carbon\Carbon::parse($expense->date)->format('d/m/Y') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $expense->description ?? '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $expense->category->name ?? '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $expense->account->name ?? '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{{ number_format($expense->amount/100, 2, ',', '.') }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-gray-500">Nenhuma despesa encontrada para o período selecionado.</p>
+                @endif
+            </div>
         </div>
     </div>
 
