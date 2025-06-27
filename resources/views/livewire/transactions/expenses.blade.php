@@ -52,7 +52,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
-                        <select wire:model.live="accountFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="accountFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             @foreach($accounts as $account)
                                 <option value="{{ $account->id }}">{{ $account->name }}</option>
@@ -61,7 +61,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                        <select wire:model.live="categoryFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="categoryFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -70,7 +70,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select wire:model.live="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="statusFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todos</option>
                             <option value="paid">Paga</option>
                             <option value="pending">Pendente</option>
@@ -78,7 +78,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fatura</label>
-                        <select wire:model.live="recurrenceFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <select wire:model.live="recurrenceFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
                             <option value="fixed">Fixa</option>
                             <option value="installment">Parcelada</option>
@@ -86,19 +86,19 @@ Consulte o log de interações com o Assistente AI para detalhes.
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
-                        <input type="date" wire:model.live="dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="date" wire:model.live="dateFrom" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
-                        <input type="date" wire:model.live="dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="date" wire:model.live="dateTo" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fornecedor</label>
-                        <input type="text" wire:model.live="supplierFilter" placeholder="Fornecedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="text" wire:model.live="supplierFilter" placeholder="Fornecedor" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                        <input type="text" wire:model.live="descriptionFilter" placeholder="Descrição" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400" />
+                        <input type="text" wire:model.live="descriptionFilter" placeholder="Descrição" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
                 </div>
                 <div class="flex items-center justify-between">
@@ -133,7 +133,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                  <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                      <i class="ri-search-line mr-1"></i> Buscar
                  </button>
-                 <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow transition-colors duration-200">
+                 <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                     <i class="ri-add-line mr-2"></i> Nova Despesa
                  </a>
             </div>
