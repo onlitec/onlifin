@@ -95,6 +95,9 @@ Route::middleware(['auth'])->group(function () {
     // Relatórios
     Route::get('/settings/reports', [SettingsController::class, 'reports'])->name('settings.reports');
     Route::post('/settings/reports/transactions', [SettingsController::class, 'generateTransactionsReport'])->name('settings.reports.transactions');
+    // Rotas para CSV de Rendimentos e Despesas por Conta Bancária
+    Route::post('/settings/reports/incomes-by-account', [SettingsController::class, 'exportIncomesByAccount'])->name('settings.reports.incomes_by_account');
+    Route::post('/settings/reports/expenses-by-account', [SettingsController::class, 'exportExpensesByAccount'])->name('settings.reports.expenses_by_account');
     
     // Perfil do usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
