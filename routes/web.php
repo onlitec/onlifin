@@ -128,6 +128,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/transactions/analyze', [TempStatementImportController::class, 'analyze'])->name('transactions.analyze');
     Route::get('/transactions/analysis-progress', [TempStatementImportController::class, 'checkAnalysisProgress'])->name('transactions.analysis.progress');
     
+    // Rotas para análise de extratos com IA
+    Route::post('/transactions/analyze-with-ai', [TempStatementImportController::class, 'analyzeWithAI'])->name('statements.analyze-with-ai');
+    Route::get('/transactions/review-categorized', [TempStatementImportController::class, 'reviewCategorizedTransactions'])->name('statements.review-categorized');
+    
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {
         // Rota de listagem geral de transações (habilitada novamente)
