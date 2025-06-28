@@ -2,7 +2,7 @@
     <div class="container-app max-w-7xl mx-auto space-y-8 animate-fade-in">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Revisão e Confirmação</h1>
-            <a href="{{ route('statements.import') }}" class="btn btn-secondary">
+            <a href="{{ route('transactions.import') }}" class="btn btn-secondary">
                 <i class="ri-arrow-left-line mr-2"></i>
                 Voltar para Importação
             </a>

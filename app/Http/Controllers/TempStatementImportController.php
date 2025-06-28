@@ -69,9 +69,9 @@ class TempStatementImportController extends Controller
         // Ajuste: Log mais descritivo
         Log::info('Recebida requisição em /statements/upload', ['ajax' => $request->ajax(), 'method' => $request->method(), 'input' => $request->except('statement_file')]);
 
-        // Apenas requisições AJAX POST são esperadas para o novo fluxo
-        if ($request->ajax() && $request->isMethod('post')) {
-            Log::info('Processando requisição AJAX POST para salvar extrato');
+        // Processar qualquer requisição POST (AJAX ou não) para salvar extrato
+        if ($request->isMethod('post')) {
+            Log::info('Processando requisição POST para salvar extrato', ['ajax' => $request->ajax()]);
             
             $validator = Validator::make($request->all(), [
                 'statement_file' => 'required|file|mimes:pdf,csv,ofx,qif,qfx,xls,xlsx,txt|max:10240',
@@ -79,8 +79,11 @@ class TempStatementImportController extends Controller
             ]);
 
             if ($validator->fails()) {
-                Log::error('Validação falhou para salvar extrato AJAX', ['errors' => $validator->errors()->all()]);
-                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+                Log::error('Validação falhou para salvar extrato', ['errors' => $validator->errors()->all()]);
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+                }
+                return redirect()->back()->withErrors($validator)->withInput();
             }
 
             try {
@@ -94,33 +97,53 @@ class TempStatementImportController extends Controller
 
                 if (!Storage::exists($path)) {
                     Log::error('Arquivo não encontrado após armazenamento para análise');
-                    return response()->json(['success' => false, 'message' => 'Erro ao armazenar o extrato.'], 500);
+                    if ($request->ajax()) {
+                        return response()->json(['success' => false, 'message' => 'Erro ao armazenar o extrato.'], 500);
+                    }
+                    return redirect()->back()->withErrors(['statement_file' => 'Erro ao armazenar o extrato.'])->withInput();
                 }
 
-                // Retorna sucesso e os dados necessários para o botão "Analisar com IA"
-                return response()->json([
-                    'success' => true, 
-                    'message' => 'Extrato enviado com sucesso! Clique em Analisar para continuar.',
-                    'filePath' => $path,       // Caminho do arquivo salvo
-                    'accountId' => $accountId, // ID da conta selecionada
-                    'extension' => $extension  // Extensão do arquivo
+                // Processamento automático: extrair, analisar com IA e salvar transações
+                $transactions = [];
+                if (in_array($extension, ['ofx', 'qfx'])) {
+                    $transactions = $this->extractTransactionsFromOFX($path);
+                } elseif ($extension === 'csv') {
+                    $transactions = $this->extractTransactionsFromCSV($path);
+                } elseif ($extension === 'pdf' && method_exists($this, 'extractTransactionsFromPDF')) {
+                    $transactions = $this->extractTransactionsFromPDF($path);
+                } else {
+                    $transactions = $this->extractTransactions($path, $extension);
+                }
+                $aiAnalysis = $this->analyzeTransactionsWithAI($transactions);
+                if ($aiAnalysis) {
+                    $transactions = $this->applyCategorizationToTransactions($transactions, $aiAnalysis);
+                }
+                $request->merge([
+                    'account_id' => $accountId,
+                    'file_path' => $path,
+                    'transactions' => $transactions,
+                    'use_ai' => true
                 ]);
+                return $this->saveTransactions($request);
 
             } catch (\Exception $e) {
                 Log::error('Erro durante o salvamento do extrato AJAX', [
                     'message' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                return response()->json(['success' => false, 'message' => 'Erro interno ao salvar o extrato.'], 500);
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Erro interno ao salvar o extrato.'], 500);
+                }
+                return redirect()->back()->withErrors(['statement_file' => 'Erro interno ao salvar o extrato.'])->withInput();
             }
         }
 
-        // Se não for AJAX POST, pode ser um acesso direto ou um erro de fluxo
+        // Fluxo não suportado (GET ou outros métodos)
         Log::warning('Acesso inesperado ao método upload', ['method' => $request->method(), 'ajax' => $request->ajax()]);
-        return response()->json(['success' => false, 'message' => 'Requisição inválida.'], 400);
-        
-        // O antigo fluxo de fallback (não-AJAX) foi removido, pois o novo design depende do JS.
-        // Se precisar de um fallback sem JS, teria que ser reimplementado de outra forma.
+        if ($request->ajax()) {
+            return response()->json(['success' => false, 'message' => 'Requisição inválida.'], 400);
+        }
+        return redirect()->route('transactions.import')->withErrors(['error' => 'Requisição inválida.']);
     }
 
     /**
@@ -228,7 +251,7 @@ class TempStatementImportController extends Controller
 
         if ($validator->fails()) {
             Log::error('Parâmetros inválidos para showMapping', ['errors' => $validator->errors()->all(), 'request' => $request->all()]);
-            return redirect()->route('statements.import')
+            return redirect()->route('transactions.import')
                 ->with('error', 'Link de mapeamento inválido ou expirado. Por favor, tente a importação novamente. Erro: ' . $validator->errors()->first());
         }
 
