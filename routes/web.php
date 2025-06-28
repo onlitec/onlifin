@@ -130,10 +130,10 @@ Route::middleware(['auth'])->group(function () {
     
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {
-        // Rota de listagem geral de transações removida
-        // Route::get('/', [TransactionController::class, 'index'])
-        //     ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
-        //     ->name('index');
+        // Rota de listagem geral de transações (habilitada novamente)
+        Route::get('/', [TransactionController::class, 'index'])
+            ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
+            ->name('index');
         Route::get('/income', [TransactionController::class, 'showIncome'])
             ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
             ->name('income');
