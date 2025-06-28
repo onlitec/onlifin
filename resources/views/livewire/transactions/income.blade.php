@@ -77,9 +77,9 @@ Consulte o log de interações com o Assistente AI para detalhes.
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fatura</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                         <select wire:model="recurrenceFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
-                            <option value="">Todas</option>
+                            <option value="none" selected>Avulsa</option>
                             <option value="fixed">Fixa</option>
                             <option value="installment">Parcelada</option>
                         </select>
@@ -162,6 +162,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                                 <i class="ri-sort-{{ $sortDirection === 'asc' ? 'asc' : 'desc' }}"></i>
                             @endif
                         </th>
+                        <th class="table-header-cell">Tipo</th>
                         <th class="table-header-cell">Status</th>
                         <th class="table-header-cell">Ações</th>
                     </tr>
@@ -180,6 +181,9 @@ Consulte o log de interações com o Assistente AI para detalhes.
                             </td>
                             <td class="table-cell">{{ $transaction->account->name ?? 'N/A' }}</td>
                             <td class="table-cell font-medium text-green-600">{{ 'R$ ' . number_format($transaction->amount/100, 2, ',', '.') }}</td>
+                            <td class="table-cell">
+                                <span class="badge badge-success">Receita</span>
+                            </td>
                             <td class="table-cell">
                                 @if ($transaction->status === 'paid')
                                     <span class="badge badge-success">Pago</span>

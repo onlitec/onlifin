@@ -7,6 +7,7 @@ use Livewire\Attributes\Rule;
 use Illuminate\Support\Facades\Artisan;
 use App\Notifications\Channels\WhatsApp\WhatsAppProviderFactory;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class WhatsAppConfig extends Component
 {
@@ -54,6 +55,8 @@ class WhatsAppConfig extends Component
     public $availableProviders = [];
     public $testStatus = null;
     public $testMessage = '';
+    #[\Livewire\Attributes\Rule('required|string')]
+    public $testNumber;
     
     public function mount()
     {
@@ -81,6 +84,9 @@ class WhatsAppConfig extends Component
         $this->messagebirdAccessKey = config('notification-channels.whatsapp.providers.messagebird.access_key');
         $this->messagebirdChannelId = config('notification-channels.whatsapp.providers.messagebird.channel_id');
         $this->messagebirdNamespace = config('notification-channels.whatsapp.providers.messagebird.namespace');
+        
+        // Número para teste de conexão: usa o telefone do usuário ou o número de origem
+        $this->testNumber = Auth::user()->phone ?? $this->twilioFromNumber ?? '';
     }
     
     public function saveConfig()
@@ -170,6 +176,9 @@ class WhatsAppConfig extends Component
     
     public function testConnection()
     {
+        // Validar número de teste
+        $this->validate([ 'testNumber' => 'required|string' ]);
+        
         try {
             $provider = WhatsAppProviderFactory::create($this->defaultProvider);
             
@@ -179,8 +188,8 @@ class WhatsAppConfig extends Component
                 return;
             }
             
-            // Enviar mensagem de teste para o número de teste
-            $testNumber = '+5511999999999'; // Número de teste (deve ser configurável)
+            // Enviar mensagem de teste para o número informado
+            $testNumber = $this->testNumber;
             $testMessage = 'Esta é uma mensagem de teste do Onlifin em ' . now()->format('d/m/Y H:i:s');
             
             $result = $provider->send($testNumber, $testMessage);

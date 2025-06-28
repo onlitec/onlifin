@@ -144,28 +144,45 @@
                         </div>
                     @endif
 
-                    {{-- ATENÇÃO: CORREÇÃO CRÍTICA no cadastro de transações e máscara de valor; NÃO ALTERAR SEM AUTORIZAÇÃO EXPLÍCITA. --}}
-                    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">
-                        Categoria
-                    </label>
-                    <select name="category_id" id="category_id"
-                           class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
-                        <option value="">Selecione uma categoria</option>
-                        @foreach($categories ?? [] as $category)
-                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('category_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <!-- Categoria e Conta lado a lado -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">
+                                Categoria
+                            </label>
+                            <select name="category_id" id="category_id"
+                                   class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
+                                <option value="">Selecione uma categoria</option>
+                                @foreach($categories ?? [] as $category)
+                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('category_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="form-group">
+                            <label for="account_id" class="block text-sm font-medium text-gray-700 mb-1">
+                                Conta
+                            </label>
+                            <select name="account_id" id="account_id"
+                                   class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
+                                <option value="">Selecione uma conta</option>
+                                @foreach($accounts ?? [] as $account)
+                                    <option value="{{ $account->id }}" {{ old('account_id') == $account->id ? 'selected' : '' }}>
+                                        {{ $account->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('account_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
 
-                    <!-- Adicionar campo oculto para marcar transferência se vier da URL -->
-                    @if(request()->has('is_transfer'))
-                        <input type="hidden" name="is_transfer" value="1">
-                    @endif
-                    
+                    <!-- Campos de transferência (se aplicável) -->
                     <div class="form-group" id="transfer-to-account-group" 
                          style="display: {{ old('is_transfer') || request()->has('is_transfer') || old('type') == 'transfer' ? 'block' : 'none' }};">
                         <label for="transfer_to_account_id" class="block text-sm font-medium text-gray-700 mb-1">Conta de Destino</label>
@@ -183,31 +200,6 @@
                         @enderror
                     </div>
 
-                    <!-- Conta -->
-                    <div class="form-group">
-                        <label for="account_id" class="block text-sm font-medium text-gray-700 mb-1">
-                            <span id="account_label">
-                                @if(request()->has('is_transfer') || old('type') == 'transfer')
-                                    Conta de Origem
-                                @else
-                                    Conta
-                                @endif
-                            </span>
-                        </label>
-                        <select name="account_id" id="account_id"
-                               class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
-                            <option value="">Selecione uma conta</option>
-                            @foreach($accounts ?? [] as $account)
-                                <option value="{{ $account->id }}" {{ old('account_id') == $account->id ? 'selected' : '' }}>
-                                    {{ $account->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('account_id')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
                     <!-- Observações -->
                     <div class="form-group">
                         <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">
@@ -221,29 +213,33 @@
                         @enderror
                     </div>
 
-                    <!-- Status -->
-                    <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <select name="status" 
-                                class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400" 
-                                required>
-                            <option value="pending" {{ old('status') === 'pending' ? 'selected' : '' }}>Pendente</option>
-                            <option value="paid" {{ old('status') === 'paid' ? 'selected' : '' }}>Pago</option>
-                        </select>
-                    </div>
-
-                    <!-- Fatura -->
-                    <div class="form-group">
-                        <label for="recurrence_type" class="block text-sm font-medium text-gray-700 mb-1">
-                            Fatura
-                        </label>
-                        <select name="recurrence_type" id="recurrence_type"
-                                class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
-                                onchange="toggleRecurrenceFields()">
-                            <option value="none" {{ old('recurrence_type') === 'none' ? 'selected' : '' }}>Nenhuma</option>
-                            <option value="fixed" {{ old('recurrence_type') === 'fixed' ? 'selected' : '' }}>Fixa</option>
-                            <option value="installment" {{ old('recurrence_type') === 'installment' ? 'selected' : '' }}>Parcelada</option>
-                        </select>
+                    <!-- Status e Tipo -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select name="status" id="status"
+                                   class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
+                                   required>
+                                <option value="pending" {{ old('status') === 'pending' ? 'selected' : '' }}>Pendente</option>
+                                <option value="paid" {{ old('status') === 'paid' ? 'selected' : '' }}>Pago</option>
+                            </select>
+                            @error('status')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="form-group">
+                            <label for="recurrence_type" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                            <select name="recurrence_type" id="recurrence_type"
+                                   class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400"
+                                   onchange="toggleRecurrenceFields()">
+                                <option value="none" {{ old('recurrence_type', 'none') === 'none' ? 'selected' : '' }}>Avulsa</option>
+                                <option value="fixed" {{ old('recurrence_type') === 'fixed' ? 'selected' : '' }}>Fixa</option>
+                                <option value="installment" {{ old('recurrence_type') === 'installment' ? 'selected' : '' }}>Parcelada</option>
+                            </select>
+                            @error('recurrence_type')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
 
                     <!-- Campos para parcelamento (visíveis apenas quando recurrence_type = "installment") -->
@@ -265,6 +261,20 @@
                                 class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 value="{{ old('total_installments', 12) }}" min="1">
                         </div>
+                    </div>
+
+                    <!-- Campos para recorrência fixa (visíveis apenas quando Tipo = "Fixa") -->
+                    <div id="fixed-fields" class="form-group" style="display: none;">
+                        <label for="recurrence_period" class="block text-sm font-medium text-gray-700 mb-1">
+                            Frequência
+                        </label>
+                        <select name="recurrence_period" id="recurrence_period" class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:text-gray-100 dark:placeholder-gray-400">
+                            <option value="daily">Diária</option>
+                            <option value="weekly">Semanal</option>
+                            <option value="fortnightly">Quinzenal</option>
+                            <option value="monthly">Mensal</option>
+                            <option value="yearly">Anual</option>
+                        </select>
                     </div>
 
                     <!-- Campo para data da próxima cobrança (visível apenas quando recurrence_type ≠ "none") -->
@@ -366,6 +376,8 @@
                 updateCategoriesAndFields("{{ old('type', 'expense') }}");
             }
         }
+        // Ajusta visibilidade dos campos de recorrência conforme o tipo selecionado
+        toggleRecurrenceFields();
     });
     
     function updateCategories(type) {
@@ -429,6 +441,28 @@
                     fornecedorField.style.display = 'block';
                 }
             }
+        }
+    }
+
+    // Função para mostrar/ocultar campos de recorrência ao selecionar Tipo
+    function toggleRecurrenceFields() {
+        const recurrenceType = document.getElementById('recurrence_type').value;
+        const installmentFields = document.getElementById('installment-fields');
+        const fixedFields = document.getElementById('fixed-fields');
+        const nextDateField = document.getElementById('next-date-field');
+
+        if (recurrenceType === 'installment') {
+            installmentFields.style.display = 'grid';
+            fixedFields.style.display = 'none';
+            nextDateField.style.display = 'block';
+        } else if (recurrenceType === 'fixed') {
+            installmentFields.style.display = 'none';
+            fixedFields.style.display = 'block';
+            nextDateField.style.display = 'block';
+        } else {
+            installmentFields.style.display = 'none';
+            fixedFields.style.display = 'none';
+            nextDateField.style.display = 'none';
         }
     }
 </script>

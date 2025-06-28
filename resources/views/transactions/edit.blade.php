@@ -145,10 +145,10 @@
                     <!-- Fatura -->
                     <div class="form-group">
                         <label for="recurrence_type" class="block text-sm font-medium text-gray-700 mb-1">
-                            Fatura
+                            Tipo
                         </label>
                         <select name="recurrence_type" id="recurrence_type" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" onchange="toggleRecurrenceFields()">
-                            <option value="none" {{ $transaction->recurrence_type === 'none' || !$transaction->recurrence_type ? 'selected' : '' }}>Nenhuma</option>
+                            <option value="none" {{ $transaction->recurrence_type === 'none' || !$transaction->recurrence_type ? 'selected' : '' }}>Avulsa</option>
                             <option value="fixed" {{ $transaction->recurrence_type === 'fixed' ? 'selected' : '' }}>Fixa</option>
                             <option value="installment" {{ $transaction->recurrence_type === 'installment' ? 'selected' : '' }}>Parcelada</option>
                         </select>

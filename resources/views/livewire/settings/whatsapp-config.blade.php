@@ -16,15 +16,35 @@
                         <h5 class="text-sm font-medium text-gray-900">Ativar Notificações WhatsApp</h5>
                         <p class="text-sm text-gray-500">Habilita o envio de notificações via WhatsApp</p>
                     </div>
-                    <button type="button" 
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 {{ $enabled ? 'bg-indigo-600' : 'bg-gray-200' }}"
-                        wire:click="$set('enabled', {{ !$enabled }})"
-                        role="switch"
-                        aria-checked="{{ $enabled ? 'true' : 'false' }}">
-                        <span class="sr-only">Ativar notificações WhatsApp</span>
-                        <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $enabled ? 'translate-x-5' : 'translate-x-0' }}">
+                    <label class="inline-flex items-center cursor-pointer mt-4">
+                        <!-- input -->
+                        <input id="enabled"
+                               name="enabled"
+                               type="checkbox"
+                               class="sr-only peer"
+                               {{ $enabled ? 'checked' : '' }}
+                               wire:model="enabled" />
+
+                        <!-- track + thumb -->
+                        <div
+                            class="w-11 h-6 bg-gray-200 rounded-full
+                                   peer peer-focus:ring-4 peer-focus:ring-indigo-300
+                                   peer-checked:bg-indigo-600
+                                   relative transition-colors">
+
+                            <!-- thumb (pseudo-element) -->
+                            <span
+                                class="absolute inline-block h-5 w-5 bg-white border border-gray-300 rounded-full
+                                       left-[2px] top-[2px] transition-all
+                                       peer-checked:translate-x-full peer-checked:border-white">
+                            </span>
+                        </div>
+
+                        <!-- texto -->
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            Ativar
                         </span>
-                    </button>
+                    </label>
                 </div>
                 
                 <!-- Provedor Padrão -->
@@ -44,15 +64,35 @@
                         <h5 class="text-sm font-medium text-gray-900">Usar Templates</h5>
                         <p class="text-sm text-gray-500">Utiliza templates pré-aprovados para mensagens</p>
                     </div>
-                    <button type="button" 
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 {{ $useTemplates ? 'bg-indigo-600' : 'bg-gray-200' }}"
-                        wire:click="$set('useTemplates', {{ !$useTemplates }})"
-                        role="switch"
-                        aria-checked="{{ $useTemplates ? 'true' : 'false' }}">
-                        <span class="sr-only">Usar templates</span>
-                        <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $useTemplates ? 'translate-x-5' : 'translate-x-0' }}">
+                    <label class="inline-flex items-center cursor-pointer mt-4">
+                        <!-- input -->
+                        <input id="useTemplates"
+                               name="useTemplates"
+                               type="checkbox"
+                               class="sr-only peer"
+                               {{ $useTemplates ? 'checked' : '' }}
+                               wire:model="useTemplates" />
+
+                        <!-- track + thumb -->
+                        <div
+                            class="w-11 h-6 bg-gray-200 rounded-full
+                                   peer peer-focus:ring-4 peer-focus:ring-indigo-300
+                                   peer-checked:bg-indigo-600
+                                   relative transition-colors">
+
+                            <!-- thumb (pseudo-element) -->
+                            <span
+                                class="absolute inline-block h-5 w-5 bg-white border border-gray-300 rounded-full
+                                       left-[2px] top-[2px] transition-all
+                                       peer-checked:translate-x-full peer-checked:border-white">
+                            </span>
+                        </div>
+
+                        <!-- texto -->
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            Ativar
                         </span>
-                    </button>
+                    </label>
                 </div>
                 
                 <!-- Modo Debug -->
@@ -61,15 +101,35 @@
                         <h5 class="text-sm font-medium text-gray-900">Modo Debug</h5>
                         <p class="text-sm text-gray-500">Registra informações detalhadas para depuração</p>
                     </div>
-                    <button type="button" 
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 {{ $debugMode ? 'bg-indigo-600' : 'bg-gray-200' }}"
-                        wire:click="$set('debugMode', {{ !$debugMode }})"
-                        role="switch"
-                        aria-checked="{{ $debugMode ? 'true' : 'false' }}">
-                        <span class="sr-only">Ativar modo debug</span>
-                        <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $debugMode ? 'translate-x-5' : 'translate-x-0' }}">
+                    <label class="inline-flex items-center cursor-pointer mt-4">
+                        <!-- input -->
+                        <input id="debugMode"
+                               name="debugMode"
+                               type="checkbox"
+                               class="sr-only peer"
+                               {{ $debugMode ? 'checked' : '' }}
+                               wire:model="debugMode" />
+
+                        <!-- track + thumb -->
+                        <div
+                            class="w-11 h-6 bg-gray-200 rounded-full
+                                   peer peer-focus:ring-4 peer-focus:ring-indigo-300
+                                   peer-checked:bg-indigo-600
+                                   relative transition-colors">
+
+                            <!-- thumb (pseudo-element) -->
+                            <span
+                                class="absolute inline-block h-5 w-5 bg-white border border-gray-300 rounded-full
+                                       left-[2px] top-[2px] transition-all
+                                       peer-checked:translate-x-full peer-checked:border-white">
+                            </span>
+                        </div>
+
+                        <!-- texto -->
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            Ativar
                         </span>
-                    </button>
+                    </label>
                 </div>
                 
                 <!-- Tentar Novamente Falhas -->
@@ -78,15 +138,35 @@
                         <h5 class="text-sm font-medium text-gray-900">Retentar Falhas</h5>
                         <p class="text-sm text-gray-500">Tenta novamente enviar mensagens que falharam</p>
                     </div>
-                    <button type="button" 
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 {{ $retryFailed ? 'bg-indigo-600' : 'bg-gray-200' }}"
-                        wire:click="$set('retryFailed', {{ !$retryFailed }})"
-                        role="switch"
-                        aria-checked="{{ $retryFailed ? 'true' : 'false' }}">
-                        <span class="sr-only">Retentar falhas</span>
-                        <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $retryFailed ? 'translate-x-5' : 'translate-x-0' }}">
+                    <label class="inline-flex items-center cursor-pointer mt-4">
+                        <!-- input -->
+                        <input id="retryFailed"
+                               name="retryFailed"
+                               type="checkbox"
+                               class="sr-only peer"
+                               {{ $retryFailed ? 'checked' : '' }}
+                               wire:model="retryFailed" />
+
+                        <!-- track + thumb -->
+                        <div
+                            class="w-11 h-6 bg-gray-200 rounded-full
+                                   peer peer-focus:ring-4 peer-focus:ring-indigo-300
+                                   peer-checked:bg-indigo-600
+                                   relative transition-colors">
+
+                            <!-- thumb (pseudo-element) -->
+                            <span
+                                class="absolute inline-block h-5 w-5 bg-white border border-gray-300 rounded-full
+                                       left-[2px] top-[2px] transition-all
+                                       peer-checked:translate-x-full peer-checked:border-white">
+                            </span>
+                        </div>
+
+                        <!-- texto -->
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            Ativar
                         </span>
-                    </button>
+                    </label>
                 </div>
                 
                 <!-- Número Máximo de Tentativas -->
@@ -131,15 +211,35 @@
                         <h5 class="text-sm font-medium text-gray-900">Modo Sandbox</h5>
                         <p class="text-sm text-gray-500">Utiliza o ambiente de testes do Twilio</p>
                     </div>
-                    <button type="button" 
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 {{ $twilioSandboxMode ? 'bg-indigo-600' : 'bg-gray-200' }}"
-                        wire:click="$set('twilioSandboxMode', {{ !$twilioSandboxMode }})"
-                        role="switch"
-                        aria-checked="{{ $twilioSandboxMode ? 'true' : 'false' }}">
-                        <span class="sr-only">Ativar modo sandbox</span>
-                        <span class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $twilioSandboxMode ? 'translate-x-5' : 'translate-x-0' }}">
+                    <label class="inline-flex items-center cursor-pointer mt-4">
+                        <!-- input -->
+                        <input id="twilioSandboxMode"
+                               name="twilioSandboxMode"
+                               type="checkbox"
+                               class="sr-only peer"
+                               {{ $twilioSandboxMode ? 'checked' : '' }}
+                               wire:model="twilioSandboxMode" />
+
+                        <!-- track + thumb -->
+                        <div
+                            class="w-11 h-6 bg-gray-200 rounded-full
+                                   peer peer-focus:ring-4 peer-focus:ring-indigo-300
+                                   peer-checked:bg-indigo-600
+                                   relative transition-colors">
+
+                            <!-- thumb (pseudo-element) -->
+                            <span
+                                class="absolute inline-block h-5 w-5 bg-white border border-gray-300 rounded-full
+                                       left-[2px] top-[2px] transition-all
+                                       peer-checked:translate-x-full peer-checked:border-white">
+                            </span>
+                        </div>
+
+                        <!-- texto -->
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            Ativar
                         </span>
-                    </button>
+                    </label>
                 </div>
             </div>
         </div>
@@ -177,6 +277,12 @@
         
         <!-- Testar Conexão -->
         <div class="pt-4">
+            <!-- Número para Teste -->
+            <div class="mb-4">
+                <label for="testNumber" class="block text-sm font-medium text-gray-700">Número para Teste</label>
+                <input type="text" wire:model="testNumber" id="testNumber" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" placeholder="+5511999999999">
+                <p class="mt-1 text-xs text-gray-500">Informe o número que receberá a mensagem de teste</p>
+            </div>
             <button type="button" wire:click="testConnection" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
