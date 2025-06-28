@@ -103,22 +103,28 @@ class TempStatementImportController extends Controller
                     return redirect()->back()->withErrors(['statement_file' => 'Erro ao armazenar o extrato.'])->withInput();
                 }
 
-                // Processamento delegado: armazenar dados mínimos em sessão para análise posterior
-                session(['upload_data' => [
-                    'file_path'  => $path,
-                    'extension'  => $extension,
+                // Processamento automático: extrair, analisar com IA e salvar transações
+                $transactions = [];
+                if (in_array($extension, ['ofx', 'qfx'])) {
+                    $transactions = $this->extractTransactionsFromOFX($path);
+                } elseif ($extension === 'csv') {
+                    $transactions = $this->extractTransactionsFromCSV($path);
+                } elseif ($extension === 'pdf' && method_exists($this, 'extractTransactionsFromPDF')) {
+                    $transactions = $this->extractTransactionsFromPDF($path);
+                } else {
+                    $transactions = $this->extractTransactions($path, $extension);
+                }
+                $aiAnalysis = $this->analyzeTransactionsWithAI($transactions);
+                if ($aiAnalysis) {
+                    $transactions = $this->applyCategorizationToTransactions($transactions, $aiAnalysis);
+                }
+                $request->merge([
                     'account_id' => $accountId,
-                    'use_ai'     => true,
-                ]]);
-
-                // Retornar JSON com dados para análise (sempre JSON, AJAX ou não)
-                return response()->json([
-                    'success'    => true,
-                    'message'    => 'Upload realizado com sucesso. Iniciando análise.',
-                    'filePath'   => $path,
-                    'accountId'  => $accountId,
-                    'extension'  => $extension,
+                    'file_path' => $path,
+                    'transactions' => $transactions,
+                    'use_ai' => true
                 ]);
+                return $this->saveTransactions($request);
 
             } catch (\Exception $e) {
                 Log::error('Erro durante o salvamento do extrato AJAX', [

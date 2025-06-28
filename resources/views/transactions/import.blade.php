@@ -238,34 +238,58 @@
 
                 const formData = new FormData(form);
 
-                safeFetch(form.action, {
+                fetch(form.action, {
                     method: 'POST',
                     body: formData,
                     headers: {
-                        'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                         // Tenta ler a resposta JSON mesmo se não for 2xx para obter a mensagem de erro
+                        return response.json().then(errData => {
+                             throw { status: response.status, data: errData }; // Lança objeto com status e dados
+                        }).catch(() => {
+                            // Se não conseguir ler JSON, lança erro genérico
+                            throw new Error(`Erro HTTP: ${response.status}`); 
+                        });
+                    }
+                    return response.json();
                 })
                 .then(data => {
                     if (data.success) {
                         // Esconder Passo 1, Mostrar Passo 2
                         uploadStepDiv.classList.add('hidden');
                         analysisStepDiv.classList.remove('hidden');
+                        
                         // Atualizar mensagem de sucesso e guardar dados
                         successMessage.textContent = data.message || 'Extrato enviado com sucesso!';
                         savedFilePathInput.value = data.filePath;
                         savedAccountIdInput.value = data.accountId;
                         savedExtensionInput.value = data.extension;
+                        
                     } else {
+                        // Mostrar erro específico retornado pela API (pode ser validação)
                         showAjaxError(data.message || 'Erro desconhecido ao enviar.');
+                        hideLoading(submitButton, 'Enviar Extrato');
                     }
                 })
                 .catch(error => {
                     console.error('Erro no fetch:', error);
+                     if (error.status === 422 && error.data && error.data.message) {
+                         // Erro de validação, mostrar no campo específico se possível
+                         if (error.data.message.toLowerCase().includes('arquivo')) {
+                             displayError('file', error.data.message);
+                         } else if (error.data.message.toLowerCase().includes('conta')) {
+                              displayError('account', error.data.message);
+                         } else {
+                              showAjaxError(error.data.message);
+                         }
+                     } else {
                         showAjaxError('Não foi possível conectar ao servidor ou ocorreu um erro inesperado.');
-                })
-                .finally(() => {
+                     }
                     hideLoading(submitButton, 'Enviar Extrato');
                 });
             });
@@ -286,35 +310,40 @@
                     }
                     
                     // Fazer requisição para analisar com IA
-                    fetchWithRedirect(
-                        '{{ route('statements.analyze-with-ai') }}', 
-                        {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                path: filePath,
-                                account_id: accountId,
-                                extension: extension
-                            })
+                    fetch('{{ route('statements.analyze-with-ai') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
-                        '{{ route('statements.review-categorized') }}'
-                    )
+                        body: JSON.stringify({
+                            path: filePath,
+                            account_id: accountId,
+                            extension: extension
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errData => {
+                                throw { status: response.status, data: errData };
+                            }).catch(err => {
+                                if (err.status) throw err;
+                                throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+                            });
+                        }
+                        return response.json();
+                    })
                     .then(data => {
-                        if (!data.success) {
+                        if (data.success) {
+                            // Redirecionar para a página de revisão de categorização
+                            window.location.href = '{{ route('statements.review-categorized') }}';
+                        } else {
                             showAjaxError(data.message || 'Erro ao analisar transações com IA.');
                             hideLoading(analyzeButton, 'Analisar com IA e Mapear Transações');
                         }
                     })
                     .catch(error => {
-                        // Se o erro for "Redirecionando...", não mostramos mensagem de erro
-                        if (error.message === 'Redirecionando...') {
-                            return;
-                        }
-                        
                         console.error('Erro no fetch:', error);
                         let errorMessage = 'Erro ao conectar com o servidor. Por favor, tente novamente.';
                         
@@ -354,15 +383,18 @@
                      const mappingUrlWithAjax = mappingUrl + separator + '_ajax=1';
                      
                      // Verificar se a URL é válida antes de redirecionar
-                     safeFetch(mappingUrlWithAjax, {
+                     fetch(mappingUrlWithAjax, {
                          method: 'GET',
                          headers: {
                              'X-Requested-With': 'XMLHttpRequest'
                          }
                      })
-                     .then(data => {
+                     .then(response => {
+                         if (!response.ok) {
+                             throw new Error(`Erro HTTP: ${response.status}`);
+                         }
                          // Redirecionar para a URL original (sem o parâmetro _ajax)
-                     window.location.href = mappingUrl;
+                         window.location.href = mappingUrl;
                      })
                      .catch(error => {
                          console.error('Erro ao verificar URL:', error);

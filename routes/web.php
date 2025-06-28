@@ -95,8 +95,6 @@ Route::middleware(['auth'])->group(function () {
     // Relatórios
     Route::get('/settings/reports', [SettingsController::class, 'reports'])->name('settings.reports');
     Route::post('/settings/reports/transactions', [SettingsController::class, 'generateTransactionsReport'])->name('settings.reports.transactions');
-    Route::post('/settings/reports/incomes-by-account', [SettingsController::class, 'exportIncomesByAccount'])->name('settings.reports.incomes_by_account');
-    Route::post('/settings/reports/expenses-by-account', [SettingsController::class, 'exportExpensesByAccount'])->name('settings.reports.expenses_by_account');
     
     // Perfil do usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -127,20 +125,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/transactions/analyze', [TempStatementImportController::class, 'analyze'])->name('transactions.analyze');
     Route::get('/transactions/analysis-progress', [TempStatementImportController::class, 'checkAnalysisProgress'])->name('transactions.analysis.progress');
     
-    // Rotas para importação de extratos com análise de IA
-    Route::middleware(['auth'])->prefix('statements')->group(function () {
-        Route::post('/analyze-with-ai', [App\Http\Controllers\TempStatementImportController::class, 'analyzeWithAI'])->name('statements.analyze-with-ai');
-        Route::get('/review-categorized', [App\Http\Controllers\TempStatementImportController::class, 'reviewCategorizedTransactions'])->name('statements.review-categorized');
-        Route::post('/save-suggested-categories', [App\Http\Controllers\TempStatementImportController::class, 'saveSuggestedCategories'])->name('statements.save-suggested-categories');
-        Route::post('/save-categorized-transactions', [App\Http\Controllers\TempStatementImportController::class, 'saveCategorizedTransactions'])->name('statements.save-categorized-transactions');
-    });
-    
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {
-        // Rota de listagem geral de transações reativada
-        Route::get('/', [TransactionController::class, 'index'])
-            ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
-            ->name('index');
+        // Rota de listagem geral de transações removida
+        // Route::get('/', [TransactionController::class, 'index'])
+        //     ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
+        //     ->name('index');
         Route::get('/income', [TransactionController::class, 'showIncome'])
             ->middleware(\App\Http\Middleware\CheckPermission::class . ':view_own_transactions|view_all_transactions')
             ->name('income');

@@ -248,7 +248,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
     @endif
 
     <!-- Modal de Importação de Extrato -->
-    <div id="import-income-modal" hidden class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div id="import-income-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
       <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-bold">Importar Extrato</h3>
@@ -279,10 +279,10 @@ Consulte o log de interações com o Assistente AI para detalhes.
     </div>
     <script>
       function showImportIncomeModal() {
-        document.getElementById('import-income-modal').removeAttribute('hidden');
+        document.getElementById('import-income-modal').classList.remove('hidden');
       }
       function closeImportIncomeModal() {
-        document.getElementById('import-income-modal').setAttribute('hidden', '');
+        document.getElementById('import-income-modal').classList.add('hidden');
       }
     </script>
 </div>
