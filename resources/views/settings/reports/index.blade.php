@@ -91,7 +91,7 @@
             <div class="card">
                 <div class="card-body">
                     <h3 class="text-lg font-semibold mb-4">Despesas por Conta (Mês Atual)</h3>
-                    @if($accountLabels->isNotEmpty())
+                     @if($accountLabels->isNotEmpty())
                         <div style="width:260px; height:260px; display:flex; align-items:center; justify-content:center;"><canvas id="expensesByAccountChart" width="250" height="250" style="width:250px !important; height:250px !important;"></canvas></div>
                     @else
                         <p class="text-gray-500">Não há dados de despesas por conta para exibir no período.</p>
@@ -283,109 +283,109 @@
         </div>
     </div>
 
-    {{-- Incluir Chart.js --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- Incluir Chart.js --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Gráfico de Despesas por Categoria (Pizza)
-            const categoryCtx = document.getElementById('expensesByCategoryChart');
-            if (categoryCtx) {
-                const categoryLabels = @json($categoryLabels);
-                const categoryData = @json($categoryData);
-                new Chart(categoryCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: categoryLabels,
-                        datasets: [{
-                            label: 'Despesas por Categoria',
-                            data: categoryData,
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.8)',
-                                'rgba(54, 162, 235, 0.8)',
-                                'rgba(255, 206, 86, 0.8)',
-                                'rgba(75, 192, 192, 0.8)',
-                                'rgba(153, 102, 255, 0.8)',
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Gráfico de Despesas por Categoria (Pizza)
+        const categoryCtx = document.getElementById('expensesByCategoryChart');
+        if (categoryCtx) {
+            const categoryLabels = @json($categoryLabels);
+            const categoryData = @json($categoryData);
+            new Chart(categoryCtx, {
+                type: 'pie',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        label: 'Despesas por Categoria',
+                        data: categoryData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
                                 'rgba(255, 159, 64, 0.8)'
-                            ],
-                            borderColor: [
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed !== null) {
-                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
-                                        }
-                                        return label;
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
                                     }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
+                                    }
+                                    return label;
                                 }
                             }
                         }
                     }
-                });
-            }
+                }
+            });
+        }
 
-            // Gráfico de Despesas por Conta (Barras)
-            const accountCtx = document.getElementById('expensesByAccountChart');
-            if (accountCtx) {
-                const accountLabels = @json($accountLabels);
-                const accountData = @json($accountData);
-                new Chart(accountCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: accountLabels,
-                        datasets: [{
-                            label: 'Despesas por Conta',
-                            data: accountData,
-                            backgroundColor: 'rgba(75, 192, 192, 0.8)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
+        // Gráfico de Despesas por Conta (Barras)
+        const accountCtx = document.getElementById('expensesByAccountChart');
+        if (accountCtx) {
+            const accountLabels = @json($accountLabels);
+            const accountData = @json($accountData);
+            new Chart(accountCtx, {
+                type: 'bar',
+                data: {
+                    labels: accountLabels,
+                    datasets: [{
+                        label: 'Despesas por Conta',
+                        data: accountData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
                         indexAxis: 'y',
-                        plugins: {
-                            legend: {
+                    plugins: {
+                        legend: {
                                 display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed.x !== null) {
-                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.x);
-                                        }
-                                        return label;
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
                                     }
+                                    if (context.parsed.x !== null) {
+                                        label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.x);
+                                    }
+                                    return label;
                                 }
                             }
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
                                 ticks: {
                                     callback: function(value, index, values) {
                                         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -651,15 +651,15 @@
                             x: {
                                 beginAtZero: true,
                                 ticks: {
-                                    callback: function(value, index, values) {
-                                        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-                                    }
+                                callback: function(value, index, values) {
+                                    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
                                 }
                             }
                         }
                     }
-                });
-            }
-        });
-    </script>
+                }
+            });
+        }
+    });
+</script>
 </x-app-layout> 

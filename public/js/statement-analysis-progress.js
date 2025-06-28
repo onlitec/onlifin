@@ -75,7 +75,27 @@ class StatementAnalysisProgress {
                 if (!response.ok) {
                     throw new Error(`Erro HTTP: ${response.status}`);
                 }
-                return response.json();
+                // Verificar o tipo de conteúdo da resposta
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.indexOf('application/json') !== -1) {
+                    return response.json().catch(e => {
+                        console.error('Erro ao parsear JSON:', e);
+                        // Retornar um objeto padrão para evitar erros
+                        return {
+                            progress: 0,
+                            message: 'Erro ao processar resposta',
+                            completed: false
+                        };
+                    });
+                } else {
+                    console.warn('Resposta não é JSON');
+                    // Retornar um objeto padrão para evitar erros
+                    return {
+                        progress: 0,
+                        message: 'Formato de resposta inválido',
+                        completed: false
+                    };
+                }
             })
             .then(data => {
                 // Atualizar a barra de progresso
@@ -96,6 +116,11 @@ class StatementAnalysisProgress {
             })
             .catch(error => {
                 console.error('Erro ao verificar progresso:', error);
+                
+                // Atualizar a mensagem de status com o erro
+                if (this.statusMessage) {
+                    this.statusMessage.textContent = 'Erro ao verificar progresso. Tentando novamente...';
+                }
                 
                 // Em caso de erro, reduzir a frequência de verificação
                 this.stopMonitoring();

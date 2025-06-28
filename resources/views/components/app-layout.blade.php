@@ -16,6 +16,8 @@
 <head>
     <!-- Carregar stub de caches de forma síncrona como primeiro script -->
     <script src="{{ asset('js/cache-stub.js') }}" async="false"></script>
+    <!-- Carregar manipulador de fetch para evitar erros de JSON -->
+    <script src="{{ asset('js/fetch-handler.js') }}"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
     <!-- CSRF Token -->
