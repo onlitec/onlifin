@@ -309,18 +309,53 @@
                         return;
                     }
                     
-                    // Construir a URL para a página de mapeamento
-                    @if (Route::has('mapping'))
-                    const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}&use_ai=1`;
-                    
-                    // Redirecionar
-                    window.location.href = mappingUrl;
-                    @else
-                    showAjaxError('Rota de mapeamento não encontrada. Entre em contato com o suporte.');
-                    hideLoading(this, 'Analisar com IA e Mapear Transações');
-                    @endif
-                    
-                    // O hideLoading não será chamado aqui pois a página será redirecionada
+                    // Fazer requisição para analisar com IA
+                    fetch('{{ route('statements.analyze-with-ai') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            path: filePath,
+                            account_id: accountId,
+                            extension: extension
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errData => {
+                                throw { status: response.status, data: errData };
+                            }).catch(err => {
+                                if (err.status) throw err;
+                                throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // Redirecionar para a página de revisão de categorização
+                            window.location.href = '{{ route('statements.review-categorized') }}';
+                        } else {
+                            showAjaxError(data.message || 'Erro ao analisar transações com IA.');
+                            hideLoading(analyzeButton, 'Analisar com IA e Mapear Transações');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro no fetch:', error);
+                        let errorMessage = 'Erro ao conectar com o servidor. Por favor, tente novamente.';
+                        
+                        if (error.data && error.data.message) {
+                            errorMessage = error.data.message;
+                        } else if (error.message) {
+                            errorMessage = error.message;
+                        }
+                        
+                        showAjaxError(errorMessage);
+                        hideLoading(analyzeButton, 'Analisar com IA e Mapear Transações');
+                    });
                 });
             }
             
@@ -343,8 +378,29 @@
                      @if (Route::has('mapping'))
                      const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}&use_ai=0`;
                      
-                     // Redirecionar
-                     window.location.href = mappingUrl;
+                     // Adicionar parâmetro para indicar que é uma requisição AJAX
+                     const separator = mappingUrl.includes('?') ? '&' : '?';
+                     const mappingUrlWithAjax = mappingUrl + separator + '_ajax=1';
+                     
+                     // Verificar se a URL é válida antes de redirecionar
+                     fetch(mappingUrlWithAjax, {
+                         method: 'GET',
+                         headers: {
+                             'X-Requested-With': 'XMLHttpRequest'
+                         }
+                     })
+                     .then(response => {
+                         if (!response.ok) {
+                             throw new Error(`Erro HTTP: ${response.status}`);
+                         }
+                         // Redirecionar para a URL original (sem o parâmetro _ajax)
+                         window.location.href = mappingUrl;
+                     })
+                     .catch(error => {
+                         console.error('Erro ao verificar URL:', error);
+                         showAjaxError('Erro ao acessar página de mapeamento. Por favor, tente novamente.');
+                         hideLoading(mapManuallyButton, 'Mapear Transações Manualmente');
+                     });
                      @else
                      showAjaxError('Rota de mapeamento não encontrada. Entre em contato com o suporte.');
                      hideLoading(this, 'Mapear Transações Manualmente');
