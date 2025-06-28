@@ -133,8 +133,14 @@ Consulte o log de interações com o Assistente AI para detalhes.
                  <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                      <i class="ri-search-line mr-1"></i> Buscar
                  </button>
+                 <a href="{{ route('transactions.import') }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                     <i class="ri-file-upload-line mr-1"></i> Importar Extrato
+                 </a>
                  <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                     <i class="ri-add-line mr-2"></i> Nova Despesa
+                 </a>
+                 <a href="{{ route('transactions.create', ['is_transfer' => 1]) }}" class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                    <i class="ri-exchange-funds-line mr-2"></i> Transferência
                  </a>
             </div>
             <table class="table w-full">
@@ -239,4 +245,43 @@ Consulte o log de interações com o Assistente AI para detalhes.
         </div>
     </div>
     @endif
+
+    <!-- Modal de Importação de Extrato -->
+    <div id="import-expenses-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+      <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold">Importar Extrato</h3>
+          <button type="button" onclick="closeImportExpensesModal()" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+        </div>
+        <form action="{{ route('transactions.upload') }}" method="POST" enctype="multipart/form-data">
+          @csrf
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="upload-statement-file" class="block text-sm font-medium text-gray-700 mb-2">Arquivo do Extrato</label>
+              <input id="upload-statement-file" name="statement_file" type="file" accept=".pdf,.csv,.ofx,.qif,.qfx,.xls,.xlsx,.txt" required class="block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700"/>
+            </div>
+            <div>
+              <label for="upload-account-id" class="block text-sm font-medium text-gray-700 mb-2">Conta</label>
+              <select id="upload-account-id" name="account_id" required class="form-select w-full">
+                <option value="">Selecione uma conta</option>
+                @foreach($accounts as $account)
+                  <option value="{{ $account->id }}">{{ $account->name }}</option>
+                @endforeach
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end mt-4">
+            <button type="submit" class="btn btn-primary"><i class="ri-upload-cloud-line mr-1"></i> Enviar Extrato</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      function showImportExpensesModal() {
+        document.getElementById('import-expenses-modal').classList.remove('hidden');
+      }
+      function closeImportExpensesModal() {
+        document.getElementById('import-expenses-modal').classList.add('hidden');
+      }
+    </script>
 </div>

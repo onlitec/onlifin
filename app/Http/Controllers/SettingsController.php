@@ -297,7 +297,125 @@ class SettingsController extends Controller
         $accountLabels = $expensesByAccount->pluck('account_name');
         $accountData = $expensesByAccount->pluck('total_amount')->map(fn($amount) => $amount / 100); // Convert cents to currency unit
 
-        // 3. Detalhamento de Despesas (últimas 50 no período)
+        // 3. Receitas por Conta (Mês Atual)
+        $incomesByAccount = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'income')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->join('accounts', 'transactions.account_id', '=', 'accounts.id')
+            ->select('accounts.name as account_name', DB::raw('SUM(transactions.amount) as total_amount'))
+            ->groupBy('accounts.name')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+
+        // Preparar dados para Chart.js (Receitas por Conta)
+        if ($incomesByAccount->isEmpty()) {
+            $incomeAccountLabels = [];
+            $incomeAccountData = [];
+        } else {
+            $incomeAccountLabels = $incomesByAccount->pluck('account_name');
+            $incomeAccountData = $incomesByAccount->pluck('total_amount')->map(fn($amount) => $amount / 100);
+        }
+
+        // 4. Transferências por Conta (Mês Atual)
+        // Para transferências, precisamos identificar pares de transações (despesa e receita) com o mesmo valor e data
+        $transfersQuery = DB::table('transactions as t1')
+            ->join('transactions as t2', function ($join) {
+                $join->on('t1.amount', '=', 't2.amount')
+                    ->on('t1.date', '=', 't2.date')
+                    ->on('t1.description', '=', 't2.description');
+            })
+            ->where('t1.user_id', $userId)
+            ->where('t2.user_id', $userId)
+            ->where('t1.type', 'expense')
+            ->where('t2.type', 'income')
+            ->whereBetween('t1.date', [$currentMonthStart, $currentMonthEnd])
+            ->join('accounts as a1', 't1.account_id', '=', 'a1.id')
+            ->join('accounts as a2', 't2.account_id', '=', 'a2.id')
+            ->select(
+                'a1.name as origin_account',
+                'a2.name as destination_account',
+                't1.amount',
+                't1.date',
+                't1.description'
+            )
+            ->orderBy('t1.date', 'desc')
+            ->get();
+
+        // Preparar dados para Chart.js (Transferências)
+        $transferDetails = [];
+        $transferAccountsMap = [];
+        
+        // Verificar se há transferências encontradas
+        if ($transfersQuery->isEmpty()) {
+            $transferDetails = [];
+            $transferAccountsMap = [];
+        } else {
+        
+        foreach ($transfersQuery as $transfer) {
+            $transferDetails[] = [
+                'origin' => $transfer->origin_account,
+                'destination' => $transfer->destination_account,
+                'amount' => $transfer->amount,
+                'date' => $transfer->date,
+                'description' => $transfer->description
+            ];
+            
+            // Contabilizar transferências por conta (tanto origem quanto destino)
+            if (!isset($transferAccountsMap[$transfer->origin_account])) {
+                $transferAccountsMap[$transfer->origin_account] = 0;
+            }
+            if (!isset($transferAccountsMap[$transfer->destination_account])) {
+                $transferAccountsMap[$transfer->destination_account] = 0;
+            }
+            
+            $transferAccountsMap[$transfer->origin_account] += $transfer->amount;
+            $transferAccountsMap[$transfer->destination_account] += $transfer->amount;
+        }
+        }
+        
+        // Converter para arrays para o gráfico
+        $transferAccountLabels = !empty($transferAccountsMap) ? array_keys($transferAccountsMap) : [];
+        $transferAccountData = !empty($transferAccountsMap) ? array_map(fn($amount) => $amount / 100, array_values($transferAccountsMap)) : [];
+
+        // 5. Receitas por Categoria (Mês Atual)
+        $incomesByCategory = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'income')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->join('categories', 'transactions.category_id', '=', 'categories.id')
+            ->select('categories.name as category_name', DB::raw('SUM(transactions.amount) as total_amount'))
+            ->groupBy('categories.name')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+        $incomeCategoryLabels = $incomesByCategory->pluck('category_name');
+        $incomeCategoryData = $incomesByCategory->pluck('total_amount')->map(fn($amount) => $amount / 100);
+
+        // 6. Receitas Recebidas e Pendentes (Mês Atual)
+        $incomeByStatus = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'income')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->select('status', DB::raw('SUM(transactions.amount) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $paidIncome = ($incomeByStatus['paid'] ?? 0) / 100;
+        $pendingIncome = ($incomeByStatus['pending'] ?? 0) / 100;
+        $forecastIncome = $paidIncome + $pendingIncome;
+
+        // Total de Despesas (Mês Atual)
+        $totalExpenses = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'expense')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->sum('transactions.amount') / 100;
+
+        // Despesas Pagas (Mês Atual) e Saldo Líquido
+        $paidExpenses = Transaction::where('transactions.user_id', $userId)
+            ->where('transactions.type', 'expense')
+            ->where('transactions.status', 'paid')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->sum('transactions.amount') / 100;
+        $netBalance = $paidIncome - $paidExpenses;
+
+        // 7. Detalhamento de Despesas (últimas 50 no período)
         $detailedExpenses = Transaction::where('user_id', $userId)
             ->where('type', 'expense')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
@@ -306,13 +424,83 @@ class SettingsController extends Controller
             ->limit(50)
             ->get();
 
+        // Detalhamento de Receitas (últimas 50 no período)
+        $detailedIncomes = Transaction::where('user_id', $userId)
+            ->where('type', 'income')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->with(['category', 'account'])
+            ->orderByDesc('date')
+            ->limit(50)
+            ->get();
+
+        // Comparativo diário de Receitas vs Despesas
+        $dateLabels = [];
+        $rawDates = [];
+        $current = $currentMonthStart->copy();
+        while ($current->lte($currentMonthEnd)) {
+            $rawDates[] = $current->format('Y-m-d');
+            $dateLabels[] = $current->format('d/m');
+            $current->addDay();
+        }
+        $incomeByDateRaw = Transaction::where('user_id', $userId)
+            ->where('type', 'income')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->select(DB::raw('DATE(date) as date'), DB::raw('SUM(amount) as total'))
+            ->groupBy('date')
+            ->pluck('total', 'date');
+        $expenseByDateRaw = Transaction::where('user_id', $userId)
+            ->where('type', 'expense')
+            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->select(DB::raw('DATE(date) as date'), DB::raw('SUM(amount) as total'))
+            ->groupBy('date')
+            ->pluck('total', 'date');
+        $incomeSeries = [];
+        $expenseSeries = [];
+        foreach ($rawDates as $d) {
+            $incomeSeries[] = ($incomeByDateRaw[$d] ?? 0) / 100;
+            $expenseSeries[] = ($expenseByDateRaw[$d] ?? 0) / 100;
+        }
+
+        // Projeção de Fluxo de Caixa Futuro (7 dias)
+        $dailyDiff = [];
+        foreach ($incomeSeries as $idx => $inc) {
+            $dailyDiff[] = $inc - ($expenseSeries[$idx] ?? 0);
+        }
+        $avgDailyNet = count($dailyDiff) ? array_sum($dailyDiff) / count($dailyDiff) : 0;
+        $projectionDays = 7;
+        $projectionLabels = [];
+        $projectionValues = [];
+        for ($i = 1; $i <= $projectionDays; $i++) {
+            $date = Carbon::parse($currentMonthEnd)->addDays($i);
+            $projectionLabels[] = $date->format('d/m');
+            $projectionValues[] = $netBalance + $avgDailyNet * $i;
+        }
+
         // Retornar view com dados e filtros
         return view('settings.reports.index', compact(
             'detailedExpenses',
+            'detailedIncomes',
             'categoryLabels',
             'categoryData',
             'accountLabels',
             'accountData',
+            'incomeAccountLabels',
+            'incomeAccountData',
+            'transferAccountLabels',
+            'transferAccountData',
+            'transferDetails',
+            'paidIncome',
+            'pendingIncome',
+            'forecastIncome',
+            'totalExpenses',
+            'netBalance',
+            'dateLabels',
+            'incomeSeries',
+            'expenseSeries',
+            'incomeCategoryLabels',
+            'incomeCategoryData',
+            'projectionLabels',
+            'projectionValues',
             'startParam',
             'endParam'
         ));
@@ -1049,5 +1237,97 @@ class SettingsController extends Controller
         
         $report = $aiService->generateReport($dadosCompletos, $periodo);
         return view('settings.reports.financial', compact('report', 'periodo'));
+    }
+
+    public function exportIncomesByAccount(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $userId = auth()->id();
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+
+        $incomesByAccount = Transaction::with(['account'])
+            ->where('user_id', $userId)
+            ->where('type', 'income')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date')
+            ->get();
+
+        // Gera o CSV
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="receitas_por_conta.csv"',
+        ];
+
+        $callback = function() use ($incomesByAccount) {
+            $file = fopen('php://output', 'w');
+            
+            // Cabeçalho do CSV
+            fputcsv($file, ['Data', 'Descrição', 'Conta', 'Valor']);
+            
+            // Dados
+            foreach ($incomesByAccount as $income) {
+                fputcsv($file, [
+                    $income->date->format('d/m/Y'),
+                    $income->description,
+                    $income->account->name ?? 'Sem conta',
+                    number_format($income->amount / 100, 2, ',', '.'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
+
+    public function exportExpensesByAccount(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $userId = auth()->id();
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+
+        $expensesByAccount = Transaction::with(['account'])
+            ->where('user_id', $userId)
+            ->where('type', 'expense')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date')
+            ->get();
+
+        // Gera o CSV
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="despesas_por_conta.csv"',
+        ];
+
+        $callback = function() use ($expensesByAccount) {
+            $file = fopen('php://output', 'w');
+            
+            // Cabeçalho do CSV
+            fputcsv($file, ['Data', 'Descrição', 'Conta', 'Valor']);
+            
+            // Dados
+            foreach ($expensesByAccount as $expense) {
+                fputcsv($file, [
+                    $expense->date->format('d/m/Y'),
+                    $expense->description,
+                    $expense->account->name ?? 'Sem conta',
+                    number_format($expense->amount / 100, 2, ',', '.'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 }
