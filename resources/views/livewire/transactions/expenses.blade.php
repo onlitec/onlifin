@@ -46,11 +46,11 @@ Consulte o log de interações com o Assistente AI para detalhes.
             </div>
         </div>
         
-        <!-- Botões de ação e Filtros -->
+        <!-- Novo layout de filtros baseado na imagem -->
         <div class="mb-4 px-4">
             <div class="bg-white rounded-lg p-4 shadow-sm border">
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-4">
-                    <div>
+                <div class="flex flex-wrap items-end gap-4 mb-4">
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Conta</label>
                         <select wire:model.live="accountFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
@@ -59,7 +59,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                             @endforeach
                         </select>
                     </div>
-                    <div>
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
                         <select wire:model.live="categoryFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todas</option>
@@ -68,7 +68,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                             @endforeach
                         </select>
                     </div>
-                    <div>
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                         <select wire:model.live="statusFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="">Todos</option>
@@ -76,7 +76,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                             <option value="pending">Pendente</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                         <select wire:model.live="recurrenceFilter" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400">
                             <option value="none" selected>Avulsa</option>
@@ -84,19 +84,19 @@ Consulte o log de interações com o Assistente AI para detalhes.
                             <option value="installment">Parcelada</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">De</label>
                         <input type="date" wire:model.live="dateFrom" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
-                    <div>
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Até</label>
                         <input type="date" wire:model.live="dateTo" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
-                    <div>
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fornecedor</label>
                         <input type="text" wire:model.live="supplierFilter" placeholder="Fornecedor" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
-                    <div>
+                    <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
                         <input type="text" wire:model.live="descriptionFilter" placeholder="Descrição" class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-400" />
                     </div>
@@ -128,20 +128,23 @@ Consulte o log de interações com o Assistente AI para detalhes.
 
     <div class="card shadow">
         <div class="card-body overflow-x-auto">
-            <div class="mb-4 flex items-center justify-end space-x-2 px-4">
-                 <input wire:model.lazy="search" type="text" placeholder="Buscar Despesas..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 w-64">
-                 <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                     <i class="ri-search-line mr-1"></i> Buscar
-                 </button>
-                 <a href="{{ route('transactions.import') }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                     <i class="ri-file-upload-line mr-1"></i> Importar Extrato
-                 </a>
-                 <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                    <i class="ri-add-line mr-2"></i> Nova Despesa
-                 </a>
-                 <a href="{{ route('transactions.create', ['is_transfer' => 1]) }}" class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                    <i class="ri-exchange-funds-line mr-2"></i> Transferência
-                 </a>
+            <!-- Novo layout de busca e botões baseado na imagem -->
+            <div class="mb-4 flex items-center space-x-2 px-4">
+                <div class="flex-grow">
+                    <input wire:model.lazy="search" type="text" placeholder="Buscar Despesas..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 w-full">
+                </div>
+                <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                    <i class="ri-search-line mr-1"></i> Buscar
+                </button>
+                <a href="{{ route('transactions.import') }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                    <i class="ri-file-upload-line mr-1"></i> Importar Extrato
+                </a>
+                <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                    <i class="ri-add-line mr-1"></i> Nova Despesa
+                </a>
+                <a href="{{ route('transactions.create', ['is_transfer' => 1]) }}" class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                    <i class="ri-exchange-funds-line mr-1"></i> Transferência
+                </a>
             </div>
             <table class="table w-full">
                 <thead class="table-header">
