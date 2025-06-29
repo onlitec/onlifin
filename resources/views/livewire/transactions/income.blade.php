@@ -109,6 +109,25 @@ Consulte o log de interações com o Assistente AI para detalhes.
                         <button wire:click="applyFilters" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg">
                             Filtrar
                         </button>
+
+                        <!-- Barra de busca e botões alinhados horizontalmente -->
+                        <div class="flex items-center space-x-2 ml-2">
+                            <div class="w-64">
+                                <input wire:model.lazy="search" type="text" placeholder="Buscar Receitas..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 w-full">
+                            </div>
+                            <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                                <i class="ri-search-line mr-1"></i> Buscar
+                            </button>
+                            <a href="{{ route('transactions.import') }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                                <i class="ri-file-upload-line mr-1"></i> Importar Extrato
+                            </a>
+                            <a href="{{ route('transactions.create', ['type' => 'income']) }}" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow text-sm transition-colors duration-200" style="background-color: #6366f1;">
+                                <i class="ri-add-line mr-1"></i> Nova Receita
+                            </a>
+                            <a href="{{ route('transactions.create', ['is_transfer' => 1]) }}" class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                                <i class="ri-exchange-funds-line mr-1"></i> Transferência
+                            </a>
+                        </div>
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="text-sm text-gray-600">Exibir:</span>
@@ -128,25 +147,6 @@ Consulte o log de interações com o Assistente AI para detalhes.
 
     <div class="card shadow">
         <div class="card-body overflow-x-auto">
-            <!-- Novo layout de busca e botões baseado na imagem -->
-            <div class="mb-4 flex items-center space-x-2 px-4">
-                <div class="flex-grow">
-                    <input wire:model.lazy="search" type="text" placeholder="Buscar Receitas..." class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 w-full">
-                </div>
-                <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                    <i class="ri-search-line mr-1"></i> Buscar
-                </button>
-                <a href="{{ route('transactions.import') }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                    <i class="ri-file-upload-line mr-1"></i> Importar Extrato
-                </a>
-                <a href="{{ route('transactions.create', ['type' => 'income']) }}" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                    <i class="ri-add-line mr-1"></i> Nova Receita
-                </a>
-                <a href="{{ route('transactions.create', ['is_transfer' => 1]) }}" class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
-                    <i class="ri-exchange-funds-line mr-1"></i> Transferência
-                </a>
-            </div>
-        
             <table class="table w-full">
                 <thead class="table-header">
                     <tr>
