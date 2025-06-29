@@ -309,7 +309,12 @@
                     <div class="hidden sm:flex items-center mr-4">
                         <x-ai-status />
                     </div>
-
+                    <!-- Chatbot -->
+                    <div class="hidden sm:flex items-center mr-4">
+                        <a href="{{ route('chatbot.index') }}" target="_blank" title="Assistente Financeiro" class="text-blue-600 hover:text-blue-800 focus:outline-none">
+                            <i class="ri-chat-3-line text-xl"></i>
+                        </a>
+                    </div>
                     <!-- User Dropdown -->
                     <div class="hidden sm:flex items-center">
                         <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none transition duration-150 ease-in-out">
@@ -422,12 +427,6 @@
         </footer>
     </div>
 
-    <!-- Botão flutuante do Chatbot -->
-    <a href="{{ route('chatbot.index') }}" target="_blank" title="Assistente Financeiro" class="fixed z-50 bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center w-16 h-16 transition-all duration-200">
-        <i class="ri-chat-3-line text-3xl"></i>
-        <span class="sr-only">Abrir Chatbot</span>
-    </a>
-
     <script>
         function toggleMobileMenu() {
             var menu = document.getElementById('mobileMenu');
@@ -439,7 +438,6 @@
         }
     </script>
     @stack('scripts')
-    @include('chatbot._widget')
 
     @stack('modals')
 

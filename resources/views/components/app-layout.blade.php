@@ -202,15 +202,19 @@
                                 Configurações
                             </a>
                             @endif
-                            <!-- IA Icon inside main menu -->
-                            <a href="{{ route('iaprovider-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA" style="font-size: 15px; padding: 8px 10px;">
-                                <i class="ri-robot-line text-lg"></i>
-                            </a>
                             <!-- Logout direto (removido dropdown de perfil) -->
                             <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="menu-item flex items-center" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-logout-box-line mr-2 text-lg"></i>
                                 Sair
                             </button>
+                            <!-- Chatbot icon inside main menu -->
+                            <a href="{{ route('chatbot.index') }}" target="_blank" title="Assistente Financeiro" class="menu-item text-blue-600 hover:text-blue-800" style="font-size: 15px; padding: 8px 10px;">
+                                <i class="ri-chat-3-line text-lg"></i>
+                            </a>
+                            <!-- IA Icon inside main menu -->
+                            <a href="{{ route('iaprovider-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA" style="font-size: 15px; padding: 8px 10px;">
+                                <i class="ri-robot-line text-lg"></i>
+                            </a>
                         </div>
                     </div>
                     
@@ -309,12 +313,6 @@
             </div>
         </footer>
     </div>
-
-    <!-- Botão flutuante do Chatbot -->
-    <a href="{{ route('chatbot.index') }}" target="_blank" title="Assistente Financeiro" class="fixed z-50 bottom-6 right-6 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center w-16 h-16 transition-all duration-200">
-        <i class="ri-chat-3-line text-3xl"></i>
-        <span class="sr-only">Abrir Chatbot</span>
-    </a>
 
     @livewireScripts
     @stack('scripts')
