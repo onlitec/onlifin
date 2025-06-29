@@ -371,6 +371,10 @@ class DashboardController extends Controller
             ->orderBy('date')
             ->get();
         
+        // FIRST_EDIT: Calcular valor total de despesas e receitas pendentes para exibição nos cards
+        $pendingExpensesTotal = $pendingExpensesToday->sum('amount') + $pendingExpensesTomorrow->sum('amount');
+        $pendingIncomesTotal = $pendingIncomesToday->sum('amount') + $pendingIncomesTomorrow->sum('amount');
+        
         /**
          * ATENÇÃO: CONFIGURAÇÃO CRÍTICA - NÃO MODIFICAR
          * 
@@ -441,6 +445,8 @@ class DashboardController extends Controller
             'pendingExpensesTomorrow',
             'pendingIncomesToday',
             'pendingIncomesTomorrow',
+            'pendingExpensesTotal',
+            'pendingIncomesTotal',
             'accounts'
         ));
     }

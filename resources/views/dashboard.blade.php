@@ -180,6 +180,65 @@
         </div>
     </div>
 
+    <!-- Seção de Transações Pendentes (Hoje e Amanhã) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
+        <!-- Despesas a Vencer -->
+        <div class="card hover-scale p-6" style="overflow: visible;">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Despesas a Vencer</h2>
+                <p class="text-sm text-gray-600">Hoje e amanhã</p>
+            </div>
+            <div class="px-6 py-2">
+                <p class="text-base font-medium text-gray-700">Total a vencer: <span class="text-xl font-bold text-red-600">R$ {{ number_format($pendingExpensesTotal/100, 2, ',', '.') }}</span></p>
+            </div>
+            <div class="p-4 space-y-3 max-h-60 overflow-y-auto">
+                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
+                 @forelse ($pendingExpensesToday as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa pendente para hoje.</p>
+                 @endforelse
+                
+                 <hr class="my-3">
+                
+                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Amanhã ({{ \Carbon\Carbon::tomorrow()->format('d/m') }})</h4>
+                 @forelse ($pendingExpensesTomorrow as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa pendente para amanhã.</p>
+                 @endforelse
+            </div>
+        </div>
+        
+         <!-- Receitas a Receber -->
+        <div class="card hover-scale p-6" style="overflow: visible;">
+             <div class="px-6 py-4 border-b border-gray-200">
+                 <h2 class="text-lg font-semibold text-gray-900">Receitas a Receber</h2>
+                  <p class="text-sm text-gray-600">Hoje e amanhã</p>
+             </div>
+             <div class="px-6 py-2">
+                 <p class="text-base font-medium text-gray-700">Total a receber: <span class="text-xl font-bold text-green-600">R$ {{ number_format($pendingIncomesTotal/100, 2, ',', '.') }}</span></p>
+             </div>
+             <div class="p-4 space-y-3 max-h-60 overflow-y-auto">
+                  <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
+                 @forelse ($pendingIncomesToday as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma receita pendente para hoje.</p>
+                 @endforelse
+                
+                 <hr class="my-3">
+                
+                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Amanhã ({{ \Carbon\Carbon::tomorrow()->format('d/m') }})</h4>
+                 @forelse ($pendingIncomesTomorrow as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                 @empty
+                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma receita pendente para amanhã.</p>
+                 @endforelse
+             </div>
+         </div>
+    </div>
+
     <!-- Seção de Contas Bancárias -->
     {{-- 
     ATENÇÃO: CONFIGURAÇÃO CRÍTICA - NÃO MODIFICAR
@@ -243,59 +302,6 @@
         @else
             <p class="text-center text-gray-500 py-3">Nenhuma conta bancária encontrada.</p>
         @endif
-    </div>
-
-    <!-- Seção de Transações Pendentes (Hoje e Amanhã) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" style="overflow-y: hidden; overflow-x: hidden; width: 100%; max-height: none;">
-        <!-- Despesas a Vencer -->
-        <div class="card hover-scale p-6" style="overflow: visible;">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">Despesas a Vencer</h2>
-                <p class="text-sm text-gray-600">Hoje e amanhã</p>
-            </div>
-            <div class="p-4 space-y-3 max-h-60 overflow-y-auto">
-                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
-                 @forelse ($pendingExpensesToday as $transaction)
-                    <x-transactions.list-item :transaction="$transaction" />
-                 @empty
-                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa pendente para hoje.</p>
-                 @endforelse
-                
-                 <hr class="my-3">
-                
-                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Amanhã ({{ \Carbon\Carbon::tomorrow()->format('d/m') }})</h4>
-                 @forelse ($pendingExpensesTomorrow as $transaction)
-                    <x-transactions.list-item :transaction="$transaction" />
-                 @empty
-                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa pendente para amanhã.</p>
-                 @endforelse
-            </div>
-        </div>
-        
-         <!-- Receitas a Receber -->
-        <div class="card hover-scale p-6" style="overflow: visible;">
-             <div class="px-6 py-4 border-b border-gray-200">
-                 <h2 class="text-lg font-semibold text-gray-900">Receitas a Receber</h2>
-                  <p class="text-sm text-gray-600">Hoje e amanhã</p>
-             </div>
-             <div class="p-4 space-y-3 max-h-60 overflow-y-auto">
-                  <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
-                 @forelse ($pendingIncomesToday as $transaction)
-                    <x-transactions.list-item :transaction="$transaction" />
-                 @empty
-                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma receita pendente para hoje.</p>
-                 @endforelse
-                
-                 <hr class="my-3">
-                
-                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Amanhã ({{ \Carbon\Carbon::tomorrow()->format('d/m') }})</h4>
-                 @forelse ($pendingIncomesTomorrow as $transaction)
-                    <x-transactions.list-item :transaction="$transaction" />
-                 @empty
-                     <p class="text-center text-gray-500 py-3 text-sm">Nenhuma receita pendente para amanhã.</p>
-                 @endforelse
-             </div>
-         </div>
     </div>
 
     <!-- Gráficos -->
