@@ -90,7 +90,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
         Route::get('/logs/files', [SystemLogController::class, 'files'])->name('logs.files');
         Route::get('/logs/{log}', [SystemLogController::class, 'show'])->name('logs.show');
-        Route::get('/logs/view/{log}', [SystemLogController::class, 'view'])->name('logs.view');
+        // Visualizar logs de arquivo (API ou Laravel)
+        Route::get('/logs/view/{type}/{filename}', [SystemLogController::class, 'view'])->name('logs.view');
+        // Exportar logs do sistema
+        Route::get('/logs/export', [SystemLogController::class, 'export'])->name('logs.export');
     });
     
     // Relatórios
@@ -246,6 +249,9 @@ Route::middleware(['auth'])->group(function () {
     // Rotas de backup (Configurações)
     Route::get('/settings/backup', [SettingsController::class, 'backup'])->name('settings.backup');
     Route::post('/settings/backup/create', [SettingsController::class, 'createBackup'])->name('settings.backup.create');
+    Route::post('/settings/backup/restore', [SettingsController::class, 'restoreBackup'])->name('settings.backup.restore');
+    Route::get('/settings/backup/download/{filename}', [SettingsController::class, 'downloadBackup'])->name('settings.backup.download');
+    Route::delete('/settings/backup/{filename}', [SettingsController::class, 'deleteBackup'])->name('settings.backup.delete');
 
     // Rotas de sistema (Configurações)
     Route::get('/settings/system', [SettingsController::class, 'system'])->name('settings.system');

@@ -6,27 +6,7 @@
                 <h1 class="text-2xl font-bold">Logs do Sistema</h1>
             </div>
 
-            <!-- Abas -->
-            <div class="mb-6 border-b border-gray-200">
-                <nav class="flex -mb-px">
-                    <a href="{{ route('settings.logs.index', ['tab' => 'system']) }}" 
-                       class="py-4 px-6 {{ ($activeTab ?? 'api') === 'system' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700' }}">
-                        Logs do Sistema
-                    </a>
-                    <a href="{{ route('settings.logs.index', ['tab' => 'api']) }}" 
-                       class="py-4 px-6 {{ ($activeTab ?? 'api') === 'api' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700' }}">
-                        Logs de API
-                    </a>
-                    <a href="{{ route('settings.logs.index', ['tab' => 'ai']) }}" 
-                       class="py-4 px-6 {{ ($activeTab ?? 'api') === 'ai' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700' }}"> 
-                        Logs de IA
-                    </a>
-                    <a href="{{ route('settings.logs.index', ['tab' => 'laravel']) }}" 
-                       class="py-4 px-6 {{ ($activeTab ?? 'api') === 'laravel' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700' }}">
-                        Logs do Laravel
-                    </a>
-                </nav>
-            </div>
+            @include('settings.logs.tabs')
             
             <!-- Conteúdo -->
             <div class="bg-white rounded-lg shadow-sm p-6">
@@ -52,7 +32,7 @@
                                         <td class="py-2 px-4 border-b">{{ $file['modified'] }}</td>
                                         <td class="py-2 px-4 border-b">{{ number_format($file['size'] / 1024, 2) }} KB</td>
                                         <td class="py-2 px-4 border-b">
-                                            <a href="{{ route('settings.logs.view', ['log' => $file['name']]) }}" 
+                                            <a href="{{ route('settings.logs.view', ['type' => 'laravel', 'filename' => $file['name']]) }}" 
                                                 class="text-blue-600 hover:text-blue-800 mr-2">
                                                 Visualizar
                                             </a>

@@ -7,6 +7,7 @@
                     Exportar CSV
                 </a>
             </div>
+            @include('settings.logs.tabs')
 
             <!-- Filtros -->
             <div class="bg-white rounded-lg shadow-sm p-6 mb-6">

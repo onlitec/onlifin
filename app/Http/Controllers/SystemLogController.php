@@ -135,22 +135,24 @@ class SystemLogController extends Controller
     }
 
     /**
-     * Mostrar o conteúdo de um arquivo de log
+     * Mostrar o conteúdo de um arquivo de log (API ou Laravel)
      */
-    public function view($log)
+    public function view(Request $request, $type, $filename)
     {
-        $filePath = storage_path('logs/' . $log);
-        
+        // Define o caminho conforme o tipo de log
+        if ($type === 'api') {
+            $filePath = storage_path('logs/api_monitor/' . $filename);
+        } else {
+            $filePath = storage_path('logs/' . $filename);
+        }
         if (!File::exists($filePath)) {
-            return redirect()->route('settings.logs.index', ['tab' => 'laravel'])
+            return redirect()->route('settings.logs.index', ['tab' => $type])
                 ->with('error', 'Arquivo de log não encontrado');
         }
-        
         $content = File::get($filePath);
-        
         return view('settings.logs.view', [
-            'type' => 'laravel',
-            'filename' => $log,
+            'type' => $type,
+            'filename' => $filename,
             'content' => $content,
             'entries' => []
         ]);

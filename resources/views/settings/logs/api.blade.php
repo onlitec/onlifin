@@ -6,23 +6,7 @@
                 <h1 class="text-2xl font-bold">Logs do Sistema</h1>
             </div>
 
-            <!-- Abas -->
-            <div class="mb-6 border-b border-gray-200">
-                <nav class="flex -mb-px">
-                    <a href="{{ route('settings.logs.index', ['tab' => 'system']) }}" 
-                       class="py-4 px-6 {{ $activeTab === 'system' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700' }}">
-                        Logs do Sistema
-                    </a>
-                    <a href="{{ route('settings.logs.index', ['tab' => 'api']) }}" 
-                       class="py-4 px-6 {{ $activeTab === 'api' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700' }}">
-                        Logs de API
-                    </a>
-                    <a href="{{ route('settings.logs.index', ['tab' => 'laravel']) }}" 
-                       class="py-4 px-6 {{ $activeTab === 'laravel' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700' }}">
-                        Logs do Laravel
-                    </a>
-                </nav>
-            </div>
+            @include('settings.logs.tabs')
             
             <!-- Conteúdo -->
             <div class="bg-white rounded-lg shadow-sm p-6">
