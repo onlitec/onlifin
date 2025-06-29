@@ -71,6 +71,10 @@ class ChatbotController extends Controller
             $model = $config['model'];
             $apiKey = $config['api_key'];
             
+            // Obter o prompt do sistema a partir da configuração
+            $aiConfig = $this->aiConfigService->getAIConfig($provider);
+            $systemPrompt = $aiConfig['system_prompt'] ?? $aiConfig['chat_prompt'] ?? '';
+            
             // Preparar o payload para a requisição
             $payload = $this->getChatPayload($message, $provider);
             
@@ -198,8 +202,9 @@ class ChatbotController extends Controller
         // Formatar o contexto financeiro como JSON para facilitar o acesso pela IA
         $formattedContext = json_encode($financialContext, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         
-        // Obter o prompt do sistema
-        $systemPrompt = $this->aiConfigService->getSystemPrompt($provider);
+        // Obter o prompt do sistema a partir da configuração
+        $aiConfig = $this->aiConfigService->getAIConfig($provider);
+        $systemPrompt = $aiConfig['system_prompt'] ?? $aiConfig['chat_prompt'] ?? '';
         
         // Aprimorar o prompt do sistema com o contexto financeiro
         $enhancedSystemPrompt = $systemPrompt . "\n\n" . 
