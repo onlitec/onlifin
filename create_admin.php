@@ -10,7 +10,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 // Verifica se o usuário já existe
-$email = 'admin@onlifin.com.br';
+$email = 'galvatec@onlifin.com.br';
 $user = User::where('email', $email)->first();
 
 if ($user) {
@@ -21,12 +21,12 @@ if ($user) {
 } else {
     // Cria um novo usuário administrador
     $user = User::create([
-        'name' => 'Administrador',
+        'name' => 'Galvatec',
         'email' => $email,
-        'password' => Hash::make('Senha@123'),
+        'password' => Hash::make('12345678'),
         'is_admin' => true
     ]);
-    echo "Novo usuário administrador criado: {$email} com senha: Senha@123\n";
+    echo "Novo usuário administrador criado: {$email} com senha: 12345678\n";
 }
 
 echo "Operação concluída com sucesso!\n"; 
