@@ -415,14 +415,6 @@
      
 </div>
 
-<!-- Botão flutuante para transferência rápida -->
-<div class="fixed bottom-6 right-6 flex flex-col space-y-4">
-    <a href="{{ route('transactions.create', ['is_transfer' => true]) }}" 
-       class="flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-all duration-200 transform hover:scale-105">
-        <i class="ri-exchange-funds-line text-2xl"></i>
-    </a>
-</div>
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Configurações comuns de cores (pode ajustar)
