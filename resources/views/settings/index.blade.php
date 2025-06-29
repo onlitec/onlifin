@@ -108,7 +108,7 @@
             </div>
             @endif
 
-            @if($isAdmin)
+            @if($isAdmin && !app()->environment('production'))
             <!-- Usuários - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
@@ -252,7 +252,7 @@
         </div>
     </div>
 
-    @if($isAdmin)
+    @if($isAdmin && !app()->environment('production'))
     <div class="mt-8 pt-8 border-t border-gray-200">
         <h2 class="text-xl font-semibold text-red-600 mb-4">Área de Administração - Desenvolvimento</h2>
         

@@ -1057,24 +1057,18 @@ class SettingsController extends Controller
         // Define local version explicitly
         $localVersion = 'v1.0.0';
         $remoteVersion = 'error';
+        // Busca todas as tags e define a mais recente por versão sem depender de releases
         try {
-            // Try to fetch latest GitHub release
-            $resp = Http::withHeaders(['Accept' => 'application/vnd.github.v3+json'])
-                        ->get('https://api.github.com/repos/onlitec/onlifin/releases/latest');
-            $remoteVersion = $resp->json('tag_name') ?: null;
+            $tagsResp = Http::withHeaders(['Accept' => 'application/vnd.github.v3+json'])
+                          ->get('https://api.github.com/repos/onlitec/onlifin/tags');
+            $tags = $tagsResp->json();
+            $versions = array_column($tags, 'name');
+            usort($versions, function($a, $b) {
+                return version_compare(ltrim($b, 'vV'), ltrim($a, 'vV'));
+            });
+            $remoteVersion = $versions[0] ?? 'no-remote-tag';
         } catch (\Exception $e) {
-            $remoteVersion = null;
-        }
-        // Fallback: if no release found, fetch latest tag via API
-        if (!$remoteVersion) {
-            try {
-                $tagsResp = Http::withHeaders(['Accept' => 'application/vnd.github.v3+json'])
-                              ->get('https://api.github.com/repos/onlitec/onlifin/tags');
-                $tags = $tagsResp->json();
-                $remoteVersion = $tags[0]['name'] ?? 'no-remote-tag';
-            } catch (\Exception $e) {
-                $remoteVersion = 'error';
-            }
+            $remoteVersion = 'error';
         }
         $isUpToDate = version_compare($localVersion, $remoteVersion, '>=');
         return view('settings.system.index', compact('localVersion', 'remoteVersion', 'isUpToDate'));
