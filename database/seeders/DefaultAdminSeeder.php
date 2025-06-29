@@ -25,7 +25,7 @@ class DefaultAdminSeeder extends Seeder
                 'password' => Hash::make($password),
                 'is_admin' => true,
             ]);
-            $this->command->info("Usuário administrador padrão criado: {$email}");
+            $this->command->info("Usuário administrador padrão criado: {$email} (senha: {$password}).");
         } else {
             $this->command->info("Usuário administrador padrão já existe: {$email}");
         }

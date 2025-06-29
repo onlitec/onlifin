@@ -44,14 +44,20 @@
         </div>
 
         <div class="mb-4">
-            <label class="flex items-center">
+            <div class="flex items-center bg-blue-50 p-2 rounded-md border border-blue-100">
                 <input 
                     type="checkbox" 
                     wire:model="is_active"
-                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    id="is_active"
+                    class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 >
-                <span class="ml-2 text-sm text-gray-900">Usuário Ativo</span>
-            </label>
+                <label for="is_active" class="ml-2 block font-medium text-sm text-gray-900">
+                    Usuário Ativo
+                </label>
+            </div>
+            <div class="ml-7 mt-1 text-sm text-gray-600">
+                <i class="ri-information-line"></i> Quando marcado, o usuário poderá acessar o sistema
+            </div>
             @error('is_active') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
         </div>
 

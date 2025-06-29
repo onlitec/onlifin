@@ -298,64 +298,19 @@
             if (analyzeButton) {
                 analyzeButton.addEventListener('click', function() {
                     showLoading(this);
-                    
                     const filePath = savedFilePathInput.value;
                     const accountId = savedAccountIdInput.value;
                     const extension = savedExtensionInput.value;
-                    
+
                     if (!filePath || !accountId || !extension) {
                         showAjaxError('Dados do arquivo não encontrados. Tente enviar novamente.');
                         hideLoading(this, 'Analisar com IA e Mapear Transações');
                         return;
                     }
-                    
-                    // Fazer requisição para analisar com IA
-                    fetch('{{ route('statements.analyze-with-ai') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({
-                            path: filePath,
-                            account_id: accountId,
-                            extension: extension
-                        })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(errData => {
-                                throw { status: response.status, data: errData };
-                            }).catch(err => {
-                                if (err.status) throw err;
-                                throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            // Redirecionar para a página de revisão de categorização
-                            window.location.href = '{{ route('statements.review-categorized') }}';
-                        } else {
-                            showAjaxError(data.message || 'Erro ao analisar transações com IA.');
-                            hideLoading(analyzeButton, 'Analisar com IA e Mapear Transações');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erro no fetch:', error);
-                        let errorMessage = 'Erro ao conectar com o servidor. Por favor, tente novamente.';
-                        
-                        if (error.data && error.data.message) {
-                            errorMessage = error.data.message;
-                        } else if (error.message) {
-                            errorMessage = error.message;
-                        }
-                        
-                        showAjaxError(errorMessage);
-                        hideLoading(analyzeButton, 'Analisar com IA e Mapear Transações');
-                    });
+
+                    // Redirecionar diretamente para a página de mapeamento com IA
+                    const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}&use_ai=1`;
+                    window.location.href = mappingUrl;
                 });
             }
             

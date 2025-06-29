@@ -389,7 +389,7 @@
                     _token: csrfToken
                 };
 
-                fetch('{{ route("statements.save") }}', {
+                fetch('{{ route("transactions.save") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -467,7 +467,7 @@
                     'ai-analysis-progress-bar',
                     'ai-analysis-status-message',
                     currentAnalysisKey,
-                    "{{ route('statements.analysis.progress') }}"
+                    "{{ route('transactions.analysis.progress') }}"
                 );
                 progressMonitor.startMonitoring();
             }

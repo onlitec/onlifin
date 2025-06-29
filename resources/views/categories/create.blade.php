@@ -26,9 +26,13 @@
                                 Nome
                             </label>
                             <input type="text" name="name" id="name" 
-                                class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('name') border-red-500 @enderror"
                                 value="{{ old('name') }}" 
+                                placeholder="Nome da Categoria"
                                 required>
+                            @error('name')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Tipo -->

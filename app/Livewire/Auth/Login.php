@@ -17,6 +17,16 @@ class Login extends Component
     #[Validate('required')]
     public string $password = '';
 
+    public bool $forcePasswordChange = false;
+
+    public function mount()
+    {
+        // Preenche campos se vierem na query string
+        $this->email = request()->query('email', $this->email);
+        $this->password = request()->query('password', $this->password);
+        $this->forcePasswordChange = request()->has('password');
+    }
+
     public function authenticate()
     {
         $this->validate();
@@ -55,6 +65,10 @@ class Login extends Component
                     'is_admin' => Auth::user()->is_admin
                 ]);
                 
+                // Redireciona para troca de senha se veio senha na query, caso contrário para dashboard
+                if ($this->forcePasswordChange) {
+                    return redirect()->route('profile.edit')->with('forcePasswordChange', true);
+                }
                 return redirect()->intended('/dashboard');
             } else {
                 Log::warning('Falha na autenticação - senha incorreta', ['email' => $this->email]);

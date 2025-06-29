@@ -46,6 +46,7 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\GoogleChatbotController;
 use App\Http\Controllers\FinancialReportController;
+use App\Http\Controllers\InstallController;
 
 /*
 |--------------------------------------------------------------------------
@@ -127,6 +128,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/transactions/save', [TempStatementImportController::class, 'saveTransactions'])->name('transactions.save');
     Route::post('/transactions/analyze', [TempStatementImportController::class, 'analyze'])->name('transactions.analyze');
     Route::get('/transactions/analysis-progress', [TempStatementImportController::class, 'checkAnalysisProgress'])->name('transactions.analysis.progress');
+    // Rota AJAX para retornar as transações armazenadas na sessão para a página de mapeamento
+    Route::get('/transactions/ajax/get', [TempStatementImportController::class, 'getTransactions'])->name('transactions.ajax.get');
     
     // Rotas para análise de extratos com IA
     Route::post('/transactions/analyze-with-ai', [TempStatementImportController::class, 'analyzeWithAI'])->name('statements.analyze-with-ai');
@@ -269,3 +272,5 @@ Route::middleware(['auth'])->group(function () {
 
 // Rota de logout
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+Route::get('/install', [InstallController::class, 'install'])->name('install');

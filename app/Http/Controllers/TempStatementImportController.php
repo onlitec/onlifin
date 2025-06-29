@@ -103,28 +103,28 @@ class TempStatementImportController extends Controller
                     return redirect()->back()->withErrors(['statement_file' => 'Erro ao armazenar o extrato.'])->withInput();
                 }
 
-                // Processamento automático: extrair, analisar com IA e salvar transações
-                $transactions = [];
-                if (in_array($extension, ['ofx', 'qfx'])) {
-                    $transactions = $this->extractTransactionsFromOFX($path);
-                } elseif ($extension === 'csv') {
-                    $transactions = $this->extractTransactionsFromCSV($path);
-                } elseif ($extension === 'pdf' && method_exists($this, 'extractTransactionsFromPDF')) {
-                    $transactions = $this->extractTransactionsFromPDF($path);
-                } else {
-                    $transactions = $this->extractTransactions($path, $extension);
-                }
-                $aiAnalysis = $this->analyzeTransactionsWithAI($transactions);
-                if ($aiAnalysis) {
-                    $transactions = $this->applyCategorizationToTransactions($transactions, $aiAnalysis);
-                }
-                $request->merge([
-                    'account_id' => $accountId,
-                    'file_path' => $path,
-                    'transactions' => $transactions,
-                    'use_ai' => true
+                // Armazenar dados de upload na sessão para análise e mapeamento
+                session([
+                    'upload_data' => [
+                        'file_path' => $path,
+                        'extension' => $extension,
+                        'account_id' => $accountId,
+                        'use_ai' => true
+                    ]
                 ]);
-                return $this->saveTransactions($request);
+                // Se for requisição AJAX, retornar JSON com os dados para o próximo passo
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Arquivo enviado com sucesso!',
+                        'filePath' => $path,
+                        'accountId' => $accountId,
+                        'extension' => $extension
+                    ]);
+                }
+                // Para requisições não-AJAX, prosseguir com a análise e redirecionar
+                Log::info('Dados de upload armazenados na sessão, redirecionando para análise');
+                return $this->analyze($request);
 
             } catch (\Exception $e) {
                 Log::error('Erro durante o salvamento do extrato AJAX', [
@@ -1923,7 +1923,8 @@ class TempStatementImportController extends Controller
                     $transaction = new Transaction();
                     $transaction->user_id = auth()->id();
                     $transaction->account_id = $account->id;
-                    $transaction->company_id = auth()->user()->currentCompany?->id;
+                    // Definir company_id a partir da conta para evitar valor nulo
+                    $transaction->company_id = $account->company_id;
                     $transaction->date = $transactionData['date'];
                     $transaction->description = $transactionData['description'];
                     $transaction->amount = $amountCents; 

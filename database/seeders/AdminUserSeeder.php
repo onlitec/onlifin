@@ -35,7 +35,7 @@ class AdminUserSeeder extends Seeder
             ]
         );
         $adminUser->assignRole('Administrador');
-        $this->command->info('Usuário admin@onlifin.com.br criado com sucesso.');
+        $this->command->info('Usuário admin@onlifin.com.br criado com sucesso (senha: admin123).');
 
         // =================================================================
         // 2. Criar usuário alfreire@onlifin.com.br e Empresa Galvatec

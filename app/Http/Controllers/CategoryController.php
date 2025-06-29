@@ -67,6 +67,24 @@ class CategoryController extends Controller
             'color' => 'nullable|string|max:7',
         ]);
 
+        // Verificar se já existe uma categoria com o mesmo nome e tipo para este usuário
+        $existingCategory = Category::where('name', $validated['name'])
+            ->where('type', $validated['type'])
+            ->where(function($query) use ($user) {
+                $query->where('user_id', $user->id)
+                      ->orWhereNull('user_id');
+            })
+            ->first();
+
+        if ($existingCategory) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['name' => 'Já existe uma categoria com este nome e tipo.']);
+        }
+
+        // Remover espaços do nome da categoria
+        $validated['name'] = str_replace(' ', '', $validated['name']);
+
         // For now, new categories created by users are associated with them.
         // Admins could potentially create global categories (user_id = null) through a different mechanism or UI if needed.
         $validated['user_id'] = $user->id;
@@ -110,6 +128,26 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'color' => 'nullable|string|max:7',
         ]);
+
+        // Verificar se já existe uma categoria com o mesmo nome e tipo para este usuário
+        // excluindo a categoria atual da verificação
+        $existingCategory = Category::where('name', $validated['name'])
+            ->where('type', $validated['type'])
+            ->where('id', '!=', $category->id)
+            ->where(function($query) use ($user) {
+                $query->where('user_id', $user->id)
+                      ->orWhereNull('user_id');
+            })
+            ->first();
+
+        if ($existingCategory) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['name' => 'Já existe uma categoria com este nome e tipo.']);
+        }
+
+        // Remover espaços do nome da categoria
+        $validated['name'] = str_replace(' ', '', $validated['name']);
 
         // Prevent non-admins from changing ownership or making a user-category global.
         // If an admin is editing, they could be allowed to change user_id or set it to null if a UI for that exists.

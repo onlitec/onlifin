@@ -10,6 +10,11 @@
                 {{ session('message') ?? session('status') }}
             </div>
         @endif
+        @if(session('forcePasswordChange'))
+            <div class="mb-4 p-4 bg-yellow-100 text-yellow-700 rounded-lg">
+                <p>Por favor, defina uma nova senha para sua conta.</p>
+            </div>
+        @endif
 
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 bg-white border-b border-gray-200">
@@ -53,8 +58,12 @@
                     </div>
 
                     <div class="mt-8 border-t border-gray-200 pt-6">
-                        <h3 class="text-lg font-medium text-gray-900">Atualizar Senha</h3>
-                        <p class="text-sm text-gray-600">Deixe em branco se não quiser alterar sua senha</p>
+                        <h3 class="text-lg font-medium text-gray-900">
+                            {{ session('forcePasswordChange') ? 'Definir Nova Senha' : 'Atualizar Senha' }}
+                        </h3>
+                        <p class="text-sm text-gray-600">
+                            {{ session('forcePasswordChange') ? 'Por favor, escolha uma nova senha para continuar.' : 'Deixe em branco se não quiser alterar sua senha' }}
+                        </p>
                     </div>
 
                     <div class="mt-4 mb-4">
