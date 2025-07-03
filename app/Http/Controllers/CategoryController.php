@@ -50,7 +50,14 @@ class CategoryController extends Controller
             abort(403, 'Você não tem permissão para criar categorias.');
         }
         $isAdminView = $user->hasRole('Administrador');
-        return view('categories.create', compact('isAdminView'));
+        
+        // CORREÇÃO: Buscar categorias existentes para validação JavaScript
+        $existingCategories = Category::where('user_id', $user->id)
+            ->orWhereNull('user_id')
+            ->get(['name', 'type'])
+            ->toArray();
+        
+        return view('categories.create', compact('isAdminView', 'existingCategories'));
     }
 
     public function store(Request $request)
@@ -111,7 +118,14 @@ class CategoryController extends Controller
         }
         
         $isAdminView = $user->hasRole('Administrador');
-        return view('categories.edit', compact('category', 'isAdminView'));
+        
+        // CORREÇÃO: Buscar categorias existentes para validação JavaScript
+        $existingCategories = Category::where('user_id', $user->id)
+            ->orWhereNull('user_id')
+            ->get(['id', 'name', 'type'])
+            ->toArray();
+        
+        return view('categories.edit', compact('category', 'isAdminView', 'existingCategories'));
     }
 
     public function update(Request $request, Category $category)

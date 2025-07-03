@@ -97,12 +97,7 @@
             let checkTimeout;
 
             // Categorias existentes (obtidas do servidor)
-            const existingCategories = @json(
-                \App\Models\Category::where('user_id', auth()->id())
-                    ->orWhereNull('user_id')
-                    ->get(['name', 'type'])
-                    ->toArray()
-            );
+            const existingCategories = @json($existingCategories);
 
             function checkDuplicate() {
                 const name = nameInput.value.trim().toLowerCase();

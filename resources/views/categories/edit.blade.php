@@ -88,12 +88,7 @@
             const currentCategoryId = {{ $category->id }};
 
             // Categorias existentes (obtidas do servidor)
-            const existingCategories = @json(
-                \App\Models\Category::where('user_id', auth()->id())
-                    ->orWhereNull('user_id')
-                    ->get(['id', 'name', 'type'])
-                    ->toArray()
-            );
+            const existingCategories = @json($existingCategories);
 
             function checkDuplicate() {
                 const name = nameInput.value.trim().toLowerCase();
