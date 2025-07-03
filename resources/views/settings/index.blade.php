@@ -108,7 +108,7 @@
             </div>
             @endif
 
-            @if($isAdmin && !app()->environment('production'))
+            @if($isAdmin)
             <!-- Usuários - Apenas para Administradores -->
             <div class="card hover:shadow-md transition-shadow">
                 <div class="p-6">
@@ -251,56 +251,6 @@
             @endif
         </div>
     </div>
-
-    @if($isAdmin && !app()->environment('production'))
-    <div class="mt-8 pt-8 border-t border-gray-200">
-        <h2 class="text-xl font-semibold text-red-600 mb-4">Área de Administração - Desenvolvimento</h2>
-        
-        <div class="card bg-yellow-50 border-yellow-200">
-            <div class="card-body">
-                <h3 class="text-lg font-medium text-yellow-800 mb-2">Apagar Dados Financeiros (Usuário Atual)</h3>
-                <p class="text-sm text-yellow-700 mb-4">
-                    <strong>Atenção (Dev):</strong> Esta ação apagará permanentemente todas as transações, contas e categorias associadas ao <strong class="font-bold">seu usuário atual ({{ auth()->user()->email }})</strong>. Use com cuidado.
-                </p>
-                
-                <form method="POST" action="{{ route('settings.deleteUserData') }}" onsubmit="return confirm('Tem certeza que deseja apagar TODOS os dados financeiros deste usuário (transações e categorias)? Esta ação não pode ser desfeita!');">
-                    @csrf
-                    @method('DELETE')
-                    <input type="hidden" name="user_id" value="{{ auth()->id() }}">
-                    <button type="submit" class="btn btn-danger mt-4">
-                        Apagar Minhas Transações e Categorias
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="card bg-yellow-50 border-yellow-200 mt-4">
-            <div class="card-body">
-                <h3 class="text-lg font-medium text-yellow-800 mb-2">Apagar Dados Financeiros (Usuário Selecionado)</h3>
-                <p class="text-sm text-yellow-700 mb-4">
-                    Selecione um usuário para apagar todas as transações, contas e categorias associadas a ele. <strong class="font-bold">Esta ação é irreversível e afetará o usuário selecionado.</strong> Use com extrema cautela.
-                </p>
-                <form method="POST" action="{{ route('settings.deleteUserData') }}" id="deleteSpecificUserForm">
-                     @csrf
-                     @method('DELETE')
-                     <div class="mb-4">
-                         <label for="specific_user_id" class="block text-sm font-medium text-gray-700 mb-1">Selecione o Usuário:</label>
-                         <select name="user_id" id="specific_user_id" class="form-select w-full md:w-1/2" required>
-                             <option value="" disabled selected>-- Selecione um usuário --</option>
-                             @foreach($usersForDeletion as $user)
-                                 {{-- Corrected fetching user data for the options --}}
-                                 <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
-                             @endforeach
-                         </select>
-                     </div>
-                     <button type="button" onclick="confirmSpecificUserDeletion()" class="btn btn-danger">
-                         Apagar Dados do Usuário Selecionado
-                     </button>
-                 </form>
-            </div>
-        </div>
-    </div>
-    @endif
 </x-app-layout>
 
 <script>

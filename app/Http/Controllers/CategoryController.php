@@ -67,8 +67,13 @@ class CategoryController extends Controller
             'color' => 'nullable|string|max:7',
         ]);
 
-        // Verificar se já existe uma categoria com o mesmo nome e tipo para este usuário
-        $existingCategory = Category::where('name', $validated['name'])
+        // CORREÇÃO: Preservar o título original sem alterações
+        $categoryName = trim($validated['name']);
+        
+        // CORREÇÃO: Verificação mais rigorosa de duplicatas (case-insensitive)
+        $existingCategory = Category::where(function($query) use ($categoryName) {
+                $query->whereRaw('LOWER(name) = ?', [strtolower($categoryName)]);
+            })
             ->where('type', $validated['type'])
             ->where(function($query) use ($user) {
                 $query->where('user_id', $user->id)
@@ -79,14 +84,11 @@ class CategoryController extends Controller
         if ($existingCategory) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['name' => 'Já existe uma categoria com este nome e tipo.']);
+                ->withErrors(['name' => 'Já existe uma categoria com este nome e tipo. Categoria existente: "' . $existingCategory->name . '"']);
         }
 
-        // Remover espaços do nome da categoria
-        $validated['name'] = str_replace(' ', '', $validated['name']);
-
-        // For now, new categories created by users are associated with them.
-        // Admins could potentially create global categories (user_id = null) through a different mechanism or UI if needed.
+        // CORREÇÃO: Garantir que o nome seja preservado exatamente como digitado
+        $validated['name'] = $categoryName;
         $validated['user_id'] = $user->id;
 
         Category::create($validated);
@@ -129,9 +131,14 @@ class CategoryController extends Controller
             'color' => 'nullable|string|max:7',
         ]);
 
-        // Verificar se já existe uma categoria com o mesmo nome e tipo para este usuário
+        // CORREÇÃO: Preservar o título original sem alterações
+        $categoryName = trim($validated['name']);
+        
+        // CORREÇÃO: Verificação mais rigorosa de duplicatas (case-insensitive)
         // excluindo a categoria atual da verificação
-        $existingCategory = Category::where('name', $validated['name'])
+        $existingCategory = Category::where(function($query) use ($categoryName) {
+                $query->whereRaw('LOWER(name) = ?', [strtolower($categoryName)]);
+            })
             ->where('type', $validated['type'])
             ->where('id', '!=', $category->id)
             ->where(function($query) use ($user) {
@@ -143,15 +150,11 @@ class CategoryController extends Controller
         if ($existingCategory) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['name' => 'Já existe uma categoria com este nome e tipo.']);
+                ->withErrors(['name' => 'Já existe uma categoria com este nome e tipo. Categoria existente: "' . $existingCategory->name . '"']);
         }
 
-        // Remover espaços do nome da categoria
-        $validated['name'] = str_replace(' ', '', $validated['name']);
-
-        // Prevent non-admins from changing ownership or making a user-category global.
-        // If an admin is editing, they could be allowed to change user_id or set it to null if a UI for that exists.
-        // For now, user_id is not part of $validated here for update for simplicity.
+        // CORREÇÃO: Garantir que o nome seja preservado exatamente como digitado
+        $validated['name'] = $categoryName;
 
         $category->update($validated);
 

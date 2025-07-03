@@ -38,8 +38,13 @@ class TempStatementImportController extends Controller
     /**
      * Mostra o formulário de upload de extratos
      */
-    public function index()
+    public function index(Request $request)
     {
+        // Capture optional return URL to redirect after import
+        $redirectUrl = $request->query('redirect');
+        if ($redirectUrl) {
+            session(['transactions_import_redirect_url' => $redirectUrl]);
+        }
         $accounts = Account::where('active', true)
             ->where('user_id', auth()->id())
             ->orderBy('name')
@@ -50,7 +55,7 @@ class TempStatementImportController extends Controller
         $aiConfig = $aiConfigService->getAIConfig();
         $aiConfigured = $aiConfig['is_configured'];
             
-        return view('transactions.import', compact('accounts', 'aiConfig', 'aiConfigured'));
+        return view('transactions.import', compact('accounts', 'aiConfig', 'aiConfigured', 'redirectUrl'));
     }
 
     /**
@@ -1996,15 +2001,21 @@ class TempStatementImportController extends Controller
             
             // Retornar JSON para AJAX ou Redirect para requisição normal
             if ($request->wantsJson()) {
+                // Use stored return URL if available
+                $redirectUrl = session('transactions_import_redirect_url', route('transactions.index'));
+                session()->forget('transactions_import_redirect_url');
                 return response()->json([
                     'success' => true,
                     'message' => $message,
                     'status' => $status,
-                    'redirect_url' => route('transactions.index')
+                    'redirect_url' => $redirectUrl
                 ]);
             }
 
-            return redirect()->route('transactions.index')->with($status, $message);
+            // Redirect back to origin page if provided
+            $redirectUrl = session('transactions_import_redirect_url', route('transactions.index'));
+            session()->forget('transactions_import_redirect_url');
+            return redirect($redirectUrl)->with($status, $message);
             
         } catch (\Exception $e) {
             DB::rollBack();

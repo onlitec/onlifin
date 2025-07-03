@@ -262,7 +262,8 @@ class SettingsController extends Controller
 
     public function reports(Request $request)
     {
-        $userId = auth()->id();
+        $user = auth()->user();
+        $userId = $user->id;
         // Obter limites de data a partir dos parâmetros ou mês atual
         $startParam = $request->get('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $endParam = $request->get('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
@@ -270,7 +271,9 @@ class SettingsController extends Controller
         $currentMonthEnd = Carbon::parse($endParam)->endOfDay();
 
         // 1. Despesas por Categoria (Mês Atual)
-        $expensesByCategory = Transaction::where('transactions.user_id', $userId)
+        $expensesByCategory = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('transactions.user_id', $userId);
+        })
             ->where('transactions.type', 'expense')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->join('categories', 'transactions.category_id', '=', 'categories.id')
@@ -284,7 +287,9 @@ class SettingsController extends Controller
         $categoryData = $expensesByCategory->pluck('total_amount')->map(fn($amount) => $amount / 100); // Convert cents to currency unit
 
         // 2. Despesas por Conta (Mês Atual)
-        $expensesByAccount = Transaction::where('transactions.user_id', $userId)
+        $expensesByAccount = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('transactions.user_id', $userId);
+        })
             ->where('transactions.type', 'expense')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->join('accounts', 'transactions.account_id', '=', 'accounts.id')
@@ -298,9 +303,11 @@ class SettingsController extends Controller
         $accountData = $expensesByAccount->pluck('total_amount')->map(fn($amount) => $amount / 100); // Convert cents to currency unit
 
         // 3. Receitas por Conta (Mês Atual)
-        $incomesByAccount = Transaction::where('transactions.user_id', $userId)
+        $incomesByAccount = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('transactions.user_id', $userId);
+        })
             ->where('transactions.type', 'income')
-            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->whereBetween('transactions.date', [$currentMonthStart, $currentMonthEnd])
             ->join('accounts', 'transactions.account_id', '=', 'accounts.id')
             ->select('accounts.name as account_name', DB::raw('SUM(transactions.amount) as total_amount'))
             ->groupBy('accounts.name')
@@ -324,8 +331,10 @@ class SettingsController extends Controller
                     ->on('t1.date', '=', 't2.date')
                     ->on('t1.description', '=', 't2.description');
             })
-            ->where('t1.user_id', $userId)
-            ->where('t2.user_id', $userId)
+            ->when(!$user->isAdmin(), function($query) use ($userId) {
+                $query->where('t1.user_id', $userId)
+                      ->where('t2.user_id', $userId);
+            })
             ->where('t1.type', 'expense')
             ->where('t2.type', 'income')
             ->whereBetween('t1.date', [$currentMonthStart, $currentMonthEnd])
@@ -378,9 +387,11 @@ class SettingsController extends Controller
         $transferAccountData = !empty($transferAccountsMap) ? array_map(fn($amount) => $amount / 100, array_values($transferAccountsMap)) : [];
 
         // 5. Receitas por Categoria (Mês Atual)
-        $incomesByCategory = Transaction::where('transactions.user_id', $userId)
+        $incomesByCategory = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('transactions.user_id', $userId);
+        })
             ->where('transactions.type', 'income')
-            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->whereBetween('transactions.date', [$currentMonthStart, $currentMonthEnd])
             ->join('categories', 'transactions.category_id', '=', 'categories.id')
             ->select('categories.name as category_name', DB::raw('SUM(transactions.amount) as total_amount'))
             ->groupBy('categories.name')
@@ -390,9 +401,11 @@ class SettingsController extends Controller
         $incomeCategoryData = $incomesByCategory->pluck('total_amount')->map(fn($amount) => $amount / 100);
 
         // 6. Receitas Recebidas e Pendentes (Mês Atual)
-        $incomeByStatus = Transaction::where('transactions.user_id', $userId)
+        $incomeByStatus = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('transactions.user_id', $userId);
+        })
             ->where('transactions.type', 'income')
-            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->whereBetween('transactions.date', [$currentMonthStart, $currentMonthEnd])
             ->select('status', DB::raw('SUM(transactions.amount) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -402,21 +415,27 @@ class SettingsController extends Controller
         $forecastIncome = $paidIncome + $pendingIncome;
 
         // Total de Despesas (Mês Atual)
-        $totalExpenses = Transaction::where('transactions.user_id', $userId)
+        $totalExpenses = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('transactions.user_id', $userId);
+        })
             ->where('transactions.type', 'expense')
-            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->whereBetween('transactions.date', [$currentMonthStart, $currentMonthEnd])
             ->sum('transactions.amount') / 100;
 
         // Despesas Pagas (Mês Atual) e Saldo Líquido
-        $paidExpenses = Transaction::where('transactions.user_id', $userId)
+        $paidExpenses = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('transactions.user_id', $userId);
+        })
             ->where('transactions.type', 'expense')
             ->where('transactions.status', 'paid')
-            ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
+            ->whereBetween('transactions.date', [$currentMonthStart, $currentMonthEnd])
             ->sum('transactions.amount') / 100;
         $netBalance = $paidIncome - $paidExpenses;
 
         // 7. Detalhamento de Despesas (últimas 50 no período)
-        $detailedExpenses = Transaction::where('user_id', $userId)
+        $detailedExpenses = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
             ->where('type', 'expense')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->with(['category', 'account'])
@@ -425,7 +444,9 @@ class SettingsController extends Controller
             ->get();
 
         // Detalhamento de Receitas (últimas 50 no período)
-        $detailedIncomes = Transaction::where('user_id', $userId)
+        $detailedIncomes = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
             ->where('type', 'income')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->with(['category', 'account'])
@@ -442,13 +463,17 @@ class SettingsController extends Controller
             $dateLabels[] = $current->format('d/m');
             $current->addDay();
         }
-        $incomeByDateRaw = Transaction::where('user_id', $userId)
+        $incomeByDateRaw = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
             ->where('type', 'income')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->select(DB::raw('DATE(date) as date'), DB::raw('SUM(amount) as total'))
             ->groupBy('date')
             ->pluck('total', 'date');
-        $expenseByDateRaw = Transaction::where('user_id', $userId)
+        $expenseByDateRaw = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
             ->where('type', 'expense')
             ->whereBetween('date', [$currentMonthStart, $currentMonthEnd])
             ->select(DB::raw('DATE(date) as date'), DB::raw('SUM(amount) as total'))
@@ -1202,7 +1227,10 @@ class SettingsController extends Controller
         $periodo = $request->input('periodo', 'mensal');
         
         // Obtém transações do mês atual
-        $transactions = $user->transactions()->select('description', 'amount', 'category_id', 'date', 'type')
+        $transactions = Transaction::when(!$user->isAdmin(), function($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->select('description', 'amount', 'category_id', 'date', 'type')
             ->with('category:id,name')
             ->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])
             ->get()
@@ -1240,12 +1268,15 @@ class SettingsController extends Controller
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        $userId = auth()->id();
+        $user = auth()->user();
+        $userId = $user->id;
         $startDate = $request->start_date;
         $endDate = $request->end_date;
 
         $incomesByAccount = Transaction::with(['account'])
-            ->where('user_id', $userId)
+            ->when(!$user->isAdmin(), function($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
             ->where('type', 'income')
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date')
@@ -1286,12 +1317,15 @@ class SettingsController extends Controller
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        $userId = auth()->id();
+        $user = auth()->user();
+        $userId = $user->id;
         $startDate = $request->start_date;
         $endDate = $request->end_date;
 
         $expensesByAccount = Transaction::with(['account'])
-            ->where('user_id', $userId)
+            ->when(!$user->isAdmin(), function($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
             ->where('type', 'expense')
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date')

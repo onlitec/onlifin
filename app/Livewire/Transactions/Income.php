@@ -233,8 +233,7 @@ class Income extends TransactionBase
 
     public function loadTransactions()
     {
-        $this->transactions = Transaction::where('user_id', auth()->id())
-            ->where('type', 'income')
+        $this->transactions = Transaction::when(!$this->isAdmin, fn($query) => $query->where('user_id', auth()->id()))
             ->whereYear('date', $this->year)
             ->whereMonth('date', $this->month)
             ->with(['category', 'account'])
@@ -244,12 +243,14 @@ class Income extends TransactionBase
 
     public function render()
     {
-        $query = Transaction::with(['category', 'account'])
-            ->where('type', 'income');
+        $query = Transaction::with(['category', 'account']);
             
         if (!$this->isAdmin) {
             $query->where('user_id', auth()->id());
         }
+        
+        // CORREÇÃO CRÍTICA: Filtrar apenas transações do tipo 'income' (receitas)
+        $query->where('type', 'income');
         
         // Filter by current company
         $currentCompany = auth()->user()->currentCompany;

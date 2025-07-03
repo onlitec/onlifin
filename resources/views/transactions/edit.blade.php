@@ -70,6 +70,7 @@
                                 <div class="flex items-center">
                                     <span class="text-gray-700 mr-2">R$</span>
                                     <input type="text" 
+                                        name="amount_display"
                                         id="amount_display" 
                                         class="form-input block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                         value="{{ number_format($transaction->amount / 100, 2, ',', '.') }}" 

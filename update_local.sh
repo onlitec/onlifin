@@ -2,7 +2,7 @@
 
 # Atualiza o repositório local
 ssh onlifin.onlitec.com.br "cd /var/www/html/onlifin && git fetch origin"
-ssh onlifin.onlitec.com.br "cd /var/www/html/onlifin && git reset --hard origin/main"
+ssh onlifin.onlitec.com.br "cd /var/www/html/onlifin && git reset --hard origin/beta"
 
 # Limpa os caches e recompila os assets
 ssh onlifin.onlitec.com.br "cd /var/www/html/onlifin && php artisan cache:clear"

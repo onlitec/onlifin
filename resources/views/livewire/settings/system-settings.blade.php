@@ -78,10 +78,10 @@
                         <input 
                             type="checkbox" 
                             wire:model="showCurrentPassword" 
-                            id="showPassword" 
+                            id="showCurrentPassword" 
                             class="form-checkbox h-4 w-4 text-indigo-600"
                         >
-                        <label for="showPassword" class="ml-2 text-sm text-gray-600">
+                        <label for="showCurrentPassword" class="ml-2 text-sm text-gray-600">
                             Mostrar senhas
                         </label>
                     </div>
