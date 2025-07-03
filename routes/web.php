@@ -121,6 +121,9 @@ Route::middleware(['auth'])->group(function () {
     // Rotas do Chatbot
     Route::get('/chatbot', [ChatbotController::class, 'index'])->name('chatbot.index');
     Route::post('/chatbot/ask', [ChatbotController::class, 'ask'])->name('chatbot.ask');
+    Route::post('/chatbot/process-message', [ChatbotController::class, 'processMessage'])
+        ->middleware('auth')
+        ->name('chatbot.processMessage');
     Route::post('/chatbot/upload-statement', [ChatbotController::class, 'uploadStatement'])->name('chatbot.uploadStatement');
     Route::post('/chatbot/process-statement', [ChatbotController::class, 'processStatement'])->name('chatbot.processStatement');
     

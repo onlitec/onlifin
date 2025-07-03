@@ -425,11 +425,34 @@
             // Limpar input
             input.value = '';
             
-            // Simular resposta do bot (aqui você pode integrar com uma API real)
-            setTimeout(() => {
-                const botResponse = generateBotResponse(message);
-                addMessageToChat(botResponse, 'bot');
-            }, 1000);
+            // Mostrar indicador de digitação
+            addTypingIndicator();
+            
+            // Enviar mensagem para a API
+            fetch('{{ route("chatbot.processMessage") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remover indicador de digitação
+                removeTypingIndicator();
+                
+                if (data.success) {
+                    addMessageToChat(data.response, 'bot');
+                } else {
+                    addMessageToChat('Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.', 'bot');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                removeTypingIndicator();
+                addMessageToChat('Erro de conexão. Verifique sua internet e tente novamente.', 'bot');
+            });
         }
 
         function addMessageToChat(message, sender) {
@@ -437,24 +460,68 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = 'mb-4';
             
+            // Converter markdown básico para HTML
+            const formattedMessage = formatMessage(message);
+            
             if (sender === 'user') {
                 messageDiv.innerHTML = `
                     <div class="flex justify-end">
                         <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">
-                            <p class="text-sm">${message}</p>
+                            <div class="text-sm">${formattedMessage}</div>
                         </div>
                     </div>
                 `;
             } else {
                 messageDiv.innerHTML = `
                     <div class="bg-blue-100 text-blue-800 p-3 rounded-lg max-w-xs">
-                        <p class="text-sm">${message}</p>
+                        <div class="text-sm">${formattedMessage}</div>
                     </div>
                 `;
             }
             
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const chatMessages = document.getElementById('chat-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'mb-4 typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="bg-gray-200 text-gray-600 p-3 rounded-lg max-w-xs">
+                    <div class="flex items-center space-x-1">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        </div>
+                        <span class="text-xs ml-2">Digitando...</span>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function formatMessage(message) {
+            // Converter quebras de linha
+            message = message.replace(/\n/g, '<br>');
+            
+            // Converter **texto** para <strong>texto</strong>
+            message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Converter emojis e manter formatação
+            message = message.replace(/•/g, '•');
+            
+            return message;
         }
 
         function generateBotResponse(userMessage) {
