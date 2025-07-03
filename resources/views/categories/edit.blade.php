@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app max-w-4xl mx-auto">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
@@ -134,4 +134,4 @@
             });
         });
     </script>
-</x-layouts.app>
+</x-app-layout>
