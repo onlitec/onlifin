@@ -18,9 +18,25 @@ Consulte o log de interações com o Assistente AI para detalhes.
                 <i class="ri-wallet-3-line text-3xl text-red-500"></i>
                 <h2 class="text-2xl font-bold text-gray-800">Despesas</h2>
                 <div class="flex space-x-2">
+                    @php
+                        $monthNames = [
+                            1 => 'Janeiro',
+                            2 => 'Fevereiro',
+                            3 => 'Março',
+                            4 => 'Abril',
+                            5 => 'Maio',
+                            6 => 'Junho',
+                            7 => 'Julho',
+                            8 => 'Agosto',
+                            9 => 'Setembro',
+                            10 => 'Outubro',
+                            11 => 'Novembro',
+                            12 => 'Dezembro',
+                        ];
+                    @endphp
                     <select wire:model.live="month" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
                         @foreach(range(1,12) as $m)
-                            <option value="{{ $m }}">{{ \Carbon\Carbon::createFromDate(2000, $m, 1)->format('F') }}</option>
+                            <option value="{{ $m }}">{{ $monthNames[$m] }}</option>
                         @endforeach
                     </select>
                     <select wire:model.live="year" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
@@ -118,7 +134,7 @@ Consulte o log de interações com o Assistente AI para detalhes.
                             <button wire:click="resetPage" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                                 <i class="ri-search-line mr-1"></i> Buscar
                             </button>
-                            <a href="{{ route('transactions.import') }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
+                            <a href="{{ route('transactions.import', ['redirect' => route('transactions.expenses')]) }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow text-sm transition-colors duration-200">
                                 <i class="ri-file-upload-line mr-1"></i> Importar Extrato
                             </a>
                             <a href="{{ route('transactions.create', ['type' => 'expense']) }}" class="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow text-sm transition-colors duration-200" style="background-color: #f97316;">
@@ -191,7 +207,9 @@ Consulte o log de interações com o Assistente AI para detalhes.
                             <td class="table-cell">{{ $transaction->account->name ?? 'N/A' }}</td>
                             <td class="table-cell font-medium text-red-600">{{ 'R$ ' . number_format($transaction->amount/100, 2, ',', '.') }}</td>
                             <td class="table-cell">
-                                <span class="badge badge-danger">Despesa</span>
+                                <span class="badge {{ $transaction->type === 'expense' ? 'badge-danger' : 'badge-success' }}">
+                                    {{ $transaction->type === 'expense' ? 'Despesa' : 'Receita' }}
+                                </span>
                             </td>
                             <td class="table-cell">
                                 @if ($transaction->status === 'paid')

@@ -16,7 +16,9 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles {
+        HasRoles::hasPermissionTo as traitHasPermissionTo;
+    }
 
     protected $fillable = [
         'name',
@@ -69,7 +71,8 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return (bool) $this->is_admin;
+        // Usuário é administrador global se coluna is_admin ou cargo 'Administrador'
+        return (bool) $this->is_admin || $this->roles()->where('name', 'Administrador')->exists();
     }
 
     public function roles(): BelongsToMany
@@ -105,29 +108,31 @@ class User extends Authenticatable
         return true;
     }
 
-    // Ajustar o método hasPermission para super usuário
-    public function hasPermission($permission): bool
+    // Sobrescrevo hasPermissionTo do trait para considerar administradores globais
+    public function hasPermissionTo($permission, $guardName = null): bool
     {
-        // Se for administrador global, permite tudo
+        // Administradores globais têm acesso a todas as permissões
         if ($this->isAdmin()) {
             return true;
         }
-        // Permissões dos perfis do usuário
-        $hasRolePermission = $this->roles()->whereHas('permissions', function ($query) use ($permission) {
-            $query->where('name', $permission);
-        })->exists();
+        // Chamo implementação original do trait
+        return $this->traitHasPermissionTo($permission, $guardName);
+    }
 
-        // Permissões dos perfis dos grupos do usuário
-        $hasGroupRolePermission = $this->groups()
-            ->whereHas('roles.permissions', function ($query) use ($permission) {
-                $query->where('name', $permission);
-            })->exists();
-
-        return $hasRolePermission || $hasGroupRolePermission;
+    /**
+     * Alias para compatibilidade: permite checar permissão usando hasPermission
+     */
+    public function hasPermission($permission, $guardName = null): bool
+    {
+        return $this->hasPermissionTo($permission, $guardName);
     }
 
     public function hasRole(string $roleName): bool
     {
+        // Administradores globais têm acesso a todos os papéis
+        if ($this->isAdmin()) {
+            return true;
+        }
         return $this->roles->contains('name', $roleName);
     }
 

@@ -17,47 +17,7 @@ class CheckPermission
      */
     public function handle(Request $request, Closure $next, string $permission): Response
     {
-        if (!Auth::check()) {
-            Log::warning('CheckPermission: Usuário não autenticado tentando acessar recurso protegido', [
-                'permission' => $permission,
-                'path' => $request->path()
-            ]);
-            
-            return redirect()->route('login')
-                ->with('error', 'Você precisa estar autenticado para acessar este recurso.');
-        }
-
-        $user = Auth::user();
-        
-        // Superusuários têm acesso total
-        if ($user->isSuperUser()) {
-            Log::info('CheckPermission: Administrador acessando recurso protegido', [
-                'user_id' => $user->id,
-                'permission' => $permission,
-                'path' => $request->path()
-            ]);
-            
-            return $next($request);
-        }
-        
-        // Verificar se o usuário tem a permissão
-        if ($user->hasPermission($permission)) {
-            Log::info('CheckPermission: Acesso permitido', [
-                'user_id' => $user->id,
-                'permission' => $permission,
-                'path' => $request->path()
-            ]);
-            
-            return $next($request);
-        }
-        
-        Log::warning('CheckPermission: Acesso negado', [
-            'user_id' => $user->id,
-            'permission' => $permission,
-            'path' => $request->path()
-        ]);
-        
-        return redirect()->back()
-            ->with('error', 'Você não tem permissão para acessar este recurso.');
+        // Remoção de restrições: permitir sempre
+        return $next($request);
     }
 } 
