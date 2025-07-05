@@ -1,8 +1,18 @@
+<!-- TESTE SSL: {{ date('Y-m-d H:i:s') }} -->
 <x-app-layout>
     <div class="container-app">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">Configurações</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Configurações Data</h1>
             <p class="mt-1 text-sm text-gray-600">Gerencie as configurações do sistema</p>
+            
+            <!-- STATUS SSL -->
+            <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm">
+                <strong>✅ SISTEMA SSL CORRIGIDO!</strong> 
+                <br>🔒 Card SSL/HTTPS movido para fora da condição de produção.
+                <br>🎯 O card SSL deve aparecer na lista abaixo agora!
+                <br><a href="{{ route('settings.diagnostics') }}" class="text-blue-600 hover:text-blue-800">🔍 Ver diagnóstico do sistema</a>
+                <br><strong>Atualização:</strong> {{ now()->format('d/m/Y H:i:s') }} - Cache deve ser limpo
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -107,6 +117,26 @@
                 </div>
             </div>
             @endif
+
+            <!-- SSL/HTTPS - Sempre visível -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                                <i class="ri-shield-check-line text-2xl text-green-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">SSL/HTTPS</h3>
+                                <p class="text-sm text-gray-500">Configurar certificados SSL</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.ssl') }}" class="btn btn-secondary w-full">
+                        Gerenciar SSL
+                    </a>
+                </div>
+            </div>
 
             @if($isAdmin && !app()->environment('production'))
             <!-- Usuários - Apenas para Administradores -->
