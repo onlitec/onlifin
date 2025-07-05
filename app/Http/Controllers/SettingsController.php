@@ -22,6 +22,7 @@ use App\Models\Setting;
 use App\Services\FinancialReportAIService;
 use App\Services\FinancialDataService;
 use Symfony\Component\Process\Process;
+use App\Models\SslErrorLog;
 
 class SettingsController extends Controller
 {
@@ -1087,7 +1088,14 @@ class SettingsController extends Controller
         }
         // E-mail de contato padrão (usuário autenticado)
         $userEmail = auth()->user()->email;
-        return view('settings.ssl', compact('domain', 'validTo', 'userEmail'));
+        
+        // Buscar erros recentes
+        $recentErrors = SslErrorLog::getRecentErrors($domain, 10);
+        
+        // Verificar se há erro de rate limit ativo
+        $hasRateLimitError = SslErrorLog::hasRateLimitError($domain);
+        
+        return view('settings.ssl', compact('domain', 'validTo', 'userEmail', 'recentErrors', 'hasRateLimitError'));
     }
 
     /**
@@ -1097,16 +1105,29 @@ class SettingsController extends Controller
     {
         $domain = parse_url(config('app.url'), PHP_URL_HOST);
         $email = $request->input('email');
+        
+        // Verificar se há erro de rate limit ativo
+        if (SslErrorLog::hasRateLimitError($domain)) {
+            return back()->with('error', 'Você excedeu o limite de tentativas. O Let\'s Encrypt permite apenas 5 tentativas por hora. Por favor, aguarde antes de tentar novamente.');
+        }
+        
         $process = new Process(['sudo', '-n', 'certbot', 'certonly', '--webroot', '-w', '/var/www/html/onlifin/public', '-d', $domain, '-m', $email, '--agree-tos', '--non-interactive']);
         $process->run();
+        
+        $output = $process->getOutput();
         $errorOutput = $process->getErrorOutput();
-        if (strpos($errorOutput, 'password is required') !== false || strpos($errorOutput, 'terminal is required') !== false) {
-            return back()->with('error', 'O Certbot requer permissão sem senha. Configure o arquivo /etc/sudoers.d/certbot conforme a documentação do Let\'s Encrypt: https://letsencrypt.org/pt-br/docs/');
-        }
+        
         if (!$process->isSuccessful()) {
-            return back()->with('error', $errorOutput);
+            // Log do erro com tradução
+            $errorLog = SslErrorLog::logError('generate', $domain, $errorOutput, $output, [
+                'email' => $email,
+                'command' => $process->getCommandLine()
+            ]);
+            
+            return back()->with('error', $errorLog->friendly_message);
         }
-        return back()->with('message', 'Certificado SSL gerado com sucesso.');
+        
+        return back()->with('message', 'Certificado SSL gerado com sucesso!');
     }
 
     /**
@@ -1116,15 +1137,48 @@ class SettingsController extends Controller
     {
         $domain = parse_url(config('app.url'), PHP_URL_HOST);
         $certPath = "/etc/letsencrypt/live/{$domain}/fullchain.pem";
+        
         if (!file_exists($certPath)) {
-            return back()->with('error', 'Certificado não encontrado para validação.');
+            SslErrorLog::logError('validate', $domain, 'Certificate not found', null, [
+                'cert_path' => $certPath
+            ]);
+            return back()->with('error', 'Certificado não encontrado. Você precisa gerar um certificado primeiro.');
         }
+        
         $process = new Process(['openssl', 'x509', '-in', $certPath, '-noout', '-dates']);
         $process->run();
+        
         if (!$process->isSuccessful()) {
-            return back()->with('error', $process->getErrorOutput());
+            $errorLog = SslErrorLog::logError('validate', $domain, $process->getErrorOutput(), $process->getOutput(), [
+                'cert_path' => $certPath
+            ]);
+            return back()->with('error', $errorLog->friendly_message);
         }
-        return back()->with('output', $process->getOutput());
+        
+        // Processar output para exibir de forma amigável
+        $output = $process->getOutput();
+        $lines = explode("\n", trim($output));
+        $dates = [];
+        
+        foreach ($lines as $line) {
+            if (strpos($line, 'notBefore=') !== false) {
+                $date = substr($line, 10);
+                $dates['inicio'] = Carbon::parse($date)->format('d/m/Y H:i:s');
+            } elseif (strpos($line, 'notAfter=') !== false) {
+                $date = substr($line, 9);
+                $dates['fim'] = Carbon::parse($date)->format('d/m/Y H:i:s');
+                $dates['dias_restantes'] = Carbon::now()->diffInDays(Carbon::parse($date), false);
+            }
+        }
+        
+        $message = "Certificado válido de {$dates['inicio']} até {$dates['fim']}. ";
+        if ($dates['dias_restantes'] > 0) {
+            $message .= "Expira em {$dates['dias_restantes']} dias.";
+        } else {
+            $message .= "EXPIRADO há " . abs($dates['dias_restantes']) . " dias!";
+        }
+        
+        return back()->with('message', $message);
     }
 
     /**
@@ -1133,16 +1187,33 @@ class SettingsController extends Controller
     public function sslRenew(Request $request)
     {
         $domain = parse_url(config('app.url'), PHP_URL_HOST);
+        
+        // Verificar se há erro de rate limit ativo
+        if (SslErrorLog::hasRateLimitError($domain)) {
+            return back()->with('error', 'Você excedeu o limite de tentativas. O Let\'s Encrypt permite apenas 5 tentativas por hora. Por favor, aguarde antes de tentar novamente.');
+        }
+        
         $process = new Process(['sudo', '-n', 'certbot', 'renew', '--nginx', '--non-interactive']);
         $process->run();
+        
+        $output = $process->getOutput();
         $errorOutput = $process->getErrorOutput();
-        if (strpos($errorOutput, 'password is required') !== false || strpos($errorOutput, 'terminal is required') !== false) {
-            return back()->with('error', 'O Certbot requer permissão sem senha. Configure o arquivo /etc/sudoers.d/certbot conforme a documentação do Let\'s Encrypt: https://letsencrypt.org/pt-br/docs/');
-        }
+        
         if (!$process->isSuccessful()) {
-            return back()->with('error', $errorOutput);
+            // Log do erro com tradução
+            $errorLog = SslErrorLog::logError('renew', $domain, $errorOutput, $output, [
+                'command' => $process->getCommandLine()
+            ]);
+            
+            return back()->with('error', $errorLog->friendly_message);
         }
-        return back()->with('message', 'Certificado SSL renovado com sucesso.');
+        
+        // Verificar se realmente renovou ou se não era necessário
+        if (strpos($output, 'not yet due for renewal') !== false || strpos($output, 'not due for renewal') !== false) {
+            return back()->with('message', 'O certificado ainda não precisa ser renovado. O Let\'s Encrypt renova automaticamente certificados com menos de 30 dias para expirar.');
+        }
+        
+        return back()->with('message', 'Certificado SSL renovado com sucesso!');
     }
 
     /**
