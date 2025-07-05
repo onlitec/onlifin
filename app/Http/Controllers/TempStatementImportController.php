@@ -45,10 +45,19 @@ class TempStatementImportController extends Controller
         if ($redirectUrl) {
             session(['transactions_import_redirect_url' => $redirectUrl]);
         }
-        $accounts = Account::where('active', true)
-            ->where('user_id', auth()->id())
-            ->orderBy('name')
-            ->get();
+        // Buscar contas baseado nas permissões do usuário
+        $user = Auth::user();
+        $accountsQuery = Account::where('active', true);
+        
+        if (!$user->hasPermission('view_all_accounts')) {
+            if ($user->hasPermission('view_own_accounts')) {
+                $accountsQuery->where('user_id', $user->id);
+            } else {
+                abort(403, 'Você não tem permissão para visualizar contas.');
+            }
+        }
+        
+        $accounts = $accountsQuery->orderBy('name')->get();
             
         // Verifica se a IA está configurada no banco de dados
         $aiConfigService = new AIConfigService();
