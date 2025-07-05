@@ -301,10 +301,18 @@ class TempStatementImportController extends Controller
             Log::info('🧪 MODO DEBUG ATIVADO: Usando transações simuladas para teste da IA');
             
             $account = Account::findOrFail($accountId);
-            // Verificar permissão do usuário
-            if ($account->user_id !== auth()->id()) {
-                Log::warning('Tentativa de acesso não autorizado ao mapeamento (modo debug)', ['user_id' => auth()->id(), 'account_id' => $accountId]);
-                abort(403, 'Acesso não autorizado a esta conta.');
+            // Verificar permissão do usuário baseada em roles/permissões
+            $user = Auth::user();
+            if (!$user->hasPermission('view_all_accounts')) {
+                if ($user->hasPermission('view_own_accounts')) {
+                    if ($account->user_id !== $user->id) {
+                        Log::warning('Tentativa de acesso não autorizado ao mapeamento (modo debug)', ['user_id' => $user->id, 'account_id' => $accountId]);
+                        abort(403, 'Acesso não autorizado a esta conta.');
+                    }
+                } else {
+                    Log::warning('Usuário sem permissão para visualizar contas (modo debug)', ['user_id' => $user->id, 'account_id' => $accountId]);
+                    abort(403, 'Você não tem permissão para visualizar contas.');
+                }
             }
             
             // Simular transações extraídas para teste
@@ -325,10 +333,18 @@ class TempStatementImportController extends Controller
             }
             
             $account = Account::findOrFail($accountId);
-            // Verificar permissão do usuário
-            if ($account->user_id !== auth()->id()) {
-                Log::warning('Tentativa de acesso não autorizado ao mapeamento', ['user_id' => auth()->id(), 'account_id' => $accountId]);
-                abort(403, 'Acesso não autorizado a esta conta.');
+            // Verificar permissão do usuário baseada em roles/permissões
+            $user = Auth::user();
+            if (!$user->hasPermission('view_all_accounts')) {
+                if ($user->hasPermission('view_own_accounts')) {
+                    if ($account->user_id !== $user->id) {
+                        Log::warning('Tentativa de acesso não autorizado ao mapeamento', ['user_id' => $user->id, 'account_id' => $accountId]);
+                        abort(403, 'Acesso não autorizado a esta conta.');
+                    }
+                } else {
+                    Log::warning('Usuário sem permissão para visualizar contas', ['user_id' => $user->id, 'account_id' => $accountId]);
+                    abort(403, 'Você não tem permissão para visualizar contas.');
+                }
             }
             
             // Extrair transações do arquivo baseado no formato
