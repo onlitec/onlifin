@@ -32,6 +32,7 @@ use App\Models\AiCallLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Services\AIService;
+use Carbon\Carbon;
 
 class TempStatementImportController extends Controller
 {
@@ -2068,6 +2069,23 @@ class TempStatementImportController extends Controller
                 Log::warning('Arquivo temporário não encontrado para deletar', ['path' => $filePathToDelete]);
             }
             
+            // Processar vínculos de recorrência se houver dados da IA
+            $recurringResult = null;
+            if (session()->has('ai_analysis_result')) {
+                $aiAnalysis = session('ai_analysis_result');
+                if (isset($aiAnalysis['transactions'])) {
+                    $recurringResult = $this->processRecurringLinks($aiAnalysis['transactions'], $account->id);
+                    
+                    if ($recurringResult['linked'] > 0) {
+                        Log::info('Transações recorrentes processadas', [
+                            'vinculadas' => $recurringResult['linked'],
+                            'criadas' => $recurringResult['created'],
+                            'erros' => $recurringResult['errors']
+                        ]);
+                    }
+                }
+            }
+            
             DB::commit();
             
             Log::info('✅ Importação concluída com sucesso', [
@@ -2082,6 +2100,11 @@ class TempStatementImportController extends Controller
                 $status = 'warning';
             } else {
                 $status = 'success';
+            }
+            
+            // Adicionar informações sobre recorrências processadas
+            if ($recurringResult && $recurringResult['linked'] > 0) {
+                $message .= " {$recurringResult['linked']} transações recorrentes foram automaticamente vinculadas e baixadas.";
             }
             
             // Recalcular saldo das contas
@@ -2206,6 +2229,31 @@ class TempStatementImportController extends Controller
                 
                 if (isset($aiItem['related_recurring_id']) && $aiItem['related_recurring_id']) {
                     $enrichedTransaction['related_recurring_id'] = $aiItem['related_recurring_id'];
+                }
+            }
+            
+            // Aplicar detecção de recorrência (nova transação recorrente detectada)
+            if (isset($aiItem['is_recurring']) && $aiItem['is_recurring'] === true) {
+                $enrichedTransaction['is_recurring'] = true;
+                
+                // Aplicar tipo de recorrência
+                if (isset($aiItem['recurrence_type']) && in_array($aiItem['recurrence_type'], ['fixed', 'installment'])) {
+                    $enrichedTransaction['recurrence_type'] = $aiItem['recurrence_type'];
+                }
+                
+                // Para parcelamentos, aplicar número e total de parcelas
+                if ($aiItem['recurrence_type'] === 'installment') {
+                    if (isset($aiItem['installment_number'])) {
+                        $enrichedTransaction['installment_number'] = $aiItem['installment_number'];
+                    }
+                    if (isset($aiItem['total_installments'])) {
+                        $enrichedTransaction['total_installments'] = $aiItem['total_installments'];
+                    }
+                }
+                
+                // Aplicar padrão recorrente detectado
+                if (isset($aiItem['recurring_pattern'])) {
+                    $enrichedTransaction['recurring_pattern'] = $aiItem['recurring_pattern'];
                 }
             }
             
@@ -2429,7 +2477,7 @@ class TempStatementImportController extends Controller
         $processedResults = [];
         foreach ($decoded as $item) {
             $processedResults[] = [
-                'id' => $item['id'] ?? null,
+                'id' => isset($item['id']) ? $item['id'] : null,
                 'type' => $item['type'] ?? null,
                 'date' => $item['date'] ?? null,
                 'description' => $item['description'] ?? null,
@@ -2572,8 +2620,13 @@ class TempStatementImportController extends Controller
                 'fornecedor' => $item['fornecedor'] ?? null,
                 'status' => $item['status'] ?? 'paid',
                 'notes' => $item['notes'] ?? null,
+                'is_recurring' => $item['is_recurring'] ?? false,
                 'is_recurring_payment' => $item['is_recurring_payment'] ?? false,
-                'related_recurring_id' => $item['related_recurring_id'] ?? null
+                'related_recurring_id' => $item['related_recurring_id'] ?? null,
+                'recurrence_type' => $item['recurrence_type'] ?? 'none',
+                'installment_number' => $item['installment_number'] ?? null,
+                'total_installments' => $item['total_installments'] ?? null,
+                'recurring_pattern' => $item['recurring_pattern'] ?? null
             ];
         }
         
@@ -2971,5 +3024,113 @@ class TempStatementImportController extends Controller
                 'data' => $result
             ], 500);
         }
+    }
+
+    /**
+     * Processa vinculos de recorrência após salvar as transações
+     * 
+     * @param array $transactions Transações com dados de recorrência da IA
+     * @param int $accountId ID da conta
+     * @return array Resultado do processamento
+     */
+    private function processRecurringLinks($transactions, $accountId)
+    {
+        $result = [
+            'linked' => 0,
+            'created' => 0,
+            'errors' => 0,
+            'details' => []
+        ];
+        
+        foreach ($transactions as $transaction) {
+            try {
+                // 1. Processar vínculos com recorrentes existentes
+                if (isset($transaction['is_recurring_payment']) && $transaction['is_recurring_payment'] === true) {
+                    if (isset($transaction['related_recurring_id'])) {
+                        $recurring = Transaction::where('id', $transaction['related_recurring_id'])
+                            ->where('user_id', auth()->id())
+                            ->where('status', 'pending')
+                            ->first();
+                            
+                        if ($recurring) {
+                            // Dar baixa na transação recorrente
+                            $recurring->status = 'paid';
+                            $recurring->save();
+                            
+                            // Se for parcelada, criar próxima parcela
+                            if ($recurring->isInstallmentRecurrence() && 
+                                $recurring->installment_number < $recurring->total_installments) {
+                                $this->createNextInstallment($recurring);
+                            }
+                            
+                            // Se for fixa, atualizar próxima data
+                            if ($recurring->isFixedRecurrence() && $recurring->next_date) {
+                                $nextDate = Carbon::parse($recurring->next_date)->addMonth();
+                                $recurring->next_date = $nextDate;
+                                $recurring->save();
+                            }
+                            
+                            $result['linked']++;
+                            $result['details'][] = [
+                                'type' => 'linked',
+                                'description' => $transaction['description'],
+                                'recurring_id' => $recurring->id
+                            ];
+                            
+                            Log::info('Transação recorrente vinculada', [
+                                'recurring_id' => $recurring->id,
+                                'description' => $transaction['description']
+                            ]);
+                        }
+                    }
+                }
+                
+                // 2. Criar novas recorrências detectadas (será implementado na Fase 2)
+                // if (isset($transaction['is_recurring']) && $transaction['is_recurring'] === true) {
+                //     // Lógica para criar nova recorrência será adicionada aqui
+                // }
+                
+            } catch (\Exception $e) {
+                $result['errors']++;
+                Log::error('Erro ao processar recorrência', [
+                    'transaction' => $transaction['description'] ?? 'Sem descrição',
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Cria a próxima parcela de uma transação parcelada
+     * 
+     * @param Transaction $transaction Transação parcelada atual
+     * @return Transaction Nova parcela criada
+     */
+    private function createNextInstallment($transaction)
+    {
+        $nextInstallment = $transaction->replicate();
+        $nextInstallment->status = 'pending';
+        $nextInstallment->installment_number = $transaction->installment_number + 1;
+        $nextInstallment->date = Carbon::parse($transaction->date)->addMonth();
+        
+        // Se for a última parcela, remover recorrência
+        if ($nextInstallment->installment_number >= $transaction->total_installments) {
+            $nextInstallment->recurrence_type = 'none';
+            $nextInstallment->next_date = null;
+        } else {
+            $nextInstallment->next_date = Carbon::parse($transaction->next_date)->addMonth();
+        }
+        
+        $nextInstallment->save();
+        
+        Log::info('Próxima parcela criada', [
+            'original_id' => $transaction->id,
+            'new_id' => $nextInstallment->id,
+            'installment' => "{$nextInstallment->installment_number}/{$nextInstallment->total_installments}"
+        ]);
+        
+        return $nextInstallment;
     }
 }

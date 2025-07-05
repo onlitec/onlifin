@@ -468,10 +468,39 @@ $recurringTransactionsJson
    - Se não existir uma categoria adequada, sugira uma nova no campo `suggested_category`.
    - Estabeleça a categoria correta baseando-se na descrição da transação (ex: "Tenda Atacado" → categoria "Supermercado").
 
-2. **IDENTIFICAÇÃO DE TRANSAÇÕES RECORRENTES**:
-   - Compare as transações do extrato com as transações recorrentes existentes.
-   - Se encontrar uma correspondência por valor, data aproximada e descrição similar, marque como pagamento de fatura recorrente.
-   - Uma fatura recorrente identificada deve atualizar o status da cobrança futura para "paid".
+2. **DETECÇÃO DE TRANSAÇÕES RECORRENTES E PARCELADAS**:
+   
+   **a) Transações Recorrentes Fixas (mensalidades, assinaturas, contas)**:
+   - Identifique padrões de serviços recorrentes como:
+     - Streaming: Netflix, Spotify, Disney+, Amazon Prime, etc.
+     - Utilidades: SABSP, Enel, Comgas, NET, Vivo, etc.
+     - Assinaturas: Academias, clubes, seguros, etc.
+     - Mensalidades: Escolas, faculdades, condomínio, etc.
+   - Se identificar um padrão recorrente, marque:
+     - `recurrence_type`: "fixed"
+     - `is_recurring`: true
+     - `recurring_pattern`: descrição do padrão (ex: "Netflix - Mensalidade")
+   
+   **b) Transações Parceladas**:
+   - Identifique padrões de parcelamento como:
+     - "PARC XX/YY" (ex: PARC 03/12)
+     - "XX/YY" no final da descrição
+     - "Parcela X de Y"
+     - Cartões com indicação de parcelamento
+   - Para parcelamentos, extraia:
+     - `recurrence_type`: "installment"
+     - `installment_number`: número da parcela atual
+     - `total_installments`: total de parcelas
+     - `is_recurring`: true
+   
+   **c) Vinculação com Recorrências Existentes**:
+   - Compare com `recurringTransactions` por:
+     - Valor aproximado (tolerância de 5%)
+     - Descrição similar (usando fuzzy matching)
+     - Data compatível (dentro do período esperado)
+   - Se encontrar correspondência:
+     - `is_recurring_payment`: true
+     - `related_recurring_id`: ID da transação recorrente
 
 3. **IDENTIFICAÇÃO DE CLIENTES/FORNECEDORES**:
    - Para receitas: Tente identificar o cliente/pagador na descrição.
@@ -496,8 +525,13 @@ Responda APENAS com um array JSON contendo objetos com os seguintes campos:
 - `fornecedor`: Nome do fornecedor (apenas para 'expense')
 - `status`: "paid" (sempre para importações)
 - `notes`: Observações adicionais (pode incluir detalhes extras identificados)
-- `is_recurring_payment`: Boolean indicando se é pagamento de uma fatura recorrente
+- `is_recurring`: Boolean indicando se é uma transação recorrente ou parcelada
+- `is_recurring_payment`: Boolean indicando se é pagamento de uma fatura recorrente existente
 - `related_recurring_id`: ID da transação recorrente relacionada (se aplicável)
+- `recurrence_type`: 'none', 'fixed' ou 'installment'
+- `installment_number`: Número da parcela atual (apenas para tipo 'installment')
+- `total_installments`: Total de parcelas (apenas para tipo 'installment')
+- `recurring_pattern`: Descrição do padrão recorrente identificado
 
 Exemplo de resposta:
 ```json
@@ -514,23 +548,53 @@ Exemplo de resposta:
     "cliente": null,
     "status": "paid",
     "notes": "Compra em supermercado",
+    "is_recurring": false,
     "is_recurring_payment": false,
-    "related_recurring_id": null
+    "related_recurring_id": null,
+    "recurrence_type": "none",
+    "installment_number": null,
+    "total_installments": null,
+    "recurring_pattern": null
   },
   {
     "id": 1,
-    "type": "income",
+    "type": "expense",
     "date": "2023-05-10",
-    "description": "Salário",
-    "amount": 350000,
-    "category_id": 1,
+    "description": "Netflix.com",
+    "amount": 3990,
+    "category_id": 12,
     "suggested_category": null,
-    "cliente": "Empresa ABC",
-    "fornecedor": null,
+    "cliente": null,
+    "fornecedor": "Netflix",
     "status": "paid",
-    "notes": "Salário mensal",
+    "notes": "Assinatura mensal de streaming",
+    "is_recurring": true,
     "is_recurring_payment": true,
-    "related_recurring_id": 42
+    "related_recurring_id": 42,
+    "recurrence_type": "fixed",
+    "installment_number": null,
+    "total_installments": null,
+    "recurring_pattern": "Netflix - Mensalidade"
+  },
+  {
+    "id": 2,
+    "type": "expense",
+    "date": "2023-05-20",
+    "description": "Americanas PARC 03/10",
+    "amount": 12500,
+    "category_id": 8,
+    "suggested_category": null,
+    "cliente": null,
+    "fornecedor": "Americanas",
+    "status": "paid",
+    "notes": "Compra parcelada",
+    "is_recurring": true,
+    "is_recurring_payment": false,
+    "related_recurring_id": null,
+    "recurrence_type": "installment",
+    "installment_number": 3,
+    "total_installments": 10,
+    "recurring_pattern": "Americanas - Parcelamento"
   }
 ]
 ```
