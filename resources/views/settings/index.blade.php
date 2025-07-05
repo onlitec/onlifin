@@ -279,6 +279,30 @@
                 </div>
             </div>
             @endif
+
+            <!-- Apagar Dados da Plataforma - Visível para todos -->
+            <div class="card hover:shadow-md transition-shadow border-red-200 bg-red-50">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                                <i class="ri-delete-bin-7-line text-2xl text-red-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-red-900">Apagar Meus Dados</h3>
+                                <p class="text-sm text-red-700">Apaga todas as transações e categorias pessoais</p>
+                            </div>
+                        </div>
+                    </div>
+                    <form id="deleteMyDataForm" method="POST" action="{{ route('settings.deleteMyData') }}">
+                        @csrf
+                        @method('DELETE')
+                        <button type="button" onclick="confirmMyDataDeletion()" class="btn bg-red-600 hover:bg-red-700 text-white w-full">
+                            Apagar Meus Dados
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>
@@ -290,6 +314,12 @@ function confirmSpecificUserDeletion() {
 
     if (confirm(`Tem certeza que deseja apagar TODAS as transações e categorias do usuário "${selectedUserName}"? As contas serão mantidas. Esta ação não pode ser desfeita!`)) {
         document.getElementById('deleteSpecificUserForm').submit();
+    }
+}
+
+function confirmMyDataDeletion() {
+    if (confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os seus dados financeiros (transações e categorias)!\n\n✅ Suas contas serão mantidas\n❌ Todas as transações serão removidas\n❌ Todas as categorias personalizadas serão removidas\n\nEsta ação NÃO PODE ser desfeita!\n\nTem certeza que deseja continuar?')) {
+        document.getElementById('deleteMyDataForm').submit();
     }
 }
 </script>

@@ -1074,6 +1074,47 @@ class SettingsController extends Controller
     }
 
     /**
+     * Exclui todos os dados financeiros do usuário logado (próprio usuário).
+     */
+    public function deleteMyData()
+    {
+        $user = auth()->user();
+        
+        try {
+            DB::transaction(function () use ($user) {
+                // Excluir Transações do usuário
+                $transactionsDeleted = Transaction::where('user_id', $user->id)->delete();
+                
+                // Excluir Categorias do usuário (categorias personalizadas)
+                $categoriesDeleted = Category::where('user_id', $user->id)->delete();
+                
+                // Log da operação
+                \Log::info('Usuário apagou seus próprios dados', [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'transactions_deleted' => $transactionsDeleted,
+                    'categories_deleted' => $categoriesDeleted
+                ]);
+            });
+
+            return redirect()->route('settings.index')
+                ->with('success', 'Todos os seus dados financeiros (transações e categorias) foram apagados com sucesso. Suas contas foram mantidas.');
+
+        } catch (\Exception $e) {
+            // Log do erro
+            \Log::error('Erro ao apagar dados do próprio usuário: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('settings.index')
+                ->with('error', 'Ocorreu um erro ao tentar apagar seus dados. Tente novamente ou entre em contato com o suporte.');
+        }
+    }
+
+    /**
      * Página de gerenciamento de SSL/HTTPS
      */
     public function ssl()

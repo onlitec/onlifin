@@ -275,6 +275,9 @@ Route::middleware(['auth'])->group(function () {
     // Rota para exclusão de dados financeiros de usuário (Configurações)
     Route::delete('/settings/delete-user-data', [SettingsController::class, 'deleteUserData'])->name('settings.deleteUserData');
 
+    // Rota para exclusão dos próprios dados financeiros (Configurações)
+    Route::delete('/settings/delete-my-data', [SettingsController::class, 'deleteMyData'])->name('settings.deleteMyData');
+
     // Adiciono rotas de notificações
     Route::prefix('settings/notifications')->name('settings.notifications.')->group(function () {
         Route::get('/', [NotificationConfigController::class, 'index'])->name('index');
