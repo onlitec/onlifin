@@ -504,6 +504,56 @@ class TempStatementImportController extends Controller
     }
 
     /**
+     * Registra uma chamada de API da IA no banco de dados
+     * 
+     * @param string $action Ação realizada (ex: 'analyze_transactions')
+     * @param string $provider Provedor da IA (ex: 'gemini', 'openai')
+     * @param string $model Modelo usado (ex: 'gemini-1.5-pro')
+     * @param int $promptLength Tamanho do prompt enviado
+     * @return int ID do registro criado
+     */
+    private function logAICall($action, $provider, $model, $promptLength = 0)
+    {
+        $log = AiCallLog::create([
+            'user_id' => auth()->id(),
+            'provider' => $provider,
+            'model' => $model,
+            'duration_ms' => 0, // Será atualizado depois
+            'status_code' => null, // Será atualizado depois
+            'prompt_preview' => 'Análise de transações - ' . $action . ' (' . $promptLength . ' chars)',
+            'response_preview' => null, // Será atualizado depois
+            'error_message' => null, // Será atualizado se houver erro
+        ]);
+        
+        return $log->id;
+    }
+
+    /**
+     * Atualiza o registro de chamada da IA com o resultado
+     * 
+     * @param int $callId ID do registro da chamada
+     * @param int $responseLength Tamanho da resposta recebida
+     * @param int $statusCode Código de status HTTP (padrão: 200)
+     * @param string $errorMessage Mensagem de erro, se houver
+     */
+    private function updateAICallLog($callId, $responseLength = 0, $statusCode = 200, $errorMessage = null)
+    {
+        try {
+            $log = AiCallLog::find($callId);
+            if ($log) {
+                $log->update([
+                    'status_code' => $statusCode,
+                    'response_preview' => $responseLength > 0 ? 'Resposta recebida (' . $responseLength . ' chars)' : 'Sem resposta',
+                    'error_message' => $errorMessage,
+                    'duration_ms' => ($log->updated_at->diffInMilliseconds($log->created_at) ?: 1000), // Tempo estimado
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar log da IA: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Analisa as transações usando IA com a configuração do banco de dados
      * 
      * @protected MODIFICAÇÃO PROTEGIDA - Requer autorização explícita para alteração.
