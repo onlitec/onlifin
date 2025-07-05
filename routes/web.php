@@ -103,6 +103,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/settings/reports/incomes-by-account', [SettingsController::class, 'exportIncomesByAccount'])->name('settings.reports.incomes_by_account');
     Route::post('/settings/reports/expenses-by-account', [SettingsController::class, 'exportExpensesByAccount'])->name('settings.reports.expenses_by_account');
     
+    // Rotas SSL/HTTPS
+    Route::get('/settings/ssl', [SettingsController::class, 'ssl'])->name('settings.ssl');
+    Route::post('/settings/ssl/generate', [SettingsController::class, 'sslGenerate'])->name('settings.ssl.generate');
+    Route::post('/settings/ssl/renew', [SettingsController::class, 'sslRenew'])->name('settings.ssl.renew');
+    Route::post('/settings/ssl/validate', [SettingsController::class, 'sslValidate'])->name('settings.ssl.validate');
+    // Rota de diagnóstico
+    Route::get('/settings/diagnostics', [SettingsController::class, 'diagnostics'])->name('settings.diagnostics');
+    
     // Perfil do usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

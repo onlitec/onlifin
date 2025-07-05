@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Setting;
 use App\Services\FinancialReportAIService;
 use App\Services\FinancialDataService;
+use Symfony\Component\Process\Process;
 
 class SettingsController extends Controller
 {
@@ -1069,6 +1070,87 @@ class SettingsController extends Controller
             // 6. Feedback de Erro
              return back()->with('error', 'Ocorreu um erro ao tentar excluir os dados do usuário. Verifique os logs.');
         }
+    }
+
+    /**
+     * Página de gerenciamento de SSL/HTTPS
+     */
+    public function ssl()
+    {
+        $domain = parse_url(config('app.url'), PHP_URL_HOST);
+        $certPath = "/etc/letsencrypt/live/{$domain}/fullchain.pem";
+        if (file_exists($certPath)) {
+            $certData = openssl_x509_parse(file_get_contents($certPath));
+            $validTo = Carbon::createFromTimestamp($certData['validTo_time_t']);
+        } else {
+            $validTo = null;
+        }
+        // E-mail de contato padrão (usuário autenticado)
+        $userEmail = auth()->user()->email;
+        return view('settings.ssl', compact('domain', 'validTo', 'userEmail'));
+    }
+
+    /**
+     * Gera novo certificado SSL via Certbot
+     */
+    public function sslGenerate(Request $request)
+    {
+        $domain = parse_url(config('app.url'), PHP_URL_HOST);
+        $email = $request->input('email');
+        $process = new Process(['sudo', '-n', 'certbot', 'certonly', '--webroot', '-w', '/var/www/html/onlifin/public', '-d', $domain, '-m', $email, '--agree-tos', '--non-interactive']);
+        $process->run();
+        $errorOutput = $process->getErrorOutput();
+        if (strpos($errorOutput, 'password is required') !== false || strpos($errorOutput, 'terminal is required') !== false) {
+            return back()->with('error', 'O Certbot requer permissão sem senha. Configure o arquivo /etc/sudoers.d/certbot conforme a documentação do Let\'s Encrypt: https://letsencrypt.org/pt-br/docs/');
+        }
+        if (!$process->isSuccessful()) {
+            return back()->with('error', $errorOutput);
+        }
+        return back()->with('message', 'Certificado SSL gerado com sucesso.');
+    }
+
+    /**
+     * Valida o certificado SSL existente
+     */
+    public function sslValidate(Request $request)
+    {
+        $domain = parse_url(config('app.url'), PHP_URL_HOST);
+        $certPath = "/etc/letsencrypt/live/{$domain}/fullchain.pem";
+        if (!file_exists($certPath)) {
+            return back()->with('error', 'Certificado não encontrado para validação.');
+        }
+        $process = new Process(['openssl', 'x509', '-in', $certPath, '-noout', '-dates']);
+        $process->run();
+        if (!$process->isSuccessful()) {
+            return back()->with('error', $process->getErrorOutput());
+        }
+        return back()->with('output', $process->getOutput());
+    }
+
+    /**
+     * Renova o certificado SSL via Certbot
+     */
+    public function sslRenew(Request $request)
+    {
+        $domain = parse_url(config('app.url'), PHP_URL_HOST);
+        $process = new Process(['sudo', '-n', 'certbot', 'renew', '--nginx', '--non-interactive']);
+        $process->run();
+        $errorOutput = $process->getErrorOutput();
+        if (strpos($errorOutput, 'password is required') !== false || strpos($errorOutput, 'terminal is required') !== false) {
+            return back()->with('error', 'O Certbot requer permissão sem senha. Configure o arquivo /etc/sudoers.d/certbot conforme a documentação do Let\'s Encrypt: https://letsencrypt.org/pt-br/docs/');
+        }
+        if (!$process->isSuccessful()) {
+            return back()->with('error', $errorOutput);
+        }
+        return back()->with('message', 'Certificado SSL renovado com sucesso.');
+    }
+
+    /**
+     * Página de diagnóstico do sistema
+     */
+    public function diagnostics()
+    {
+        return view('settings.diagnostics');
     }
 
     /**
