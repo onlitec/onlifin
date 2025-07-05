@@ -1931,12 +1931,25 @@ class TempStatementImportController extends Controller
         }
         
         $account = Account::findOrFail($request->account_id);
-        if ($account->user_id !== auth()->id()) {
-             Log::warning('Tentativa de salvar transações em conta não autorizada', ['user_id' => auth()->id(), 'account_id' => $request->account_id]);
-             if ($request->wantsJson()) {
-                 return response()->json(['success' => false, 'message' => 'Acesso não autorizado.'], 403);
-             }
-            abort(403, 'Você não tem permissão para salvar transações nesta conta.');
+        
+        // Verificar permissão baseada em roles/permissões
+        $user = Auth::user();
+        if (!$user->hasPermission('view_all_accounts')) {
+            if ($user->hasPermission('view_own_accounts')) {
+                if ($account->user_id !== $user->id) {
+                    Log::warning('Tentativa de salvar transações em conta não autorizada', ['user_id' => $user->id, 'account_id' => $request->account_id]);
+                    if ($request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => 'Acesso não autorizado a esta conta.'], 403);
+                    }
+                    abort(403, 'Você não tem permissão para salvar transações nesta conta.');
+                }
+            } else {
+                Log::warning('Usuário sem permissão para salvar transações', ['user_id' => $user->id, 'account_id' => $request->account_id]);
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Você não tem permissão para salvar transações.'], 403);
+                }
+                abort(403, 'Você não tem permissão para salvar transações.');
+            }
         }
         
         Log::info('💾 Iniciando salvamento de transações importadas', [
@@ -2704,13 +2717,23 @@ class TempStatementImportController extends Controller
             ], 404);
         }
         
-        // Verificar se a conta pertence ao usuário
+        // Verificar permissão baseada em roles/permissões
         $account = Account::findOrFail($accountId);
-        if ($account->user_id !== auth()->id()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Você não tem permissão para acessar esta conta'
-            ], 403);
+        $user = Auth::user();
+        if (!$user->hasPermission('view_all_accounts')) {
+            if ($user->hasPermission('view_own_accounts')) {
+                if ($account->user_id !== $user->id) {
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'Você não tem permissão para acessar esta conta'
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Você não tem permissão para acessar contas'
+                ], 403);
+            }
         }
         
         // Extrair transações do arquivo
@@ -2898,13 +2921,30 @@ class TempStatementImportController extends Controller
             ], 404);
         }
         
-        // Verificar se a conta pertence ao usuário
+        // Verificar permissão baseada em roles/permissões
         $account = Account::find($accountId);
-        if (!$account || $account->user_id !== auth()->id()) {
+        if (!$account) {
             return response()->json([
                 'success' => false,
-                'message' => 'Conta inválida'
-            ], 403);
+                'message' => 'Conta não encontrada'
+            ], 404);
+        }
+        
+        $user = Auth::user();
+        if (!$user->hasPermission('view_all_accounts')) {
+            if ($user->hasPermission('view_own_accounts')) {
+                if ($account->user_id !== $user->id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Você não tem permissão para acessar esta conta'
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Você não tem permissão para acessar contas'
+                ], 403);
+            }
         }
         
         // Salvar transações
