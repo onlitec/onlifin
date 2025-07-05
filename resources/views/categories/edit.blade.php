@@ -1,4 +1,4 @@
-<x-layouts.app>
+<x-app-layout>
     <div class="container-app max-w-4xl mx-auto">
         <!-- Cabeçalho -->
         <div class="mb-6 flex items-center justify-between">
@@ -34,6 +34,9 @@
                             @error('name')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
+                            <div id="duplicate-warning" class="text-yellow-600 text-xs mt-1 hidden">
+                                ⚠️ Já existe uma categoria similar. Verifique se não é duplicata.
+                            </div>
                         </div>
 
                         <!-- Tipo -->
@@ -74,4 +77,61 @@
             </form>
         </div>
     </div>
-</x-layouts.app>
+
+    <script>
+        // Validação em tempo real para prevenir duplicatas
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameInput = document.getElementById('name');
+            const typeSelect = document.getElementById('type');
+            const duplicateWarning = document.getElementById('duplicate-warning');
+            let checkTimeout;
+            const currentCategoryId = {{ $category->id }};
+
+            // Categorias existentes (obtidas do servidor)
+            const existingCategories = @json($existingCategories);
+
+            function checkDuplicate() {
+                const name = nameInput.value.trim().toLowerCase();
+                const type = typeSelect.value;
+                
+                if (name.length < 2) {
+                    duplicateWarning.classList.add('hidden');
+                    return;
+                }
+
+                const isDuplicate = existingCategories.some(cat => 
+                    cat.name.toLowerCase() === name && 
+                    cat.type === type && 
+                    cat.id !== currentCategoryId
+                );
+
+                if (isDuplicate) {
+                    duplicateWarning.classList.remove('hidden');
+                    nameInput.classList.add('border-yellow-500');
+                } else {
+                    duplicateWarning.classList.add('hidden');
+                    nameInput.classList.remove('border-yellow-500');
+                }
+            }
+
+            // Verificar ao digitar (com debounce)
+            nameInput.addEventListener('input', function() {
+                clearTimeout(checkTimeout);
+                checkTimeout = setTimeout(checkDuplicate, 300);
+            });
+
+            // Verificar ao mudar tipo
+            typeSelect.addEventListener('change', checkDuplicate);
+
+            // Preservar capitalização ao digitar
+            nameInput.addEventListener('blur', function() {
+                // Capitalizar primeira letra de cada palavra
+                const words = this.value.trim().split(' ');
+                const capitalizedWords = words.map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                );
+                this.value = capitalizedWords.join(' ');
+            });
+        });
+    </script>
+</x-app-layout>

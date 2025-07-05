@@ -68,7 +68,8 @@ class TransactionController extends Controller
             abort(403, 'Você não tem permissão para criar transações.');
         }
 
-        $type = $request->type ?? 'expense';
+        // Determina o tipo: receita, despesa ou transferência via parâmetro is_transfer
+        $type = $request->type ?? ($request->has('is_transfer') ? 'transfer' : 'expense');
         
         // CORREÇÃO DE AUTORIZAÇÃO: Carregar categorias separadamente por tipo para o JavaScript
         // Esta correção resolve o problema onde apenas um tipo de categoria era carregado,
@@ -133,7 +134,7 @@ class TransactionController extends Controller
 
         try {
             $validated = $request->validate([
-                'type' => 'required|in:income,expense',
+                'type' => 'required|in:income,expense,transfer',
                 'status' => 'required|in:pending,paid',
                 'date' => 'required|date',
                 'description' => 'required|string|max:255',

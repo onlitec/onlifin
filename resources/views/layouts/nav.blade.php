@@ -1,3 +1,4 @@
+<!DOCTYPE html>
                 <!-- Notification dropdown -->
                 @auth
                 <div class="relative ml-3" x-data="{ open: false }">

@@ -156,8 +156,10 @@ class Expenses extends Component
 
     public function render()
     {
-        $query = Transaction::query()
-            ->where('type', 'expense');
+        $query = Transaction::query();
+            
+        // CORREÇÃO CRÍTICA: Filtrar apenas transações do tipo 'expense' (despesas)
+        $query->where('type', 'expense');
             
         // Aplica filtro de Fatura (recorrência)
         if ($this->recurrenceFilter === 'fixed') {

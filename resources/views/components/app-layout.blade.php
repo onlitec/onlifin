@@ -207,10 +207,10 @@
                                 <i class="ri-logout-box-line mr-2 text-lg"></i>
                                 Sair
                             </button>
-                            <!-- Chatbot icon inside main menu -->
-                            <a href="{{ route('chatbot.index') }}" target="_blank" title="Assistente Financeiro" class="menu-item text-blue-600 hover:text-blue-800" style="font-size: 15px; padding: 8px 10px;">
-                                <i class="ri-chat-3-line text-lg"></i>
-                            </a>
+                                        <!-- Chatbot icon inside main menu -->
+            <button onclick="toggleChatbot()" title="Assistente Financeiro" class="menu-item text-blue-600 hover:text-blue-800" style="font-size: 15px; padding: 8px 10px;">
+                <i class="ri-chat-3-line text-lg"></i>
+            </button>
                             <!-- IA Icon inside main menu -->
                             <a href="{{ route('iaprovider-config.index') }}" class="menu-item {{ $aiConfig['is_configured'] ? 'text-green-600' : 'text-gray-400' }} hover:{{ $aiConfig['is_configured'] ? 'text-green-800' : 'text-gray-600' }}" title="Status da IA" style="font-size: 15px; padding: 8px 10px;">
                                 <i class="ri-robot-line text-lg"></i>
@@ -276,6 +276,12 @@
                         </div>
                     </div>
                     @endif
+                    <!-- Chatbot no menu mobile -->
+                    <button onclick="toggleChatbot()" class="mobile-nav-link w-full text-left flex items-center text-blue-600">
+                        <i class="ri-chat-3-line mr-2 text-lg"></i>
+                        Assistente Financeiro
+                    </button>
+                    
                     <!-- Mobile logout via hidden form -->
                     <button onclick="event.preventDefault();document.getElementById('logout-form').submit()" class="mobile-nav-link w-full text-left flex items-center">
                         <i class="ri-logout-box-line mr-2 text-lg"></i>
@@ -314,6 +320,50 @@
         </footer>
     </div>
 
+    <!-- Chat Flutuante -->
+    <div id="chatbot-container" class="fixed bottom-4 right-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-80 h-96 flex flex-col md:w-80 md:h-96 max-md:w-72 max-md:h-80 max-md:bottom-2 max-md:right-2">
+            <!-- Header do Chat -->
+            <div class="bg-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="ri-robot-line text-xl mr-2"></i>
+                    <h3 class="font-semibold">Assistente Financeiro</h3>
+                </div>
+                <button onclick="toggleChatbot()" class="text-white hover:text-gray-200">
+                    <i class="ri-close-line text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Área de Mensagens -->
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-gray-50">
+                <div class="mb-4">
+                    <div class="bg-blue-100 text-blue-800 p-3 rounded-lg max-w-xs">
+                        <p class="text-sm">Olá! Sou seu assistente financeiro. Como posso ajudá-lo hoje?</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input de Mensagem -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center space-x-2">
+                    <input 
+                        type="text" 
+                        id="chat-input" 
+                        placeholder="Digite sua mensagem..." 
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        onkeypress="handleChatKeyPress(event)"
+                    >
+                    <button 
+                        onclick="sendMessage()" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <i class="ri-send-plane-line"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @livewireScripts
     @stack('scripts')
 
@@ -343,6 +393,159 @@
             document.body.style.maxWidth = '100vw';
             document.body.style.overflowX = 'hidden';
         });
+
+        // Funções do Chatbot
+        function toggleChatbot() {
+            const chatContainer = document.getElementById('chatbot-container');
+            if (chatContainer.classList.contains('hidden')) {
+                chatContainer.classList.remove('hidden');
+                chatContainer.classList.add('animate-fade-in');
+                document.getElementById('chat-input').focus();
+            } else {
+                chatContainer.classList.add('hidden');
+                chatContainer.classList.remove('animate-fade-in');
+            }
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message === '') return;
+            
+            // Adicionar mensagem do usuário
+            addMessageToChat(message, 'user');
+            
+            // Limpar input
+            input.value = '';
+            
+            // Mostrar indicador de digitação
+            addTypingIndicator();
+            
+            // Enviar mensagem para a API
+            fetch('{{ route("chatbot.processMessage") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remover indicador de digitação
+                removeTypingIndicator();
+                
+                if (data.success) {
+                    addMessageToChat(data.response, 'bot');
+                } else {
+                    addMessageToChat('Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.', 'bot');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                removeTypingIndicator();
+                addMessageToChat('Erro de conexão. Verifique sua internet e tente novamente.', 'bot');
+            });
+        }
+
+        function addMessageToChat(message, sender) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'mb-4';
+            
+            // Converter markdown básico para HTML
+            const formattedMessage = formatMessage(message);
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="flex justify-end">
+                        <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">
+                            <div class="text-sm">${formattedMessage}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="bg-blue-100 text-blue-800 p-3 rounded-lg max-w-xs">
+                        <div class="text-sm">${formattedMessage}</div>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const chatMessages = document.getElementById('chat-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'mb-4 typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="bg-gray-200 text-gray-600 p-3 rounded-lg max-w-xs">
+                    <div class="flex items-center space-x-1">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        </div>
+                        <span class="text-xs ml-2">Digitando...</span>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function formatMessage(message) {
+            // Converter quebras de linha
+            message = message.replace(/\n/g, '<br>');
+            
+            // Converter **texto** para <strong>texto</strong>
+            message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Converter emojis e manter formatação
+            message = message.replace(/•/g, '•');
+            
+            return message;
+        }
+
+        function generateBotResponse(userMessage) {
+            const message = userMessage.toLowerCase();
+            
+            // Respostas baseadas em palavras-chave
+            if (message.includes('saldo') || message.includes('conta')) {
+                return 'Para verificar o saldo das suas contas, acesse o menu "Contas" na barra lateral.';
+            } else if (message.includes('receita') || message.includes('ganho')) {
+                return 'Para gerenciar suas receitas, clique em "Receitas" no menu principal.';
+            } else if (message.includes('despesa') || message.includes('gasto')) {
+                return 'Para controlar suas despesas, acesse a seção "Despesas" no menu.';
+            } else if (message.includes('categoria')) {
+                return 'Você pode criar e gerenciar categorias na seção "Categorias" do menu.';
+            } else if (message.includes('transferencia') || message.includes('transferir')) {
+                return 'Para fazer transferências entre contas, acesse "Transações" e selecione a opção de transferência.';
+            } else if (message.includes('relatorio') || message.includes('relatório')) {
+                return 'Os relatórios financeiros estão disponíveis na seção "Relatórios" do menu.';
+            } else if (message.includes('ajuda') || message.includes('help')) {
+                return 'Posso ajudá-lo com: consultar saldos, gerenciar receitas e despesas, criar categorias, fazer transferências e gerar relatórios. O que você precisa?';
+            } else {
+                return 'Entendi! Posso ajudá-lo com questões sobre suas finanças. Tente perguntar sobre saldos, receitas, despesas, categorias ou transferências.';
+            }
+        }
     </script>
     <!-- Formulário oculto de logout -->
     <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">

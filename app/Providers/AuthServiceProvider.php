@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -20,6 +22,11 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Registrar policies e liberar administradores
+        $this->registerPolicies();
+        // Liberar todas as abilities para todos os usuários (remoção de restrições)
+        Gate::before(function ($user, $ability) {
+            return true;
+        });
     }
 } 
