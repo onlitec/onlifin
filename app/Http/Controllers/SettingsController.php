@@ -1106,28 +1106,71 @@ class SettingsController extends Controller
         $domain = parse_url(config('app.url'), PHP_URL_HOST);
         $email = $request->input('email');
         
+        \Log::info('SSL Generate - Iniciando', [
+            'domain' => $domain,
+            'email' => $email
+        ]);
+        
         // Verificar se há erro de rate limit ativo
         if (SslErrorLog::hasRateLimitError($domain)) {
+            \Log::info('SSL Generate - Rate limit detectado');
             return back()->with('error', 'Você excedeu o limite de tentativas. O Let\'s Encrypt permite apenas 5 tentativas por hora. Por favor, aguarde antes de tentar novamente.');
         }
         
-        $process = new Process(['sudo', '-n', 'certbot', 'certonly', '--webroot', '-w', '/var/www/html/onlifin/public', '-d', $domain, '-m', $email, '--agree-tos', '--non-interactive']);
-        $process->run();
+        \Log::info('SSL Generate - Executando certbot');
         
-        $output = $process->getOutput();
-        $errorOutput = $process->getErrorOutput();
-        
-        if (!$process->isSuccessful()) {
-            // Log do erro com tradução
-            $errorLog = SslErrorLog::logError('generate', $domain, $errorOutput, $output, [
+        try {
+            $process = new Process(['sudo', '-n', 'certbot', 'certonly', '--webroot', '-w', '/var/www/html/onlifin/public', '-d', $domain, '-m', $email, '--agree-tos', '--non-interactive']);
+            $process->run();
+            
+            $output = $process->getOutput();
+            $errorOutput = $process->getErrorOutput();
+            
+            \Log::info('SSL Generate - Certbot executado', [
+                'success' => $process->isSuccessful(),
+                'output' => $output,
+                'error_output' => $errorOutput
+            ]);
+            
+            if (!$process->isSuccessful()) {
+                \Log::error('SSL Generate - Erro no certbot', [
+                    'error_output' => $errorOutput,
+                    'output' => $output
+                ]);
+                
+                // Log do erro com tradução
+                $errorLog = SslErrorLog::logError('generate', $domain, $errorOutput, $output, [
+                    'email' => $email,
+                    'command' => $process->getCommandLine()
+                ]);
+                
+                \Log::info('SSL Generate - Log de erro criado', [
+                    'error_log_id' => $errorLog->id,
+                    'friendly_message' => $errorLog->friendly_message
+                ]);
+                
+                return back()->with('error', $errorLog->friendly_message);
+            }
+            
+            \Log::info('SSL Generate - Sucesso');
+            return back()->with('message', 'Certificado SSL gerado com sucesso!');
+            
+        } catch (\Exception $e) {
+            \Log::error('SSL Generate - Exceção capturada', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Log do erro genérico
+            $errorLog = SslErrorLog::logError('generate', $domain, $e->getMessage(), null, [
                 'email' => $email,
-                'command' => $process->getCommandLine()
+                'exception' => get_class($e)
             ]);
             
             return back()->with('error', $errorLog->friendly_message);
         }
-        
-        return back()->with('message', 'Certificado SSL gerado com sucesso!');
     }
 
     /**
