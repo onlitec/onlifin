@@ -27,6 +27,7 @@ class Transaction extends Model
         'description',
         'amount',
         'category_id',
+        'suggested_category', // Adicionado para categorias sugeridas pela IA
         'account_id',
         'company_id',
         'user_id',
@@ -194,5 +195,40 @@ class Transaction extends Model
         }
         
         return "Parcela {$this->installment_number}/{$this->total_installments}";
+    }
+    
+    /**
+     * Garante que uma categoria válida seja atribuída à transação
+     * Cria uma categoria automaticamente se suggested_category for fornecida
+     * 
+     * @param int|null $categoryId ID da categoria existente
+     * @param string|null $suggestedCategory Nome da categoria sugerida
+     * @param string $type Tipo da transação (income ou expense)
+     * @param int $userId ID do usuário
+     * @return int ID da categoria válida
+     */
+    public static function ensureValidCategory($categoryId, $suggestedCategory, $type, $userId)
+    {
+        // Se já tem um category_id válido, usa ele
+        if ($categoryId && is_numeric($categoryId)) {
+            $existingCategory = Category::where('id', $categoryId)
+                ->where('user_id', $userId)
+                ->first();
+            if ($existingCategory) {
+                return $categoryId;
+            }
+        }
+        
+        // Se tem suggested_category, usa o método createOrGet para evitar duplicatas
+        if (!empty($suggestedCategory)) {
+            $category = Category::createOrGet($suggestedCategory, $type, $userId);
+            return $category->id;
+        }
+        
+        // Como último recurso, cria ou obtém categoria padrão
+        $defaultName = ($type === 'income') ? 'Receita Geral' : 'Despesa Geral';
+        $defaultCategory = Category::createOrGet($defaultName, $type, $userId);
+        
+        return $defaultCategory->id;
     }
 }

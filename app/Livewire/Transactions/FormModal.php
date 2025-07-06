@@ -75,6 +75,7 @@ class FormModal extends Component
             'type' => $this->type,
             'note' => $this->note,
             'user_id' => auth()->id(),
+            'company_id' => auth()->user()->currentCompany?->id,
         ]);
 
         $this->reset();

@@ -40,7 +40,13 @@ class CategoryController extends Controller
         $categories = $query->paginate(10)->appends(['type' => $typeFilter]);
         $isAdminView = $user->hasRole('Administrador');
         
-        return view('categories.index', compact('categories', 'isAdminView', 'typeFilter'));
+        // Se for administrador, calcular estatísticas de duplicatas
+        $duplicateStats = null;
+        if ($isAdminView) {
+            $duplicateStats = $this->calculateDuplicateStats();
+        }
+        
+        return view('categories.index', compact('categories', 'isAdminView', 'typeFilter', 'duplicateStats'));
     }
 
     public function create()
@@ -199,5 +205,35 @@ class CategoryController extends Controller
             return redirect()->route('categories.index')
                 ->with('error', 'Não foi possível excluir esta categoria. Ela pode estar em uso em transações.');
         }
+    }
+    
+    /**
+     * Calcula estatísticas de categorias duplicadas para administradores
+     */
+    private function calculateDuplicateStats()
+    {
+        $duplicateGroups = \DB::select("
+            SELECT 
+                TRIM(LOWER(name)) as normalized_name,
+                MIN(name) as example_name,
+                type,
+                COUNT(*) as count,
+                COUNT(DISTINCT user_id) as unique_users
+            FROM categories
+            GROUP BY TRIM(LOWER(name)), type
+            HAVING COUNT(*) > 1
+            ORDER BY COUNT(*) DESC
+        ");
+        
+        $totalCategories = Category::count();
+        $totalDuplicates = array_sum(array_column($duplicateGroups, 'count'));
+        $duplicateGroups = array_slice($duplicateGroups, 0, 10); // Top 10
+        
+        return [
+            'total_categories' => $totalCategories,
+            'total_duplicates' => $totalDuplicates,
+            'duplicate_groups' => $duplicateGroups,
+            'duplicate_percentage' => $totalCategories > 0 ? round(($totalDuplicates / $totalCategories) * 100, 1) : 0
+        ];
     }
 }

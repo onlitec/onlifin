@@ -204,6 +204,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{category}', [CategoryController::class, 'destroy'])
             ->middleware('permission:delete_own_categories|delete_all_categories')
             ->name('destroy');
+        
+        // Rotas de limpeza de duplicatas (apenas administradores)
+        Route::get('/cleanup/analyze', [\App\Http\Controllers\CategoryCleanupController::class, 'analyze'])
+            ->middleware('permission:view_all_categories')
+            ->name('cleanup.analyze');
+        Route::post('/cleanup/execute', [\App\Http\Controllers\CategoryCleanupController::class, 'cleanup'])
+            ->middleware('permission:delete_all_categories')
+            ->name('cleanup.execute');
     });
     
     // Contas
