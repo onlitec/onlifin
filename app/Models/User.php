@@ -13,6 +13,7 @@ use App\Models\Company;
 use Illuminate\Support\Facades\Session;
 use App\Models\Account;
 use Spatie\Permission\Traits\HasRoles;
+use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -33,11 +34,19 @@ class User extends Authenticatable
         'whatsapp_notifications',
         'push_notifications',
         'due_date_notifications',
+        'google_id',
+        'google_avatar',
+        'two_factor_enabled',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
+        'two_factor_recovery_codes',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $casts = [
@@ -45,6 +54,9 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_admin' => 'boolean',
         'is_active' => 'boolean',
+        'two_factor_enabled' => 'boolean',
+        'two_factor_confirmed_at' => 'datetime',
+        'two_factor_recovery_codes' => 'array',
     ];
 
     // Adicionar um método boot para log
@@ -219,6 +231,15 @@ class User extends Authenticatable
         return $this->hasMany(Account::class);
     }
 
+    /**
+     * Relacionamento: Contas bancárias acessíveis através dos grupos do usuário.
+     */
+    public function accountsThroughGroups()
+    {
+        $groupIds = $this->groups()->pluck('groups.id');
+        return Account::whereIn('group_id', $groupIds);
+    }
+
     public function groups()
     {
         return $this->belongsToMany(Group::class);
@@ -313,5 +334,138 @@ class User extends Authenticatable
     public function currentCompany()
     {
         return $this->belongsTo(Company::class, 'current_company_id');
+    }
+
+    /**
+     * Verifica se o usuário tem 2FA habilitado e confirmado
+     */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_enabled && $this->two_factor_confirmed_at !== null;
+    }
+
+    /**
+     * Gera códigos de recuperação para 2FA
+     */
+    public function generateRecoveryCodes(): array
+    {
+        $codes = [];
+        for ($i = 0; $i < 8; $i++) {
+            $codes[] = strtoupper(str_replace('-', '', (string) \Illuminate\Support\Str::uuid()));
+        }
+        
+        $this->two_factor_recovery_codes = $codes;
+        $this->save();
+        
+        return $codes;
+    }
+
+    /**
+     * Verifica se um código de recuperação é válido
+     */
+    public function isValidRecoveryCode(string $code): bool
+    {
+        if (!$this->two_factor_recovery_codes) {
+            return false;
+        }
+        
+        return in_array(strtoupper($code), $this->two_factor_recovery_codes);
+    }
+
+    /**
+     * Usa um código de recuperação (remove da lista)
+     */
+    public function useRecoveryCode(string $code): bool
+    {
+        if (!$this->isValidRecoveryCode($code)) {
+            return false;
+        }
+        
+        $codes = $this->two_factor_recovery_codes;
+        $key = array_search(strtoupper($code), $codes);
+        
+        if ($key !== false) {
+            unset($codes[$key]);
+            $this->two_factor_recovery_codes = array_values($codes);
+            $this->save();
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Verifica se o usuário fez login via Google
+     */
+    public function isGoogleUser(): bool
+    {
+        return !empty($this->google_id);
+    }
+
+    /**
+     * Relacionamento com contas sociais
+     */
+    public function socialAccounts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
+    /**
+     * Obtém conta social por provedor
+     */
+    public function getSocialAccount(string $provider): ?SocialAccount
+    {
+        return $this->socialAccounts()->where('provider', $provider)->first();
+    }
+
+    /**
+     * Verifica se o usuário tem conta vinculada a um provedor
+     */
+    public function hasSocialProvider(string $provider): bool
+    {
+        return $this->socialAccounts()->where('provider', $provider)->exists();
+    }
+
+    /**
+     * Obtém todos os provedores sociais vinculados
+     */
+    public function getConnectedProviders(): array
+    {
+        return $this->socialAccounts()->pluck('provider')->toArray();
+    }
+
+    /**
+     * Verifica se o usuário tem pelo menos uma conta social vinculada
+     */
+    public function hasSocialAccounts(): bool
+    {
+        return $this->socialAccounts()->exists();
+    }
+
+    /**
+     * Verifica se um email está cadastrado no sistema
+     */
+    public static function isEmailRegistered(string $email): bool
+    {
+        return self::where('email', $email)->exists();
+    }
+
+    /**
+     * Busca usuário por email
+     */
+    public static function findByEmail(string $email): ?User
+    {
+        return self::where('email', $email)->first();
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

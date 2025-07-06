@@ -96,6 +96,26 @@
                 </div>
             </div>
 
+            <!-- Autenticação Social - Visível para todos -->
+            <div class="card hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
+                                <i class="ri-share-line text-2xl text-orange-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-gray-900">Autenticação Social</h3>
+                                <p class="text-sm text-gray-500">Configurar provedores sociais</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('settings.social-auth.index') }}" class="btn btn-secondary w-full">
+                        Configurar Provedores
+                    </a>
+                </div>
+            </div>
+
             @if(auth()->user()->currentCompany && optional(auth()->user()->currentCompany->profile)->chatbot_enabled)
             <!-- Chatbot Financeiro -->
             <div class="card hover:shadow-md transition-shadow">

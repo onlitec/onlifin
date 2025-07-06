@@ -11,9 +11,9 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Driver -->
-                <div>
+                <div class="md:col-span-2">
                     <label for="driver" class="block text-sm font-medium text-gray-700">Driver</label>
-                    <select id="driver" wire:model="driver" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <select id="driver" wire:model.live="driver" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                         @foreach($availableDrivers as $value => $label)
                             <option value="{{ $value }}">{{ $label }}</option>
                         @endforeach
@@ -22,48 +22,57 @@
                 </div>
                 
                 @if($driver === 'smtp')
-                <!-- Host -->
-                <div>
-                    <label for="host" class="block text-sm font-medium text-gray-700">Host</label>
-                    <input type="text" wire:model="host" id="host" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" placeholder="smtp.exemplo.com">
-                    <p class="mt-1 text-xs text-gray-500">Endereço do servidor SMTP</p>
-                </div>
-                
-                <!-- Port -->
-                <div>
-                    <label for="port" class="block text-sm font-medium text-gray-700">Porta</label>
-                    <input type="number" wire:model="port" id="port" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" placeholder="587">
-                    <p class="mt-1 text-xs text-gray-500">Porta do servidor SMTP (geralmente 587 ou 465)</p>
-                </div>
-                
-                <!-- Encryption -->
-                <div>
-                    <label for="encryption" class="block text-sm font-medium text-gray-700">Criptografia</label>
-                    <select id="encryption" wire:model="encryption" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                        @foreach($encryptionOptions as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    <p class="mt-1 text-xs text-gray-500">Tipo de criptografia (TLS recomendado)</p>
-                </div>
-                
-                <!-- Username -->
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
-                    <input type="text" wire:model="username" id="username" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" placeholder="seu@email.com">
-                    <p class="mt-1 text-xs text-gray-500">Usuário para autenticação SMTP</p>
-                </div>
-                
-                <!-- Password -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
-                    <input type="password" wire:model="password" id="password" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
-                    <p class="mt-1 text-xs text-gray-500">Senha para autenticação SMTP</p>
+                <!-- Campos SMTP -->
+                <div class="mt-6">
+                    <div class="bg-green-50 p-4 rounded-md">
+                        <h5 class="text-sm font-medium text-green-800 mb-3">Configurações SMTP</h5>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Host -->
+                            <div>
+                                <label for="host" class="block text-sm font-medium text-gray-700">Host</label>
+                                <input type="text" wire:model="host" id="host" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" placeholder="smtp.exemplo.com">
+                                <p class="mt-1 text-xs text-gray-500">Endereço do servidor SMTP</p>
+                            </div>
+                            
+                            <!-- Port -->
+                            <div>
+                                <label for="port" class="block text-sm font-medium text-gray-700">Porta</label>
+                                <input type="number" wire:model="port" id="port" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" placeholder="587">
+                                <p class="mt-1 text-xs text-gray-500">Porta do servidor SMTP (geralmente 587 ou 465)</p>
+                            </div>
+                            
+                            <!-- Encryption -->
+                            <div>
+                                <label for="encryption" class="block text-sm font-medium text-gray-700">Criptografia</label>
+                                <select id="encryption" wire:model="encryption" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    @foreach($encryptionOptions as $value => $label)
+                                        <option value="{{ $value }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Tipo de criptografia (TLS recomendado)</p>
+                            </div>
+                            
+                            <!-- Username -->
+                            <div>
+                                <label for="username" class="block text-sm font-medium text-gray-700">Usuário</label>
+                                <input type="text" wire:model="username" id="username" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" placeholder="seu@email.com">
+                                <p class="mt-1 text-xs text-gray-500">Usuário para autenticação SMTP</p>
+                            </div>
+                            
+                            <!-- Password -->
+                            <div class="md:col-span-2">
+                                <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+                                <input type="password" wire:model="password" id="password" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
+                                <p class="mt-1 text-xs text-gray-500">Senha para autenticação SMTP</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 @endif
                 
                 @if($driver === 'mailgun')
-                <div class="col-span-2">
+                <div class="mt-6">
                     <div class="bg-blue-50 p-4 rounded-md">
                         <div class="flex">
                             <div class="flex-shrink-0">
@@ -86,7 +95,7 @@ MAILGUN_ENDPOINT=api.mailgun.net</pre>
                 @endif
                 
                 @if($driver === 'ses')
-                <div class="col-span-2">
+                <div class="mt-6">
                     <div class="bg-blue-50 p-4 rounded-md">
                         <div class="flex">
                             <div class="flex-shrink-0">
@@ -109,7 +118,7 @@ AWS_DEFAULT_REGION=us-east-1</pre>
                 @endif
                 
                 @if($driver === 'postmark')
-                <div class="col-span-2">
+                <div class="mt-6">
                     <div class="bg-blue-50 p-4 rounded-md">
                         <div class="flex">
                             <div class="flex-shrink-0">
@@ -169,6 +178,22 @@ POSTMARK_TOKEN=seu-token-postmark</pre>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                         Enviar Email de Teste
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Botão para testar recuperação de senha -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="text-sm font-medium text-gray-900">Testar Recuperação de Senha</h5>
+                        <p class="text-xs text-gray-500">Enviar um email de recuperação de senha para testar a funcionalidade</p>
+                    </div>
+                    <button type="button" wire:click="testPasswordReset" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-3.586l6.879-6.879A6 6 0 0121 9z" />
+                        </svg>
+                        Testar Recuperação de Senha
                     </button>
                 </div>
             </div>

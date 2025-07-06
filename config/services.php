@@ -65,4 +65,10 @@ return [
         'document_ai_region' => env('GOOGLE_DOCUMENT_AI_REGION', 'us'), // 'us' é um valor padrão comum
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
 ];
