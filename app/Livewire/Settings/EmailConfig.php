@@ -13,25 +13,25 @@ class EmailConfig extends Component
     #[Rule('required|string')]
     public $driver;
     
-    #[Rule('required_if:driver,smtp')]
+    #[Rule('nullable|string')]
     public $host;
     
-    #[Rule('required_if:driver,smtp|integer')]
+    #[Rule('nullable|integer')]
     public $port;
     
     #[Rule('nullable|string')]
     public $encryption;
     
-    #[Rule('required_if:driver,smtp')]
+    #[Rule('nullable|string')]
     public $username;
     
-    #[Rule('required_if:driver,smtp')]
+    #[Rule('nullable|string')]
     public $password;
     
-    #[Rule('required|email')]
+    #[Rule('nullable|email')]
     public $fromAddress;
     
-    #[Rule('required|string')]
+    #[Rule('nullable|string')]
     public $fromName;
     
     #[Rule('nullable|email')]
@@ -60,21 +60,44 @@ class EmailConfig extends Component
         $this->loadConfig();
     }
     
+    public function updatedDriver()
+    {
+        // Método chamado quando o driver é alterado
+        // Isso força a atualização da interface
+        $this->dispatch('driver-updated', $this->driver);
+    }
+    
     protected function loadConfig()
     {
         $this->driver = config('mail.default', 'smtp');
-        $this->host = config('mail.mailers.smtp.host');
-        $this->port = config('mail.mailers.smtp.port');
-        $this->encryption = config('mail.mailers.smtp.encryption');
-        $this->username = config('mail.mailers.smtp.username');
-        $this->password = config('mail.mailers.smtp.password');
-        $this->fromAddress = config('mail.from.address');
-        $this->fromName = config('mail.from.name');
+        $this->host = config('mail.mailers.smtp.host', '');
+        $this->port = config('mail.mailers.smtp.port', 587);
+        $this->encryption = config('mail.mailers.smtp.encryption', 'tls');
+        $this->username = config('mail.mailers.smtp.username', '');
+        $this->password = config('mail.mailers.smtp.password', '');
+        $this->fromAddress = config('mail.from.address', '');
+        $this->fromName = config('mail.from.name', '');
     }
     
     public function saveConfig()
     {
-        $this->validate();
+        // Validações específicas baseadas no driver selecionado
+        $rules = [
+            'driver' => 'required|string',
+            'fromAddress' => 'required|email',
+            'fromName' => 'required|string',
+        ];
+        
+        // Adicionar validações específicas para SMTP
+        if ($this->driver === 'smtp') {
+            $rules['host'] = 'required|string';
+            $rules['port'] = 'required|integer';
+            $rules['username'] = 'required|string';
+            $rules['password'] = 'required|string';
+            $rules['encryption'] = 'nullable|string';
+        }
+        
+        $this->validate($rules);
         
         try {
             // Atualizar o arquivo .env
@@ -129,6 +152,44 @@ class EmailConfig extends Component
             $this->testMessage = 'Erro ao enviar email de teste: ' . $e->getMessage();
             
             Log::error('Erro ao testar configuração de email', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+    
+    public function testPasswordReset()
+    {
+        $this->validate([
+            'testEmail' => 'required|email',
+        ]);
+        
+        try {
+            // Verificar se o usuário existe
+            $user = \App\Models\User::where('email', $this->testEmail)->first();
+            
+            if (!$user) {
+                $this->testStatus = 'error';
+                $this->testMessage = 'Usuário com email ' . $this->testEmail . ' não encontrado.';
+                return;
+            }
+            
+            // Enviar email de recuperação de senha
+            $status = \Illuminate\Support\Facades\Password::sendResetLink(['email' => $this->testEmail]);
+            
+            if ($status === \Illuminate\Support\Facades\Password::RESET_LINK_SENT) {
+                $this->testStatus = 'success';
+                $this->testMessage = 'Email de recuperação de senha enviado com sucesso para ' . $this->testEmail;
+            } else {
+                $this->testStatus = 'error';
+                $this->testMessage = 'Erro ao enviar email de recuperação de senha: ' . __($status);
+            }
+            
+        } catch (\Exception $e) {
+            $this->testStatus = 'error';
+            $this->testMessage = 'Erro ao enviar email de recuperação de senha: ' . $e->getMessage();
+            
+            Log::error('Erro ao testar envio de email de recuperação de senha', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

@@ -17,7 +17,9 @@ class AccountController extends Controller
 
         if (!$user->hasPermission('view_all_accounts')) {
             if ($user->hasPermission('view_own_accounts')) {
-                $query->where('user_id', $user->id);
+                // Buscar contas através dos grupos do usuário
+                $groupIds = $user->groups()->pluck('groups.id');
+                $query->whereIn('group_id', $groupIds);
             } else {
                 abort(403, 'Você não tem permissão para visualizar contas.');
             }
@@ -58,13 +60,18 @@ class AccountController extends Controller
             'initial_balance' => 'required|numeric',
             'description' => 'nullable|string',
             'color' => 'nullable|string|max:7',
-            'user_id' => 'sometimes|exists:users,id',
+            'group_id' => 'sometimes|exists:groups,id',
         ]);
 
-        if ($user->hasRole('Administrador') && isset($validated['user_id'])) {
-            // Keep $validated['user_id']
+        if ($user->hasRole('Administrador') && isset($validated['group_id'])) {
+            // Administradores podem especificar o grupo
         } else {
-            $validated['user_id'] = $user->id;
+            // Usuários normais usam o primeiro grupo ao qual pertencem
+            $firstGroup = $user->groups()->first();
+            if (!$firstGroup) {
+                abort(403, 'Usuário não pertence a nenhum grupo.');
+            }
+            $validated['group_id'] = $firstGroup->id;
         }
         
         $validated['current_balance'] = $validated['initial_balance'];
@@ -81,17 +88,23 @@ class AccountController extends Controller
         $canEditAll = $user->hasPermission('edit_all_accounts');
         $canEditOwn = $user->hasPermission('edit_own_accounts');
 
-        if (!($canEditAll || ($canEditOwn && $account->user_id === $user->id))) {
+        if (!$canEditAll && $canEditOwn) {
+            // Verificar se o usuário pertence ao grupo da conta
+            $userGroupIds = $user->groups()->pluck('groups.id');
+            if (!$userGroupIds->contains($account->group_id)) {
+                abort(403, 'Você não tem permissão para editar esta conta.');
+            }
+        } elseif (!$canEditAll) {
             abort(403, 'Você não tem permissão para editar esta conta.');
         }
         
         $isAdminView = $user->hasRole('Administrador');
-        $usersForSelect = null;
+        $groupsForSelect = null;
         if ($isAdminView) {
-            $usersForSelect = User::orderBy('name')->get();
+            $groupsForSelect = \App\Models\Group::orderBy('name')->get();
         }
         
-        return view('accounts.edit', compact('account', 'isAdminView', 'usersForSelect'));
+        return view('accounts.edit', compact('account', 'isAdminView', 'groupsForSelect'));
     }
 
     public function update(Request $request, Account $account)
@@ -100,7 +113,13 @@ class AccountController extends Controller
         $canEditAll = $user->hasPermission('edit_all_accounts');
         $canEditOwn = $user->hasPermission('edit_own_accounts');
 
-        if (!($canEditAll || ($canEditOwn && $account->user_id === $user->id))) {
+        if (!$canEditAll && $canEditOwn) {
+            // Verificar se o usuário pertence ao grupo da conta
+            $userGroupIds = $user->groups()->pluck('groups.id');
+            if (!$userGroupIds->contains($account->group_id)) {
+                abort(403, 'Você não tem permissão para atualizar esta conta.');
+            }
+        } elseif (!$canEditAll) {
             abort(403, 'Você não tem permissão para atualizar esta conta.');
         }
         
@@ -113,13 +132,13 @@ class AccountController extends Controller
         ];
         
         if ($user->hasRole('Administrador')) {
-            $validationRules['user_id'] = 'sometimes|exists:users,id';
+            $validationRules['group_id'] = 'sometimes|exists:groups,id';
         }
         
         $validated = $request->validate($validationRules);
         
-        if (!$user->hasRole('Administrador') && isset($validated['user_id'])) {
-            unset($validated['user_id']);
+        if (!$user->hasRole('Administrador') && isset($validated['group_id'])) {
+            unset($validated['group_id']);
         }
 
         $account->update($validated);
@@ -134,18 +153,24 @@ class AccountController extends Controller
         $canDeleteAll = $user->hasPermission('delete_all_accounts');
         $canDeleteOwn = $user->hasPermission('delete_own_accounts');
 
-        if (!($canDeleteAll || ($canDeleteOwn && $account->user_id === $user->id))) {
+        if (!$canDeleteAll && $canDeleteOwn) {
+            // Verificar se o usuário pertence ao grupo da conta
+            $userGroupIds = $user->groups()->pluck('groups.id');
+            if (!$userGroupIds->contains($account->group_id)) {
+                abort(403, 'Você não tem permissão para excluir esta conta.');
+            }
+        } elseif (!$canDeleteAll) {
             abort(403, 'Você não tem permissão para excluir esta conta.');
         }
         
         $hasTransactions = $account->transactions()->count() > 0;
-        $userAccountsCount = Account::where('user_id', $account->user_id)->count();
-        $isLastAccount = $userAccountsCount <= 1;
+        $groupAccountsCount = Account::where('group_id', $account->group_id)->count();
+        $isLastAccount = $groupAccountsCount <= 1;
         $isMainAccount = $account->name === 'Conta Principal';
         
         if ($isLastAccount) {
             return redirect()->route('accounts.index')
-                ->with('error', 'Não é possível excluir a última conta do usuário.');
+                ->with('error', 'Não é possível excluir a última conta do grupo.');
         }
         
         if ($isMainAccount && $hasTransactions) {

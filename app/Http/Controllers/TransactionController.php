@@ -124,9 +124,9 @@ class TransactionController extends Controller
         // Log do request para debug
         \Log::info('Request completo:', $request->all());
 
-        // Se não forneceu account_id, usa a primeira conta do usuário como fallback
+        // Se não forneceu account_id, usa a primeira conta do grupo do usuário como fallback
         if (! $request->filled('account_id')) {
-            $firstAccount = Account::where('user_id', $user->id)->first();
+            $firstAccount = $user->accountsThroughGroups()->first();
             if ($firstAccount) {
                 $request->merge(['account_id' => $firstAccount->id]);
             }

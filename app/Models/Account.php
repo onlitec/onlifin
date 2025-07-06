@@ -24,6 +24,7 @@ class Account extends Model
         'initial_balance',
         'active',
         'user_id',
+        'group_id',
         'description',
         'color',
     ];
@@ -52,6 +53,11 @@ class Account extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
     }
 
     public function transactions(): HasMany

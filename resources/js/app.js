@@ -13,7 +13,6 @@ window.IMask = IMask;
 // Importa outros scripts
 import './notification';
 import './bootstrap';
-import './alpine-override'; // Importa a sobrecarga do Alpine
 
 // Abordagem alternativa para Alpine: verificar se já existe uma instância em execução
 // e se não existir, inicializar plugins e disponibilizar globalmente

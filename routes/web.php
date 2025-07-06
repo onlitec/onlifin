@@ -288,9 +288,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/', [NotificationConfigController::class, 'update'])->name('update');
         Route::post('/test', [NotificationConfigController::class, 'sendTest'])->name('sendTest');
     });
+
+    // Rotas de configuração de autenticação social
+    Route::prefix('settings/social-auth')->name('settings.social-auth.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Settings\SocialAuthConfigController::class, 'index'])->name('index');
+        Route::put('/{provider}', [App\Http\Controllers\Settings\SocialAuthConfigController::class, 'update'])->name('update');
+        Route::post('/{provider}/test', [App\Http\Controllers\Settings\SocialAuthConfigController::class, 'test'])->name('test');
+        Route::get('/{provider}/documentation', [App\Http\Controllers\Settings\SocialAuthConfigController::class, 'documentation'])->name('documentation');
+    });
 });
 
 // Rota de logout
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+// Incluir rotas de autenticação
+require __DIR__.'/auth.php';
 
 Route::get('/install', [InstallController::class, 'install'])->name('install');

@@ -35,10 +35,14 @@ export default defineConfig({
         },
     },
     server: {
-        host: true,
+        host: '0.0.0.0',
+        port: 5173,
         hmr: {
-            host: 'dev.onlifin.onlitec.com.br'
-        }
+            host: 'localhost',
+            port: 5173
+        },
+        cors: true,
+        strictPort: true
     },
     base: '/',
 });
