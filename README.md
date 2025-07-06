@@ -1,219 +1,270 @@
-# Onlifin - Sistema de Gestão Financeira Pessoal
+# Onlifin - Sistema de Gestão Financeira
 
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Build Status](https://github.com/onlitec/onlifin/actions/workflows/php.yml/badge.svg)](https://github.com/onlitec/onlifin/actions)
+[![Versão](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/onlitec/onlifin/releases/tag/v3.0.0)
+[![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2%2B-purple.svg)](https://php.net)
+[![Licença](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Sistema web moderno e completo para gestão financeira pessoal, desenvolvido com Laravel 11 e Livewire 3.
+Sistema completo de gestão financeira pessoal e empresarial com autenticação social, notificações por email e interface moderna.
 
-## Tecnologias
+## 🚀 Funcionalidades Principais
 
-- **Backend**
-  - PHP 8.2
-  - Laravel 11.0
-  - Livewire 3.6
-  - Sanctum (Autenticação)
-  - RoadRunner (Servidor de alta performance)
+### 💳 Gestão Financeira
+- **Transações**: Controle completo de receitas e despesas
+- **Contas**: Gerenciamento de múltiplas contas bancárias
+- **Categorias**: Organização inteligente por categorias personalizáveis
+- **Relatórios**: Dashboards e relatórios detalhados
+- **Importação**: Importação automática de extratos bancários
 
-- **Frontend**
-  - JavaScript/Alpine.js 3.14
-  - TailwindCSS 3.4
-  - Vite (Build System)
-  - Livewire Elements (Componentes)
+### 🔐 Autenticação e Segurança
+- **Login Tradicional**: Sistema de login com email e senha
+- **Login Social**: Autenticação com Google OAuth2
+- **Autenticação de Dois Fatores (2FA)**: Segurança adicional com códigos TOTP
+- **Recuperação de Senha**: Sistema completo com emails personalizados
+- **Gestão de Sessões**: Controle avançado de sessões de usuário
 
-- **Banco de Dados**
-  - MariaDB
-  - MySQL
+### 📧 Sistema de Notificações
+- **Email SMTP**: Configuração completa de servidores SMTP
+- **Templates Personalizados**: Emails com design da marca
+- **Notificações Inteligentes**: Sistema de notificações contextuais
+- **Teste de Conectividade**: Ferramentas para testar configurações
 
-## Funcionalidades Principais
+### 🎨 Interface Moderna
+- **Design Responsivo**: Interface otimizada para todos os dispositivos
+- **Tema Escuro/Claro**: Alternância entre temas
+- **Componentes Dinâmicos**: Interface reativa com Livewire
+- **Acessibilidade**: Seguindo padrões de acessibilidade web
 
-- Dashboard completo com visualização de finanças
-- Gestão de transações (receitas e despesas)
-- Categorização de transações
-- Gestão de contas bancárias
-- Relatórios e análises financeiras
-- Sistema de autenticação robusto
-- Gestão de usuários e permissões
-- Interface responsiva
-- Sistema de backup automático
-- Importação de extratos bancários
-- Integração com IA para categorização automática
+## 🛠️ Tecnologias Utilizadas
 
-## Regras Financeiras e Diretrizes Críticas
+### Backend
+- **Laravel 11.x**: Framework PHP moderno
+- **Livewire 3.x**: Componentes dinâmicos
+- **MySQL**: Banco de dados relacional
+- **Redis**: Cache e sessões (opcional)
 
-O sistema segue regras específicas para cálculos financeiros e manipulação de valores monetários:
+### Frontend
+- **Alpine.js**: Framework JavaScript reativo
+- **Tailwind CSS**: Framework CSS utilitário
+- **Vite**: Build tool moderno
+- **Chart.js**: Gráficos e visualizações
 
-- **Valores Monetários**: Armazenados em centavos no banco de dados para evitar erros de arredondamento
-- **Cálculo de Saldos**: Implementação rigorosa para garantir consistência nos dados financeiros
-- **Modificações em Código Financeiro**: Requer aprovação explícita e documentação
-- **Documentação Detalhada**: Consulte [FINANCIAL_RULES.md](FINANCIAL_RULES.md) para informações completas
+### Integrações
+- **Google OAuth2**: Autenticação social
+- **SMTP**: Envio de emails
+- **2FA**: Autenticação de dois fatores
+- **Backup**: Sistema de backup automático
 
-**IMPORTANTE**: Qualquer alteração em código que manipula valores monetários ou cálculos de saldo deve seguir as diretrizes em FINANCIAL_RULES.md. Os arquivos contendo lógica financeira crítica estão claramente marcados com comentários de aviso.
+## 📋 Requisitos do Sistema
 
-## Requisitos do Sistema
+### Mínimos
+- **PHP**: 8.2 ou superior
+- **Composer**: 2.0 ou superior
+- **Node.js**: 18.0 ou superior
+- **MySQL**: 8.0 ou superior
+- **Nginx/Apache**: Servidor web
 
-- PHP 8.2 ou superior
-- Composer
-- Node.js e NPM
-- MariaDB 10.4 ou MySQL 8.0
-- Nginx ou Apache
-- Servidor de email configurado
+### Recomendados
+- **PHP**: 8.3
+- **MySQL**: 8.0
+- **Redis**: 7.0 (para cache)
+- **SSL**: Certificado SSL válido
 
-## Instalação
+## 🚀 Instalação
 
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/onlitec/onlifin.git
-   cd onlifin
-   ```
-
-2. Instale as dependências:
-   ```bash
-   composer install
-   npm install
-   ```
-
-3. Configure o ambiente:
-   - Copie `.env.example` para `.env`
-   - Configure as variáveis de ambiente
-   - Execute: `php artisan key:generate`
-
-4. Configure o banco de dados:
-   ```bash
-   php artisan migrate
-   php artisan db:seed
-   ```
-
-5. Compile os assets:
-   ```bash
-   npm run build
-   ```
-
-6. Inicie o servidor:
-   ```bash
-   php artisan serve
-   ```
-
-## Regras de Execução de Comandos
-
-Sempre que for instruir comandos de terminal no projeto, crie-os de forma que possam ser copiados e executados diretamente:
-
-- Forneça o comando completo em uma só linha, sem quebras de linha.
-- Caso use ferramentas que paginam a saída (git, less, head, etc.), acrescente `| cat` ao final.
-- Se for necessário trocar de diretório, inclua o `cd /caminho/para/projeto` antes do comando.
-- Não inclua interações adicionais (como prompts) a menos que explicitamente solicitado.
-
-## Estrutura de Branches
-
-- `main`: Branch principal com código estável
-- `Beta1`: Branch de desenvolvimento ativo
-- `release/*`: Branches para releases
-- `feature/*`: Branches para novas funcionalidades
-- `fix/*`: Branches para correções
-- `hotfix/*`: Branches para correções urgentes
-
-## Padrões de Código
-
-- Segue as PSR-12 standards
-- Utiliza PHPStan para análise estática
-- Emprega PHP CS Fixer para formatação
-- Adota padrões Laravel
-- Utiliza docblocks completos
-
-## Testes
-
-- Testes unitários com PHPUnit
-- Testes de feature com Laravel Dusk
-- Testes de API com Pest
-
-## CI/CD
-
-O projeto utiliza GitHub Actions para CI/CD:
-
-### Testes Automatizados
-
-- Testes PHP com PHPUnit
-- Análise estática com PHPStan
-- Formatação de código com PHP CS Fixer
-- Testes JavaScript com ESLint
-- Formatação JavaScript com Prettier
-- Verificações de segurança
-
-### Deploy Automatizado
-
-O deploy é automatizado para a branch `Beta1`:
-
-1. Testes automatizados
-2. Build dos assets frontend
-3. Deploy para ambiente de produção
-
-### Status do Build
-
-[![CI Status](https://github.com/onlitec/onlifin/workflows/CI/badge.svg)](https://github.com/onlitec/onlifin/actions)
-[![Deploy Status](https://github.com/onlitec/onlifin/workflows/Deploy/badge.svg)](https://github.com/onlitec/onlifin/actions)
-
-## Documentação
-
-- Documentação completa em [/docs](docs)
-- API documentation em [/docs/api](docs/api)
-- Guia de contribuição em [CONTRIBUTING.md](CONTRIBUTING.md)
-- Código de conduta em [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-
-## Documentação da API
-
-A API do Onlifin está documentada usando Swagger/OpenAPI. Você pode acessar a documentação em:
-
-- [Documentação da API](https://onlifin.com/api/docs)
-
-### Endpoints Principais
-
-- `GET /api/transactions` - Listar transações
-- `POST /api/transactions` - Criar transação
-- `GET /api/transactions/{id}` - Obter transação
-- `PUT /api/transactions/{id}` - Atualizar transação
-- `DELETE /api/transactions/{id}` - Excluir transação
-- `GET /api/categories` - Listar categorias
-- `POST /api/categories` - Criar categoria
-- `GET /api/accounts` - Listar contas
-- `POST /api/accounts` - Criar conta
-
-### Autenticação
-
-A API usa autenticação via token JWT. Para fazer requisições, inclua o token no header:
-
-```
-Authorization: Bearer seu-token-aqui
+### 1. Clone o Repositório
+```bash
+git clone https://github.com/onlitec/onlifin.git
+cd onlifin
 ```
 
-### Respostas
+### 2. Instale as Dependências
+```bash
+# Dependências PHP
+composer install
 
-Todos os endpoints retornam respostas no formato JSON. Os códigos de status HTTP são:
+# Dependências Node.js
+npm install
+```
 
-- 200: Sucesso
-- 201: Criado
-- 204: Sem conteúdo (ex: DELETE)
-- 400: Requisição inválida
-- 401: Não autorizado
-- 404: Não encontrado
-- 422: Validação falhou
+### 3. Configure o Ambiente
+```bash
+# Copie o arquivo de configuração
+cp .env.example .env
 
-## Licença
+# Gere a chave da aplicação
+php artisan key:generate
+```
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+### 4. Configure o Banco de Dados
+```bash
+# Execute as migrações
+php artisan migrate
 
-## Contribuição
+# Execute os seeders (opcional)
+php artisan db:seed
+```
 
+### 5. Configure o Storage
+```bash
+# Crie o link simbólico
+php artisan storage:link
+```
+
+### 6. Compile os Assets
+```bash
+# Para desenvolvimento
+npm run dev
+
+# Para produção
+npm run build
+```
+
+## ⚙️ Configuração
+
+### Variáveis de Ambiente
+
+#### Banco de Dados
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=onlifin
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha
+```
+
+#### Google OAuth
+```env
+GOOGLE_CLIENT_ID=seu_client_id_google
+GOOGLE_CLIENT_SECRET=seu_client_secret_google
+GOOGLE_REDIRECT_URI=https://seudominio.com/auth/google/callback
+```
+
+#### Email SMTP
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=seu_servidor_smtp
+MAIL_PORT=587
+MAIL_USERNAME=seu_usuario_email
+MAIL_PASSWORD=sua_senha_email
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@seudominio.com
+MAIL_FROM_NAME="Onlifin"
+```
+
+#### Cache e Sessões
+```env
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+```
+
+## 📖 Uso
+
+### Primeiro Acesso
+1. Acesse o sistema através do navegador
+2. Complete o processo de instalação
+3. Crie sua conta de administrador
+4. Configure as integrações necessárias
+
+### Configuração de Autenticação Social
+1. Acesse **Configurações → Autenticação Social**
+2. Configure as credenciais do Google
+3. Teste a conexão
+4. Ative o provedor
+
+### Configuração de Email
+1. Acesse **Configurações → Email**
+2. Configure o servidor SMTP
+3. Teste o envio de email
+4. Teste a recuperação de senha
+
+## 🔧 Desenvolvimento
+
+### Comandos Úteis
+```bash
+# Executar testes
+php artisan test
+
+# Limpar cache
+php artisan config:clear
+php artisan view:clear
+php artisan route:clear
+
+# Executar filas
+php artisan queue:work
+
+# Executar scheduler
+php artisan schedule:work
+```
+
+### Estrutura do Projeto
+```
+onlifin/
+├── app/
+│   ├── Http/Controllers/     # Controladores
+│   ├── Livewire/            # Componentes Livewire
+│   ├── Models/              # Modelos Eloquent
+│   ├── Notifications/       # Notificações
+│   └── Services/            # Serviços
+├── config/                  # Configurações
+├── database/               # Migrações e seeders
+├── resources/
+│   ├── views/              # Templates Blade
+│   ├── js/                 # JavaScript
+│   └── css/                # Estilos
+└── routes/                 # Rotas
+```
+
+## 📝 Contribuição
+
+### Como Contribuir
 1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
+3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
+4. Push para a branch (`git push origin feature/MinhaFeature`)
 5. Abra um Pull Request
 
-## Suporte e Comunidade
+### Padrões de Código
+- Siga os padrões PSR-12 para PHP
+- Use ESLint para JavaScript
+- Documente novas funcionalidades
+- Escreva testes para novas features
 
-- Issues: [https://github.com/onlitec/onlifin/issues](https://github.com/onlitec/onlifin/issues)
-- Discussões: [https://github.com/onlitec/onlifin/discussions](https://github.com/onlitec/onlifin/discussions)
-- Documentação: [/docs](docs)
+## 📄 Changelog
 
-## Versionamento
+Veja o arquivo [CHANGELOG.md](CHANGELOG.md) para detalhes sobre as mudanças em cada versão.
 
-Este projeto segue o Semantic Versioning 2.0.0. As versões são marcadas com tags no formato `vX.Y.Z`.
+## 🐛 Reportar Problemas
+
+Se você encontrar algum problema, por favor:
+1. Verifique se já não foi reportado
+2. Crie uma issue detalhada
+3. Inclua informações do ambiente
+4. Forneça passos para reproduzir
+
+## 📞 Suporte
+
+- **Email**: galvatec@gmail.com
+- **GitHub**: [Issues](https://github.com/onlitec/onlifin/issues)
+- **Documentação**: [Wiki](https://github.com/onlitec/onlifin/wiki)
+
+## 📜 Licença
+
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## 🙏 Agradecimentos
+
+- **Laravel**: Framework PHP excepcional
+- **Livewire**: Componentes dinâmicos fantásticos
+- **Tailwind CSS**: Framework CSS incrível
+- **Comunidade**: Todos os contribuidores e usuários
+
+---
+
+**Desenvolvido com ❤️ pela equipe Onlitec**

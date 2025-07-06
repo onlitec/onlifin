@@ -1,5 +1,7 @@
 # Changelog
 
+Todas as mudanças importantes do projeto serão documentadas neste arquivo.
+
 ## [Não Lançado]
 
 ### Adicionado
@@ -53,11 +55,112 @@
 - Funcionalidades de edição e exclusão de categorias
 - Filtragem dinâmica de categorias por tipo de transação
 
-## [3.0.0] - 2024-02-28
+## [3.0.0] - 2025-07-06
 
-### Adicionado
-- Importação automática de extratos bancários com IA
-- Melhorias significativas no sistema de contas e categorias
+### 🚀 Novas Funcionalidades
+
+#### Autenticação Social
+- **Login com Google**: Implementado sistema completo de autenticação OAuth2 com Google
+- **Autenticação Híbrida**: Suporte para login tradicional e social na mesma plataforma
+- **Gestão de Contas Sociais**: Interface para gerenciar contas sociais vinculadas
+- **Autenticação de Dois Fatores (2FA)**: Sistema completo de 2FA com códigos de recuperação
+
+#### Sistema de Email SMTP
+- **Configuração SMTP**: Interface completa para configuração de servidores SMTP
+- **Email de Recuperação de Senha**: Template personalizado com design da marca
+- **Notificações Personalizadas**: Sistema de notificações por email totalmente customizável
+- **Teste de Conectividade**: Botões para testar conexão SMTP e envio de emails
+
+#### Melhorias na Interface
+- **Design Responsivo**: Interface otimizada para dispositivos móveis
+- **Correções de Layout**: Eliminados problemas de overflow horizontal
+- **Componentes Reutilizáveis**: Criados componentes Livewire para melhor organização
+
+### 🔧 Melhorias Técnicas
+
+#### Arquitetura
+- **Livewire 3.x**: Atualização completa para a versão mais recente
+- **Alpine.js**: Otimização e correção de conflitos de inicialização
+- **Vite**: Sistema de build moderno implementado
+
+#### Segurança
+- **Validação de Domínios**: Sistema de whitelist para domínios Google autorizados
+- **Sanitização de Dados**: Melhorias na validação e sanitização de entradas
+- **Logs de Segurança**: Sistema de auditoria para tentativas de login
+
+#### Performance
+- **Cache Otimizado**: Implementação de cache inteligente para configurações
+- **Lazy Loading**: Carregamento otimizado de componentes
+- **Compressão de Assets**: Otimização de CSS e JavaScript
+
+### 🐛 Correções
+
+#### Problemas Críticos
+- **Link Simbólico**: Corrigido problema com storage/public que causava erro 404
+- **Alpine Override**: Removido código conflitante que causava erros de referência
+- **Popups SweetAlert**: Eliminados popups indesejados em formulários de edição
+
+#### Bugs Menores
+- **Validação de Formulários**: Correções em validações de campos obrigatórios
+- **Responsividade**: Ajustes em componentes para melhor visualização mobile
+- **Compatibilidade**: Correções para melhor compatibilidade entre navegadores
+
+### 🗑️ Removidos
+
+#### Código Obsoleto
+- **Alpine Override**: Removido arquivo desnecessário que causava conflitos
+- **Código Duplicado**: Limpeza de código duplicado e comentários obsoletos
+- **Dependências Não Utilizadas**: Remoção de pacotes não utilizados
+
+### 📦 Dependências
+
+#### Adicionadas
+- `hybridauth/hybridauth`: ^3.0 - Biblioteca para autenticação social
+- `pragmarx/google2fa`: ^8.0 - Biblioteca para autenticação de dois fatores
+
+#### Atualizadas
+- `livewire/livewire`: ^3.6 - Framework para componentes dinâmicos
+- `laravel/framework`: ^11.0 - Framework principal
+
+### 🔄 Migração
+
+#### Configurações Necessárias
+1. Executar migrações: `php artisan migrate`
+2. Publicar assets: `php artisan storage:link`
+3. Limpar cache: `php artisan config:clear`
+4. Recompilar assets: `npm run build`
+
+#### Variáveis de Ambiente
+Adicionar ao `.env`:
+```
+# Google OAuth
+GOOGLE_CLIENT_ID=seu_client_id
+GOOGLE_CLIENT_SECRET=seu_client_secret
+
+# SMTP
+MAIL_MAILER=smtp
+MAIL_HOST=seu_servidor_smtp
+MAIL_PORT=587
+MAIL_USERNAME=seu_usuario
+MAIL_PASSWORD=sua_senha
+MAIL_ENCRYPTION=tls
+```
+
+### 📝 Notas de Desenvolvimento
+
+#### Arquivos Importantes
+- `app/Notifications/ResetPasswordNotification.php`: Notificação personalizada
+- `resources/views/mail/auth/reset-password.blade.php`: Template de email
+- `app/Livewire/Settings/EmailConfig.php`: Configuração de email
+- `app/Http/Controllers/Auth/GoogleAuthController.php`: Controlador Google Auth
+
+#### Configurações
+- `config/hybridauth.php`: Configurações de autenticação social
+- `config/services.php`: Configurações de serviços externos
+
+---
+
+**Versão completa com todas as funcionalidades implementadas e testadas.**
 
 ## [2.1.0] - 2024-02-25
 

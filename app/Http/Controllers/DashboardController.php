@@ -223,8 +223,8 @@ class DashboardController extends Controller
         }
         
         // 5. NOVO: Despesas por Conta Bancária
-        // Primeiro, buscar todas as contas do usuário
-        $userAccounts = Account::where('user_id', $userId)->orderBy('name')->get();
+        // Primeiro, buscar todas as contas acessíveis pelo usuário através de grupos
+        $userAccounts = auth()->user()->accountsThroughGroups()->orderBy('name')->get();
 
         // Preparar dados para Chart.js (Despesas por Conta)
         // Mapear sobre cada conta para obter o total de despesas
@@ -386,12 +386,13 @@ class DashboardController extends Controller
         
         if ($isAdmin) {
             // Administradores veem todas as contas
-            $accounts = Account::with('user')
+            $accounts = Account::with('group')
                 ->orderBy('name')
                 ->get();
         } else {
-            // Usuários normais veem apenas suas próprias contas
-            $accounts = Account::where('user_id', $userId)
+            // Usuários normais veem contas dos grupos aos quais pertencem
+            $accounts = auth()->user()->accountsThroughGroups()
+                ->with('group')
                 ->orderBy('name')
                 ->get();
         }
