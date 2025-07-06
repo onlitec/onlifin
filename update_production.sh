@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Diretório do projeto no servidor de produção
-PROD_DIR="/var/www/html/onlifin"
+PROD_DIR="/var/www/onlifin"
 
 # Atualiza o repositório
 ssh onlifin.onlitec.com.br "cd $PROD_DIR && git pull origin beta"
