@@ -204,6 +204,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{category}', [CategoryController::class, 'destroy'])
             ->middleware('permission:delete_own_categories|delete_all_categories')
             ->name('destroy');
+        
+        // Rotas de limpeza de duplicatas (apenas administradores)
+        Route::get('/cleanup/analyze', [\App\Http\Controllers\CategoryCleanupController::class, 'analyze'])
+            ->middleware('permission:view_all_categories')
+            ->name('cleanup.analyze');
+        Route::post('/cleanup/execute', [\App\Http\Controllers\CategoryCleanupController::class, 'cleanup'])
+            ->middleware('permission:delete_all_categories')
+            ->name('cleanup.execute');
     });
     
     // Contas
@@ -274,6 +282,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota para exclusão de dados financeiros de usuário (Configurações)
     Route::delete('/settings/delete-user-data', [SettingsController::class, 'deleteUserData'])->name('settings.deleteUserData');
+
+    // Rota para exclusão dos próprios dados financeiros (Configurações)
+    Route::delete('/settings/delete-my-data', [SettingsController::class, 'deleteMyData'])->name('settings.deleteMyData');
 
     // Adiciono rotas de notificações
     Route::prefix('settings/notifications')->name('settings.notifications.')->group(function () {

@@ -313,6 +313,7 @@ class FixedStatementImportController extends Controller
                     $transaction->type = $transactionData['type'];
                     $transaction->category_id = $transactionData['category_id'] ?? null;
                     $transaction->status = 'paid'; // Transações importadas são consideradas pagas
+                    $transaction->company_id = auth()->user()->currentCompany?->id;
                     $transaction->save();
                     
                     $savedCount++;
@@ -743,6 +744,7 @@ class FixedStatementImportController extends Controller
                     $transaction->type = $transactionData['type'];
                     $transaction->date = $transactionData['date'];
                     $transaction->status = 'paid'; // Transações importadas são consideradas pagas
+                    $transaction->company_id = auth()->user()->currentCompany?->id;
                     $transaction->save();
 
                     Log::info('Transação salva com sucesso', [

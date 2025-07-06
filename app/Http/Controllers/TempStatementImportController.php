@@ -32,6 +32,7 @@ use App\Models\AiCallLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Services\AIService;
+use Carbon\Carbon;
 
 class TempStatementImportController extends Controller
 {
@@ -391,6 +392,12 @@ class TempStatementImportController extends Controller
             session()->flash('warning', 'Não foi possível extrair transações do arquivo. Verifique o formato do arquivo.');
         }
 
+        // Executar análise prévia para detectar duplicatas
+        $preAnalysisResult = $this->performPreAnalysisWithAI($extractedTransactions, $accountId);
+        
+        // Mesclar resultados da análise prévia com transações
+        $extractedTransactions = $this->mergePreAnalysisResults($extractedTransactions, $preAnalysisResult);
+        
         // Analisar transações usando a IA se solicitado
         $aiAnalysis = null;
         if ($useAI) {
@@ -458,7 +465,10 @@ class TempStatementImportController extends Controller
             'hasImportedBefore' => $hasImportedBefore,
             'usedAI' => $useAI && !empty($aiAnalysis),
             'autoSave' => $autoSave,
-            'isDebugMode' => $isDebugMode // Nova flag para informar a view que estamos em modo debug
+            'isDebugMode' => $isDebugMode, // Nova flag para informar a view que estamos em modo debug
+            'preAnalysisResult' => $preAnalysisResult, // Adicionar resultados da análise prévia
+            'hasDuplicates' => !empty($preAnalysisResult['duplicates']),
+            'hasCategoryConflicts' => !empty($preAnalysisResult['category_conflicts'])
         ];
         
         // **** NOVO LOG: Testar json_encode manualmente ****
@@ -1008,6 +1018,7 @@ class TempStatementImportController extends Controller
                 $transaction->type = isset($analyzedTransaction['type']) ? $analyzedTransaction['type'] : 
                                     (($originalTransaction['amount'] < 0) ? 'expense' : 'income');
                 $transaction->status = 'paid'; // Padrão para transações importadas
+                $transaction->company_id = auth()->user()->currentCompany?->id;
                 $transaction->save();
                 
                 $result['saved']++;
@@ -1895,6 +1906,7 @@ class TempStatementImportController extends Controller
      */
     public function saveTransactions(Request $request)
     {
+        \Log::debug('DEBUG saveTransactions payload', $request->all());
         // Validar os dados enviados
          $validator = Validator::make($request->all(), [
             'account_id' => 'required|exists:accounts,id',
@@ -1956,7 +1968,8 @@ class TempStatementImportController extends Controller
             'conta' => $account->name,
             'total_transacoes_recebidas' => count($request->transactions),
             'file_path' => $request->file_path,
-            'is_ajax' => $request->wantsJson()
+            'is_ajax' => $request->wantsJson(),
+            'memory_usage' => memory_get_usage(true) / 1024 / 1024 . ' MB'
         ]);
         
         DB::beginTransaction();
@@ -2005,6 +2018,11 @@ class TempStatementImportController extends Controller
                 }
             }
             
+            Log::info('📂 Categorias processadas', [
+                'total_categorias' => count($categories),
+                'novas_categorias' => count($createdCategoryIds)
+            ]);
+            
             // Agora salvar as transações
             foreach ($request->transactions as $index => $transactionData) {
                 try {
@@ -2026,28 +2044,40 @@ class TempStatementImportController extends Controller
                     
                     // Definir categoria
                     $categoryId = $transactionData['category_id'] ?? null;
+                    $suggestedCategory = $transactionData['suggested_category'] ?? null;
+                    
                     if ($categoryId !== null && $categoryId !== '') {
                         if (is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
                             // Buscar categoria já criada
-                            $categoryName = $transactionData['suggested_category'] ?? str_replace('_', ' ', substr($categoryId, 4));
+                            $categoryName = $suggestedCategory ?? str_replace('_', ' ', substr($categoryId, 4));
                             $categoryName = trim(ucfirst($categoryName));
                             $key = $categoryName.'-'.$type;
                             
                             if (isset($categories[$key])) {
                                 $transaction->category_id = $categories[$key]['id'];
+                                $transaction->suggested_category = null; // Limpar sugestão já que foi aplicada
                             } else {
                                 $transaction->category_id = null;
+                                $transaction->suggested_category = $categoryName; // Salvar sugestão para uso futuro
                                 Log::warning('Categoria não encontrada para transação', ['index' => $index, 'category' => $categoryName, 'type' => $type]);
                             }
                         } else {
                             $transaction->category_id = $categoryId;
+                            $transaction->suggested_category = null; // Limpar sugestão já que categoria foi definida
                         }
                     } else {
-                        $transaction->category_id = null;
+                        // Usar método helper para garantir categoria válida
+                        $transaction->category_id = Transaction::ensureValidCategory(null, $suggestedCategory, $type, auth()->id());
+                        $transaction->suggested_category = $suggestedCategory;
                     }
                     
                     $transaction->save();
                     $savedCount++;
+                    
+                    // Log de progresso a cada 10 transações
+                    if ($savedCount % 10 === 0) {
+                        Log::info("💳 Progresso: {$savedCount} transações salvas");
+                    }
                     
                 } catch (\Exception $e) {
                     $failedCount++;
@@ -2068,12 +2098,34 @@ class TempStatementImportController extends Controller
                 Log::warning('Arquivo temporário não encontrado para deletar', ['path' => $filePathToDelete]);
             }
             
+            // Processar vínculos de recorrência se houver dados da IA
+            $recurringResult = null;
+            if (session()->has('ai_analysis_result')) {
+                $aiAnalysis = session('ai_analysis_result');
+                if (isset($aiAnalysis['transactions'])) {
+                    $recurringResult = $this->processRecurringLinks($aiAnalysis['transactions'], $account->id);
+                    
+                    if ($recurringResult['linked'] > 0) {
+                        Log::info('Transações recorrentes processadas', [
+                            'vinculadas' => $recurringResult['linked'],
+                            'criadas' => $recurringResult['created'],
+                            'erros' => $recurringResult['errors']
+                        ]);
+                    }
+                }
+            }
+            
             DB::commit();
+            
+            $endTime = microtime(true);
+            $executionTime = $endTime - ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
             
             Log::info('✅ Importação concluída com sucesso', [
                 'transacoes_salvas' => $savedCount,
                 'transacoes_falhas' => $failedCount,
-                'novas_categorias' => count($createdCategoryIds)
+                'novas_categorias' => count($createdCategoryIds),
+                'tempo_execucao' => round($executionTime, 2) . 's',
+                'memory_final' => memory_get_usage(true) / 1024 / 1024 . ' MB'
             ]);
             
             $message = "Importação concluída! {$savedCount} transações foram importadas.";
@@ -2082,6 +2134,11 @@ class TempStatementImportController extends Controller
                 $status = 'warning';
             } else {
                 $status = 'success';
+            }
+            
+            // Adicionar informações sobre recorrências processadas
+            if ($recurringResult && $recurringResult['linked'] > 0) {
+                $message .= " {$recurringResult['linked']} transações recorrentes foram automaticamente vinculadas e baixadas.";
             }
             
             // Recalcular saldo das contas
@@ -2206,6 +2263,31 @@ class TempStatementImportController extends Controller
                 
                 if (isset($aiItem['related_recurring_id']) && $aiItem['related_recurring_id']) {
                     $enrichedTransaction['related_recurring_id'] = $aiItem['related_recurring_id'];
+                }
+            }
+            
+            // Aplicar detecção de recorrência (nova transação recorrente detectada)
+            if (isset($aiItem['is_recurring']) && $aiItem['is_recurring'] === true) {
+                $enrichedTransaction['is_recurring'] = true;
+                
+                // Aplicar tipo de recorrência
+                if (isset($aiItem['recurrence_type']) && in_array($aiItem['recurrence_type'], ['fixed', 'installment'])) {
+                    $enrichedTransaction['recurrence_type'] = $aiItem['recurrence_type'];
+                }
+                
+                // Para parcelamentos, aplicar número e total de parcelas
+                if ($aiItem['recurrence_type'] === 'installment') {
+                    if (isset($aiItem['installment_number'])) {
+                        $enrichedTransaction['installment_number'] = $aiItem['installment_number'];
+                    }
+                    if (isset($aiItem['total_installments'])) {
+                        $enrichedTransaction['total_installments'] = $aiItem['total_installments'];
+                    }
+                }
+                
+                // Aplicar padrão recorrente detectado
+                if (isset($aiItem['recurring_pattern'])) {
+                    $enrichedTransaction['recurring_pattern'] = $aiItem['recurring_pattern'];
                 }
             }
             
@@ -2429,7 +2511,7 @@ class TempStatementImportController extends Controller
         $processedResults = [];
         foreach ($decoded as $item) {
             $processedResults[] = [
-                'id' => $item['id'] ?? null,
+                'id' => isset($item['id']) ? $item['id'] : null,
                 'type' => $item['type'] ?? null,
                 'date' => $item['date'] ?? null,
                 'description' => $item['description'] ?? null,
@@ -2572,8 +2654,13 @@ class TempStatementImportController extends Controller
                 'fornecedor' => $item['fornecedor'] ?? null,
                 'status' => $item['status'] ?? 'paid',
                 'notes' => $item['notes'] ?? null,
+                'is_recurring' => $item['is_recurring'] ?? false,
                 'is_recurring_payment' => $item['is_recurring_payment'] ?? false,
-                'related_recurring_id' => $item['related_recurring_id'] ?? null
+                'related_recurring_id' => $item['related_recurring_id'] ?? null,
+                'recurrence_type' => $item['recurrence_type'] ?? 'none',
+                'installment_number' => $item['installment_number'] ?? null,
+                'total_installments' => $item['total_installments'] ?? null,
+                'recurring_pattern' => $item['recurring_pattern'] ?? null
             ];
         }
         
@@ -2971,5 +3058,299 @@ class TempStatementImportController extends Controller
                 'data' => $result
             ], 500);
         }
+    }
+
+    /**
+     * Processa vinculos de recorrência após salvar as transações
+     * 
+     * @param array $transactions Transações com dados de recorrência da IA
+     * @param int $accountId ID da conta
+     * @return array Resultado do processamento
+     */
+    private function processRecurringLinks($transactions, $accountId)
+    {
+        $result = [
+            'linked' => 0,
+            'created' => 0,
+            'errors' => 0,
+            'details' => []
+        ];
+        
+        foreach ($transactions as $transaction) {
+            try {
+                // 1. Processar vínculos com recorrentes existentes
+                if (isset($transaction['is_recurring_payment']) && $transaction['is_recurring_payment'] === true) {
+                    if (isset($transaction['related_recurring_id'])) {
+                        $recurring = Transaction::where('id', $transaction['related_recurring_id'])
+                            ->where('user_id', auth()->id())
+                            ->where('status', 'pending')
+                            ->first();
+                            
+                        if ($recurring) {
+                            // Dar baixa na transação recorrente
+                            $recurring->status = 'paid';
+                            $recurring->save();
+                            
+                            // Se for parcelada, criar próxima parcela
+                            if ($recurring->isInstallmentRecurrence() && 
+                                $recurring->installment_number < $recurring->total_installments) {
+                                $this->createNextInstallment($recurring);
+                            }
+                            
+                            // Se for fixa, atualizar próxima data
+                            if ($recurring->isFixedRecurrence() && $recurring->next_date) {
+                                $nextDate = Carbon::parse($recurring->next_date)->addMonth();
+                                $recurring->next_date = $nextDate;
+                                $recurring->save();
+                            }
+                            
+                            $result['linked']++;
+                            $result['details'][] = [
+                                'type' => 'linked',
+                                'description' => $transaction['description'],
+                                'recurring_id' => $recurring->id
+                            ];
+                            
+                            Log::info('Transação recorrente vinculada', [
+                                'recurring_id' => $recurring->id,
+                                'description' => $transaction['description']
+                            ]);
+                        }
+                    }
+                }
+                
+                // 2. Criar novas recorrências detectadas (será implementado na Fase 2)
+                // if (isset($transaction['is_recurring']) && $transaction['is_recurring'] === true) {
+                //     // Lógica para criar nova recorrência será adicionada aqui
+                // }
+                
+            } catch (\Exception $e) {
+                $result['errors']++;
+                Log::error('Erro ao processar recorrência', [
+                    'transaction' => $transaction['description'] ?? 'Sem descrição',
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Cria a próxima parcela de uma transação parcelada
+     * 
+     * @param Transaction $transaction Transação parcelada atual
+     * @return Transaction Nova parcela criada
+     */
+    private function createNextInstallment($transaction)
+    {
+        $nextInstallment = $transaction->replicate();
+        $nextInstallment->status = 'pending';
+        $nextInstallment->installment_number = $transaction->installment_number + 1;
+        $nextInstallment->date = Carbon::parse($transaction->date)->addMonth();
+        
+        // Se for a última parcela, remover recorrência
+        if ($nextInstallment->installment_number >= $transaction->total_installments) {
+            $nextInstallment->recurrence_type = 'none';
+            $nextInstallment->next_date = null;
+        } else {
+            $nextInstallment->next_date = Carbon::parse($transaction->next_date)->addMonth();
+        }
+        
+        $nextInstallment->save();
+        
+        Log::info('Próxima parcela criada', [
+            'original_id' => $transaction->id,
+            'new_id' => $nextInstallment->id,
+            'installment' => "{$nextInstallment->installment_number}/{$nextInstallment->total_installments}"
+        ]);
+        
+        return $nextInstallment;
+    }
+
+    /**
+     * Análise prévia com IA para detectar duplicatas de transações e categorias
+     * 
+     * @param array $extractedTransactions Transações do extrato
+     * @param int $accountId ID da conta
+     * @return array Resultado da análise prévia
+     */
+    private function performPreAnalysisWithAI($extractedTransactions, $accountId)
+    {
+        try {
+            Log::info('🔍 Iniciando análise prévia com IA para detectar duplicatas');
+            
+            // Obter transações existentes dos últimos 90 dias
+            $existingTransactions = Transaction::where('user_id', auth()->id())
+                ->where('account_id', $accountId)
+                ->where('date', '>=', now()->subDays(90))
+                ->select('id', 'description', 'amount', 'date', 'category_id')
+                ->with('category:id,name')
+                ->get()
+                ->toArray();
+            
+            // Obter categorias existentes
+            $existingCategories = Category::where('user_id', auth()->id())
+                ->select('id', 'name', 'type')
+                ->get()
+                ->toArray();
+            
+            // Preparar prompt para análise de duplicatas
+            $prompt = $this->preparePreAnalysisPrompt($extractedTransactions, $existingTransactions, $existingCategories);
+            
+            // Executar análise com IA
+            $aiConfigService = new AIConfigService();
+            $aiConfig = $aiConfigService->getAIConfig();
+            
+            if (!$aiConfig['is_configured']) {
+                Log::warning('IA não configurada para análise prévia');
+                return ['duplicates' => [], 'category_conflicts' => []];
+            }
+            
+            $aiService = new AIService();
+            $response = $aiService->analyze($prompt);
+            
+            // Processar resposta da IA
+            $preAnalysisResult = $this->processPreAnalysisResponse($response);
+            
+            Log::info('✅ Análise prévia concluída', [
+                'duplicates_found' => count($preAnalysisResult['duplicates'] ?? []),
+                'category_conflicts' => count($preAnalysisResult['category_conflicts'] ?? [])
+            ]);
+            
+            return $preAnalysisResult;
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Erro na análise prévia: ' . $e->getMessage());
+            return ['duplicates' => [], 'category_conflicts' => []];
+        }
+    }
+    
+    /**
+     * Prepara o prompt para análise prévia de duplicatas
+     * 
+     * @param array $extractedTransactions Transações do extrato
+     * @param array $existingTransactions Transações já cadastradas
+     * @param array $existingCategories Categorias já cadastradas
+     * @return string Prompt formatado
+     */
+    private function preparePreAnalysisPrompt($extractedTransactions, $existingTransactions, $existingCategories)
+    {
+        $prompt = "Você é um especialista em análise financeira. Analise as transações do extrato bancário e compare com as transações e categorias já existentes no sistema.\n\n";
+        
+        $prompt .= "OBJETIVO:\n";
+        $prompt .= "1. Identificar transações do extrato que já estão cadastradas no sistema (possíveis duplicatas)\n";
+        $prompt .= "2. Identificar categorias que já existem no sistema para evitar duplicatas\n";
+        $prompt .= "3. Fornecer alertas sobre potenciais conflitos\n\n";
+        
+        $prompt .= "TRANSAÇÕES DO EXTRATO:\n";
+        $prompt .= json_encode($extractedTransactions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
+        
+        $prompt .= "TRANSAÇÕES JÁ CADASTRADAS (últimos 90 dias):\n";
+        $prompt .= json_encode($existingTransactions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
+        
+        $prompt .= "CATEGORIAS JÁ CADASTRADAS:\n";
+        $prompt .= json_encode($existingCategories, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
+        
+        $prompt .= "CRITÉRIOS PARA IDENTIFICAR DUPLICATAS:\n";
+        $prompt .= "- Mesma descrição (ou muito similar)\n";
+        $prompt .= "- Mesmo valor\n";
+        $prompt .= "- Data próxima (diferença de até 3 dias)\n";
+        $prompt .= "- Mesmo tipo (receita/despesa)\n\n";
+        
+        $prompt .= "RESPONDA APENAS COM JSON NO FORMATO:\n";
+        $prompt .= "{\n";
+        $prompt .= "  \"duplicates\": [\n";
+        $prompt .= "    {\n";
+        $prompt .= "      \"extract_transaction_id\": \"ID da transação do extrato\",\n";
+        $prompt .= "      \"existing_transaction_id\": \"ID da transação já cadastrada\",\n";
+        $prompt .= "      \"similarity_score\": 0.95,\n";
+        $prompt .= "      \"reason\": \"Descrição detalhada da similaridade\",\n";
+        $prompt .= "      \"recommendation\": \"skip\" ou \"import_anyway\"\n";
+        $prompt .= "    }\n";
+        $prompt .= "  ],\n";
+        $prompt .= "  \"category_conflicts\": [\n";
+        $prompt .= "    {\n";
+        $prompt .= "      \"transaction_description\": \"Descrição da transação\",\n";
+        $prompt .= "      \"suggested_category\": \"Categoria sugerida\",\n";
+        $prompt .= "      \"existing_category_id\": \"ID da categoria existente\",\n";
+        $prompt .= "      \"existing_category_name\": \"Nome da categoria existente\",\n";
+        $prompt .= "      \"recommendation\": \"use_existing\" ou \"create_new\"\n";
+        $prompt .= "    }\n";
+        $prompt .= "  ]\n";
+        $prompt .= "}\n\n";
+        
+        return $prompt;
+    }
+    
+    /**
+     * Processa a resposta da IA da análise prévia
+     * 
+     * @param string $response Resposta da IA
+     * @return array Resultado processado
+     */
+    private function processPreAnalysisResponse($response)
+    {
+        $result = ['duplicates' => [], 'category_conflicts' => []];
+        
+        // Tentar extrair JSON da resposta
+        $pattern = '/\{[\s\S]*\}/';
+        if (preg_match($pattern, $response, $matches)) {
+            $jsonStr = $matches[0];
+            $decoded = json_decode($jsonStr, true);
+            
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $result['duplicates'] = $decoded['duplicates'] ?? [];
+                $result['category_conflicts'] = $decoded['category_conflicts'] ?? [];
+            } else {
+                Log::error('Erro ao decodificar JSON da análise prévia: ' . json_last_error_msg());
+            }
+        } else {
+            Log::error('Nenhum JSON encontrado na resposta da análise prévia');
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Mescla os resultados da análise prévia com as transações extraídas
+     * 
+     * @param array $extractedTransactions Transações do extrato
+     * @param array $preAnalysisResult Resultado da análise prévia
+     * @return array Transações com informações de duplicatas
+     */
+    private function mergePreAnalysisResults($extractedTransactions, $preAnalysisResult)
+    {
+        // Criar mapeamento de duplicatas por ID da transação do extrato
+        $duplicatesMap = [];
+        foreach ($preAnalysisResult['duplicates'] as $duplicate) {
+            $duplicatesMap[$duplicate['extract_transaction_id']] = $duplicate;
+        }
+        
+        // Criar mapeamento de conflitos de categoria por descrição
+        $categoryConflictsMap = [];
+        foreach ($preAnalysisResult['category_conflicts'] as $conflict) {
+            $categoryConflictsMap[$conflict['transaction_description']] = $conflict;
+        }
+        
+        // Adicionar informações de duplicatas às transações
+        foreach ($extractedTransactions as &$transaction) {
+            $transactionId = $transaction['id'] ?? array_search($transaction, $extractedTransactions);
+            
+            // Verificar se é duplicata
+            if (isset($duplicatesMap[$transactionId])) {
+                $transaction['is_duplicate'] = true;
+                $transaction['duplicate_info'] = $duplicatesMap[$transactionId];
+            } else {
+                $transaction['is_duplicate'] = false;
+            }
+            
+            // Verificar conflitos de categoria
+            if (isset($categoryConflictsMap[$transaction['description']])) {
+                $transaction['category_conflict'] = $categoryConflictsMap[$transaction['description']];
+            }
+        }
+        
+        return $extractedTransactions;
     }
 }

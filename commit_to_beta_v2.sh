@@ -49,4 +49,4 @@ echo "Fazendo push para origin/beta..."
 git push origin beta
 
 echo "=== Processo concluído! ==="
-echo "Alterações enviadas para a branch beta - Release v2.0.0"
+echo "Alterações enviadas para a branch beta - Release v2.0.0" 

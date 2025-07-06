@@ -148,7 +148,7 @@
             
             // Dados passados pelo PHP via AJAX
             let transactions = [];
-            let categories = @json($categories ?? []); // Categorias ainda podemos passar diretamente
+            let categories = @json($categories ?? []);
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             // Carregar os dados de transações do elemento oculto
@@ -397,7 +397,8 @@
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': csrfToken
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: AbortSignal.timeout(300000) // 5 minutos
                 })
                 .then(response => {
                     if (!response.ok) {

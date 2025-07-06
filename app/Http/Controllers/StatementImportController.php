@@ -1578,7 +1578,8 @@ private function extractTransactionsFromCSV($path)
                     'status' => 'paid',
                     'category_id' => $transaction['category_id'],
                     'account_id' => $account->id,
-                    'user_id' => auth()->id()
+                    'user_id' => auth()->id(),
+                    'company_id' => auth()->user()->currentCompany?->id
                 ];
                 
                 Log::info('Transação preparada para salvar', [
@@ -1800,7 +1801,8 @@ private function extractTransactionsFromCSV($path)
                 'status' => 'paid',
                 'category_id' => $transactionData['category_id'],
                 'account_id' => $account->id,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
+                'company_id' => auth()->user()->currentCompany?->id
             ];
         }
         

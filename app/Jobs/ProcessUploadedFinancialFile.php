@@ -198,6 +198,7 @@ class ProcessUploadedFinancialFile implements ShouldQueue
                 'type' => $transactionData['type'],
                 'status' => 'paid',
                 'category_id' => $categoryId, // Nunca nulo
+                'company_id' => \App\Models\User::find($this->userId)->currentCompany?->id,
             ]);
             Log::info('Transação criada com categoria NLP (se aplicável).', $transactionData);
         }
