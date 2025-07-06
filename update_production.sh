@@ -4,7 +4,7 @@
 PROD_DIR="/var/www/onlifin"
 
 # Atualiza o repositório
-ssh onlifin.onlitec.com.br "cd $PROD_DIR && git pull origin beta"
+ssh onlifin.onlitec.com.br "cd $PROD_DIR && git pull origin main"
 
 # Instala as dependências
 ssh onlifin.onlitec.com.br "cd $PROD_DIR && composer install --no-dev --optimize-autoloader"
