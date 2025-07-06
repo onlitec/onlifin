@@ -85,6 +85,9 @@ Route::middleware(['auth'])->group(function () {
     // Rota nomeada do dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+    // Rota principal de Configurações
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    
     // Logs do sistema
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/logs', [SystemLogController::class, 'index'])->name('logs.index');
@@ -248,8 +251,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{company}', [CompanyController::class, 'destroy'])->name('destroy');
     });
 
-    // Configurações - página principal acessível a todos os usuários
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     // Rotas de gerenciamento de usuários (Configurações)
     Route::get('/settings/users', [SettingsController::class, 'users'])->name('settings.users');
     Route::get('/settings/users/new', [SettingsController::class, 'createUser'])->name('settings.users.new');
