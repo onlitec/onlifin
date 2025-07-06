@@ -23,6 +23,7 @@ use App\Services\FinancialReportAIService;
 use App\Services\FinancialDataService;
 use Symfony\Component\Process\Process;
 use App\Models\SslErrorLog;
+use App\Http\Controllers\Controller;
 
 class SettingsController extends Controller
 {
@@ -30,21 +31,7 @@ class SettingsController extends Controller
 
     public function index()
     {
-        $user = auth()->user();
-        $isAdmin = $user->isAdmin() || $user->hasPermission('manage_settings');
-
-        \Illuminate\Support\Facades\Log::info('Acessando configurações', [
-            'user_id' => auth()->id(),
-            'is_admin' => $isAdmin,
-            'email' => auth()->user()->email,
-            'request_path' => request()->path(),
-            'request_url' => request()->url()
-        ]);
-        
-        // Passa a lista de usuários para a view, se for admin ou tiver permissão
-        $usersForDeletion = $isAdmin ? $this->usersForDeletion() : collect();
-        
-        return view('settings.index', compact('isAdmin', 'usersForDeletion'));
+        return view('settings.index');
     }
 
     public function users()
