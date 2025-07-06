@@ -309,7 +309,7 @@ class FixedStatementImportController extends Controller
                     $transaction->account_id = $request->account_id;
                     $transaction->date = $transactionData['date'];
                     $transaction->description = $transactionData['description'];
-                    $transaction->amount = $transactionData['amount'] * 100; // Converter para centavos
+                    $transaction->amount = $transactionData['amount']; // O modelo Transaction já faz a conversão para centavos
                     $transaction->type = $transactionData['type'];
                     $transaction->category_id = $transactionData['category_id'] ?? null;
                     $transaction->status = 'paid'; // Transações importadas são consideradas pagas

@@ -255,7 +255,11 @@ class Income extends TransactionBase
         // Filter by current company
         $currentCompany = auth()->user()->currentCompany;
         if ($currentCompany) {
-            $query->where('company_id', $currentCompany->id);
+            // Incluir transações da empresa atual E transações sem company_id (importadas antes da correção)
+            $query->where(function($q) use ($currentCompany) {
+                $q->where('company_id', $currentCompany->id)
+                  ->orWhereNull('company_id');
+            });
         }
         
         $query->whereMonth('date', $this->month)

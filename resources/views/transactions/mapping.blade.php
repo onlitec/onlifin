@@ -347,8 +347,8 @@
                     }
                     // *** FIM DA CORREÇÃO ***
                     
-                    // IMPORTANTE: O modelo Transaction multiplica o amount por 100 para armazenar em centavos
-                    // portanto, precisamos DIVIDIR por 100 aqui para compensar, assim o modelo multiplicará e teremos o valor correto
+                    // IMPORTANTE: O controller PHP já faz a conversão para centavos multiplicando por 100
+                    // portanto, enviamos o valor original sem divisão
                     let amountValue = t.amount;
                     // Se o amount for uma string com formatação monetária, remover os caracteres não numéricos
                     if (typeof amountValue === 'string') {
@@ -366,11 +366,10 @@
                         amountValue = 0;
                     }
                     
-                    // DIVIDIR POR 100 para compensar a multiplicação que o modelo fará
-                    amountValue = amountValue / 100;
+                    // NÃO DIVIDIR POR 100 - enviar o valor original para o controller fazer a conversão
                     
                     // Log para verificar o valor enviado
-                    console.log(`Enviando transação - descr: "${t.description}", valor original: ${t.amount}, valor processado: ${amountValue} (dividido por 100)`);
+                    console.log(`Enviando transação - descr: "${t.description}", valor original: ${t.amount}, valor processado: ${amountValue} (valor original)`);
                     
                     return {
                         date: t.date,
