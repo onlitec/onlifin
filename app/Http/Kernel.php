@@ -67,6 +67,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
+        'ai.timeout' => \App\Http\Middleware\IncreaseTimeoutForAIAnalysis::class,
     ];
 
     /**
@@ -109,6 +110,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
+        'ai.timeout' => \App\Http\Middleware\IncreaseTimeoutForAIAnalysis::class,
     ];
 
     protected function configureRateLimiting()

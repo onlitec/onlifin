@@ -138,7 +138,8 @@ Route::middleware(['auth'])->group(function () {
     // Importação de extratos
     Route::get('/transactions/import', [TempStatementImportController::class, 'index'])->name('transactions.import');
     Route::post('/transactions/upload', [TempStatementImportController::class, 'upload'])->name('transactions.upload');
-    Route::get('/transactions/mapping', [TempStatementImportController::class, 'showMapping'])->name('mapping');
+    Route::get('/transactions/mapping', [TempStatementImportController::class, 'showMapping'])
+        ->name('mapping');
     Route::post('/transactions/save', [TempStatementImportController::class, 'saveTransactions'])->name('transactions.save');
     Route::post('/transactions/analyze', [TempStatementImportController::class, 'analyze'])->name('transactions.analyze');
     Route::get('/transactions/analysis-progress', [TempStatementImportController::class, 'checkAnalysisProgress'])->name('transactions.analysis.progress');

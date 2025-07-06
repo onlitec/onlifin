@@ -469,7 +469,8 @@ class AIService
             return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
         }
         try {
-            $response = Http::withHeaders([
+                    $response = Http::timeout(120) // Adicionar timeout de 2 minutos
+            ->withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiToken,
                 'Content-Type' => 'application/json',
             ])->post('https://api.openai.com/v1/chat/completions', [
@@ -512,20 +513,21 @@ class AIService
                 'model' => $this->model
             ]);
 
-            $response = Http::withHeaders([
-                'x-api-key' => $this->apiToken,
-                'anthropic-version' => '2024-02-15',
-                'Content-Type' => 'application/json',
-            ])->post('https://api.anthropic.com/v1/messages', [
-                'model' => $this->model,
-                'max_tokens' => 50,
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => 'Teste de conexão'
+            $response = Http::timeout(120) // Adicionar timeout de 2 minutos
+                ->withHeaders([
+                    'x-api-key' => $this->apiToken,
+                    'anthropic-version' => '2024-02-15',
+                    'Content-Type' => 'application/json',
+                ])->post('https://api.anthropic.com/v1/messages', [
+                    'model' => $this->model,
+                    'max_tokens' => 50,
+                    'messages' => [
+                        [
+                            'role' => 'user',
+                            'content' => 'Teste de conexão'
+                        ]
                     ]
-                ]
-            ]);
+                ]);
 
             Log::info('Resposta da Anthropic', [
                 'status' => $response->status(),
@@ -622,19 +624,21 @@ class AIService
                 ? $openRouterConfig->endpoint . '/chat/completions'
                 : 'https://openrouter.ai/api/v1/chat/completions';
 
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiToken,
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => config('app.url', 'http://localhost'),
-                'X-Title' => config('app.name', 'OnliFin')
-            ])->post($endpoint, [
-                'model' => $this->model,
-                'messages' => [
-                    ['role' => 'system', 'content' => 'Você é um assistente útil.'],
-                    ['role' => 'user', 'content' => 'Teste de conexão']
-                ],
-                'max_tokens' => 50
-            ]);
+            $response = Http::timeout(120) // Adicionar timeout de 2 minutos
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiToken,
+                    'Content-Type' => 'application/json',
+                    'HTTP-Referer' => config('app.url', 'http://localhost'),
+                    'X-Title' => config('app.name', 'OnliFin')
+                ])->post($endpoint, [
+                    'model' => $this->model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => 'Você é um assistente útil.'],
+                        ['role' => 'user', 'content' => 'Teste de conexão']
+                    ],
+                    'temperature' => 0.3,
+                    'max_tokens' => 500
+                ]);
 
             if (!$response->successful()) {
                 $error = $response->json('error.message') ?? 'Erro desconhecido';
@@ -881,20 +885,21 @@ class AIService
             ? $openRouterConfig->endpoint . '/chat/completions'
             : 'https://openrouter.ai/api/v1/chat/completions';
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->apiToken,
-            'Content-Type' => 'application/json',
-            'HTTP-Referer' => config('app.url', 'http://localhost'),
-            'X-Title' => config('app.name', 'OnliFin')
-        ])->post($endpoint, [
-            'model' => $this->model,
-            'messages' => [
-                ['role' => 'system', 'content' => $systemPrompt],
-                ['role' => 'user', 'content' => $text]
-            ],
-            'temperature' => 0.3,
-            'max_tokens' => 500
-        ]);
+        $response = Http::timeout(120) // Adicionar timeout de 2 minutos
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => config('app.url', 'http://localhost'),
+                'X-Title' => config('app.name', 'OnliFin')
+            ])->post($endpoint, [
+                'model' => $this->model,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $text]
+                ],
+                'temperature' => 0.3,
+                'max_tokens' => 500
+            ]);
 
         if (!$response->successful()) {
             $errorMessage = $response->json('error.message') ?? 'Erro desconhecido';
@@ -922,20 +927,21 @@ class AIService
         // Combina o prompt do sistema com o texto do usuário
         $fullPrompt = $systemPrompt . "\n\n" . $text;
 
-        $response = Http::withHeaders([
-            'x-goog-api-key' => $this->apiToken,
-            'Content-Type' => 'application/json',
-        ])->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent', [
-            'contents' => [
-                'parts' => [
-                    ['text' => $fullPrompt]
+        $response = Http::timeout(120) // Adicionar timeout de 2 minutos
+            ->withHeaders([
+                'x-goog-api-key' => $this->apiToken,
+                'Content-Type' => 'application/json',
+            ])->post('https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent', [
+                'contents' => [
+                    'parts' => [
+                        ['text' => $fullPrompt]
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.3,
+                    'maxOutputTokens' => 4000 // Aumentado para permitir respostas JSON maiores
                 ]
-            ],
-            'generationConfig' => [
-                'temperature' => 0.3,
-                'maxOutputTokens' => 4000 // Aumentado para permitir respostas JSON maiores
-            ]
-        ]);
+            ]);
 
         if (!$response->successful()) {
             $errorMessage = $response->json('error.message') ?? 'Erro desconhecido';

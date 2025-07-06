@@ -258,6 +258,16 @@ class TempStatementImportController extends Controller
      */
     public function showMapping(Request $request)
     {
+        // Aplicar timeout aumentado se IA estiver ativada
+        if ($request->get('use_ai') === '1') {
+            set_time_limit(300); // 5 minutos
+            Log::info('Timeout aumentado para análise com IA', [
+                'route' => 'mapping',
+                'use_ai' => $request->get('use_ai'),
+                'time_limit' => ini_get('max_execution_time')
+            ]);
+        }
+        
         // Verificar se é uma requisição AJAX de verificação
         if ($request->has('_ajax')) {
             if ($request->ajax()) {
@@ -392,11 +402,13 @@ class TempStatementImportController extends Controller
             session()->flash('warning', 'Não foi possível extrair transações do arquivo. Verifique o formato do arquivo.');
         }
 
-        // Executar análise prévia para detectar duplicatas
-        $preAnalysisResult = $this->performPreAnalysisWithAI($extractedTransactions, $accountId);
-        
-        // Mesclar resultados da análise prévia com transações
-        $extractedTransactions = $this->mergePreAnalysisResults($extractedTransactions, $preAnalysisResult);
+        // Executar análise prévia para detectar duplicatas (apenas se não usar IA principal)
+        $preAnalysisResult = ['duplicates' => [], 'category_conflicts' => []];
+        if (!$useAI) {
+            // Só fazer análise prévia se não estiver usando IA principal para evitar dupla chamada
+            $preAnalysisResult = $this->performPreAnalysisWithAI($extractedTransactions, $accountId);
+            $extractedTransactions = $this->mergePreAnalysisResults($extractedTransactions, $preAnalysisResult);
+        }
         
         // Analisar transações usando a IA se solicitado
         $aiAnalysis = null;
@@ -660,8 +672,12 @@ class TempStatementImportController extends Controller
             // Registrar chamada de API
             $callId = $this->logAICall('analyze_transactions', $provider, $model, strlen($prompt));
             
-            // Fazer a chamada à API
+            // Fazer a chamada à API com timeout
             $this->updateAnalysisProgress($processKey, 40, 'Processando transações com IA...', false);
+            
+            // Usar set_time_limit para garantir que não exceda o limite do PHP
+            set_time_limit(180); // 3 minutos
+            
             $response = $aiService->analyze($prompt);
             
             // Atualizar registro de chamada
@@ -800,7 +816,8 @@ class TempStatementImportController extends Controller
             : [];
         
         // Limitar o número de transações para análise (evitar exceder limite de tokens)
-        $transactionsForAnalysis = array_slice($transactions, 0, 50);
+        // Reduzir de 50 para 25 para evitar timeouts
+        $transactionsForAnalysis = array_slice($transactions, 0, 25);
         
         // Construir o prompt
         $prompt = "Você é um assistente financeiro especializado em categorizar transações bancárias. ";
@@ -3180,23 +3197,28 @@ class TempStatementImportController extends Controller
         try {
             Log::info('🔍 Iniciando análise prévia com IA para detectar duplicatas');
             
-            // Obter transações existentes dos últimos 90 dias
+            // Limitar o número de transações para análise prévia (evitar timeouts)
+            $limitedTransactions = array_slice($extractedTransactions, 0, 15);
+            
+            // Obter transações existentes dos últimos 30 dias (reduzir de 90 para 30)
             $existingTransactions = Transaction::where('user_id', auth()->id())
                 ->where('account_id', $accountId)
-                ->where('date', '>=', now()->subDays(90))
+                ->where('date', '>=', now()->subDays(30))
                 ->select('id', 'description', 'amount', 'date', 'category_id')
                 ->with('category:id,name')
+                ->limit(50) // Limitar a 50 transações existentes
                 ->get()
                 ->toArray();
             
-            // Obter categorias existentes
+            // Obter categorias existentes (limitadas)
             $existingCategories = Category::where('user_id', auth()->id())
                 ->select('id', 'name', 'type')
+                ->limit(100) // Limitar a 100 categorias
                 ->get()
                 ->toArray();
             
             // Preparar prompt para análise de duplicatas
-            $prompt = $this->preparePreAnalysisPrompt($extractedTransactions, $existingTransactions, $existingCategories);
+            $prompt = $this->preparePreAnalysisPrompt($limitedTransactions, $existingTransactions, $existingCategories);
             
             // Executar análise com IA
             $aiConfigService = new AIConfigService();
@@ -3206,6 +3228,9 @@ class TempStatementImportController extends Controller
                 Log::warning('IA não configurada para análise prévia');
                 return ['duplicates' => [], 'category_conflicts' => []];
             }
+            
+            // Usar timeout mais agressivo para análise prévia
+            set_time_limit(120); // 2 minutos
             
             $aiService = new AIService();
             $response = $aiService->analyze($prompt);
