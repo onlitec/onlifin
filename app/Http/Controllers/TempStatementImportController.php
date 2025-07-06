@@ -2034,8 +2034,8 @@ class TempStatementImportController extends Controller
                     $transaction = new Transaction();
                     $transaction->user_id = auth()->id();
                     $transaction->account_id = $account->id;
-                    // Definir company_id a partir da conta para evitar valor nulo
-                    $transaction->company_id = $account->company_id;
+                    // Definir company_id a partir do usuário atual para evitar valor nulo
+                    $transaction->company_id = auth()->user()->currentCompany?->id;
                     $transaction->date = $transactionData['date'];
                     $transaction->description = $transactionData['description'];
                     $transaction->amount = $amountCents; 
