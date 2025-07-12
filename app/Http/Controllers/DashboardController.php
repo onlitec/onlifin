@@ -354,7 +354,20 @@ class DashboardController extends Controller
             ->whereDate('date', $tomorrow)
             ->orderBy('date')
             ->get();
-            
+
+        // Buscar despesas em atraso
+        $pendingExpensesOverdue = Transaction::with(['category', 'account'])
+            ->where('user_id', $userId)
+            ->where('type', 'expense')
+            ->where('status', 'pending')
+            ->whereDate('date', '<', $today)
+            ->orderBy('date')
+            ->get();
+
+        // Total de despesas em atraso
+        $pendingExpensesOverdueTotal = $pendingExpensesOverdue->sum('amount');
+
+        // NOVO: Buscar receitas pendentes de hoje e amanhã
         $pendingIncomesToday = Transaction::with(['category', 'account'])
             ->where('user_id', $userId)
             ->where('type', 'income')
@@ -362,7 +375,7 @@ class DashboardController extends Controller
             ->whereDate('date', $today)
             ->orderBy('date')
             ->get();
-            
+
         $pendingIncomesTomorrow = Transaction::with(['category', 'account'])
             ->where('user_id', $userId)
             ->where('type', 'income')
@@ -370,9 +383,9 @@ class DashboardController extends Controller
             ->whereDate('date', $tomorrow)
             ->orderBy('date')
             ->get();
-        
+
         // FIRST_EDIT: Calcular valor total de despesas e receitas pendentes para exibição nos cards
-        $pendingExpensesTotal = $pendingExpensesToday->sum('amount') + $pendingExpensesTomorrow->sum('amount');
+        $pendingExpensesTotal = $pendingExpensesOverdueTotal + $pendingExpensesToday->sum('amount') + $pendingExpensesTomorrow->sum('amount');
         $pendingIncomesTotal = $pendingIncomesToday->sum('amount') + $pendingIncomesTomorrow->sum('amount');
         
         /**
@@ -448,6 +461,8 @@ class DashboardController extends Controller
             'pendingIncomesTomorrow',
             'pendingExpensesTotal',
             'pendingIncomesTotal',
+            'pendingExpensesOverdue',
+            'pendingExpensesOverdueTotal',
             'accounts'
         ));
     }

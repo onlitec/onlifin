@@ -186,14 +186,23 @@
         <div class="card hover-scale p-6" style="overflow: visible;">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-900">Despesas a Vencer</h2>
-                <p class="text-sm text-gray-600">Hoje e amanhã</p>
+                <p class="text-sm text-gray-600">Em atraso, hoje e amanhã</p>
             </div>
             <div class="px-6 py-2">
                 <p class="text-base font-medium text-gray-700">Total a vencer: <span class="text-xl font-bold text-red-600">R$ {{ number_format($pendingExpensesTotal/100, 2, ',', '.') }}</span></p>
             </div>
             <div class="p-4 space-y-3 max-h-60 overflow-y-auto">
-                 <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
-                 @forelse ($pendingExpensesToday as $transaction)
+                <!-- Seção de Despesas em Atraso -->
+                <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Em Atraso (até {{ \Carbon\Carbon::yesterday()->format('d/m') }})</h4>
+                @forelse ($pendingExpensesOverdue as $transaction)
+                    <x-transactions.list-item :transaction="$transaction" />
+                @empty
+                    <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa em atraso.</p>
+                @endforelse
+
+                <hr class="my-3">
+                <h4 class="text-sm font-medium text-gray-700 mb-1 mt-2 pl-1">Hoje ({{ \Carbon\Carbon::now()->format('d/m') }})</h4>
+                @forelse ($pendingExpensesToday as $transaction)
                     <x-transactions.list-item :transaction="$transaction" />
                  @empty
                      <p class="text-center text-gray-500 py-3 text-sm">Nenhuma despesa pendente para hoje.</p>
