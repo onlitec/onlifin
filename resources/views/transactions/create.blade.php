@@ -130,7 +130,9 @@
                                     <select name="recurrence_type" id="recurrence_type"
                                            class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500"
                                            onchange="toggleRecurrenceFields()">
-                                        <option value="none" selected>Avulsa</option>
+                                        <option value="none" {{ old('recurrence_type', 'none') === 'none' ? 'selected' : '' }}>Avulsa</option>
+                                        <option value="fixed" {{ old('recurrence_type') === 'fixed' ? 'selected' : '' }}>Fixa</option>
+                                        <option value="installment" {{ old('recurrence_type') === 'installment' ? 'selected' : '' }}>Parcelada</option>
                                     </select>
                                     @error('recurrence_type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                                 </div>
@@ -329,7 +331,9 @@
                                     <select name="recurrence_type" id="recurrence_type"
                                            class="form-select bg-white dark:bg-gray-800 block w-full rounded-lg shadow-sm border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500"
                                            onchange="toggleRecurrenceFields()">
-                                        <option value="none" selected>Avulsa</option>
+                                        <option value="none" {{ old('recurrence_type', 'none') === 'none' ? 'selected' : '' }}>Avulsa</option>
+                                        <option value="fixed" {{ old('recurrence_type') === 'fixed' ? 'selected' : '' }}>Fixa</option>
+                                        <option value="installment" {{ old('recurrence_type') === 'installment' ? 'selected' : '' }}>Parcelada</option>
                                     </select>
                                     @error('recurrence_type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                                 </div>

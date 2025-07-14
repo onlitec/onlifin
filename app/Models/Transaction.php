@@ -20,6 +20,7 @@ class Transaction extends Model
         'type',
         'status',
         'recurrence_type',
+        'recurrence_period',
         'installment_number',
         'total_installments',
         'next_date',
