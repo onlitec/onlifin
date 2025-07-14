@@ -2034,18 +2034,27 @@ class TempStatementImportController extends Controller
                     }
 
                     if ($isNewCategory && !empty($categoryName)) {
-                        // Determinar tipo baseado no valor da transação
-                        $amount = (float) ($transactionData['amount'] ?? 0);
-                        $type = $amount >= 0 ? 'income' : 'expense';
+                        // CORREÇÃO: Usar o tipo da transação, não o valor
+                        $type = $transactionData['type'] ?? 'expense';
 
+                        // Validar e corrigir o tipo da categoria baseado no nome
                         $categoryName = trim(ucfirst($categoryName));
-                        $categoryKey = $categoryName . '-' . $type;
+                        $correctCategoryType = \App\Services\CategoryTypeService::getCorrectCategoryType($categoryName, $type);
+
+                        $categoryKey = $categoryName . '-' . $correctCategoryType;
 
                         if (!isset($categories[$categoryKey])) {
                             $categories[$categoryKey] = [
                                 'name' => $categoryName,
-                                'type' => $type
+                                'type' => $correctCategoryType
                             ];
+
+                            Log::info('Nova categoria preparada para criação', [
+                                'name' => $categoryName,
+                                'type' => $correctCategoryType,
+                                'transaction_type' => $type,
+                                'key' => $categoryKey
+                            ]);
                         }
                     }
                 }
@@ -2099,19 +2108,39 @@ class TempStatementImportController extends Controller
                     $isNewCategory = $transactionData['is_new_category'] ?? false;
 
                     if ($isNewCategory && !empty($categoryName)) {
-                        // Buscar categoria recém-criada
-                        $categoryKey = trim(ucfirst($categoryName)) . '-' . $type;
+                        // CORREÇÃO: Usar o tipo correto da categoria
+                        $categoryName = trim(ucfirst($categoryName));
+                        $correctCategoryType = \App\Services\CategoryTypeService::getCorrectCategoryType($categoryName, $type);
+                        $categoryKey = $categoryName . '-' . $correctCategoryType;
 
                         if (isset($categories[$categoryKey])) {
                             $transaction->category_id = $categories[$categoryKey]['id'];
-                        } else {
-                            // Categoria não foi criada, deixar sem categoria
-                            $transaction->category_id = null;
-                            Log::warning('Nova categoria não encontrada para transação', [
-                                'index' => $index,
-                                'category' => $categoryName,
-                                'type' => $type
+
+                            Log::info('Categoria aplicada à transação', [
+                                'transaction_index' => $index,
+                                'category_name' => $categoryName,
+                                'category_id' => $categories[$categoryKey]['id'],
+                                'category_type' => $correctCategoryType,
+                                'transaction_type' => $type
                             ]);
+                        } else {
+                            // FALLBACK: Criar categoria na hora se não foi criada antes
+                            Log::warning('Categoria não encontrada, criando na hora', [
+                                'category_name' => $categoryName,
+                                'category_type' => $correctCategoryType,
+                                'transaction_type' => $type,
+                                'available_keys' => array_keys($categories)
+                            ]);
+
+                            $fallbackCategory = Category::firstOrCreate([
+                                'user_id' => auth()->id(),
+                                'name' => $categoryName,
+                                'type' => $correctCategoryType
+                            ], [
+                                'system' => false
+                            ]);
+
+                            $transaction->category_id = $fallbackCategory->id;
                         }
                     } elseif (!empty($categoryId) && is_numeric($categoryId)) {
                         // Categoria existente
@@ -2127,10 +2156,47 @@ class TempStatementImportController extends Controller
                             $transaction->category_id = null;
                         }
                     } else {
-                        // Sem categoria
-                        $transaction->category_id = null;
+                        // FALLBACK: Criar categoria padrão se não há categoria
+                        $defaultCategoryName = $type === 'income' ? 'Outros Recebimentos' : 'Outros Gastos';
+                        $defaultCategoryType = \App\Services\CategoryTypeService::getCorrectCategoryType($defaultCategoryName, $type);
+
+                        Log::warning('Transação sem categoria, aplicando categoria padrão', [
+                            'transaction_index' => $index,
+                            'transaction_description' => $transactionData['description'],
+                            'transaction_type' => $type,
+                            'default_category' => $defaultCategoryName
+                        ]);
+
+                        $defaultCategory = Category::firstOrCreate([
+                            'user_id' => auth()->id(),
+                            'name' => $defaultCategoryName,
+                            'type' => $defaultCategoryType
+                        ], [
+                            'system' => false
+                        ]);
+
+                        $transaction->category_id = $defaultCategory->id;
                     }
-                    
+
+                    // VALIDAÇÃO FINAL: Garantir que TODA transação tenha categoria
+                    if (empty($transaction->category_id)) {
+                        $emergencyCategory = Category::firstOrCreate([
+                            'user_id' => auth()->id(),
+                            'name' => 'Não Categorizada',
+                            'type' => 'expense'
+                        ], [
+                            'system' => false
+                        ]);
+
+                        $transaction->category_id = $emergencyCategory->id;
+
+                        Log::error('EMERGÊNCIA: Transação sem categoria após todos os fallbacks', [
+                            'transaction_index' => $index,
+                            'transaction_data' => $transactionData,
+                            'emergency_category_id' => $emergencyCategory->id
+                        ]);
+                    }
+
                     $transaction->save();
                     $savedCount++;
                     

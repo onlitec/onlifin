@@ -1,5 +1,46 @@
 /* Estilos para importação de transações */
 
+/* Estilos para logotipos */
+.application-logo {
+    max-height: 40px;
+    max-width: 120px;
+    height: auto;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.application-logo.header {
+    max-height: 32px;
+    max-width: 120px;
+}
+
+.application-logo.sidebar {
+    max-height: 24px;
+    max-width: 80px;
+}
+
+.application-logo.favicon {
+    max-height: 32px;
+    max-width: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+/* Garantir que logotipos não quebrem o layout */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.logo-container img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 .btn-lg {
     @apply px-6 py-3 text-lg;
 }

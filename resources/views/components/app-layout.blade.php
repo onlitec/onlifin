@@ -152,8 +152,8 @@
                         <div class="menu-container bg-gray-50 dark:bg-gray-700 rounded-lg p-1 w-full" style="display: flex; flex-wrap: nowrap; gap: 8px; overflow-y: hidden;">
                             <!-- Logo highlighted in menu -->
                             <div class="flex-shrink-0 ml-4">
-                                <a href="{{ route('dashboard') }}">
-                                    <x-application-logo class="h-8 w-auto text-gray-800 dark:text-gray-100" />
+                                <a href="{{ route('dashboard') }}" class="flex items-center">
+                                    <x-application-logo class="h-8 w-auto max-w-32 max-h-8 object-contain" />
                                 </a>
                             </div>
                             <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" style="font-size: 15px; padding: 8px 10px;">
