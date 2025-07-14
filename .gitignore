@@ -26,3 +26,11 @@ yarn-error.log
 # Ignore Google Cloud credentials
 /storage/app/google-cloud-credentials.json
 .env
+
+# Ignore temporary upload files
+/storage/app/private/temp_uploads/
+/storage/app/private/temp_uploads/*
+
+# Ignore log files
+/storage/logs/
+/storage/logs/*
