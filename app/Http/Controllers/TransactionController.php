@@ -160,6 +160,7 @@ class TransactionController extends Controller
                 'transfer_to_account_id' => 'nullable|exists:accounts,id|different:account_id',
                 'notes' => 'nullable|string',
                 'recurrence_type' => 'nullable|in:none,fixed,installment',
+                'recurrence_period' => 'nullable|required_if:recurrence_type,fixed|in:daily,weekly,fortnightly,monthly,yearly',
                 'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
                 'total_installments' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
                 'next_date' => 'nullable|required_unless:recurrence_type,none|date',
@@ -198,10 +199,12 @@ class TransactionController extends Controller
             if (isset($validated['recurrence_type']) && $validated['recurrence_type'] !== 'none') {
                 $transactionData['recurrence_type'] = $validated['recurrence_type'];
                 $transactionData['next_date'] = $validated['next_date'];
-                
+
                 if ($validated['recurrence_type'] === 'installment') {
                     $transactionData['installment_number'] = $validated['installment_number'];
                     $transactionData['total_installments'] = $validated['total_installments'];
+                } elseif ($validated['recurrence_type'] === 'fixed') {
+                    $transactionData['recurrence_period'] = $validated['recurrence_period'];
                 }
             } else {
                 $transactionData['recurrence_type'] = 'none';
@@ -279,6 +282,11 @@ class TransactionController extends Controller
             'category_id' => 'required|exists:categories,id',
             'account_id' => 'required|exists:accounts,id',
             'notes' => 'nullable|string',
+            'recurrence_type' => 'nullable|in:none,fixed,installment',
+            'recurrence_period' => 'nullable|required_if:recurrence_type,fixed|in:daily,weekly,fortnightly,monthly,yearly',
+            'installment_number' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
+            'total_installments' => 'nullable|required_if:recurrence_type,installment|integer|min:1',
+            'next_date' => 'nullable|required_unless:recurrence_type,none|date',
             'cliente' => 'nullable|string|max:255',
             'fornecedor' => 'nullable|string|max:255',
         ]);
@@ -308,7 +316,29 @@ class TransactionController extends Controller
         $transaction->notes = $validatedData['notes'] ?? null;
         $transaction->cliente = $validatedData['cliente'];
         $transaction->fornecedor = $validatedData['fornecedor'];
-        
+
+        // Processar campos de recorrência
+        if (isset($validatedData['recurrence_type']) && $validatedData['recurrence_type'] !== 'none') {
+            $transaction->recurrence_type = $validatedData['recurrence_type'];
+            $transaction->next_date = $validatedData['next_date'];
+
+            if ($validatedData['recurrence_type'] === 'installment') {
+                $transaction->installment_number = $validatedData['installment_number'];
+                $transaction->total_installments = $validatedData['total_installments'];
+                $transaction->recurrence_period = null;
+            } elseif ($validatedData['recurrence_type'] === 'fixed') {
+                $transaction->recurrence_period = $validatedData['recurrence_period'];
+                $transaction->installment_number = null;
+                $transaction->total_installments = null;
+            }
+        } else {
+            $transaction->recurrence_type = 'none';
+            $transaction->recurrence_period = null;
+            $transaction->installment_number = null;
+            $transaction->total_installments = null;
+            $transaction->next_date = null;
+        }
+
         // user_id is not changed on update by default unless specifically handled for admins re-assigning transactions.
         // For now, we assume user_id remains the same.
 
