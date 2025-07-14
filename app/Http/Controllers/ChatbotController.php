@@ -63,76 +63,59 @@ class ChatbotController extends Controller
     {
         try {
             $message = $request->input('message');
-            
-            // Obter a configuração da IA
-            $config = $this->aiConfigService->getAIConfig();
-            
-            if (!$config['is_configured']) {
+            $user = Auth::user();
+
+            if (!$message) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'A IA não está configurada. Por favor, configure-a nas configurações.'
+                    'error' => 'Mensagem é obrigatória'
                 ], 400);
             }
-            
-            $provider = $config['provider'];
-            $model = $config['model'];
-            $apiKey = $config['api_key'];
-            
-            // Obter o prompt do sistema a partir da configuração
-            $aiConfig = $this->aiConfigService->getAIConfig($provider);
-            $systemPrompt = $aiConfig['system_prompt'] ?? $aiConfig['chat_prompt'] ?? '';
-            
-            // Preparar o payload para a requisição
-            $payload = $this->getChatPayload($message, $provider);
-            
-            // Fazer a requisição para a API
-            $response = Http::withHeaders($this->getHeaders($provider, $apiKey))
-                ->timeout(60)
-                ->post($this->getEndpoint($provider, $model), $payload);
-            
-            if ($response->failed()) {
-                Log::error('Erro na API de IA', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'provider' => $provider
+
+            // Usar o novo serviço de chatbot financeiro
+            $financialChatbotService = new \App\Services\FinancialChatbotService($this->aiConfigService);
+            $result = $financialChatbotService->processMessage($message, $user);
+
+            if ($result['success']) {
+                // Adicionar ao histórico da sessão
+                $history = session('chat_history', []);
+                $history[] = ['role' => 'user', 'content' => $message];
+                $history[] = ['role' => 'assistant', 'content' => $result['response']['text']];
+
+                // Limitar o histórico às últimas 10 mensagens
+                if (count($history) > 10) {
+                    $history = array_slice($history, -10);
+                }
+                session(['chat_history' => $history]);
+
+                return response()->json([
+                    'success' => true,
+                    'answer' => $result['response']['text'],
+                    'intent' => $result['intent'],
+                    'confidence' => $result['response']['confidence'] ?? 0,
+                    'data' => $result['response']['data'] ?? null,
+                    'data_sources' => $result['data_used'] ?? []
                 ]);
-                
+            } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Erro ao comunicar com a IA: ' . $response->status()
+                    'error' => $result['error'],
+                    'debug' => $result['debug'] ?? null
                 ], 500);
             }
-            
-            // Extrair a resposta da IA
-            $answer = $this->extractAnswer($response->json(), $provider);
-            
-            // Adicionar a mensagem do usuário e a resposta ao histórico de mensagens
-            $history = session('chat_history', []);
-            $history[] = ['role' => 'user', 'content' => $message];
-            $history[] = ['role' => 'assistant', 'content' => $answer];
-            
-            // Limitar o histórico às últimas 10 mensagens (5 pares de perguntas/respostas)
-            if (count($history) > 10) {
-                $history = array_slice($history, -10);
-            }
-            
-            // Salvar o histórico atualizado na sessão
-            session(['chat_history' => $history]);
-            
-            return response()->json([
-                'success' => true,
-                'message' => $answer
-            ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Erro ao processar mensagem: ' . $e->getMessage(), [
-                'exception' => $e,
+            Log::error('Erro ao processar mensagem do chatbot', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'message' => $request->input('message'),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao processar sua mensagem: ' . $e->getMessage()
+                'error' => 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.',
+                'debug' => $e->getMessage()
             ], 500);
         }
     }
@@ -423,7 +406,7 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Processa mensagem do chatbot e retorna resposta inteligente
+     * Processa mensagem do chatbot usando o novo sistema financeiro
      */
     public function processMessage(Request $request): JsonResponse
     {
@@ -432,26 +415,42 @@ class ChatbotController extends Controller
         ]);
 
         $user = Auth::user();
-        $message = strtolower(trim($request->message));
-        
+        $message = trim($request->message);
+
         try {
-            // Analisar a mensagem e determinar a intenção
-            $intent = $this->analyzeIntent($message);
-            
-            // Gerar resposta baseada na intenção e dados do usuário
-            $response = $this->generateResponse($intent, $message, $user);
-            
-            return response()->json([
-                'success' => true,
-                'response' => $response,
-                'intent' => $intent
-            ]);
-            
+            // Usar o novo serviço de chatbot financeiro
+            $financialChatbotService = new \App\Services\FinancialChatbotService($this->aiConfigService);
+            $result = $financialChatbotService->processMessage($message, $user);
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'answer' => $result['response']['text'],
+                    'intent' => $result['intent'],
+                    'confidence' => $result['response']['confidence'] ?? 0,
+                    'data' => $result['response']['data'] ?? null,
+                    'data_sources' => $result['data_used'] ?? []
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'error' => $result['error'],
+                    'debug' => $result['debug'] ?? null
+                ], 500);
+            }
+
         } catch (\Exception $e) {
+            Log::error('Erro ao processar mensagem do chatbot', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'message' => $message,
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'response' => 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.',
-                'error' => $e->getMessage()
+                'error' => 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.',
+                'debug' => $e->getMessage()
             ], 500);
         }
     }

@@ -398,6 +398,46 @@ class AIConfigService
     }
 
     /**
+     * Obtém configuração específica do chatbot
+     */
+    public function getChatbotConfig($userId = null): ?array
+    {
+        try {
+            $userId = $userId ?? auth()->id();
+
+            if (!$userId) {
+                return null;
+            }
+
+            $chatbotConfig = \App\Models\ChatbotConfig::getDefault($userId);
+
+            if (!$chatbotConfig || !$chatbotConfig->enabled) {
+                return null;
+            }
+
+            return [
+                'enabled' => true,
+                'provider' => $chatbotConfig->provider,
+                'model' => $chatbotConfig->model,
+                'api_key' => $chatbotConfig->api_key,
+                'endpoint' => $chatbotConfig->endpoint,
+                'system_prompt' => $chatbotConfig->system_prompt,
+                'temperature' => $chatbotConfig->temperature,
+                'max_tokens' => $chatbotConfig->max_tokens,
+                'settings' => $chatbotConfig->settings ?? []
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao obter configuração do chatbot', [
+                'error' => $e->getMessage(),
+                'user_id' => $userId
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * Retorna o prompt fixo padrão para análise de extratos bancários
      * Este prompt deve ser usado por todas as IAs para garantir consistência na importação
      * 

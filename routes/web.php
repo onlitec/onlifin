@@ -128,7 +128,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Rotas do Chatbot
     Route::get('/chatbot', [ChatbotController::class, 'index'])->name('chatbot.index');
-    Route::post('/chatbot/ask', [ChatbotController::class, 'ask'])->name('chatbot.ask');
+    Route::post('/chatbot/ask', [ChatbotController::class, 'ask'])
+        ->middleware('auth')
+        ->name('chatbot.ask');
     Route::post('/chatbot/process-message', [ChatbotController::class, 'processMessage'])
         ->middleware('auth')
         ->name('chatbot.processMessage');
@@ -278,6 +280,17 @@ Route::middleware(['auth'])->group(function () {
     // Rotas de aparência (Configurações)
     Route::get('/settings/appearance', [SettingsController::class, 'appearance'])->name('settings.appearance');
     Route::post('/settings/appearance', [SettingsController::class, 'updateAppearance'])->name('settings.appearance.update');
+
+    // Rotas de configuração do chatbot (Configurações)
+    Route::prefix('settings/chatbot-config')->name('settings.chatbot-config.')->group(function () {
+        Route::get('/', [App\Http\Controllers\ChatbotConfigController::class, 'index'])->name('index');
+        Route::post('/', [App\Http\Controllers\ChatbotConfigController::class, 'store'])->name('store');
+        Route::post('/test', [App\Http\Controllers\ChatbotConfigController::class, 'test'])->name('test');
+        Route::get('/list', [App\Http\Controllers\ChatbotConfigController::class, 'list'])->name('list');
+        Route::get('/stats', [App\Http\Controllers\ChatbotConfigController::class, 'stats'])->name('stats');
+        Route::post('/{config}/set-default', [App\Http\Controllers\ChatbotConfigController::class, 'setDefault'])->name('set-default');
+        Route::delete('/{config}', [App\Http\Controllers\ChatbotConfigController::class, 'destroy'])->name('destroy');
+    });
 
     // Rota para exclusão de dados financeiros de usuário (Configurações)
     Route::delete('/settings/delete-user-data', [SettingsController::class, 'deleteUserData'])->name('settings.deleteUserData');

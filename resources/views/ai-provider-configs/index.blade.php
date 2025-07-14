@@ -26,11 +26,18 @@
                     </a>
                 @endif
                 <!-- Botão para Configurações Múltiplas -->
-                <a href="{{ route('multiple-ai-config.index') }}" 
+                <a href="{{ route('multiple-ai-config.index') }}"
                    class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg flex items-center font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
                    title="Gerenciar Múltiplas IAs">
-                    <i class="fas fa-layer-group mr-2 text-lg"></i> 
+                    <i class="fas fa-layer-group mr-2 text-lg"></i>
                     <span class="text-sm font-bold">MÚLTIPLAS IAs</span>
+                </a>
+                <!-- Botão para Configuração do Chatbot -->
+                <a href="{{ route('settings.chatbot-config.index') }}"
+                   class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-lg flex items-center font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
+                   title="Configurar Chatbot Financeiro">
+                    <i class="ri-robot-line mr-2 text-lg"></i>
+                    <span class="text-sm font-bold">CHATBOT IA</span>
                 </a>
                 <a href="{{ route('iaprovider-config.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
                     <i class="fas fa-plus"></i> Nova Configuração

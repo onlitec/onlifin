@@ -35,10 +35,14 @@
     
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- CSS específico para melhorias do tema escuro -->
+    <link href="{{ asset('css/dark-theme-improvements.css') }}" rel="stylesheet">
     <!-- Incluir jQuery antes dos scripts que dependem dele -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Incluir Bootstrap JS para suportar modais -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- JavaScript para melhorias do tema escuro -->
+    <script src="{{ asset('js/theme-switcher.js') }}" defer></script>
     @livewireStyles
 
 
@@ -428,24 +432,27 @@
             // Mostrar indicador de digitação
             addTypingIndicator();
             
-            // Enviar mensagem para a API
-            fetch('{{ route("chatbot.processMessage") }}', {
+            // Enviar mensagem para a API (usando a mesma rota do chatbot principal)
+            const formData = new FormData();
+            formData.append('message', message);
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+            fetch('{{ route("chatbot.ask") }}', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ message: message })
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
                 // Remover indicador de digitação
                 removeTypingIndicator();
-                
+
                 if (data.success) {
-                    addMessageToChat(data.response, 'bot');
+                    // Usar a resposta do novo sistema (answer em vez de response)
+                    const botResponse = data.answer || data.message || 'Resposta recebida sem conteúdo.';
+                    addMessageToChat(botResponse, 'bot');
                 } else {
-                    addMessageToChat('Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.', 'bot');
+                    const errorMessage = data.error || data.message || 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.';
+                    addMessageToChat(errorMessage, 'bot');
                 }
             })
             .catch(error => {

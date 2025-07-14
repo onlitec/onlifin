@@ -1,0 +1,327 @@
+/* Melhorias específicas para o tema escuro da plataforma Onlifin */
+
+/* Variáveis CSS para tema escuro */
+:root.dark {
+    --primary-bg: #1f2937;
+    --secondary-bg: #374151;
+    --card-bg: #1f2937;
+    --border-color: #4b5563;
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --text-muted: #9ca3af;
+    --accent-blue: #3b82f6;
+    --accent-blue-hover: #2563eb;
+    --success-bg: #065f46;
+    --success-text: #10b981;
+    --error-bg: #7f1d1d;
+    --error-text: #ef4444;
+    --warning-bg: #78350f;
+    --warning-text: #f59e0b;
+}
+
+/* Melhorias gerais para o tema escuro */
+.dark {
+    color-scheme: dark;
+}
+
+/* Formulários melhorados */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="time"],
+.dark input[type="datetime-local"],
+.dark input[type="file"],
+.dark select,
+.dark textarea {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark input[type="number"]:focus,
+.dark input[type="date"]:focus,
+.dark input[type="time"]:focus,
+.dark input[type="datetime-local"]:focus,
+.dark select:focus,
+.dark textarea:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Placeholders melhorados */
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* Cards e containers melhorados */
+.dark .bg-white {
+    background-color: var(--card-bg) !important;
+}
+
+.dark .border-gray-200 {
+    border-color: var(--border-color) !important;
+}
+
+.dark .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.dark .shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.dark .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* Melhorias para dropdowns e selects */
+.dark select option {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+}
+
+/* Melhorias para modais */
+.dark .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.dark .modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+.dark .modal-footer {
+    border-top-color: var(--border-color);
+}
+
+/* Melhorias para alertas */
+.dark .alert-success {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border-color: var(--success-text);
+}
+
+.dark .alert-danger {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+    border-color: var(--error-text);
+}
+
+.dark .alert-warning {
+    background-color: var(--warning-bg);
+    color: var(--warning-text);
+    border-color: var(--warning-text);
+}
+
+/* Melhorias para badges */
+.dark .badge {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+}
+
+.dark .badge-success {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+}
+
+.dark .badge-danger {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+}
+
+.dark .badge-warning {
+    background-color: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+/* Melhorias para navegação */
+.dark .navbar {
+    background-color: var(--primary-bg);
+    border-bottom-color: var(--border-color);
+}
+
+.dark .nav-link {
+    color: var(--text-secondary);
+}
+
+.dark .nav-link:hover {
+    color: var(--text-primary);
+}
+
+.dark .nav-link.active {
+    color: var(--accent-blue);
+}
+
+/* Melhorias para sidebar */
+.dark .sidebar {
+    background-color: var(--primary-bg);
+    border-right-color: var(--border-color);
+}
+
+/* Melhorias para tabelas */
+.dark .table {
+    color: var(--text-primary);
+}
+
+.dark .table thead th {
+    background-color: var(--secondary-bg);
+    color: var(--text-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+.dark .table tbody tr {
+    border-bottom-color: var(--border-color);
+}
+
+.dark .table tbody tr:hover {
+    background-color: var(--secondary-bg);
+}
+
+/* Melhorias para paginação */
+.dark .pagination .page-link {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark .pagination .page-link:hover {
+    background-color: var(--primary-bg);
+    color: var(--accent-blue);
+}
+
+.dark .pagination .page-item.active .page-link {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+/* Melhorias para tooltips */
+.dark .tooltip .tooltip-inner {
+    background-color: var(--primary-bg);
+    color: var(--text-primary);
+}
+
+/* Melhorias para scrollbars */
+.dark ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Melhorias para file inputs */
+.dark input[type="file"]::-webkit-file-upload-button {
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-right: 12px;
+}
+
+.dark input[type="file"]::-webkit-file-upload-button:hover {
+    background-color: var(--accent-blue-hover);
+}
+
+/* Melhorias para checkboxes e radio buttons */
+.dark input[type="checkbox"],
+.dark input[type="radio"] {
+    accent-color: var(--accent-blue);
+}
+
+/* Melhorias para progress bars */
+.dark .progress {
+    background-color: var(--secondary-bg);
+}
+
+.dark .progress-bar {
+    background-color: var(--accent-blue);
+}
+
+/* Melhorias para breadcrumbs */
+.dark .breadcrumb {
+    background-color: var(--secondary-bg);
+}
+
+.dark .breadcrumb-item a {
+    color: var(--accent-blue);
+}
+
+.dark .breadcrumb-item.active {
+    color: var(--text-muted);
+}
+
+/* Melhorias específicas para a página de aparência */
+.dark .appearance-preview {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+.dark .theme-selector {
+    background-color: var(--secondary-bg);
+    border-color: var(--border-color);
+}
+
+.dark .theme-selector:checked {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+/* Animações suaves para transições de tema */
+* {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Melhorias para contraste em elementos interativos */
+.dark button:focus,
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+/* Melhorias para texto de ajuda */
+.dark .help-text,
+.dark .form-help,
+.dark .text-muted {
+    color: var(--text-muted);
+}
+
+/* Melhorias para divisores */
+.dark hr,
+.dark .divider {
+    border-color: var(--border-color);
+}
+
+/* Melhorias para código e pre */
+.dark code,
+.dark pre {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Melhorias para blockquotes */
+.dark blockquote {
+    border-left-color: var(--accent-blue);
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+}

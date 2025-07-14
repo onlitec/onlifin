@@ -15,7 +15,14 @@
                     </div>
                     <div>
                         <h2 class="text-xl font-bold text-white">Assistente Financeiro IA</h2>
-                        <p class="text-xs text-blue-100">Google Cloud ({{ ucfirst($config['model'] ?? 'Desconhecido') }})</p>
+                        @php
+                            $chatbotConfig = app('App\Services\AIConfigService')->getChatbotConfig();
+                        @endphp
+                        @if($chatbotConfig && $chatbotConfig['enabled'])
+                            <p class="text-xs text-blue-100">{{ ucfirst($chatbotConfig['provider']) }} ({{ $chatbotConfig['model'] }})</p>
+                        @else
+                            <p class="text-xs text-blue-100">Google Cloud ({{ ucfirst($config['model'] ?? 'Desconhecido') }})</p>
+                        @endif
                     </div>
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/20 text-white animate-pulse">
