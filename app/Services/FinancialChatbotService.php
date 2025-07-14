@@ -79,7 +79,7 @@ class FinancialChatbotService
             'income' => ['receitas', 'ganhos', 'entradas', 'recebimentos', 'créditos'],
             'transactions' => ['transações', 'movimentações', 'histórico', 'extrato'],
             'categories' => ['categorias', 'tipos de gasto', 'classificação'],
-            'predictions' => ['previsão', 'projeção', 'tendência', 'futuro', 'estimativa'],
+            'predictions' => ['previsão', 'projeção', 'tendência', 'futuro', 'estimativa', 'previsões', 'próximo mês', 'próxima semana'],
             'analysis' => ['análise', 'relatório', 'resumo', 'insights', 'comparação'],
             'accounts' => ['contas', 'bancos', 'cartões'],
             'budget' => ['orçamento', 'planejamento', 'meta', 'limite'],
@@ -149,10 +149,19 @@ class FinancialChatbotService
             }
         }
 
-        // Padrão: mês atual (mais relevante para análises específicas)
+        // Para previsões, usar dados históricos mais amplos
+        if (strpos($message, 'previsão') !== false || strpos($message, 'próximo') !== false) {
+            return [
+                'type' => 'prediction',
+                'start_date' => now()->subMonths(6), // 6 meses de histórico para previsões
+                'end_date' => now()->addDays(30)
+            ];
+        }
+
+        // Padrão: usar período mais amplo para ter dados suficientes
         return [
-            'type' => 'month',
-            'start_date' => now()->startOfMonth(),
+            'type' => 'recent',
+            'start_date' => now()->subMonths(3), // 3 meses para ter dados relevantes
             'end_date' => now()
         ];
     }
@@ -169,7 +178,9 @@ class FinancialChatbotService
             'quarter' => now()->startOfQuarter(),
             'year' => now()->startOfYear(),
             'all' => now()->subYears(2), // Para visão geral, 2 anos para incluir todas as transações
-            default => now()->startOfMonth()
+            'prediction' => now()->subMonths(6), // 6 meses para previsões
+            'recent' => now()->subMonths(3), // 3 meses para dados recentes
+            default => now()->subMonths(3) // Padrão mais amplo
         };
     }
     
@@ -203,7 +214,8 @@ class FinancialChatbotService
             return [
                 'id' => $transaction->id,
                 'description' => $transaction->description ?? 'Sem descrição',
-                'amount' => (float) $transaction->amount,
+                'amount' => (float) ($transaction->amount / 100), // Converter centavos para reais
+                'amount_formatted' => 'R$ ' . number_format($transaction->amount / 100, 2, ',', '.'),
                 'type' => $transaction->type ?? 'unknown',
                 'date' => $transaction->date ? $transaction->date->format('Y-m-d') : now()->format('Y-m-d'),
                 'category' => $transaction->category?->name ?? 'Sem categoria',
@@ -212,10 +224,17 @@ class FinancialChatbotService
         })->toArray();
         
         // Resumo financeiro
+        $totalIncome = $transactions->where('type', 'income')->sum('amount') / 100;
+        $totalExpenses = $transactions->where('type', 'expense')->sum('amount') / 100;
+        $netBalance = $totalIncome - $totalExpenses;
+
         $data['summary'] = [
-            'total_income' => $transactions->where('type', 'income')->sum('amount'),
-            'total_expenses' => $transactions->where('type', 'expense')->sum('amount'),
-            'net_balance' => $transactions->where('type', 'income')->sum('amount') - $transactions->where('type', 'expense')->sum('amount'),
+            'total_income' => $totalIncome,
+            'total_expenses' => $totalExpenses,
+            'net_balance' => $netBalance,
+            'total_income_formatted' => 'R$ ' . number_format($totalIncome, 2, ',', '.'),
+            'total_expenses_formatted' => 'R$ ' . number_format($totalExpenses, 2, ',', '.'),
+            'net_balance_formatted' => 'R$ ' . number_format($netBalance, 2, ',', '.'),
             'transaction_count' => $transactions->count(),
             'period' => $period['type'],
             'start_date' => $period['start_date']->format('Y-m-d'),
@@ -254,10 +273,83 @@ class FinancialChatbotService
                 $data['summary']['total_expenses']
             )
         ];
-        
+
+        // Adicionar previsões se a intenção for de previsão
+        if ($intent['primary'] === 'predictions' || strpos($intent['original_message'], 'previsão') !== false) {
+            $data['predictions'] = $this->calculatePredictions($user, $intent);
+        }
+
         return $data;
     }
     
+    /**
+     * Calcula previsões baseadas em dados históricos
+     */
+    private function calculatePredictions(User $user, array $intent): array
+    {
+        // Buscar dados dos últimos 6 meses para análise de tendência
+        $sixMonthsAgo = now()->subMonths(6);
+        $transactions = Transaction::where('user_id', $user->id)
+            ->where('date', '>=', $sixMonthsAgo)
+            ->orderBy('date', 'asc')
+            ->get();
+
+        if ($transactions->isEmpty()) {
+            return [
+                'next_month_income_prediction' => 0,
+                'next_month_expenses_prediction' => 0,
+                'confidence' => 0,
+                'trend' => 'insufficient_data'
+            ];
+        }
+
+        // Agrupar por mês
+        $monthlyData = $transactions->groupBy(function($transaction) {
+            return $transaction->date->format('Y-m');
+        })->map(function($monthTransactions) {
+            $income = $monthTransactions->where('type', 'income')->sum('amount') / 100;
+            $expenses = $monthTransactions->where('type', 'expense')->sum('amount') / 100;
+            return [
+                'income' => $income,
+                'expenses' => $expenses,
+                'net' => $income - $expenses
+            ];
+        });
+
+        // Calcular médias
+        $avgIncome = $monthlyData->avg('income');
+        $avgExpenses = $monthlyData->avg('expenses');
+
+        // Calcular tendência (últimos 3 meses vs 3 anteriores)
+        $recentMonths = $monthlyData->take(-3);
+        $previousMonths = $monthlyData->take(-6)->take(3);
+
+        $recentAvgIncome = $recentMonths->avg('income');
+        $previousAvgIncome = $previousMonths->avg('income');
+
+        $recentAvgExpenses = $recentMonths->avg('expenses');
+        $previousAvgExpenses = $previousMonths->avg('expenses');
+
+        // Aplicar tendência à previsão
+        $incomeTrend = $previousAvgIncome > 0 ? ($recentAvgIncome - $previousAvgIncome) / $previousAvgIncome : 0;
+        $expensesTrend = $previousAvgExpenses > 0 ? ($recentAvgExpenses - $previousAvgExpenses) / $previousAvgExpenses : 0;
+
+        $predictedIncome = $avgIncome * (1 + $incomeTrend * 0.5); // Aplicar 50% da tendência
+        $predictedExpenses = $avgExpenses * (1 + $expensesTrend * 0.5);
+
+        return [
+            'next_month_income_prediction' => max(0, $predictedIncome),
+            'next_month_expenses_prediction' => max(0, $predictedExpenses),
+            'next_month_income_formatted' => 'R$ ' . number_format(max(0, $predictedIncome), 2, ',', '.'),
+            'next_month_expenses_formatted' => 'R$ ' . number_format(max(0, $predictedExpenses), 2, ',', '.'),
+            'historical_avg_income' => $avgIncome,
+            'historical_avg_expenses' => $avgExpenses,
+            'confidence' => min(100, $monthlyData->count() * 20), // 20% por mês de dados
+            'trend' => $incomeTrend > 0.1 ? 'growing' : ($incomeTrend < -0.1 ? 'declining' : 'stable'),
+            'months_analyzed' => $monthlyData->count()
+        ];
+    }
+
     /**
      * Calcula mudança percentual
      */
@@ -306,7 +398,18 @@ class FinancialChatbotService
             $context .= "- Receitas: {$financialData['trends']['income_change']}%\n";
             $context .= "- Despesas: {$financialData['trends']['expense_change']}%\n\n";
         }
-        
+
+        // Adicionar previsões se disponíveis
+        if (!empty($financialData['predictions'])) {
+            $predictions = $financialData['predictions'];
+            $context .= "PREVISÕES PARA O PRÓXIMO MÊS:\n";
+            $context .= "- Receitas previstas: {$predictions['next_month_income_formatted']}\n";
+            $context .= "- Despesas previstas: {$predictions['next_month_expenses_formatted']}\n";
+            $context .= "- Confiança da previsão: {$predictions['confidence']}%\n";
+            $context .= "- Tendência: {$predictions['trend']}\n";
+            $context .= "- Baseado em {$predictions['months_analyzed']} meses de dados\n\n";
+        }
+
         $context .= "INTENÇÃO DETECTADA: {$intent['primary']}\n";
         $context .= "MENSAGEM DO USUÁRIO: {$message}\n\n";
         
