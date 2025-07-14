@@ -176,6 +176,20 @@
                         </div>
                     </div>
 
+                    <!-- Campos para recorrência fixa (visíveis apenas quando Tipo = "Fixa") -->
+                    <div id="fixed-fields" class="form-group" style="display: none;">
+                        <label for="recurrence_period" class="block text-sm font-medium text-gray-700 mb-1">
+                            Frequência
+                        </label>
+                        <select name="recurrence_period" id="recurrence_period" class="form-select block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="daily" {{ old('recurrence_period', $transaction->recurrence_period ?? '') === 'daily' ? 'selected' : '' }}>Diária</option>
+                            <option value="weekly" {{ old('recurrence_period', $transaction->recurrence_period ?? '') === 'weekly' ? 'selected' : '' }}>Semanal</option>
+                            <option value="fortnightly" {{ old('recurrence_period', $transaction->recurrence_period ?? '') === 'fortnightly' ? 'selected' : '' }}>Quinzenal</option>
+                            <option value="monthly" {{ old('recurrence_period', $transaction->recurrence_period ?? '') === 'monthly' ? 'selected' : '' }}>Mensal</option>
+                            <option value="yearly" {{ old('recurrence_period', $transaction->recurrence_period ?? '') === 'yearly' ? 'selected' : '' }}>Anual</option>
+                        </select>
+                    </div>
+
                     <!-- Campo para data da próxima cobrança (visível apenas quando recurrence_type ≠ "none") -->
                     <div id="next-date-field" class="form-group" style="display: none;">
                         <label for="next_date" class="block text-sm font-medium text-gray-700 mb-1">
@@ -478,16 +492,20 @@ function updateCategories(type) {
 function toggleRecurrenceFields() {
     const recurrenceType = document.getElementById('recurrence_type').value;
     const installmentFields = document.getElementById('installment-fields');
+    const fixedFields = document.getElementById('fixed-fields');
     const nextDateField = document.getElementById('next-date-field');
-    
+
     if (recurrenceType === 'installment') {
         installmentFields.style.display = 'grid';
+        fixedFields.style.display = 'none';
         nextDateField.style.display = 'block';
     } else if (recurrenceType === 'fixed') {
         installmentFields.style.display = 'none';
+        fixedFields.style.display = 'block';
         nextDateField.style.display = 'block';
     } else {
         installmentFields.style.display = 'none';
+        fixedFields.style.display = 'none';
         nextDateField.style.display = 'none';
     }
 }
