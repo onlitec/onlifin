@@ -32,6 +32,8 @@ use App\Models\AiCallLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Services\AIService;
+use App\Services\DuplicateDetectionService;
+use App\Services\AICategorizationService;
 use Carbon\Carbon;
 
 class TempStatementImportController extends Controller
@@ -258,16 +260,6 @@ class TempStatementImportController extends Controller
      */
     public function showMapping(Request $request)
     {
-        // Aplicar timeout aumentado se IA estiver ativada
-        if ($request->get('use_ai') === '1') {
-            set_time_limit(300); // 5 minutos
-            Log::info('Timeout aumentado para análise com IA', [
-                'route' => 'mapping',
-                'use_ai' => $request->get('use_ai'),
-                'time_limit' => ini_get('max_execution_time')
-            ]);
-        }
-        
         // Verificar se é uma requisição AJAX de verificação
         if ($request->has('_ajax')) {
             if ($request->ajax()) {
@@ -276,13 +268,12 @@ class TempStatementImportController extends Controller
                 return response()->json(['success' => false, 'message' => 'Esta rota requer uma requisição AJAX'], 400);
             }
         }
-        
+
         // Validar parâmetros essenciais da URL
         $validator = Validator::make($request->all(), [
             'path' => 'required|string',
             'account_id' => 'required|exists:accounts,id',
             'extension' => 'required|string|in:pdf,csv,ofx,qif,qfx,xls,xlsx,txt',
-            'use_ai' => 'required|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -294,11 +285,10 @@ class TempStatementImportController extends Controller
         $path = $request->path;
         $accountId = $request->account_id;
         $extension = $request->extension;
-        $useAI = $request->use_ai === '1'; // Converter para boolean
         $autoSave = $request->boolean('auto_save') ?? false; // Manter auto_save se usado
 
         Log::info('Iniciando showMapping', [
-            'path' => $path, 'account_id' => $accountId, 'extension' => $extension, 'use_ai' => $useAI
+            'path' => $path, 'account_id' => $accountId, 'extension' => $extension
         ]);
 
         // ****** MODO DEBUG PARA TESTAR SEM ARQUIVO ******
@@ -402,51 +392,82 @@ class TempStatementImportController extends Controller
             session()->flash('warning', 'Não foi possível extrair transações do arquivo. Verifique o formato do arquivo.');
         }
 
-        // Executar análise prévia para detectar duplicatas (apenas se não usar IA principal)
-        $preAnalysisResult = ['duplicates' => [], 'category_conflicts' => []];
-        if (!$useAI) {
-            // Só fazer análise prévia se não estiver usando IA principal para evitar dupla chamada
-            $preAnalysisResult = $this->performPreAnalysisWithAI($extractedTransactions, $accountId);
-            $extractedTransactions = $this->mergePreAnalysisResults($extractedTransactions, $preAnalysisResult);
-        }
-        
-        // Analisar transações usando a IA se solicitado
-        $aiAnalysis = null;
-        if ($useAI) {
-            try {
-                // Diagnóstico adicional
-                Log::info('Chamando análise com IA para ' . count($extractedTransactions) . ' transações');
-                
-                // A análise com IA será sempre realizada através de analyzeTransactionsWithAI
-                $aiAnalysis = $this->analyzeTransactionsWithAI($extractedTransactions);
-                
-                if ($aiAnalysis) {
-                    Log::info('Análise com IA concluída com sucesso', [
-                        'transactions_analyzed' => count($aiAnalysis['transactions'] ?? [])
-                    ]);
+        // Detectar duplicatas automaticamente
+        $duplicateService = new DuplicateDetectionService();
+        $transactionsWithDuplicates = $duplicateService->detectDuplicates($extractedTransactions, $accountId);
+
+        // Categorizar automaticamente as transações com IA
+        Log::info('INICIANDO CATEGORIZAÇÃO COM IA NO TEMP CONTROLLER', [
+            'transactions_count' => count($transactionsWithDuplicates),
+            'user_id' => auth()->id()
+        ]);
+
+        try {
+            Log::info('INICIANDO CATEGORIZAÇÃO POR IA', [
+                'transactions_count' => count($transactionsWithDuplicates),
+                'account_id' => $accountId,
+                'user_id' => auth()->id()
+            ]);
+
+            $aiCategorizationService = new AICategorizationService();
+            $categorizedTransactions = $aiCategorizationService->categorizeTransactions($transactionsWithDuplicates, $accountId);
+
+            // Log detalhado das categorias sugeridas
+            $categoriesLog = [];
+            $categorizedCount = 0;
+            $uncategorizedCount = 0;
+
+            foreach ($categorizedTransactions as $index => $transaction) {
+                $hasCategory = !empty($transaction['suggested_category_name']);
+                if ($hasCategory) {
+                    $categorizedCount++;
                 } else {
-                    Log::warning('Análise com IA retornou nulo');
+                    $uncategorizedCount++;
                 }
-            } catch (\Exception $e) {
-                Log::error('Erro na análise com IA', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                
-                session()->flash('error', 'Ocorreu um erro durante a análise com IA: ' . $e->getMessage());
+
+                $categoriesLog[] = [
+                    'index' => $index,
+                    'description' => substr($transaction['description'], 0, 50),
+                    'type' => $transaction['type'],
+                    'suggested_category_name' => $transaction['suggested_category_name'] ?? 'VAZIO',
+                    'suggested_category_id' => $transaction['suggested_category_id'] ?? 'NULL',
+                    'is_new_category' => $transaction['is_new_category'] ?? 'UNDEFINED',
+                    'has_category' => $hasCategory ? 'SIM' : 'NÃO'
+                ];
             }
-        }
-        
-        // Aplicar categorização às transações se a análise de IA for bem-sucedida
-        if ($aiAnalysis) {
-            $extractedTransactions = $this->applyCategorizationToTransactions($extractedTransactions, $aiAnalysis);
-        }
-        
-        // Verificar se a resposta da IA está em um formato diferente e precisa ser adaptada
-        if ($aiAnalysis && isset($aiAnalysis['categories']) && !isset($aiAnalysis['transactions'])) {
-            // Formato diferente detectado, fazer adaptação aqui
-            Log::warning('Formato de resposta da IA não padrão detectado. Adaptando...');
-            // Código de adaptação...
+
+            Log::info('CATEGORIZAÇÃO POR IA E DETECÇÃO DE TRANSFERÊNCIAS APLICADAS COM SUCESSO', [
+                'transactions_count' => count($categorizedTransactions),
+                'categorized_count' => $categorizedCount,
+                'uncategorized_count' => $uncategorizedCount,
+                'success_rate' => round(($categorizedCount / count($categorizedTransactions)) * 100, 1) . '%',
+                'account_id' => $accountId,
+                'categories_detail' => $categoriesLog,
+                'user_id' => auth()->id()
+            ]);
+
+            if ($uncategorizedCount > 0) {
+                Log::warning('TRANSAÇÕES SEM CATEGORIA DETECTADAS', [
+                    'uncategorized_count' => $uncategorizedCount,
+                    'total_count' => count($categorizedTransactions)
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('ERRO NA CATEGORIZAÇÃO POR IA NO TEMP CONTROLLER', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id()
+            ]);
+
+            // Fallback para categorização básica
+            $categorizedTransactions = $transactionsWithDuplicates;
+            foreach ($categorizedTransactions as &$transaction) {
+                $transaction['suggested_category_name'] = $transaction['type'] === 'income' ? 'Outros Recebimentos' : 'Outros Gastos';
+                $transaction['suggested_category_id'] = null;
+                $transaction['category_confidence'] = 0.3;
+                $transaction['is_new_category'] = true;
+                $transaction['ai_reasoning'] = 'Categorização automática (IA não disponível)';
+            }
         }
 
         // Categorias disponíveis para o usuário
@@ -455,10 +476,7 @@ class TempStatementImportController extends Controller
             ->get()
             ->groupBy('type');
         
-        // Verifica se a IA está configurada no banco de dados
-        $aiConfigService = new AIConfigService();
-        $aiConfig = $aiConfigService->getAIConfig();
-        $aiConfigured = $aiConfig['is_configured'];
+        // IA removida - configuração não necessária
         
         // Determinar se deve mostrar instruções para primeira importação
         $hasImportedBefore = Transaction::where('user_id', auth()->id())
@@ -469,18 +487,16 @@ class TempStatementImportController extends Controller
         // Preparar dados para a view
         $viewData = [
             'account' => $account,
-            'transactions' => $extractedTransactions,
+            'transactions' => $categorizedTransactions,
             'categories' => $categories,
             'path' => $path,
             'extension' => $extension,
-            'aiConfigured' => $aiConfigured,
             'hasImportedBefore' => $hasImportedBefore,
-            'usedAI' => $useAI && !empty($aiAnalysis),
             'autoSave' => $autoSave,
-            'isDebugMode' => $isDebugMode, // Nova flag para informar a view que estamos em modo debug
-            'preAnalysisResult' => $preAnalysisResult, // Adicionar resultados da análise prévia
-            'hasDuplicates' => !empty($preAnalysisResult['duplicates']),
-            'hasCategoryConflicts' => !empty($preAnalysisResult['category_conflicts'])
+            'isDebugMode' => $isDebugMode,
+            'hasDuplicates' => count(array_filter($categorizedTransactions, fn($t) => $t['is_duplicate'])) > 0,
+            'duplicatesCount' => count(array_filter($categorizedTransactions, fn($t) => $t['is_duplicate'])),
+            'newTransactionsCount' => count(array_filter($categorizedTransactions, fn($t) => !$t['is_duplicate'])),
         ];
         
         // **** NOVO LOG: Testar json_encode manualmente ****
@@ -500,9 +516,8 @@ class TempStatementImportController extends Controller
             'view_data_keys' => array_keys($viewData)
         ]);
 
-        // **** NOVO: Armazenar transações em uma chave de sessão temporária ****
-        // Isso permitirá recuperá-las via AJAX em uma rota separada
-        session(['temp_transactions' => $extractedTransactions]);
+        // Armazenar transações processadas na sessão
+        session(['temp_transactions' => $categorizedTransactions]);
         
         // Incluir uma flag indicando que as transações devem ser carregadas via AJAX
         $viewData['load_via_ajax'] = true;
@@ -1919,7 +1934,7 @@ class TempStatementImportController extends Controller
     }
     
     /**
-     * Salva as transações importadas no banco de dados
+     * Salva as transações importadas no banco de dados com suporte a novas categorias e duplicatas
      */
     public function saveTransactions(Request $request)
     {
@@ -1944,7 +1959,11 @@ class TempStatementImportController extends Controller
                     $fail("A categoria selecionada ($value) é inválida para o campo $attribute.");
                 }
             }],
-            'transactions.*.suggested_category' => 'nullable|string|max:100' // Nome da nova categoria sugerida
+            'transactions.*.suggested_category' => 'nullable|string|max:100', // Nome da nova categoria sugerida
+            'transactions.*.category_name' => 'nullable|string|max:100', // Nome da categoria (nova ou existente)
+            'transactions.*.is_new_category' => 'boolean', // Se é uma nova categoria
+            'transactions.*.force_import' => 'boolean', // Se deve forçar importação (duplicatas)
+            'create_missing_categories' => 'boolean' // Se deve criar categorias que não existem
         ]);
 
         if ($validator->fails()) {
@@ -1996,23 +2015,38 @@ class TempStatementImportController extends Controller
             $failedCount = 0;
             $createdCategoryIds = []; // Rastrear novas categorias criadas
             
-            // Criar categorias primeiro
+            // Criar categorias primeiro (se permitido)
             $categories = [];
-            foreach ($request->transactions as $index => $transactionData) {
-                $categoryId = $transactionData['category_id'] ?? null;
-                if ($categoryId !== null && $categoryId !== '' && is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
-                    $categoryName = $transactionData['suggested_category'] ?? null;
-                    if (empty($categoryName)) {
-                        $categoryName = str_replace('_', ' ', substr($categoryId, 4));
+            $createMissingCategories = $request->create_missing_categories ?? true;
+
+            if ($createMissingCategories) {
+                foreach ($request->transactions as $index => $transactionData) {
+                    $isNewCategory = $transactionData['is_new_category'] ?? false;
+                    $categoryName = $transactionData['category_name'] ?? $transactionData['suggested_category'] ?? null;
+
+                    // Também suportar o formato antigo para compatibilidade
+                    $categoryId = $transactionData['category_id'] ?? null;
+                    if (!$isNewCategory && is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
+                        $isNewCategory = true;
+                        if (empty($categoryName)) {
+                            $categoryName = str_replace('_', ' ', substr($categoryId, 4));
+                        }
                     }
-                    $categoryName = trim(ucfirst($categoryName));
-                    
-                    if (!empty($categoryName)) {
-                        $type = $transactionData['type'] ?? 'expense';
-                        $categories[$categoryName.'-'.$type] = [
-                            'name' => $categoryName,
-                            'type' => $type
-                        ];
+
+                    if ($isNewCategory && !empty($categoryName)) {
+                        // Determinar tipo baseado no valor da transação
+                        $amount = (float) ($transactionData['amount'] ?? 0);
+                        $type = $amount >= 0 ? 'income' : 'expense';
+
+                        $categoryName = trim(ucfirst($categoryName));
+                        $categoryKey = $categoryName . '-' . $type;
+
+                        if (!isset($categories[$categoryKey])) {
+                            $categories[$categoryKey] = [
+                                'name' => $categoryName,
+                                'type' => $type
+                            ];
+                        }
                     }
                 }
             }
@@ -2059,33 +2093,42 @@ class TempStatementImportController extends Controller
                     $transaction->type = $type;
                     $transaction->status = 'paid'; // Definir status como pago
                     
-                    // Definir categoria
+                    // Definir categoria usando nova lógica
                     $categoryId = $transactionData['category_id'] ?? null;
-                    $suggestedCategory = $transactionData['suggested_category'] ?? null;
-                    
-                    if ($categoryId !== null && $categoryId !== '') {
-                        if (is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
-                            // Buscar categoria já criada
-                            $categoryName = $suggestedCategory ?? str_replace('_', ' ', substr($categoryId, 4));
-                            $categoryName = trim(ucfirst($categoryName));
-                            $key = $categoryName.'-'.$type;
-                            
-                            if (isset($categories[$key])) {
-                                $transaction->category_id = $categories[$key]['id'];
-                                $transaction->suggested_category = null; // Limpar sugestão já que foi aplicada
-                            } else {
-                                $transaction->category_id = null;
-                                $transaction->suggested_category = $categoryName; // Salvar sugestão para uso futuro
-                                Log::warning('Categoria não encontrada para transação', ['index' => $index, 'category' => $categoryName, 'type' => $type]);
-                            }
+                    $categoryName = $transactionData['category_name'] ?? $transactionData['suggested_category'] ?? null;
+                    $isNewCategory = $transactionData['is_new_category'] ?? false;
+
+                    if ($isNewCategory && !empty($categoryName)) {
+                        // Buscar categoria recém-criada
+                        $categoryKey = trim(ucfirst($categoryName)) . '-' . $type;
+
+                        if (isset($categories[$categoryKey])) {
+                            $transaction->category_id = $categories[$categoryKey]['id'];
                         } else {
-                            $transaction->category_id = $categoryId;
-                            $transaction->suggested_category = null; // Limpar sugestão já que categoria foi definida
+                            // Categoria não foi criada, deixar sem categoria
+                            $transaction->category_id = null;
+                            Log::warning('Nova categoria não encontrada para transação', [
+                                'index' => $index,
+                                'category' => $categoryName,
+                                'type' => $type
+                            ]);
+                        }
+                    } elseif (!empty($categoryId) && is_numeric($categoryId)) {
+                        // Categoria existente
+                        $transaction->category_id = $categoryId;
+                    } elseif (is_string($categoryId) && strpos($categoryId, 'new_') === 0) {
+                        // Formato antigo - compatibilidade
+                        $categoryName = $categoryName ?? str_replace('_', ' ', substr($categoryId, 4));
+                        $categoryKey = trim(ucfirst($categoryName)) . '-' . $type;
+
+                        if (isset($categories[$categoryKey])) {
+                            $transaction->category_id = $categories[$categoryKey]['id'];
+                        } else {
+                            $transaction->category_id = null;
                         }
                     } else {
-                        // Usar método helper para garantir categoria válida
-                        $transaction->category_id = Transaction::ensureValidCategory(null, $suggestedCategory, $type, auth()->id());
-                        $transaction->suggested_category = $suggestedCategory;
+                        // Sem categoria
+                        $transaction->category_id = null;
                     }
                     
                     $transaction->save();

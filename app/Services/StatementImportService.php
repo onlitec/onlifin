@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Services\AIConfigService;
+use App\Services\CategoryTypeService;
 use App\Models\AiCallLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -525,26 +526,87 @@ class StatementImportService
                             $categoryName = trim(ucfirst($categoryName));
 
                             if (!empty($categoryName)) {
+                                // Determinar o tipo correto da categoria baseado no nome, não no tipo da transação
+                                $correctCategoryType = CategoryTypeService::getCorrectCategoryType($categoryName, $transactionData['type']);
+
+                                Log::info('Criando/buscando categoria', [
+                                    'category_name' => $categoryName,
+                                    'transaction_type' => $transactionData['type'],
+                                    'correct_category_type' => $correctCategoryType,
+                                    'transaction_description' => $transactionData['description'],
+                                    'original_category_id' => $categoryId
+                                ]);
+
                                 $existingCategory = Category::firstOrCreate(
                                     [
                                         'user_id' => auth()->id(),
                                         'name' => $categoryName,
-                                        'type' => $transactionData['type']
+                                        'type' => $correctCategoryType
                                     ],
                                     [
-                                        'system' => false 
+                                        'system' => false
                                     ]
                                 );
                                 $transaction->category_id = $existingCategory->id;
                                 if($existingCategory->wasRecentlyCreated) {
                                      $newCategoryCreated = true;
                                      $createdCategoryIds[] = $existingCategory->id;
+
+                                     Log::info('Nova categoria criada', [
+                                         'category_id' => $existingCategory->id,
+                                         'category_name' => $categoryName,
+                                         'category_type' => $correctCategoryType
+                                     ]);
                                 }
                             } else {
-                                $transaction->category_id = null;
+                                // Fallback: criar categoria padrão se nome estiver vazio
+                                $defaultCategoryName = $transactionData['type'] === 'income' ? 'Outros Recebimentos' : 'Outros Gastos';
+                                $correctCategoryType = CategoryTypeService::getCorrectCategoryType($defaultCategoryName, $transactionData['type']);
+
+                                Log::warning('Nome de categoria vazio, usando categoria padrão', [
+                                    'category_id' => $categoryId,
+                                    'transaction_description' => $transactionData['description'],
+                                    'default_category' => $defaultCategoryName
+                                ]);
+
+                                $existingCategory = Category::firstOrCreate(
+                                    [
+                                        'user_id' => auth()->id(),
+                                        'name' => $defaultCategoryName,
+                                        'type' => $correctCategoryType
+                                    ],
+                                    [
+                                        'system' => false
+                                    ]
+                                );
+                                $transaction->category_id = $existingCategory->id;
                             }
                         } else {
                             $transaction->category_id = $categoryId;
+                        }
+
+                        // VALIDAÇÃO FINAL: Garantir que TODA transação tenha categoria
+                        if (empty($transaction->category_id)) {
+                            $defaultCategoryName = $transactionData['type'] === 'income' ? 'Outros Recebimentos' : 'Outros Gastos';
+                            $correctCategoryType = CategoryTypeService::getCorrectCategoryType($defaultCategoryName, $transactionData['type']);
+
+                            Log::warning('Transação sem categoria detectada, aplicando categoria padrão', [
+                                'transaction_description' => $transactionData['description'],
+                                'transaction_type' => $transactionData['type'],
+                                'default_category' => $defaultCategoryName
+                            ]);
+
+                            $defaultCategory = Category::firstOrCreate(
+                                [
+                                    'user_id' => auth()->id(),
+                                    'name' => $defaultCategoryName,
+                                    'type' => $correctCategoryType
+                                ],
+                                [
+                                    'system' => false
+                                ]
+                            );
+                            $transaction->category_id = $defaultCategory->id;
                         }
                     } else {
                          $transaction->category_id = null;

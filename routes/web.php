@@ -146,9 +146,7 @@ Route::middleware(['auth'])->group(function () {
     // Rota AJAX para retornar as transações armazenadas na sessão para a página de mapeamento
     Route::get('/transactions/ajax/get', [TempStatementImportController::class, 'getTransactions'])->name('transactions.ajax.get');
     
-    // Rotas para análise de extratos com IA
-    Route::post('/transactions/analyze-with-ai', [TempStatementImportController::class, 'analyzeWithAI'])->name('statements.analyze-with-ai');
-    Route::get('/transactions/review-categorized', [TempStatementImportController::class, 'reviewCategorizedTransactions'])->name('statements.review-categorized');
+    // Rotas para análise de extratos com IA - REMOVIDAS
     
     // Transações
     Route::prefix('transactions')->name('transactions.')->group(function () {

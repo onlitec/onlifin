@@ -25,8 +25,7 @@ class FixedStatementImportController extends Controller
         $accountId = $request->account_id;
         $extension = $request->extension;
         
-        // IA é sempre ativada por padrão
-        $useAI = true;
+        // IA removida - apenas mapeamento manual
         $autoSave = $request->boolean('auto_save') ?? false;
         
         if (!Storage::exists($path)) {
@@ -63,14 +62,7 @@ class FixedStatementImportController extends Controller
             'sample' => json_encode(array_slice($extractedTransactions, 0, 2))
         ]);
         
-        // Tentar usar a IA configurada no banco de dados
-        $aiAnalysisResult = $this->categorizeTransactionsWithConfiguredAI($extractedTransactions);
-        
-        // Se não conseguir usar a IA configurada, usar a categorização local
-        if (empty($aiAnalysisResult)) {
-            Log::info('Usando categorização local como fallback');
-            $aiAnalysisResult = $this->categorizeTransactionsLocally($extractedTransactions);
-        }
+        // Análise de IA removida - apenas mapeamento manual
         
         // Aplicar categorização às transações
         $extractedTransactions = $this->applyCategorizationToTransactions($extractedTransactions, $aiAnalysisResult);

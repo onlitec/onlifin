@@ -71,7 +71,7 @@
                 </div>
                 <div class="transaction-info">
                     <span class="transaction-title">{{ $transaction->title }}</span>
-                    <span class="transaction-category">{{ $transaction->category->name }}</span>
+                    <span class="transaction-category">{{ $transaction->category?->name ?? 'Sem categoria' }}</span>
                 </div>
                 <div class="transaction-amount {{ $transaction->type === 'expense' ? 'text-danger' : 'text-success' }}">
                     R$ {{ number_format($transaction->amount, 2, ',', '.') }}

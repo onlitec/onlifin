@@ -307,6 +307,26 @@ Você é um assistente financeiro. Analise **cada linha** do extrato e **extraia
             ],
             'icon' => 'ri-google-fill'
         ],
+        'groq' => [
+            'name' => 'Groq',
+            'models' => [
+                'llama-3.3-70b-versatile',
+                'llama-3.1-8b-instant',
+                'gemma2-9b-it',
+                'whisper-large-v3',
+                'whisper-large-v3-turbo',
+                'distil-whisper-large-v3-en',
+                'meta-llama/llama-guard-4-12b',
+                'deepseek-r1-distill-llama-70b',
+                'meta-llama/llama-4-maverick-17b-128e-instruct',
+                'meta-llama/llama-4-scout-17b-16e-instruct',
+                'mistral-saba-24b',
+                'qwen/qwen3-32b',
+                'compound-beta',
+                'compound-beta-mini'
+            ],
+            'icon' => 'ri-flashlight-fill'
+        ],
         'grok' => [
             'name' => 'xAI Grok',
             'models' => [

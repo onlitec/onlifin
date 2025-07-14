@@ -503,6 +503,15 @@ class SettingsController extends Controller
             $projectionValues[] = $netBalance + $avgDailyNet * $i;
         }
 
+        // Buscar transações recentes para exibir na página
+        $recentTransactions = Transaction::when(!$user->isAdmin(), function($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
+            ->with(['category', 'account'])
+            ->orderByDesc('date')
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
         // Retornar view com dados e filtros
         return view('settings.reports.index', compact(
             'detailedExpenses',
@@ -529,7 +538,8 @@ class SettingsController extends Controller
             'projectionLabels',
             'projectionValues',
             'startParam',
-            'endParam'
+            'endParam',
+            'recentTransactions'
         ));
     }
 

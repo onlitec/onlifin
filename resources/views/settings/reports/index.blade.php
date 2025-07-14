@@ -128,6 +128,202 @@
             </div>
         </div>
 
+        {{-- Lista de Transações --}}
+        <div class="mb-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 mr-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="ri-file-list-3-line text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">Transações Recentes</h3>
+                                <p class="text-sm text-gray-600 mt-1">Últimas transações registradas no sistema</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="relative">
+                                    <input type="text" id="transaction-search" placeholder="Buscar por descrição..."
+                                           class="form-input text-sm pl-8 pr-4 py-2 w-64">
+                                    <i class="ri-search-line absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                                <select id="transaction-filter" class="form-select text-sm">
+                                    <option value="all">Todas</option>
+                                    <option value="income">Receitas</option>
+                                    <option value="expense">Despesas</option>
+                                    <option value="paid">Pagas</option>
+                                    <option value="pending">Pendentes</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <a href="{{ route('transactions.create') }}" class="btn btn-sm btn-secondary">
+                                    <i class="ri-add-line mr-1"></i>
+                                    Nova
+                                </a>
+                                <a href="{{ route('transactions.import') }}" class="btn btn-sm btn-success">
+                                    <i class="ri-upload-line mr-1"></i>
+                                    Importar
+                                </a>
+                                <a href="{{ route('transactions.index') }}" class="btn btn-sm btn-primary">
+                                    <i class="ri-external-link-line mr-1"></i>
+                                    Ver Todas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estatísticas Rápidas -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-arrow-up-circle-line text-2xl text-green-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-green-800">Receitas (Mês)</p>
+                                    <p class="text-lg font-bold text-green-900" id="monthly-income">
+                                        R$ {{ number_format($paidIncome / 100, 2, ',', '.') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-arrow-down-circle-line text-2xl text-red-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-red-800">Despesas (Mês)</p>
+                                    <p class="text-lg font-bold text-red-900" id="monthly-expenses">
+                                        R$ {{ number_format($totalExpenses / 100, 2, ',', '.') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-wallet-line text-2xl text-blue-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-blue-800">Saldo Líquido</p>
+                                    <p class="text-lg font-bold {{ $netBalance >= 0 ? 'text-green-900' : 'text-red-900' }}" id="net-balance">
+                                        R$ {{ number_format($netBalance / 100, 2, ',', '.') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-file-list-line text-2xl text-purple-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-purple-800">Total Transações</p>
+                                    <p class="text-lg font-bold text-purple-900" id="total-transactions-count">
+                                        {{ $recentTransactions->total() }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conta</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body" class="bg-white divide-y divide-gray-200">
+                                @forelse($recentTransactions as $transaction)
+                                    <tr class="transaction-row hover:bg-gray-50"
+                                        data-type="{{ $transaction->type }}"
+                                        data-status="{{ $transaction->status }}"
+                                        data-transaction-id="{{ $transaction->id }}">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $transaction->date->format('d/m/Y') }}
+                                        </td>
+                                        <td class="px-4 py-4 text-sm text-gray-900">
+                                            <div class="max-w-xs truncate" title="{{ $transaction->description }}">
+                                                {{ $transaction->description }}
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $transaction->category?->name ?? 'Sem categoria' }}
+                                        </td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $transaction->account?->name ?? 'Conta não definida' }}
+                                        </td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                            <span class="{{ $transaction->type === 'income' ? 'text-green-600' : 'text-red-600' }}">
+                                                {{ $transaction->formatted_amount }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-4 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $transaction->type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                                {{ $transaction->type === 'income' ? 'Receita' : 'Despesa' }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-4 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $transaction->status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                                {{ $transaction->status === 'paid' ? 'Pago' : 'Pendente' }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                            <div class="flex items-center space-x-3">
+                                                <a href="{{ route('transactions.edit', $transaction) }}"
+                                                   class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200 transition-colors"
+                                                   title="Editar transação">
+                                                    <i class="ri-edit-line mr-1"></i>
+                                                    Editar
+                                                </a>
+                                                @if($transaction->status === 'pending')
+                                                    <button onclick="markAsPaid({{ $transaction->id }})"
+                                                            class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-100 rounded hover:bg-green-200 transition-colors"
+                                                            title="Marcar como pago">
+                                                        <i class="ri-check-line mr-1"></i>
+                                                        Pagar
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="ri-file-list-line text-4xl mb-2"></i>
+                                            <p>Nenhuma transação encontrada</p>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if($recentTransactions->hasPages())
+                        <div class="mt-4">
+                            {{ $recentTransactions->links() }}
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
         {{-- Geração de Relatórios --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Relatório de Transações (Existente) -->
@@ -661,5 +857,173 @@
                 });
             }
         });
+
+        // Função para filtrar transações
+        function filterTransactions() {
+            const searchTerm = document.getElementById('transaction-search').value.toLowerCase();
+            const filterValue = document.getElementById('transaction-filter').value;
+            const rows = document.querySelectorAll('.transaction-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const type = row.dataset.type;
+                const status = row.dataset.status;
+                const description = row.querySelector('td:nth-child(2) div').textContent.toLowerCase();
+
+                // Verificar filtro de tipo/status
+                let matchesFilter = true;
+                switch(filterValue) {
+                    case 'income':
+                        matchesFilter = type === 'income';
+                        break;
+                    case 'expense':
+                        matchesFilter = type === 'expense';
+                        break;
+                    case 'paid':
+                        matchesFilter = status === 'paid';
+                        break;
+                    case 'pending':
+                        matchesFilter = status === 'pending';
+                        break;
+                    case 'all':
+                    default:
+                        matchesFilter = true;
+                        break;
+                }
+
+                // Verificar busca por descrição
+                const matchesSearch = searchTerm === '' || description.includes(searchTerm);
+
+                const shouldShow = matchesFilter && matchesSearch;
+                row.style.display = shouldShow ? '' : 'none';
+
+                if (shouldShow) visibleCount++;
+            });
+
+            // Atualizar contador de resultados
+            updateResultsCounter(visibleCount);
+        }
+
+        // Função para atualizar contador de resultados
+        function updateResultsCounter(count) {
+            let counter = document.getElementById('results-counter');
+            if (!counter) {
+                // Criar contador se não existir
+                const tableContainer = document.querySelector('.overflow-x-auto');
+                counter = document.createElement('div');
+                counter.id = 'results-counter';
+                counter.className = 'text-sm text-gray-600 mt-2';
+                tableContainer.appendChild(counter);
+            }
+
+            const totalRows = document.querySelectorAll('.transaction-row').length;
+            if (count === totalRows) {
+                counter.textContent = `Mostrando todas as ${totalRows} transações`;
+            } else {
+                counter.textContent = `Mostrando ${count} de ${totalRows} transações`;
+            }
+        }
+
+        // Event listeners
+        document.getElementById('transaction-filter').addEventListener('change', filterTransactions);
+        document.getElementById('transaction-search').addEventListener('input', filterTransactions);
+
+        // Inicializar contador
+        document.addEventListener('DOMContentLoaded', function() {
+            updateResultsCounter(document.querySelectorAll('.transaction-row').length);
+        });
+
+        // Função para marcar transação como paga
+        function markAsPaid(transactionId) {
+            if (!confirm('Marcar esta transação como paga?')) {
+                return;
+            }
+
+            // Encontrar o botão e mostrar loading
+            const button = document.querySelector(`button[onclick*="markAsPaid(${transactionId})"]`);
+            if (button) {
+                const originalContent = button.innerHTML;
+                button.innerHTML = '<i class="ri-loader-4-line animate-spin mr-1"></i>Processando...';
+                button.disabled = true;
+            }
+
+            fetch(`/transactions/${transactionId}/mark-as-paid`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Atualizar a linha da transação
+                    const row = document.querySelector(`tr[data-transaction-id="${transactionId}"]`);
+                    if (row) {
+                        // Atualizar status badge
+                        const statusCell = row.querySelector('td:nth-child(7) span');
+                        if (statusCell) {
+                            statusCell.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                            statusCell.textContent = 'Pago';
+                        }
+
+                        // Remover botão de marcar como pago
+                        const actionsCell = row.querySelector('td:nth-child(8) div');
+                        const markPaidButton = actionsCell.querySelector('button[onclick*="markAsPaid"]');
+                        if (markPaidButton) {
+                            markPaidButton.remove();
+                        }
+
+                        // Atualizar dataset
+                        row.dataset.status = 'paid';
+                    }
+
+                    // Mostrar mensagem de sucesso
+                    showNotification('Transação marcada como paga!', 'success');
+                } else {
+                    // Restaurar botão em caso de erro
+                    if (button) {
+                        button.innerHTML = '<i class="ri-check-line mr-1"></i>Pagar';
+                        button.disabled = false;
+                    }
+                    showNotification('Erro ao marcar transação como paga: ' + (data.message || 'Erro desconhecido'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                // Restaurar botão em caso de erro
+                if (button) {
+                    button.innerHTML = '<i class="ri-check-line mr-1"></i>Pagar';
+                    button.disabled = false;
+                }
+                showNotification('Erro ao marcar transação como paga', 'error');
+            });
+        }
+
+        // Função para mostrar notificações
+        function showNotification(message, type = 'info') {
+            // Criar elemento de notificação
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+
+            // Adicionar ao DOM
+            document.body.appendChild(notification);
+
+            // Remover após 3 segundos
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
     </script>
-</x-app-layout> 
+</x-app-layout>

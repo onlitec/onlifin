@@ -60,6 +60,32 @@ class AIProviderService
             'endpoint' => 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
             'api_key_param' => 'Authorization'
         ],
+        'groq' => [
+            'name' => 'Groq',
+            'models' => [
+                // Production Models
+                'llama-3.3-70b-versatile' => 'Llama 3.3 70B Versatile',
+                'llama-3.1-8b-instant' => 'Llama 3.1 8B Instant',
+                'gemma2-9b-it' => 'Gemma 2 9B IT',
+                'whisper-large-v3' => 'Whisper Large v3',
+                'whisper-large-v3-turbo' => 'Whisper Large v3 Turbo',
+                'distil-whisper-large-v3-en' => 'Distil Whisper Large v3 EN',
+                'meta-llama/llama-guard-4-12b' => 'Llama Guard 4 12B',
+                // Preview Models
+                'deepseek-r1-distill-llama-70b' => 'DeepSeek R1 Distill Llama 70B',
+                'meta-llama/llama-4-maverick-17b-128e-instruct' => 'Llama 4 Maverick 17B',
+                'meta-llama/llama-4-scout-17b-16e-instruct' => 'Llama 4 Scout 17B',
+                'mistral-saba-24b' => 'Mistral Saba 24B',
+                'qwen/qwen3-32b' => 'Qwen 3 32B',
+                'playai-tts' => 'PlayAI TTS',
+                'playai-tts-arabic' => 'PlayAI TTS Arabic',
+                // Preview Systems
+                'compound-beta' => 'Compound Beta',
+                'compound-beta-mini' => 'Compound Beta Mini',
+            ],
+            'endpoint' => 'https://api.groq.com/openai/v1/chat/completions',
+            'api_key_param' => 'Authorization'
+        ],
         'openrouter' => [
             'name' => 'OpenRouter',
             'models' => [

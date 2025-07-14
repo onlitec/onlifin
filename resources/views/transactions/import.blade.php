@@ -23,13 +23,8 @@
                         </p>
                         <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
                              <p class="mb-2">
-                                Após o envio, você poderá analisar as transações com nossa IA para categorização automática.
+                                Após o envio, você poderá mapear as transações manualmente para categorização.
                             </p>
-                            @if(!$aiConfigured)
-                                <p class="mt-2 text-amber-600">
-                                    <i class="ri-alert-line mr-1"></i> Nenhuma IA está configurada. A análise automática não estará disponível.
-                                </p>
-                            @endif
                         </div>
                     </div>
 
@@ -89,7 +84,7 @@
                     @endif
                 </div>
 
-                <!-- Passo 2: Análise com IA (inicialmente oculto) -->
+                <!-- Passo 2: Mapeamento Manual (inicialmente oculto) -->
                 <div id="analysis-step" class="mt-8 hidden">
                     <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6">
                         <div class="flex items-center">
@@ -100,32 +95,24 @@
 
                     <div class="text-center">
                          <p class="text-gray-700 mb-4">
-                             Agora você pode analisar as transações com a nossa Inteligência Artificial para categorização automática.
+                             Agora você pode mapear as transações manualmente para categorização.
                          </p>
-                         
+
                          <!-- Inputs hidden para guardar os dados do arquivo salvo -->
                          <input type="hidden" id="saved-file-path">
                          <input type="hidden" id="saved-account-id">
                          <input type="hidden" id="saved-extension">
-                         
-                         @if($aiConfigured)
-                            <button type="button" id="analyze-button" class="btn btn-ai">
-                               <span class="button-text">
-                                    <i class="ri-robot-line mr-2"></i>
-                                    Analisar com IA e Mapear Transações
-                                </span>
-                                <span class="loading-spinner hidden animate-spin mr-2">
-                                    <i class="ri-loader-4-line"></i>
-                                </span>
-                                <span class="loading-text hidden">Analisando...</span>
-                            </button>
-                        @else
-                             <p class="text-amber-600 mb-4"><i class="ri-alert-line mr-1"></i> IA não configurada. A análise automática não está disponível.</p>
-                             <button type="button" id="map-manually-button" class="btn btn-primary">
+
+                         <button type="button" id="map-manually-button" class="btn btn-primary">
+                            <span class="button-text">
                                 <i class="ri-list-check mr-2"></i>
                                 Mapear Transações Manualmente
-                             </button>
-                         @endif
+                            </span>
+                            <span class="loading-spinner hidden animate-spin mr-2">
+                                <i class="ri-loader-4-line"></i>
+                            </span>
+                            <span class="loading-text hidden">Carregando...</span>
+                         </button>
                     </div>
                 </div>
                 
@@ -156,7 +143,6 @@
             const uploadStepDiv = document.getElementById('upload-step');
             const analysisStepDiv = document.getElementById('analysis-step');
             const successMessage = document.getElementById('success-message');
-            const analyzeButton = document.getElementById('analyze-button');
             const mapManuallyButton = document.getElementById('map-manually-button');
             
             const savedFilePathInput = document.getElementById('saved-file-path');
@@ -294,68 +280,27 @@
                 });
             });
 
-            // Clique no Botão "Analisar com IA" (Passo 2)
-            if (analyzeButton) {
-                analyzeButton.addEventListener('click', function() {
-                    showLoading(this);
-                    const filePath = savedFilePathInput.value;
-                    const accountId = savedAccountIdInput.value;
-                    const extension = savedExtensionInput.value;
 
-                    if (!filePath || !accountId || !extension) {
-                        showAjaxError('Dados do arquivo não encontrados. Tente enviar novamente.');
-                        hideLoading(this, 'Analisar com IA e Mapear Transações');
-                        return;
-                    }
-
-                    // Redirecionar diretamente para a página de mapeamento com IA
-                    const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}&use_ai=1`;
-                    window.location.href = mappingUrl;
-                });
-            }
             
-            // Clique no Botão "Mapear Manualmente" (Passo 2 - se IA não configurada)
+            // Clique no Botão "Mapear Manualmente" (Passo 2)
              if (mapManuallyButton) {
                  mapManuallyButton.addEventListener('click', function() {
                      showLoading(this);
-                     
+
                      const filePath = savedFilePathInput.value;
                      const accountId = savedAccountIdInput.value;
                      const extension = savedExtensionInput.value;
-                     
+
                      if (!filePath || !accountId || !extension) {
                          showAjaxError('Dados do arquivo não encontrados. Tente enviar novamente.');
                          hideLoading(this, 'Mapear Transações Manualmente');
                          return;
                      }
-                     
-                     // Construir a URL para a página de mapeamento SEM IA
+
+                     // Redirecionar para a página de mapeamento
                      @if (Route::has('mapping'))
-                     const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}&use_ai=0`;
-                     
-                     // Adicionar parâmetro para indicar que é uma requisição AJAX
-                     const separator = mappingUrl.includes('?') ? '&' : '?';
-                     const mappingUrlWithAjax = mappingUrl + separator + '_ajax=1';
-                     
-                     // Verificar se a URL é válida antes de redirecionar
-                     fetch(mappingUrlWithAjax, {
-                         method: 'GET',
-                         headers: {
-                             'X-Requested-With': 'XMLHttpRequest'
-                         }
-                     })
-                     .then(response => {
-                         if (!response.ok) {
-                             throw new Error(`Erro HTTP: ${response.status}`);
-                         }
-                         // Redirecionar para a URL original (sem o parâmetro _ajax)
-                         window.location.href = mappingUrl;
-                     })
-                     .catch(error => {
-                         console.error('Erro ao verificar URL:', error);
-                         showAjaxError('Erro ao acessar página de mapeamento. Por favor, tente novamente.');
-                         hideLoading(mapManuallyButton, 'Mapear Transações Manualmente');
-                     });
+                     const mappingUrl = `{{ route('mapping') }}?path=${encodeURIComponent(filePath)}&account_id=${accountId}&extension=${extension}`;
+                     window.location.href = mappingUrl;
                      @else
                      showAjaxError('Rota de mapeamento não encontrada. Entre em contato com o suporte.');
                      hideLoading(this, 'Mapear Transações Manualmente');

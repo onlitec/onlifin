@@ -244,6 +244,7 @@
                                     <li><i class="fas fa-search text-purple-500 mr-1"></i> DeepSeek</li>
                                     <li><i class="fas fa-language text-red-500 mr-1"></i> Qwen</li>
                                     <li><i class="fas fa-route text-indigo-500 mr-1"></i> OpenRouter</li>
+                                    <li><i class="fas fa-bolt text-yellow-500 mr-1"></i> Groq (Llama, Gemma, Whisper)</li>
                                 </ul>
                             </div>
                             
@@ -324,6 +325,12 @@
                 description: 'Acesso unificado a múltiplos modelos de IA.',
                 website: 'https://openrouter.ai',
                 apiDocs: 'https://openrouter.ai/docs'
+            },
+            'groq': {
+                name: 'Groq',
+                description: 'Inferência de IA ultrarrápida com modelos Llama, Gemma e Whisper.',
+                website: 'https://groq.com',
+                apiDocs: 'https://console.groq.com/docs'
             }
         };
 

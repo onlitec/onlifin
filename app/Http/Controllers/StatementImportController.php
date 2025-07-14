@@ -14,6 +14,7 @@ use DateTime;
 use SimpleXMLElement;
 use App\Services\AIConfigService;
 use App\Services\StatementImportService;
+use App\Services\AICategorizationService;
 
 class StatementImportController extends Controller
 {
@@ -213,29 +214,37 @@ class StatementImportController extends Controller
         if (empty($extractedTransactions)) {
             $extractedTransactions = $this->getExampleTransactions();
         }
-        
-        // Analisar transações com IA
-        $aiAnalysisResult = null;
-        if (!empty($extractedTransactions)) {
-            Log::info('Iniciando análise de transações com IA', ['count' => count($extractedTransactions)]);
-            $aiAnalysisResult = $this->analyzeTransactionsWithAI($extractedTransactions);
-            
-            // Se a análise por IA falhar, usar resposta simulada
-            if (empty($aiAnalysisResult)) {
-                Log::warning('Análise por IA falhou, usando resposta simulada');
-                $aiAnalysisResult = $this->getMockAIResponse($extractedTransactions);
-            }
+
+        // Aplicar categorização com IA
+        Log::info('INICIANDO CATEGORIZAÇÃO COM IA', [
+            'transactions_count' => count($extractedTransactions),
+            'user_id' => auth()->id(),
+            'method' => 'StatementImportController@mapping'
+        ]);
+
+        try {
+            $aiCategorizationService = new AICategorizationService();
+            $extractedTransactions = $aiCategorizationService->categorizeTransactions($extractedTransactions);
+
+            Log::info('CATEGORIZAÇÃO POR IA APLICADA COM SUCESSO', [
+                'transactions_count' => count($extractedTransactions),
+                'user_id' => auth()->id()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('ERRO NA CATEGORIZAÇÃO POR IA', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id()
+            ]);
+            // Continuar sem categorização em caso de erro
         }
 
         return view('transactions.mapping', compact(
             'path',
             'account',
             'extension',
-            'use_ai',
-            'ai_data',
             'categories',
-            'extractedTransactions',
-            'aiAnalysisResult'
+            'extractedTransactions'
         ));
     }
 
@@ -319,58 +328,7 @@ class StatementImportController extends Controller
         // Forçar uso da IA sempre, independente do parâmetro
         $useAI = true;
         
-        if (!empty($extractedTransactions)) {
-            Log::info('Iniciando análise de transações com IA', [
-                'transactions_count' => count($extractedTransactions),
-                'first_transaction' => !empty($extractedTransactions) ? json_encode($extractedTransactions[0]) : 'none'
-            ]);
-            
-            // SOLUÇÃO GARANTIDA: Usar diretamente a função de mock para categorização
-            // Isso garante que a categorização ocorra mesmo sem API externa
-            $aiAnalysisResult = $this->getMockAIResponse($extractedTransactions);
-            
-            Log::info('Resultado da análise de IA obtido com sucesso', [
-                'method' => 'mock_categorization',
-                'transactions_analyzed' => count($aiAnalysisResult['transactions'] ?? [])
-            ]);
-            
-            // Aplicar categorização da IA às transações
-            if ($aiAnalysisResult) {
-                Log::info('Aplicando categorização da IA às transações', [
-                    'ai_result_transactions_count' => count($aiAnalysisResult['transactions'] ?? []),
-                    'ai_result_sample' => !empty($aiAnalysisResult['transactions']) ? json_encode(array_slice($aiAnalysisResult['transactions'], 0, 2)) : 'none'
-                ]);
-                $extractedTransactions = $this->applyAICategorization($extractedTransactions, $aiAnalysisResult);
-                
-                // Se a opção de salvamento automático estiver habilitada, salvar as transações
-                if ($autoSave && !empty($extractedTransactions)) {
-                    Log::info('Salvando transações automaticamente com categorias da IA');
-                    $transactionsSaved = $this->saveTransactionsWithAICategories($extractedTransactions, $accountId);
-                    if ($transactionsSaved) {
-                        $savedCount = count($extractedTransactions);
-                        
-                        // Deleta o arquivo após processamento bem-sucedido
-                        if (Storage::exists($path)) {
-                            Storage::delete($path);
-                        }
-                        
-                        return redirect()->route('transactions.index')
-                            ->with('success', $savedCount . ' transações foram analisadas pela IA e importadas com sucesso!');
-                    }
-                }
-            } else {
-                Log::error('Falha crítica: A análise por IA não retornou resultados mesmo com mock', [
-                    'possible_cause' => 'Erro na implementação do mock ou problema com as categorias',
-                    'check_categories' => true
-                ]);
-            }
-        } else {
-            Log::warning('Análise de IA não iniciada - nenhuma transação encontrada no extrato', [
-                'use_ai' => $useAI,
-                'has_transactions' => !empty($extractedTransactions),
-                'transactions_count' => count($extractedTransactions)
-            ]);
-        }
+        // Análise de IA removida - processamento direto para mapeamento manual
         
         $categories = Category::where('user_id', auth()->id())
             ->orderBy('name')
@@ -378,7 +336,6 @@ class StatementImportController extends Controller
             ->groupBy('type');
         
         Log::info('Renderizando view de mapeamento', [
-            'has_ai_result' => isset($aiAnalysisResult) && $aiAnalysisResult !== null,
             'transactions_count' => count($extractedTransactions),
             'categories_count' => $categories->count()
         ]);
@@ -530,22 +487,72 @@ class StatementImportController extends Controller
 private function getExampleTransactions()
 {
     return [
+        // Exemplos de despesas para testar categorização
         [
-            'date' => '2022-01-01',
-            'description' => 'Transação de exemplo 1',
-            'amount' => 100.00,
-            'type' => 'income'
-        ],
-        [
-            'date' => '2022-01-05',
-            'description' => 'Transação de exemplo 2',
-            'amount' => -50.00,
+            'date' => '2024-01-01',
+            'description' => 'PADARIA SAO JOSE - COMPRA',
+            'amount' => 15.50,
             'type' => 'expense'
         ],
         [
-            'date' => '2022-01-10',
-            'description' => 'Transação de exemplo 3',
-            'amount' => 200.00,
+            'date' => '2024-01-02',
+            'description' => 'POSTO SHELL - GASOLINA',
+            'amount' => 85.00,
+            'type' => 'expense'
+        ],
+        [
+            'date' => '2024-01-03',
+            'description' => 'FARMACIA DROGA RAIA',
+            'amount' => 32.90,
+            'type' => 'expense'
+        ],
+        [
+            'date' => '2024-01-04',
+            'description' => 'SUPERMERCADO EXTRA',
+            'amount' => 127.45,
+            'type' => 'expense'
+        ],
+        [
+            'date' => '2024-01-05',
+            'description' => 'UBER TRIP',
+            'amount' => 18.75,
+            'type' => 'expense'
+        ],
+        [
+            'date' => '2024-01-06',
+            'description' => 'NETFLIX ASSINATURA',
+            'amount' => 29.90,
+            'type' => 'expense'
+        ],
+        [
+            'date' => '2024-01-07',
+            'description' => 'MAGAZINE LUIZA - ELETRONICOS',
+            'amount' => 299.99,
+            'type' => 'expense'
+        ],
+        [
+            'date' => '2024-01-08',
+            'description' => 'RESTAURANTE ITALIANO',
+            'amount' => 89.50,
+            'type' => 'expense'
+        ],
+        // Exemplos de receitas
+        [
+            'date' => '2024-01-10',
+            'description' => 'SALARIO EMPRESA XYZ',
+            'amount' => 3500.00,
+            'type' => 'income'
+        ],
+        [
+            'date' => '2024-01-15',
+            'description' => 'FREELANCE PROJETO WEB',
+            'amount' => 800.00,
+            'type' => 'income'
+        ],
+        [
+            'date' => '2024-01-20',
+            'description' => 'VENDA PRODUTO ONLINE',
+            'amount' => 150.00,
             'type' => 'income'
         ]
     ];

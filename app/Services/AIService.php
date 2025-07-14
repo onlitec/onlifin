@@ -433,6 +433,8 @@ class AIService
                 return $this->testTongyi();
             case 'deepseek':
                 return $this->testDeepseek();
+            case 'groq':
+                return $this->testGroq();
             default:
                 return ['status' => 'error', 'message' => 'Provedor não suportado.'];
         }
@@ -452,6 +454,7 @@ class AIService
             'copilot' => $this->analyzeWithCopilot($text),
             'tongyi' => $this->analyzeWithTongyi($text),
             'deepseek' => $this->analyzeWithDeepseek($text),
+            'groq' => $this->analyzeWithGroq($text),
             default => throw new \Exception('Provedor de IA não suportado')
         };
     }
@@ -798,6 +801,52 @@ class AIService
     }
 
     /**
+     * Testa a conexão com o Groq
+     */
+    private function testGroq()
+    {
+        if (empty($this->apiToken)) {
+            Log::warning("Configuração ausente ou inválida para o provedor {$this->provider}. Não prosseguindo com o teste.", [
+                'provider' => $this->provider,
+                'has_api_token' => false
+            ]);
+            return ['status' => 'error', 'message' => 'Chave API não encontrada. Verifique as configurações.'];
+        }
+
+        try {
+            Log::info('Iniciando teste de conexão com Groq', [
+                'model' => $this->model
+            ]);
+
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiToken,
+                    'Content-Type' => 'application/json',
+                ])->post('https://api.groq.com/openai/v1/chat/completions', [
+                    'model' => $this->model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => 'Você é um assistente útil.'],
+                        ['role' => 'user', 'content' => 'Teste de conexão']
+                    ],
+                    'max_tokens' => 50
+                ]);
+
+            if (!$response->successful()) {
+                $errorData = $response->json();
+                $error = $errorData['error']['message'] ?? 'Erro desconhecido';
+                throw new \Exception('Erro ao testar conexão com Groq: ' . $error);
+            }
+
+            return true;  // Retorna true para indicar sucesso
+        } catch (\Exception $e) {
+            Log::error('Erro ao testar conexão com Groq: ' . $e->getMessage(), [
+                'model' => $this->model
+            ]);
+            throw $e;  // Repassa o erro para o controller
+        }
+    }
+
+    /**
      * Analisa texto usando OpenAI
      */
     private function analyzeWithOpenAI($text)
@@ -1084,13 +1133,13 @@ class AIService
 
         return $response->json('output.text');
     }
-    
+
     /**
      * Analisa texto usando Deepseek
      */
     private function analyzeWithDeepseek($text)
     {
-        $systemPrompt = $this->settings->system_prompt ?? 
+        $systemPrompt = $this->settings->system_prompt ??
             'Você é um assistente especializado em análise de extratos bancários e transações financeiras.';
 
         $response = Http::withHeaders([
@@ -1108,6 +1157,42 @@ class AIService
 
         if (!$response->successful()) {
             throw new \Exception('Erro ao analisar com Deepseek: ' . ($response->json('error.message') ?? 'Erro desconhecido'));
+        }
+
+        return $response->json('choices.0.message.content');
+    }
+
+    /**
+     * Analisa texto usando Groq
+     */
+    private function analyzeWithGroq($text)
+    {
+        $systemPrompt = $this->getSystemPrompt();
+
+        // Log do prompt escolhido
+        Log::info('Prompt escolhido para Groq', [
+            'length' => strlen($systemPrompt),
+            'preview' => substr($systemPrompt, 0, 100) . (strlen($systemPrompt) > 100 ? '...' : ''),
+            'prompt_type' => $this->promptType
+        ]);
+
+        $response = Http::timeout(120)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.groq.com/openai/v1/chat/completions', [
+                'model' => $this->model,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $text]
+                ],
+                'temperature' => 0.3,
+                'max_tokens' => 4000
+            ]);
+
+        if (!$response->successful()) {
+            $errorMessage = $response->json('error.message') ?? 'Erro desconhecido';
+            throw new \Exception('Erro ao analisar com Groq: ' . $errorMessage);
         }
 
         return $response->json('choices.0.message.content');

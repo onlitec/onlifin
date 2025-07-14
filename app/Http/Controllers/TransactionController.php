@@ -54,11 +54,27 @@ class TransactionController extends Controller
         if (!in_array($direction, ['asc', 'desc'])) {
             $direction = 'desc';
         }
-        $query->orderBy($sort, $direction);
-        $transactions = $query->paginate(10)
-            ->appends(['filter' => $filter, 'sort' => $sort, 'direction' => $direction]);
+        // Quantidade de itens por página (10 a 1000)
+        $perPage = $request->query('per_page', 10);
+        $perPage = max(10, min(1000, (int) $perPage)); // Limitar entre 10 e 1000
 
-        return view('transactions.index', compact('transactions', 'filter', 'isAdminView', 'sort', 'direction'));
+        $query->orderBy($sort, $direction);
+        $transactions = $query->paginate($perPage)
+            ->appends(['filter' => $filter, 'sort' => $sort, 'direction' => $direction, 'per_page' => $perPage]);
+
+        // Calcular resumo financeiro das transações na página atual
+        $currentPageTransactions = $transactions->getCollection();
+        $financialSummary = [
+            'total_income' => $currentPageTransactions->where('type', 'income')->sum('amount'),
+            'total_expense' => $currentPageTransactions->where('type', 'expense')->sum('amount'),
+            'total_transfer' => $currentPageTransactions->where('type', 'transfer')->sum('amount'),
+            'net_balance' => $currentPageTransactions->where('type', 'income')->sum('amount') -
+                           $currentPageTransactions->where('type', 'expense')->sum('amount'),
+            'paid_count' => $currentPageTransactions->where('status', 'paid')->count(),
+            'pending_count' => $currentPageTransactions->where('status', 'pending')->count(),
+        ];
+
+        return view('transactions.index', compact('transactions', 'filter', 'isAdminView', 'sort', 'direction', 'financialSummary', 'perPage'));
     }
 
     public function create(Request $request)
@@ -336,11 +352,35 @@ class TransactionController extends Controller
         $canMarkOwn = $user->hasPermission('mark_as_paid_own_transactions');
 
         if (!($canMarkAll || ($canMarkOwn && $transaction->user_id === $user->id))) {
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Você não tem permissão para alterar o status desta transação.'
+                ], 403);
+            }
             abort(403, 'Você não tem permissão para alterar o status desta transação.');
         }
-        
+
+        // Verificar se já está paga
+        if ($transaction->status === 'paid') {
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Esta transação já está marcada como paga.'
+                ]);
+            }
+            return redirect()->back()->with('info', 'Esta transação já está marcada como paga.');
+        }
+
         $transaction->status = 'paid';
         $transaction->save();
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Transação marcada como paga com sucesso!'
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Transação marcada como paga!');
     }
