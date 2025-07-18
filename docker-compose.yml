@@ -7,7 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: onlifin-app
     ports:
-      - "8080:80"
+      - "172.20.120.180:8080:80"
+      - "127.0.0.1:8080:80"
     volumes:
       - ./storage:/var/www/html/storage
       - ./.env:/var/www/html/.env

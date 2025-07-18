@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Verifica se a tabela transactions existe antes de tentar modificá-la
-        if (Schema::hasTable('transactions')) {
+        // Verifica se a tabela transactions existe e se a coluna suggested_category não existe antes de tentar adicioná-la
+        if (Schema::hasTable('transactions') && !Schema::hasColumn('transactions', 'suggested_category')) {
             Schema::table('transactions', function (Blueprint $table) {
                 $table->string('suggested_category', 100)->nullable()->after('category_id');
             });
@@ -24,8 +24,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Verifica se a tabela transactions existe antes de tentar modificá-la
-        if (Schema::hasTable('transactions')) {
+        // Verifica se a tabela transactions existe e se a coluna suggested_category existe antes de tentar removê-la
+        if (Schema::hasTable('transactions') && Schema::hasColumn('transactions', 'suggested_category')) {
             Schema::table('transactions', function (Blueprint $table) {
                 $table->dropColumn('suggested_category');
             });

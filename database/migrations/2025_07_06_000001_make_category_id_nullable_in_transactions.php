@@ -11,14 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Verifica se a tabela transactions existe antes de tentar modificá-la
-        if (Schema::hasTable('transactions')) {
-            Schema::table('transactions', function (Blueprint $table) {
-                $table->foreignId('category_id')
-                    ->nullable()
-                    ->change();
-            });
-        }
+        // Esta migração não é mais necessária pois a tabela transactions já é criada com category_id nullable
+        // Mantida apenas para compatibilidade com histórico de migrações
     }
 
     /**
@@ -26,13 +20,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Verifica se a tabela transactions existe antes de tentar modificá-la
-        if (Schema::hasTable('transactions')) {
-            Schema::table('transactions', function (Blueprint $table) {
-                $table->foreignId('category_id')
-                    ->nullable(false)
-                    ->change();
-            });
-        }
+        // Esta migração não é mais necessária pois a tabela transactions já é criada com category_id nullable
+        // Mantida apenas para compatibilidade com histórico de migrações
     }
-}; 
+};

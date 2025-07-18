@@ -16,12 +16,28 @@ mkdir -p /var/www/html/storage/framework/sessions
 mkdir -p /var/www/html/storage/framework/views
 mkdir -p /var/www/html/bootstrap/cache
 
+# Criar diretórios temporários do Nginx
+mkdir -p /var/lib/nginx/tmp/fastcgi
+mkdir -p /var/lib/nginx/tmp/proxy
+mkdir -p /var/lib/nginx/tmp/scgi
+mkdir -p /var/lib/nginx/tmp/uwsgi
+
 # Configurar permissões apenas nos diretórios necessários
 chown -R www:www /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
 chown www:www /var/www/html/.env
 chmod 666 /var/www/html/.env
+
+# Configurar permissões dos diretórios temporários do Nginx
+chown -R www:www /var/lib/nginx/tmp
+chmod -R 755 /var/lib/nginx/tmp
+
+# Garantir que os diretórios de cache do Laravel tenham permissões corretas
+chown -R www:www /var/www/html/storage/framework/views
+chown -R www:www /var/www/html/storage/framework/cache
+chown -R www:www /var/www/html/storage/framework/sessions
+chmod -R 775 /var/www/html/storage/framework
 
 # Verificar se o arquivo .env existe, se não, criar a partir do .env.example
 if [ ! -f /var/www/html/.env ]; then
@@ -44,7 +60,7 @@ echo "✅ Tentando conectar ao MariaDB..."
 
 # Executar migrações
 echo "🔄 Executando migrações do banco de dados..."
-php /var/www/html/artisan migrate --force
+php /var/www/html/artisan migrate --force || echo "⚠️ Algumas migrações falharam, mas continuando..."
 
 # Executar seeders se necessário
 echo "🌱 Executando seeders..."
@@ -52,12 +68,12 @@ php /var/www/html/artisan db:seed --force --class=DefaultAdminSeeder || true
 
 # Limpar e otimizar cache
 echo "🧹 Limpando e otimizando cache..."
-php /var/www/html/artisan config:clear
-php /var/www/html/artisan route:clear
-php /var/www/html/artisan view:clear
-php /var/www/html/artisan config:cache
-php /var/www/html/artisan route:cache
-php /var/www/html/artisan view:cache
+php /var/www/html/artisan config:clear || true
+php /var/www/html/artisan route:clear || true
+php /var/www/html/artisan view:clear || true
+php /var/www/html/artisan config:cache || true
+php /var/www/html/artisan route:cache || true
+php /var/www/html/artisan view:cache || true
 
 # Criar link simbólico para storage se não existir
 if [ ! -L /var/www/html/public/storage ]; then
