@@ -11,11 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('category_id')
-                ->nullable()
-                ->change();
-        });
+        // Verifica se a tabela transactions existe antes de tentar modificá-la
+        if (Schema::hasTable('transactions')) {
+            Schema::table('transactions', function (Blueprint $table) {
+                $table->foreignId('category_id')
+                    ->nullable()
+                    ->change();
+            });
+        }
     }
 
     /**
@@ -23,10 +26,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignId('category_id')
-                ->nullable(false)
-                ->change();
-        });
+        // Verifica se a tabela transactions existe antes de tentar modificá-la
+        if (Schema::hasTable('transactions')) {
+            Schema::table('transactions', function (Blueprint $table) {
+                $table->foreignId('category_id')
+                    ->nullable(false)
+                    ->change();
+            });
+        }
     }
 }; 

@@ -11,11 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->enum('recurrence_period', ['daily', 'weekly', 'fortnightly', 'monthly', 'yearly'])
-                  ->nullable()
-                  ->after('recurrence_type');
-        });
+        // Verifica se a tabela transactions existe antes de tentar modificá-la
+        if (Schema::hasTable('transactions')) {
+            Schema::table('transactions', function (Blueprint $table) {
+                $table->enum('recurrence_period', ['daily', 'weekly', 'fortnightly', 'monthly', 'yearly'])
+                      ->nullable()
+                      ->after('recurrence_type');
+            });
+        }
     }
 
     /**
@@ -23,8 +26,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('recurrence_period');
-        });
+        // Verifica se a tabela transactions existe antes de tentar modificá-la
+        if (Schema::hasTable('transactions')) {
+            Schema::table('transactions', function (Blueprint $table) {
+                $table->dropColumn('recurrence_period');
+            });
+        }
     }
 };

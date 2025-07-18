@@ -4,22 +4,29 @@ import mask from '@alpinejs/mask';
 import focus from '@alpinejs/focus';
 import axios from 'axios';
 import IMask from 'imask';
+import Swal from 'sweetalert2';
 
 // Disponibiliza globalmente antes de qualquer uso
 window.axios = axios;
 window.IMask = IMask;
-// SweetAlert2 já está disponível globalmente via CDN
+window.Swal = Swal;
 
 // Importa outros scripts
 import './notification';
 import './bootstrap';
 
-// Abordagem alternativa para Alpine: verificar se já existe uma instância em execução
-// e se não existir, inicializar plugins e disponibilizar globalmente
-if (!window.Alpine) {
-    // Plugins do Alpine
-    Alpine.plugin(mask);
-    Alpine.plugin(focus);
+// Aguardar o Livewire carregar o Alpine ou usar nossa própria instância
+document.addEventListener('DOMContentLoaded', () => {
+    // Se o Livewire já carregou o Alpine, usar a instância existente
+    if (window.Alpine) {
+        console.log('Usando Alpine do Livewire');
+        window.Alpine.plugin(mask);
+        window.Alpine.plugin(focus);
+    } else {
+        console.log('Inicializando Alpine próprio');
+        // Alpine não existe, inicializar nossa própria instância
+        Alpine.plugin(mask);
+        Alpine.plugin(focus);
     
     // Componentes do Alpine
     Alpine.data('moneyInput', () => ({
@@ -79,20 +86,14 @@ if (!window.Alpine) {
         }
     }));
     
-    // Disponibiliza o Alpine globalmente
-    window.Alpine = Alpine;
-    
-    // Inicializa o Alpine automaticamente quando o DOM estiver pronto
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Alpine inicializado na estratégia de fallback');
-            Alpine.start();
-        });
-    } else {
-        console.log('Alpine inicializado imediatamente na estratégia de fallback');
+        // Disponibiliza o Alpine globalmente
+        window.Alpine = Alpine;
+
+        // Inicializa o Alpine automaticamente
+        console.log('Alpine inicializado (instância própria)');
         Alpine.start();
     }
-}
+});
 
 /**
  * =====================================================================
@@ -112,8 +113,7 @@ if (!window.Alpine) {
 
 // SweetAlert2 é independente do Alpine
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializa o SweetAlert2
-    window.Swal = Swal;
+    // SweetAlert2 já está disponível globalmente
     
     // Salvar a referência original do método fire do SweetAlert
     const originalSwalFire = window.Swal.fire;
@@ -253,7 +253,7 @@ window.confirmDelete = async (data) => {
     const showPopup = localStorage.getItem('showDeletePopup') !== 'false';
     
     if (!showPopup) {
-        Livewire.emit('deleteTransaction', data.transactionId);
+        Livewire.dispatch('deleteTransaction', { transactionId: data.transactionId });
         document.dispatchEvent(new CustomEvent('transaction-confirmed'));
         return;
     }
@@ -287,7 +287,7 @@ window.confirmDelete = async (data) => {
     }
 
     if (isConfirmed) {
-        Livewire.emit('deleteTransaction', data.transactionId);
+        Livewire.dispatch('deleteTransaction', { transactionId: data.transactionId });
         document.dispatchEvent(new CustomEvent('transaction-confirmed'));
     }
 };

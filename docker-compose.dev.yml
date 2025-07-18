@@ -1,0 +1,130 @@
+version: '3.8'
+
+# Docker Compose para desenvolvimento
+# Use: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  onlifin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: php-base  # Para desenvolvimento, não usar o stage final
+    container_name: onlifin-dev
+    ports:
+      - "8080:80"
+    volumes:
+      # Mount do código fonte para desenvolvimento
+      - .:/var/www/html
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/default.conf:/etc/nginx/http.d/default.conf
+      - ./docker/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ./docker/php.ini:/usr/local/etc/php/php.ini
+      - ./docker/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+      # Volumes para cache de dependências
+      - composer_cache:/root/.composer
+      - npm_cache:/root/.npm
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8080
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/database/database.sqlite
+      - CACHE_DRIVER=file
+      - SESSION_DRIVER=file
+      - QUEUE_CONNECTION=database
+      - LOG_LEVEL=debug
+    restart: unless-stopped
+    command: >
+      sh -c "
+        # Instalar dependências se necessário
+        if [ ! -d vendor ]; then composer install; fi
+        if [ ! -d node_modules ]; then npm install; fi
+        
+        # Configurar aplicação
+        if [ ! -f .env ]; then cp .env.example .env; fi
+        php artisan key:generate --force || true
+        
+        # Preparar banco de dados
+        touch database/database.sqlite || true
+        php artisan migrate --force || true
+        php artisan db:seed --force --class=DefaultAdminSeeder || true
+        
+        # Configurar permissões
+        chown -R www:www storage bootstrap/cache
+        chmod -R 775 storage bootstrap/cache
+        
+        # Build assets em modo watch (desenvolvimento)
+        npm run dev &
+        
+        # Iniciar supervisor
+        /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+      "
+
+  # MySQL para desenvolvimento
+  mysql-dev:
+    image: mysql:8.0
+    container_name: onlifin-mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: onlifin_dev
+      MYSQL_USER: onlifin
+      MYSQL_PASSWORD: onlifin
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  # PostgreSQL para desenvolvimento
+  postgres-dev:
+    image: postgres:15
+    container_name: onlifin-postgres-dev
+    environment:
+      POSTGRES_DB: onlifin_dev
+      POSTGRES_USER: onlifin
+      POSTGRES_PASSWORD: onlifin
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # Redis para desenvolvimento
+  redis-dev:
+    image: redis:7-alpine
+    container_name: onlifin-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+
+  # MailHog para teste de emails
+  mailhog:
+    image: mailhog/mailhog
+    container_name: onlifin-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    restart: unless-stopped
+
+  # Adminer para gerenciamento de banco
+  adminer:
+    image: adminer
+    container_name: onlifin-adminer
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql-dev
+
+volumes:
+  mysql_dev_data:
+  postgres_dev_data:
+  redis_dev_data:
+  composer_cache:
+  npm_cache:
+
+networks:
+  default:
+    name: onlifin-dev-network

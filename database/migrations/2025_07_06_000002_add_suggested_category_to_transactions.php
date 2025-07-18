@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->string('suggested_category', 100)->nullable()->after('category_id');
-        });
+        // Verifica se a tabela transactions existe antes de tentar modificá-la
+        if (Schema::hasTable('transactions')) {
+            Schema::table('transactions', function (Blueprint $table) {
+                $table->string('suggested_category', 100)->nullable()->after('category_id');
+            });
+        }
     }
 
     /**
@@ -21,8 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('suggested_category');
-        });
+        // Verifica se a tabela transactions existe antes de tentar modificá-la
+        if (Schema::hasTable('transactions')) {
+            Schema::table('transactions', function (Blueprint $table) {
+                $table->dropColumn('suggested_category');
+            });
+        }
     }
 }; 

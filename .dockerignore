@@ -1,0 +1,129 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+DOCUMENTATION.md
+FINANCIAL_RULES.md
+GOOGLE_AUTH_SETUP.md
+GOOGLE_AUTH_WHITELIST.md
+HYBRIDAUTH_SETUP.md
+LICENSE
+PROTECTION_POLICY.md
+README.md
+REGRAS_GIT.md
+SOCIAL_AUTH_CONFIG_GUIDE.md
+TIMEOUT_504_SOLUTION.md
+docs/
+
+# Development files
+.env.example
+phpstan.neon
+phpunit.xml
+tests/
+.editorconfig
+
+# Node.js (será copiado no stage específico)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+*.log
+storage/logs/*
+!storage/logs/.gitkeep
+
+# Cache
+storage/framework/cache/*
+!storage/framework/cache/.gitkeep
+storage/framework/sessions/*
+!storage/framework/sessions/.gitkeep
+storage/framework/views/*
+!storage/framework/views/.gitkeep
+bootstrap/cache/*
+!bootstrap/cache/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+public/build/
+public/hot
+public/storage
+
+# Backup files
+*.bak
+*.backup
+backup.sh
+
+# Scripts específicos do desenvolvimento
+*.sh
+!docker/start.sh
+commit_to_beta_v2.sh
+deploy-production.sh
+update*.sh
+build.sh
+fix_*.sh
+git_commit.sh
+
+# Arquivos de configuração específicos do ambiente
+nginx-onlifin.conf
+99-onlifin.ini
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Arquivos temporários de desenvolvimento
+cookies.txt
+token.txt
+info.php
+test_*.php
+check_*.php
+diagnose_*.php
+fix_*.php
+extract_*.php
+create_admin.php
+reset_passwords.php
+set_admin.sql
+admin_verification_report.txt
+
+# Arquivos de configuração de desenvolvimento
+load-test.yaml
+mcp.json
+global.d.ts
+
+# Arquivos específicos do Google Cloud (serão configurados via env)
+*.json
+!composer.json
+!package.json
+!package-lock.json

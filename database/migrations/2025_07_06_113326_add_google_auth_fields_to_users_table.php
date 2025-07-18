@@ -11,23 +11,38 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            // Campos para autenticação Google
-            $table->string('google_id')->nullable()->after('email');
-            $table->string('google_avatar')->nullable()->after('google_id');
-            
-            // Campos para 2FA
-            $table->boolean('two_factor_enabled')->default(false)->after('google_avatar');
-            $table->string('two_factor_secret')->nullable()->after('two_factor_enabled');
-            $table->timestamp('two_factor_confirmed_at')->nullable()->after('two_factor_secret');
-            
-            // Códigos de recuperação para 2FA
-            $table->text('two_factor_recovery_codes')->nullable()->after('two_factor_confirmed_at');
-            
-            // Índices para melhor performance
-            $table->index('google_id');
-            $table->index('two_factor_enabled');
-        });
+        // Verifica se a tabela users existe antes de tentar modificá-la
+        if (Schema::hasTable('users')) {
+            Schema::table('users', function (Blueprint $table) {
+                // Verificar se as colunas já existem antes de adicioná-las
+                if (!Schema::hasColumn('users', 'google_id')) {
+                    $table->string('google_id')->nullable()->after('email');
+                }
+                if (!Schema::hasColumn('users', 'google_avatar')) {
+                    $table->string('google_avatar')->nullable()->after('google_id');
+                }
+
+                // Campos para 2FA
+                if (!Schema::hasColumn('users', 'two_factor_enabled')) {
+                    $table->boolean('two_factor_enabled')->default(false)->after('google_avatar');
+                }
+                if (!Schema::hasColumn('users', 'two_factor_secret')) {
+                    $table->string('two_factor_secret')->nullable()->after('two_factor_enabled');
+                }
+                if (!Schema::hasColumn('users', 'two_factor_confirmed_at')) {
+                    $table->timestamp('two_factor_confirmed_at')->nullable()->after('two_factor_secret');
+                }
+
+                // Códigos de recuperação para 2FA
+                if (!Schema::hasColumn('users', 'two_factor_recovery_codes')) {
+                    $table->text('two_factor_recovery_codes')->nullable()->after('two_factor_confirmed_at');
+                }
+
+                // Índices para melhor performance
+                $table->index('google_id');
+                $table->index('two_factor_enabled');
+            });
+        }
     }
 
     /**
@@ -35,17 +50,20 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex(['google_id']);
-            $table->dropIndex(['two_factor_enabled']);
-            $table->dropColumn([
-                'google_id',
-                'google_avatar',
-                'two_factor_enabled',
-                'two_factor_secret',
-                'two_factor_confirmed_at',
-                'two_factor_recovery_codes',
-            ]);
-        });
+        // Verifica se a tabela users existe antes de tentar modificá-la
+        if (Schema::hasTable('users')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropIndex(['google_id']);
+                $table->dropIndex(['two_factor_enabled']);
+                $table->dropColumn([
+                    'google_id',
+                    'google_avatar',
+                    'two_factor_enabled',
+                    'two_factor_secret',
+                    'two_factor_confirmed_at',
+                    'two_factor_recovery_codes',
+                ]);
+            });
+        }
     }
 };

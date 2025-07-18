@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  onlifin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: onlifin-app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./storage:/var/www/html/storage
+      - ./.env:/var/www/html/.env
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=172.20.120.180
+      - DB_PORT=3306
+      - DB_DATABASE=onlifin
+      - DB_USERNAME=alfreire
+      - DB_PASSWORD=M3a74g20M
+      - DB_SSL_MODE=disabled
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    name: onlifin-network

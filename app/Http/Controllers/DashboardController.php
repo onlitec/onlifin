@@ -271,6 +271,7 @@ class DashboardController extends Controller
         }
 
         // Buscar transações pagas no período
+        // Usar DATE_FORMAT para MariaDB/MySQL
         $periodTransactions = Transaction::where('user_id', $userId)
             ->where('status', 'paid') // CONFIGURAÇÃO CRÍTICA: Apenas transações pagas
             ->whereBetween('date', [$startDate, $endDate])

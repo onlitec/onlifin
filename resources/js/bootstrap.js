@@ -25,13 +25,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
 
-    // Configuração do Livewire
-    window.Livewire = window.Livewire || {};
-    window.Livewire.on('swal:confirm', function (data) {
-        // Garantir que os dados estejam no formato esperado pela função confirmDelete
-        window.confirmDelete({
-            transactionId: data.transactionId,
-            type: data.type || 'transação'
+    // Configuração do Livewire (v3)
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('swal:confirm', (data) => {
+            // Garantir que os dados estejam no formato esperado pela função confirmDelete
+            window.confirmDelete({
+                transactionId: data.transactionId,
+                type: data.type || 'transação'
+            });
         });
     });
     
@@ -39,6 +40,6 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('popstate', removeSweetAlertContainers);
     
     // Remover containers SweetAlert2 após redirecionamento ou atualização de página
-    document.addEventListener('livewire:load', removeSweetAlertContainers);
-    document.addEventListener('livewire:update', removeSweetAlertContainers);
+    document.addEventListener('livewire:navigated', removeSweetAlertContainers);
+    document.addEventListener('livewire:updated', removeSweetAlertContainers);
 });

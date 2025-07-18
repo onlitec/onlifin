@@ -11,12 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('accounts', function (Blueprint $table) {
-            // Verifica se a coluna user_id não existe e a cria
-            if (!Schema::hasColumn('accounts', 'user_id')) {
-                $table->foreignId('user_id')->after('active')->constrained()->onDelete('cascade');
-            }
-        });
+        // Verifica se a tabela accounts existe antes de tentar modificá-la
+        if (Schema::hasTable('accounts')) {
+            Schema::table('accounts', function (Blueprint $table) {
+                // Verifica se a coluna user_id não existe e a cria
+                if (!Schema::hasColumn('accounts', 'user_id')) {
+                    $table->foreignId('user_id')->after('active')->constrained()->onDelete('cascade');
+                }
+            });
+        }
     }
 
     /**
@@ -24,12 +27,15 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('accounts', function (Blueprint $table) {
-            // Remove a coluna user_id se ela existir
-            if (Schema::hasColumn('accounts', 'user_id')) {
-                $table->dropForeign(['user_id']);
-                $table->dropColumn('user_id');
-            }
-        });
+        // Verifica se a tabela accounts existe antes de tentar modificá-la
+        if (Schema::hasTable('accounts')) {
+            Schema::table('accounts', function (Blueprint $table) {
+                // Remove a coluna user_id se ela existir
+                if (Schema::hasColumn('accounts', 'user_id')) {
+                    $table->dropForeign(['user_id']);
+                    $table->dropColumn('user_id');
+                }
+            });
+        }
     }
 };
