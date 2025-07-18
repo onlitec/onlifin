@@ -39,6 +39,19 @@ chown -R www:www /var/www/html/storage/framework/cache
 chown -R www:www /var/www/html/storage/framework/sessions
 chmod -R 775 /var/www/html/storage/framework
 
+# Função para corrigir permissões (pode ser chamada periodicamente)
+fix_permissions() {
+    echo "🔧 Corrigindo permissões..."
+    chown -R www:www /var/www/html/storage
+    chmod -R 775 /var/www/html/storage
+    chown -R www:www /var/www/html/bootstrap/cache
+    chmod -R 775 /var/www/html/bootstrap/cache
+    echo "✅ Permissões corrigidas!"
+}
+
+# Executar correção de permissões inicial
+fix_permissions
+
 # Verificar se o arquivo .env existe, se não, criar a partir do .env.example
 if [ ! -f /var/www/html/.env ]; then
     echo "📝 Criando arquivo .env..."
