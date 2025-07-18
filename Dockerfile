@@ -1,5 +1,20 @@
-# Dockerfile simplificado para Onlifin
+# Onlifin - Personal Finance Management Platform
+# Base: PHP 8.2 FPM on Alpine Linux for optimal size and security
+# Maintainer: Sandro Freire <galvatec@gmail.com>
+# Source: https://github.com/onlitec/onlifin
+# Version: 1.0.0
+
 FROM php:8.2-fpm-alpine
+
+# Metadata labels following OCI standards
+LABEL org.opencontainers.image.title="Onlifin" \
+      org.opencontainers.image.description="Personal Finance Management Platform with AI-powered categorization" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.authors="Sandro Freire <galvatec@gmail.com>" \
+      org.opencontainers.image.url="https://github.com/onlitec/onlifin" \
+      org.opencontainers.image.source="https://github.com/onlitec/onlifin" \
+      org.opencontainers.image.vendor="Onlitec Solutions" \
+      org.opencontainers.image.licenses="MIT"
 
 WORKDIR /var/www/html
 

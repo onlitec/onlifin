@@ -5,10 +5,22 @@ Todas as mudanças importantes do projeto serão documentadas neste arquivo.
 ## [Não Lançado]
 
 ### Adicionado
+- 🐳 Melhorias completas do repositório Docker Hub
+- 📋 README detalhado para Docker Hub com exemplos de uso
+- 🏷️ Sistema de versionamento semântico automatizado
+- 🔒 Scanning de segurança e gerenciamento de vulnerabilidades
+- 📝 Documentação abrangente com melhores práticas
+- 🚀 Scripts automatizados de release (docker-release.sh)
+- 📊 Labels OCI no Dockerfile seguindo padrões
 - Documentação FINANCIAL_RULES.md com regras detalhadas sobre manipulação de valores financeiros
 - Comentários de aviso "CONFIGURAÇÃO CRÍTICA" em todos os arquivos com lógica financeira crítica
 - Implementação da coluna `current_balance` na tabela accounts para armazenar os saldos atuais calculados
 - Observer `AccountObserver` para gerenciar atualizações de saldo automaticamente
+
+### Alterado
+- 🐳 Dockerfile melhorado com labels OCI e metadados
+- 📦 Configuração Docker Compose com exemplos de produção
+- 🏷️ Sistema de tags Docker seguindo versionamento semântico
 
 ### Corrigido
 - Erro 500 ao acessar a página de contas causado pela falta da coluna `current_balance`
