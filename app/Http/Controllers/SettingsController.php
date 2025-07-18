@@ -1131,21 +1131,45 @@ class SettingsController extends Controller
     {
         $domain = parse_url(config('app.url'), PHP_URL_HOST);
         $certPath = "/etc/letsencrypt/live/{$domain}/fullchain.pem";
-        if (file_exists($certPath)) {
-            $certData = openssl_x509_parse(file_get_contents($certPath));
-            $validTo = Carbon::createFromTimestamp($certData['validTo_time_t']);
-        } else {
-            $validTo = null;
+        $validTo = null;
+
+        try {
+            // Tentar verificar se o certificado existe e é válido
+            if (file_exists($certPath)) {
+                $certContent = file_get_contents($certPath);
+                if ($certContent !== false) {
+                    $certData = openssl_x509_parse($certContent);
+                    if ($certData && isset($certData['validTo_time_t'])) {
+                        $validTo = Carbon::createFromTimestamp($certData['validTo_time_t']);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Log do erro para debug, mas não quebra a página
+            \Log::warning('SSL Certificate check failed', [
+                'domain' => $domain,
+                'cert_path' => $certPath,
+                'error' => $e->getMessage()
+            ]);
+
+            // Se for erro de open_basedir, registrar um erro específico
+            if (strpos($e->getMessage(), 'open_basedir') !== false) {
+                SslErrorLog::logError('check', $domain, 'open_basedir restriction', $e->getMessage(), [
+                    'cert_path' => $certPath,
+                    'allowed_paths' => ini_get('open_basedir')
+                ]);
+            }
         }
+
         // E-mail de contato padrão (usuário autenticado)
         $userEmail = auth()->user()->email;
-        
+
         // Buscar erros recentes
         $recentErrors = SslErrorLog::getRecentErrors($domain, 10);
-        
+
         // Verificar se há erro de rate limit ativo
         $hasRateLimitError = SslErrorLog::hasRateLimitError($domain);
-        
+
         return view('settings.ssl', compact('domain', 'validTo', 'userEmail', 'recentErrors', 'hasRateLimitError'));
     }
 
@@ -1231,12 +1255,29 @@ class SettingsController extends Controller
     {
         $domain = parse_url(config('app.url'), PHP_URL_HOST);
         $certPath = "/etc/letsencrypt/live/{$domain}/fullchain.pem";
-        
-        if (!file_exists($certPath)) {
-            SslErrorLog::logError('validate', $domain, 'Certificate not found', null, [
+
+        try {
+            if (!file_exists($certPath)) {
+                SslErrorLog::logError('validate', $domain, 'Certificate not found', null, [
+                    'cert_path' => $certPath
+                ]);
+                return back()->with('error', 'Certificado não encontrado. Você precisa gerar um certificado primeiro.');
+            }
+        } catch (\Exception $e) {
+            // Se for erro de open_basedir, tratar de forma específica
+            if (strpos($e->getMessage(), 'open_basedir') !== false) {
+                SslErrorLog::logError('validate', $domain, 'open_basedir restriction', $e->getMessage(), [
+                    'cert_path' => $certPath,
+                    'allowed_paths' => ini_get('open_basedir')
+                ]);
+                return back()->with('error', 'Erro de configuração: Acesso ao diretório de certificados não permitido. Contate o administrador do sistema.');
+            }
+
+            // Outros erros
+            SslErrorLog::logError('validate', $domain, 'File access error', $e->getMessage(), [
                 'cert_path' => $certPath
             ]);
-            return back()->with('error', 'Certificado não encontrado. Você precisa gerar um certificado primeiro.');
+            return back()->with('error', 'Erro ao acessar o certificado: ' . $e->getMessage());
         }
         
         $process = new Process(['openssl', 'x509', '-in', $certPath, '-noout', '-dates']);
