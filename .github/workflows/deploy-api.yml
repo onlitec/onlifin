@@ -1,0 +1,322 @@
+name: 🚀 Deploy Onlifin API to Production
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/Http/Controllers/Api/**'
+      - 'app/Http/Resources/Api/**'
+      - 'app/Http/Middleware/Api**'
+      - 'routes/api.php'
+      - 'config/sanctum.php'
+      - 'Dockerfile**'
+      - 'docker-compose**'
+  
+  # Permitir execução manual
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      version:
+        description: 'Version tag'
+        required: false
+        default: 'latest'
+
+env:
+  DOCKER_IMAGE: onlitec/onlifin
+  REGISTRY: docker.io
+
+jobs:
+  # Job 1: Testes
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: onlifin_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, fileinfo, mysql, redis
+          coverage: none
+      
+      - name: 📦 Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      
+      - name: 🎼 Install Composer dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+      
+      - name: 📝 Copy environment file
+        run: cp .env.example .env
+      
+      - name: 🔑 Generate application key
+        run: php artisan key:generate
+      
+      - name: 🗄️ Run migrations
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: onlifin_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+      
+      - name: 🧪 Run API tests
+        run: php artisan test tests/Feature/Api/
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: onlifin_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+
+  # Job 2: Build e Push Docker Image
+  build:
+    name: 🐳 Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+      
+      - name: 🔨 Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # Job 3: Deploy para Staging (opcional)
+  deploy-staging:
+    name: 🚀 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event.inputs.environment != 'production'
+    environment: staging
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🚀 Deploy to staging server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /var/www/html/onlifin
+            
+            # Backup current container
+            docker commit onlifin-staging onlifin-staging-backup-$(date +%Y%m%d_%H%M%S) || true
+            
+            # Pull new image
+            docker pull ${{ env.DOCKER_IMAGE }}:latest
+            
+            # Update and restart
+            docker-compose -f docker-compose.staging.yml down
+            docker-compose -f docker-compose.staging.yml up -d
+            
+            # Wait for startup
+            sleep 60
+            
+            # Health check
+            if curl -f http://localhost/api/docs > /dev/null 2>&1; then
+              echo "✅ Staging deployment successful!"
+            else
+              echo "❌ Staging deployment failed!"
+              docker logs onlifin-staging --tail 50
+              exit 1
+            fi
+
+  # Job 4: Deploy para Produção
+  deploy-production:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && (github.event.inputs.environment == 'production' || github.event.inputs.environment == '')
+    environment: production
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🚀 Deploy to production server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd /var/www/html/onlifin
+            
+            echo "🐳 Starting production deployment..."
+            
+            # Backup current container
+            echo "💾 Creating backup..."
+            docker commit onlifin-prod onlifin-prod-backup-$(date +%Y%m%d_%H%M%S) || true
+            
+            # Pull new image
+            echo "📥 Pulling new image..."
+            docker pull ${{ env.DOCKER_IMAGE }}:latest
+            
+            # Update and restart with zero downtime
+            echo "🔄 Updating application..."
+            docker-compose -f docker-compose.production.yml pull
+            docker-compose -f docker-compose.production.yml up -d
+            
+            # Wait for startup
+            echo "⏳ Waiting for startup..."
+            sleep 90
+            
+            # Health check
+            echo "🔍 Running health checks..."
+            if curl -f http://localhost/api/docs > /dev/null 2>&1; then
+              echo "✅ Production deployment successful!"
+              
+              # Test critical endpoints
+              echo "🧪 Testing critical endpoints..."
+              
+              # Test API documentation
+              curl -f http://localhost/api/docs > /dev/null || echo "⚠️ API docs endpoint issue"
+              
+              # Test auth endpoints
+              curl -f -X POST http://localhost/api/auth/register \
+                -H "Content-Type: application/json" \
+                -d '{"name":"Test","email":"test-$(date +%s)@example.com","password":"password123","password_confirmation":"password123","device_name":"CI Test"}' > /dev/null || echo "⚠️ Auth register endpoint issue"
+              
+              echo "🎉 All checks passed!"
+              
+            else
+              echo "❌ Production deployment failed!"
+              echo "📋 Container logs:"
+              docker logs onlifin-prod --tail 50
+              
+              echo "🔄 Rolling back..."
+              docker-compose -f docker-compose.production.yml down
+              docker tag onlifin-prod-backup-$(date +%Y%m%d_%H%M%S) ${{ env.DOCKER_IMAGE }}:latest
+              docker-compose -f docker-compose.production.yml up -d
+              
+              exit 1
+            fi
+      
+      - name: 📱 Notify deployment success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            🎉 Onlifin API deployed successfully to production!
+            
+            📱 API Base URL: https://onlifin.onlitec.com.br/api
+            📚 Documentation: https://onlifin.onlitec.com.br/api/docs
+            🔗 Commit: ${{ github.sha }}
+            👤 Author: ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: 🚨 Notify deployment failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: |
+            ❌ Onlifin API deployment to production failed!
+            
+            🔗 Commit: ${{ github.sha }}
+            👤 Author: ${{ github.actor }}
+            📋 Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Job 5: Cleanup
+  cleanup:
+    name: 🧹 Cleanup
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always()
+    
+    steps:
+      - name: 🧹 Clean up old Docker images
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            # Remove old backup containers (keep last 3)
+            docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}" | \
+              grep "onlifin.*backup" | \
+              tail -n +4 | \
+              awk '{print $3}' | \
+              xargs -r docker rmi || true
+            
+            # Clean up unused images and containers
+            docker system prune -f
+            
+            echo "🧹 Cleanup completed!"

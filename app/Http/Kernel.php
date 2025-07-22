@@ -44,6 +44,8 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
+            \App\Http\Middleware\ApiCorsMiddleware::class,
+            \App\Http\Middleware\ApiResponseMiddleware::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
@@ -111,6 +113,9 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
         'ai.timeout' => \App\Http\Middleware\IncreaseTimeoutForAIAnalysis::class,
+        'api.cors' => \App\Http\Middleware\ApiCorsMiddleware::class,
+        'api.response' => \App\Http\Middleware\ApiResponseMiddleware::class,
+        'api.rate_limit' => \App\Http\Middleware\ApiRateLimitMiddleware::class,
     ];
 
     protected function configureRateLimiting()

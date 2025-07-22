@@ -45,7 +45,25 @@ services:
       # AI Providers
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
-      
+
+      # Configurações da API
+      - SANCTUM_STATEFUL_DOMAINS=onlifin.onlitec.com.br,www.onlifin.onlitec.com.br
+      - SESSION_DOMAIN=onlifin.onlitec.com.br
+      - API_RATE_LIMIT=60
+      - API_RATE_LIMIT_UNAUTHENTICATED=10
+
+      # CORS para app Android
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+      - CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With,Accept,Origin
+
+      # Features da API
+      - FEATURE_AI_CHAT=true
+      - FEATURE_SOCIAL_LOGIN=true
+      - FEATURE_TWO_FACTOR=true
+      - FEATURE_NOTIFICATIONS=true
+      - FEATURE_REPORTS=true
+
       # Segurança
       - SESSION_DRIVER=redis
       - CACHE_DRIVER=redis
