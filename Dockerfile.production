@@ -11,6 +11,7 @@ RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
+    curl-dev \
     zip \
     unzip \
     git \
@@ -42,9 +43,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     gd \
     zip \
     intl \
-    mbstring \
-    xml \
-    curl
+    mbstring
 
 # Instalar Redis extension
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
