@@ -111,6 +111,12 @@ php artisan tinker --execute="
     }
 "
 
+# Criar usuário admin padrão se não existir
+if [ "$APP_ENV" = "local" ] || [ "$CREATE_ADMIN_USER" = "true" ]; then
+    echo "👤 Criando usuário administrador..."
+    php artisan onlifin:create-admin --email=admin@onlifin.com --password=admin123 --name=Administrador
+fi
+
 # Mostrar informações importantes
 echo ""
 echo "🎉 Onlifin iniciado com sucesso!"

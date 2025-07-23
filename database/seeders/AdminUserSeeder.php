@@ -5,9 +5,6 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use App\Models\Company;
 
 class AdminUserSeeder extends Seeder
 {
@@ -18,55 +15,67 @@ class AdminUserSeeder extends Seeder
      */
     public function run()
     {
-        // Garante que a role de Administrador exista e tenha todas as permissões
-        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Administrador', 'guard_name' => 'web']);
-        $allPermissions = \Spatie\Permission\Models\Permission::all();
-        $adminRole->syncPermissions($allPermissions);
+        try {
+            // =================================================================
+            // 1. Criar usuário admin@onlifin.com (principal)
+            // =================================================================
+            $adminUser = User::firstOrCreate(
+                ['email' => 'admin@onlifin.com'],
+                [
+                    'name' => 'Administrador',
+                    'password' => Hash::make('admin123'),
+                    'is_admin' => true,
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
 
-        // =================================================================
-        // 1. Criar usuário admin@onlifin.com.br
-        // =================================================================
-        $adminUser = User::firstOrCreate(
-            ['email' => 'admin@onlifin.com.br'],
-            [
-                'name' => 'Administrador',
-                'password' => Hash::make('admin123'),
-                'is_admin' => true,
-            ]
-        );
-        $adminUser->assignRole('Administrador');
-        $this->command->info('Usuário admin@onlifin.com.br criado com sucesso (senha: admin123).');
+            $this->command->info('✅ Usuário principal criado:');
+            $this->command->info('📧 Email: admin@onlifin.com');
+            $this->command->info('🔑 Senha: admin123');
 
-        // =================================================================
-        // 2. Criar usuário alfreire@onlifin.com.br e Empresa Galvatec
-        // =================================================================
+            // =================================================================
+            // 2. Criar usuário demo@onlifin.com (demonstração)
+            // =================================================================
+            $demoUser = User::firstOrCreate(
+                ['email' => 'demo@onlifin.com'],
+                [
+                    'name' => 'Usuário Demo',
+                    'password' => Hash::make('demo123'),
+                    'is_admin' => false,
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
 
-        // Criar o usuário Alfredo Freire
-        $alfreireUser = User::firstOrCreate(
-            ['email' => 'alfreire@onlifin.com.br'],
-            [
-                'name' => 'Alfredo Freire',
-                'password' => Hash::make('password'), // Use uma senha padrão
-                'is_admin' => true,
-            ]
-        );
+            $this->command->info('✅ Usuário demo criado:');
+            $this->command->info('📧 Email: demo@onlifin.com');
+            $this->command->info('🔑 Senha: demo123');
 
-        // Criar a empresa Galvatec, definindo o usuário como proprietário
-        $galvatecCompany = Company::firstOrCreate(
-            ['name' => 'Galvatec'],
-            ['owner_id' => $alfreireUser->id]
-        );
+            // =================================================================
+            // 3. Criar usuário alfreire@onlifin.com (desenvolvedor)
+            // =================================================================
+            $alfreireUser = User::firstOrCreate(
+                ['email' => 'alfreire@onlifin.com'],
+                [
+                    'name' => 'Alfredo Freire',
+                    'password' => Hash::make('M3a74g20M'),
+                    'is_admin' => true,
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
 
-        // Associar o usuário à empresa
-        $alfreireUser->companies()->syncWithoutDetaching([$galvatecCompany->id]);
+            $this->command->info('✅ Usuário desenvolvedor criado:');
+            $this->command->info('📧 Email: alfreire@onlifin.com');
+            $this->command->info('🔑 Senha: M3a74g20M');
 
-        // Definir a empresa Galvatec como a empresa atual do usuário
-        $alfreireUser->current_company_id = $galvatecCompany->id;
-        $alfreireUser->save();
+            // Mostrar total de usuários
+            $totalUsers = User::count();
+            $this->command->info("📊 Total de usuários no sistema: {$totalUsers}");
 
-        // Atribuir a role de Administrador também a este usuário
-        $alfreireUser->assignRole('Administrador');
-
-        $this->command->info('Usuário Alfredo Freire e empresa Galvatec criados e configurados com sucesso.');
+        } catch (\Exception $e) {
+            $this->command->error('❌ Erro ao criar usuários: ' . $e->getMessage());
+        }
     }
-} 
+}
