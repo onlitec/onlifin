@@ -75,8 +75,25 @@ git push origin beta
 **Tags disponíveis no DockerHub:**
 - `onlitec/onlifin:latest`
 - `onlitec/onlifin:beta`
-- `onlitec/onlifin:6cce2c2`
-- `onlitec/onlifin:20250723-020251`
+- `onlitec/onlifin:667d42d` (com correção do seeder)
+- `onlitec/onlifin:20250723-103652` (com correção do seeder)
+
+## 🔧 Correção Adicional - Seeder Error
+
+### Problema Identificado no Log
+```
+include(/var/www/html/vendor/composer/../../database/seeders/DefaultAdminSeeder.php): Failed to open stream: No such file or directory
+```
+
+### Soluções Aplicadas
+1. **docker/start.sh**: Alterado `DefaultAdminSeeder` para `AdminUserSeeder`
+2. **docker-compose.dev.yml**: Alterado `DefaultAdminSeeder` para `AdminUserSeeder`
+3. **Removido**: Arquivo `DefaultAdminSeeder.php` que não estava sendo usado
+
+### Usuários Criados pelo AdminUserSeeder
+- **admin@onlifin.com** (senha: admin123) - Administrador principal
+- **demo@onlifin.com** (senha: demo123) - Usuário de demonstração
+- **alfreire@onlifin.com** (senha: M3a74g20M) - Desenvolvedor
 
 ## 🔧 Como Usar
 

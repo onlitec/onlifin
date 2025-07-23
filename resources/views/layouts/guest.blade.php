@@ -14,7 +14,9 @@
 
         <!-- Icons -->
         <link href="{{ asset('assets/css/remixicon.css') }}" rel="stylesheet">
-        
+
+        <!-- Styles -->
+        @vite(['resources/css/app.css'])
         @livewireStyles
         
         <style>
@@ -76,6 +78,41 @@
 
             .auth-input-group {
                 margin-bottom: 20px;
+            }
+
+            .input-with-icon {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+
+            .input-icon {
+                position: absolute;
+                left: 16px;
+                color: #9ca3af;
+                font-size: 18px;
+                z-index: 1;
+            }
+
+            .auth-input.with-icon {
+                padding-left: 50px;
+                padding-right: 50px;
+            }
+
+            .password-toggle {
+                position: absolute;
+                right: 16px;
+                background: none;
+                border: none;
+                color: #9ca3af;
+                cursor: pointer;
+                font-size: 18px;
+                padding: 0;
+                z-index: 1;
+            }
+
+            .password-toggle:hover {
+                color: #6b7280;
             }
 
             .auth-input {
@@ -216,6 +253,8 @@
             {{ $slot }}
         </div>
 
+        <!-- Scripts -->
         @livewireScripts
+        @vite(['resources/js/app.js'])
     </body>
-</html> 
+</html>
