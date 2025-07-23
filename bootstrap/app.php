@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware global para forçar HTTPS
         $middleware->web(prepend: [
             \App\Http\Middleware\ForceHttpsMiddleware::class,
+            \App\Http\Middleware\EnsureHttpsAssetsMiddleware::class,
         ]);
 
         $middleware->api(prepend: [

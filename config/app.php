@@ -180,6 +180,7 @@ return [
         App\Providers\MCPServiceProvider::class,
         App\Providers\SessionServiceProvider::class,
         App\Providers\GcpServiceProvider::class,
+        App\Providers\LivewireServiceProvider::class,
     ],
 
 ];

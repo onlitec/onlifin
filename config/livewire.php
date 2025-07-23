@@ -4,10 +4,10 @@ return [
     'class_namespace' => 'App\\Livewire',
     'view_path' => resource_path('views/livewire'),
     'layout' => 'layouts.app',
-    'asset_url' => null,
-    'app_url' => null,
+    'asset_url' => env('ASSET_URL'),
+    'app_url' => env('APP_URL'),
     'middleware_group' => 'web',
-    'inject_assets' => false,
+    'inject_assets' => true,
     'temporary_file_upload' => [
         'disk' => null,
         'rules' => null,
