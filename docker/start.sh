@@ -77,7 +77,7 @@ php /var/www/html/artisan migrate --force || echo "⚠️ Algumas migrações fa
 
 # Executar seeders se necessário
 echo "🌱 Executando seeders..."
-php /var/www/html/artisan db:seed --force --class=DefaultAdminSeeder || true
+php /var/www/html/artisan db:seed --force --class=AdminUserSeeder || true
 
 # Limpar e otimizar cache
 echo "🧹 Limpando e otimizando cache..."

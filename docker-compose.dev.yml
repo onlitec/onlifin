@@ -47,7 +47,7 @@ services:
         # Preparar banco de dados
         touch database/database.sqlite || true
         php artisan migrate --force || true
-        php artisan db:seed --force --class=DefaultAdminSeeder || true
+        php artisan db:seed --force --class=AdminUserSeeder || true
         
         # Configurar permissões
         chown -R www:www storage bootstrap/cache
