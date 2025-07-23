@@ -47,6 +47,10 @@ CORS_ALLOWED_ORIGINS=*
 CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
 CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With,Accept,Origin
 
+# HTTPS (IMPORTANTE para evitar Mixed Content)
+FORCE_HTTPS=true
+ASSET_URL=https://sua-url-coolify.app
+
 # IA (opcional)
 GROQ_API_KEY=sua_chave_groq_aqui
 GROQ_MODEL=llama3-8b-8192

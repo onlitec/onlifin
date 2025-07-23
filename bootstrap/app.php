@@ -12,11 +12,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Middleware global para forçar HTTPS
+        $middleware->web(prepend: [
+            \App\Http\Middleware\ForceHttpsMiddleware::class,
+        ]);
+
         $middleware->api(prepend: [
+            \App\Http\Middleware\ForceHttpsMiddleware::class,
             \App\Http\Middleware\ApiCorsMiddleware::class,
             \App\Http\Middleware\ApiResponseMiddleware::class,
         ]);
     })
+    ->withProviders([
+        \App\Providers\HttpsServiceProvider::class,
+    ])
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

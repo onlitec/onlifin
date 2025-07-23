@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
 use App\Models\User;
 use App\Models\Transaction;
@@ -33,6 +34,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Forçar HTTPS se configurado
+        if (env('FORCE_HTTPS', false) ||
+            str_starts_with(config('app.url'), 'https://') ||
+            config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
+
         // Configurar codificação UTF-8 para toda a aplicação
         mb_internal_encoding('UTF-8');
         
