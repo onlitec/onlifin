@@ -47,8 +47,12 @@ COPY . .
 # Instalar dependências PHP
 RUN composer install --no-dev --optimize-autoloader --no-interaction || true
 
+# Criar usuário www se não existir
+RUN addgroup -g 1000 -S www || true \
+    && adduser -u 1000 -D -S -G www www || true
+
 # Configurar permissões
-RUN chown -R www-data:www-data /var/www/html \
+RUN chown -R www:www /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
@@ -58,7 +62,7 @@ RUN mkdir -p /var/log/nginx \
     && mkdir -p /run/nginx \
     && mkdir -p /var/www/html/database \
     && touch /var/www/html/database/database.sqlite \
-    && chown www-data:www-data /var/www/html/database/database.sqlite
+    && chown www:www /var/www/html/database/database.sqlite
 
 # Script de inicialização
 COPY docker/start-production.sh /start.sh

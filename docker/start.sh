@@ -22,12 +22,30 @@ mkdir -p /var/lib/nginx/tmp/proxy
 mkdir -p /var/lib/nginx/tmp/scgi
 mkdir -p /var/lib/nginx/tmp/uwsgi
 
-# Configurar permissões apenas nos diretórios necessários
-chown -R www:www /var/www/html/storage /var/www/html/bootstrap/cache
+# Corrigir permissões completas
+echo "🔧 Corrigindo permissões..."
+
+# Definir propriedade para o usuário www
+chown -R www:www /var/www/html
+
+# Permissões específicas para diretórios críticos
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
-chown www:www /var/www/html/.env
-chmod 666 /var/www/html/.env
+chmod -R 755 /var/www/html/public
+
+# Permissões para arquivos específicos
+chmod 644 /var/www/html/.env 2>/dev/null || true
+chmod +x /var/www/html/artisan
+
+# Permissões para logs
+chown -R www:www /var/log/nginx /var/log/php-fpm /var/log/php /var/log/supervisor
+chmod -R 755 /var/log/nginx /var/log/php-fpm /var/log/php /var/log/supervisor
+
+# Permissões para diretórios temporários do Nginx
+chown -R www:www /var/lib/nginx/tmp
+chmod -R 755 /var/lib/nginx/tmp
+
+echo "✅ Permissões corrigidas!"
 
 # Configurar permissões dos diretórios temporários do Nginx
 chown -R www:www /var/lib/nginx/tmp
@@ -66,6 +84,13 @@ if ! grep -q "APP_KEY=base64:" /var/www/html/.env; then
     php /var/www/html/artisan key:generate --force || true
 fi
 
+# Limpar caches antes de conectar ao banco
+echo "🧹 Limpando caches iniciais..."
+php /var/www/html/artisan config:clear || true
+php /var/www/html/artisan route:clear || true
+php /var/www/html/artisan view:clear || true
+php /var/www/html/artisan cache:clear || true
+
 # Aguardar conexão com MariaDB
 echo "🗄️ Conectando ao MariaDB..."
 sleep 10
@@ -94,9 +119,16 @@ if [ ! -L /var/www/html/public/storage ]; then
     php /var/www/html/artisan storage:link
 fi
 
-# Configurar permissões finais apenas nos diretórios necessários
+# Configurar permissões finais
+echo "🔧 Aplicando permissões finais..."
+chown -R www:www /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
+
+# Garantir que os diretórios de views existam com permissões corretas
+mkdir -p /var/www/html/storage/framework/views
+chown -R www:www /var/www/html/storage/framework/views
+chmod -R 775 /var/www/html/storage/framework/views
 
 echo "✅ Onlifin inicializado com sucesso!"
 echo "🌐 Aplicação disponível em http://localhost"

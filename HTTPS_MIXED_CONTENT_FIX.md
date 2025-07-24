@@ -73,10 +73,10 @@ git push origin beta
 ```
 
 **Tags disponíveis no DockerHub:**
-- `onlitec/onlifin:latest` ⭐ (versão mais recente com todas as correções)
+- `onlitec/onlifin:latest` ⭐ (versão mais recente - IP 172.20.120.180)
 - `onlitec/onlifin:beta`
-- `onlitec/onlifin:e38b6be` (com correções de JavaScript e login)
-- `onlitec/onlifin:20250723-225548` (com correções de JavaScript e login)
+- `onlitec/onlifin:c080770` (com IP 172.20.120.180)
+- `onlitec/onlifin:20250724-115938` (com IP 172.20.120.180)
 
 ## 🔧 Correção Adicional - Seeder Error
 
@@ -159,7 +159,7 @@ A imagem `onlitec/onlifin:latest` está pronta para deploy no Coolify com todas 
 
 ### 🧪 Teste Recomendado
 1. Deploy no Coolify com `onlitec/onlifin:latest`
-2. Acesse `https://dev.onlifin.onlitec.com.br/login`
+2. Acesse `https://172.20.120.180/login`
 3. Teste login com `admin@onlifin.com` / `admin123`
 4. Verifique se não há erros no console do navegador
 
