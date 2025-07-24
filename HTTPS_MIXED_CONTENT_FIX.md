@@ -73,10 +73,10 @@ git push origin beta
 ```
 
 **Tags disponíveis no DockerHub:**
-- `onlitec/onlifin:latest`
+- `onlitec/onlifin:latest` ⭐ (versão mais recente com todas as correções)
 - `onlitec/onlifin:beta`
-- `onlitec/onlifin:667d42d` (com correção do seeder)
-- `onlitec/onlifin:20250723-103652` (com correção do seeder)
+- `onlitec/onlifin:e38b6be` (com correções de JavaScript e login)
+- `onlitec/onlifin:20250723-225548` (com correções de JavaScript e login)
 
 ## 🔧 Correção Adicional - Seeder Error
 
@@ -94,6 +94,30 @@ include(/var/www/html/vendor/composer/../../database/seeders/DefaultAdminSeeder.
 - **admin@onlifin.com** (senha: admin123) - Administrador principal
 - **demo@onlifin.com** (senha: demo123) - Usuário de demonstração
 - **alfreire@onlifin.com** (senha: M3a74g20M) - Desenvolvedor
+
+## 🔧 Correção Adicional - JavaScript e Login
+
+### Problemas Identificados
+1. **MIME Type Error**: `'MIME type (text/html) is not executable'`
+2. **Campo de senha**: Mostrava texto em vez de ocultar
+3. **Login não funcionava**: Scripts JavaScript não carregavam
+
+### Soluções Aplicadas
+1. **resources/views/layouts/guest.blade.php**:
+   - Adicionado `@vite(['resources/css/app.css'])`
+   - Adicionado `@vite(['resources/js/app.js'])`
+   - Adicionados estilos CSS para `.input-with-icon` e `.password-toggle`
+
+2. **docker/default.conf**:
+   - Configuração específica de MIME type para arquivos `.js`
+   - Configuração específica de MIME type para arquivos `.css`
+   - Headers corretos: `Content-Type: application/javascript`
+
+### Funcionalidades Restauradas
+- ✅ Scripts JavaScript carregam corretamente
+- ✅ Campo de senha oculta/mostra senha com Alpine.js
+- ✅ Formulário de login funcional
+- ✅ MIME types corretos para todos os assets
 
 ## 🔧 Como Usar
 
@@ -119,6 +143,24 @@ docker run -p 8080:80 onlitec/onlifin:latest
 6. `bootstrap/app.php` - Registro do middleware
 7. `public/vendor/livewire/` - Assets publicados
 
-## ✨ Resultado
+## ✨ Resultado Final
 
-O erro de Mixed Content foi completamente resolvido. Agora todos os assets do Livewire são servidos via HTTPS, eliminando o bloqueio do navegador e garantindo o funcionamento correto da aplicação em ambiente HTTPS.
+Todos os problemas foram completamente resolvidos:
+
+### 🎯 Status das Correções
+- ✅ **Mixed Content**: Resolvido - Assets servidos via HTTPS
+- ✅ **Seeder Error**: Resolvido - AdminUserSeeder funcionando
+- ✅ **JavaScript MIME Type**: Resolvido - Scripts carregam corretamente
+- ✅ **Campo de senha**: Resolvido - Toggle funcional com Alpine.js
+- ✅ **Login**: Resolvido - Autenticação totalmente funcional
+
+### 🚀 Deploy Pronto
+A imagem `onlitec/onlifin:latest` está pronta para deploy no Coolify com todas as correções implementadas.
+
+### 🧪 Teste Recomendado
+1. Deploy no Coolify com `onlitec/onlifin:latest`
+2. Acesse `https://dev.onlifin.onlitec.com.br/login`
+3. Teste login com `admin@onlifin.com` / `admin123`
+4. Verifique se não há erros no console do navegador
+
+A aplicação está totalmente funcional e pronta para uso! 🎉
