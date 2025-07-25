@@ -110,6 +110,19 @@ else
     echo "❌ Problema na configuração de criptografia"
 fi
 
+# Verificar se Redis está disponível e configurar drivers adequados
+echo "🔍 Verificando disponibilidade do Redis..."
+if php -r "try { new Redis(); echo 'Redis disponível'; } catch (Error \$e) { echo 'Redis não disponível'; }" 2>/dev/null | grep -q "Redis disponível"; then
+    echo "✅ Redis disponível - mantendo configurações"
+else
+    echo "⚠️ Redis não disponível - configurando drivers alternativos"
+    # Alterar para drivers que não dependem do Redis
+    sed -i 's/CACHE_DRIVER=redis/CACHE_DRIVER=file/g' /var/www/html/.env
+    sed -i 's/SESSION_DRIVER=redis/SESSION_DRIVER=file/g' /var/www/html/.env
+    sed -i 's/QUEUE_CONNECTION=redis/QUEUE_CONNECTION=sync/g' /var/www/html/.env
+    echo "✅ Drivers alternativos configurados"
+fi
+
 # Aguardar conexão com MariaDB
 echo "🗄️ Conectando ao MariaDB..."
 sleep 10
