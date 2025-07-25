@@ -80,11 +80,19 @@ if [ ! -f /var/www/html/.env ]; then
     chown www:www /var/www/html/.env
 fi
 
-# Gerar chave da aplicação se não existir
-if ! grep -q "APP_KEY=base64:" /var/www/html/.env; then
+# Gerar chave da aplicação se não existir ou for inválida
+if ! grep -q "APP_KEY=base64:" /var/www/html/.env || grep -q "GERE_UMA_CHAVE_AQUI" /var/www/html/.env; then
     echo "🔑 Gerando chave da aplicação..."
-    # Usar o comando artisan para gerar a chave
-    php /var/www/html/artisan key:generate --force || true
+    # Gerar uma nova chave válida
+    NEW_KEY=$(php /var/www/html/artisan key:generate --show)
+    if [ ! -z "$NEW_KEY" ]; then
+        # Substituir a chave no arquivo .env
+        sed -i "s|APP_KEY=.*|APP_KEY=$NEW_KEY|g" /var/www/html/.env
+        echo "✅ Chave gerada: $NEW_KEY"
+    else
+        echo "❌ Falha ao gerar chave - usando comando direto"
+        php /var/www/html/artisan key:generate --force || true
+    fi
 fi
 
 # Limpar caches antes de conectar ao banco
@@ -93,6 +101,14 @@ php /var/www/html/artisan config:clear || true
 php /var/www/html/artisan route:clear || true
 php /var/www/html/artisan view:clear || true
 php /var/www/html/artisan cache:clear || true
+
+# Verificar se a chave está funcionando
+echo "🔍 Verificando configuração de criptografia..."
+if php /var/www/html/artisan tinker --execute="echo 'Cipher: ' . config('app.cipher') . PHP_EOL; echo 'Key length: ' . strlen(config('app.key')) . PHP_EOL;" 2>/dev/null; then
+    echo "✅ Configuração de criptografia OK"
+else
+    echo "❌ Problema na configuração de criptografia"
+fi
 
 # Aguardar conexão com MariaDB
 echo "🗄️ Conectando ao MariaDB..."
