@@ -73,10 +73,10 @@ git push origin beta
 ```
 
 **Tags disponíveis no DockerHub:**
-- `onlitec/onlifin:latest` ⭐ (versão mais recente - IP 172.20.120.180)
+- `onlitec/onlifin:latest` ⭐ (versão mais recente - permissões corrigidas)
 - `onlitec/onlifin:beta`
-- `onlitec/onlifin:c080770` (com IP 172.20.120.180)
-- `onlitec/onlifin:20250724-115938` (com IP 172.20.120.180)
+- `onlitec/onlifin:91e5580` (com correções de permissões)
+- `onlitec/onlifin:20250724-221142` (com correções de permissões)
 
 ## 🔧 Correção Adicional - Seeder Error
 
@@ -118,6 +118,33 @@ include(/var/www/html/vendor/composer/../../database/seeders/DefaultAdminSeeder.
 - ✅ Campo de senha oculta/mostra senha com Alpine.js
 - ✅ Formulário de login funcional
 - ✅ MIME types corretos para todos os assets
+
+## 🔧 Correção Adicional - Permissões Docker
+
+### Problema Identificado
+```
+file_put_contents(/var/www/html/onlifin/storage/framework/views/2e444d27c325ba00c267ec1a5a851f19.php): Failed to open stream: Permission denied
+HTTP 500 Internal Server Error
+```
+
+### Soluções Aplicadas
+1. **docker/start.sh**:
+   - Correção abrangente de permissões para usuário `www:www`
+   - Limpeza de cache inicial antes das migrações
+   - Criação e configuração de todos os diretórios necessários
+   - Permissões específicas para logs e diretórios temporários
+
+2. **Dockerfile.simple**:
+   - Correção de inconsistência: `www-data` → `www`
+   - Criação do usuário `www` se não existir
+   - Permissões corretas aplicadas durante o build
+
+3. **Diretórios configurados**:
+   - `/var/www/html/storage` (775)
+   - `/var/www/html/bootstrap/cache` (775)
+   - `/var/www/html/storage/framework/views` (775)
+   - `/var/www/html/public` (755)
+   - Logs e diretórios temporários do Nginx
 
 ## 🔧 Como Usar
 

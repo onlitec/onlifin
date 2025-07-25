@@ -22,28 +22,23 @@ mkdir -p /var/lib/nginx/tmp/proxy
 mkdir -p /var/lib/nginx/tmp/scgi
 mkdir -p /var/lib/nginx/tmp/uwsgi
 
-# Corrigir permissões completas
+# Corrigir permissões de forma otimizada
 echo "🔧 Corrigindo permissões..."
 
-# Definir propriedade para o usuário www
-chown -R www:www /var/www/html
+# Aplicar permissões apenas nos diretórios críticos (mais rápido)
+chown -R www:www /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 777 /var/www/html/storage
+chmod -R 777 /var/www/html/bootstrap/cache
 
-# Permissões específicas para diretórios críticos
-chmod -R 775 /var/www/html/storage
-chmod -R 775 /var/www/html/bootstrap/cache
-chmod -R 755 /var/www/html/public
-
-# Permissões para arquivos específicos
-chmod 644 /var/www/html/.env 2>/dev/null || true
+# Permissões específicas para arquivos críticos
+chown www:www /var/www/html/.env 2>/dev/null || true
+chmod 666 /var/www/html/.env 2>/dev/null || true
 chmod +x /var/www/html/artisan
 
-# Permissões para logs
-chown -R www:www /var/log/nginx /var/log/php-fpm /var/log/php /var/log/supervisor
-chmod -R 755 /var/log/nginx /var/log/php-fpm /var/log/php /var/log/supervisor
-
-# Permissões para diretórios temporários do Nginx
-chown -R www:www /var/lib/nginx/tmp
-chmod -R 755 /var/lib/nginx/tmp
+# Permissões para diretórios de logs (apenas se existirem)
+[ -d /var/log/nginx ] && chown -R www:www /var/log/nginx && chmod -R 755 /var/log/nginx
+[ -d /var/log/php-fpm ] && chown -R www:www /var/log/php-fpm && chmod -R 755 /var/log/php-fpm
+[ -d /var/lib/nginx/tmp ] && chown -R www:www /var/lib/nginx/tmp && chmod -R 755 /var/lib/nginx/tmp
 
 echo "✅ Permissões corrigidas!"
 
@@ -119,16 +114,25 @@ if [ ! -L /var/www/html/public/storage ]; then
     php /var/www/html/artisan storage:link
 fi
 
-# Configurar permissões finais
+# Configurar permissões finais (mais permissivas para garantir funcionamento)
 echo "🔧 Aplicando permissões finais..."
-chown -R www:www /var/www/html/storage /var/www/html/bootstrap/cache
-chmod -R 775 /var/www/html/storage
-chmod -R 775 /var/www/html/bootstrap/cache
+chmod -R 777 /var/www/html/storage
+chmod -R 777 /var/www/html/bootstrap/cache
 
-# Garantir que os diretórios de views existam com permissões corretas
+# Garantir que os diretórios críticos existam
 mkdir -p /var/www/html/storage/framework/views
-chown -R www:www /var/www/html/storage/framework/views
-chmod -R 775 /var/www/html/storage/framework/views
+mkdir -p /var/www/html/storage/framework/cache
+mkdir -p /var/www/html/storage/framework/sessions
+chmod -R 777 /var/www/html/storage/framework
+
+# Verificar se as permissões estão corretas
+echo "🔍 Verificando permissões..."
+if [ -w "/var/www/html/storage/framework/views" ]; then
+    echo "✅ Diretório views é gravável"
+else
+    echo "❌ Diretório views NÃO é gravável - aplicando correção"
+    chmod -R 777 /var/www/html/storage
+fi
 
 echo "✅ Onlifin inicializado com sucesso!"
 echo "🌐 Aplicação disponível em http://localhost"

@@ -51,10 +51,11 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction || true
 RUN addgroup -g 1000 -S www || true \
     && adduser -u 1000 -D -S -G www www || true
 
-# Configurar permissões
+# Configurar permissões (mais permissivas para evitar problemas)
 RUN chown -R www:www /var/www/html \
-    && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
+    && chmod -R 777 /var/www/html/storage \
+    && chmod -R 777 /var/www/html/bootstrap/cache \
+    && chmod -R 755 /var/www/html/public
 
 # Criar diretórios necessários
 RUN mkdir -p /var/log/nginx \
