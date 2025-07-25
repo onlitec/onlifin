@@ -22,25 +22,33 @@ mkdir -p /var/lib/nginx/tmp/proxy
 mkdir -p /var/lib/nginx/tmp/scgi
 mkdir -p /var/lib/nginx/tmp/uwsgi
 
-# Corrigir permissões de forma otimizada
+# Corrigir permissões de forma RADICAL
 echo "🔧 Corrigindo permissões..."
 
-# Aplicar permissões apenas nos diretórios críticos (mais rápido)
-chown -R www:www /var/www/html/storage /var/www/html/bootstrap/cache
+# SOLUÇÃO RADICAL: Dar permissões máximas para TUDO
 chmod -R 777 /var/www/html/storage
-chmod -R 777 /var/www/html/bootstrap/cache
-
-# Permissões específicas para arquivos críticos
-chown www:www /var/www/html/.env 2>/dev/null || true
+chmod -R 777 /var/www/html/bootstrap
+chmod -R 755 /var/www/html/public
 chmod 666 /var/www/html/.env 2>/dev/null || true
 chmod +x /var/www/html/artisan
 
-# Permissões para diretórios de logs (apenas se existirem)
-[ -d /var/log/nginx ] && chown -R www:www /var/log/nginx && chmod -R 755 /var/log/nginx
-[ -d /var/log/php-fpm ] && chown -R www:www /var/log/php-fpm && chmod -R 755 /var/log/php-fpm
-[ -d /var/lib/nginx/tmp ] && chown -R www:www /var/lib/nginx/tmp && chmod -R 755 /var/lib/nginx/tmp
+# Garantir que TODOS os diretórios críticos existam
+mkdir -p /var/www/html/storage/framework/views
+mkdir -p /var/www/html/storage/framework/cache
+mkdir -p /var/www/html/storage/framework/sessions
+mkdir -p /var/www/html/storage/logs
+mkdir -p /var/www/html/bootstrap/cache
 
-echo "✅ Permissões corrigidas!"
+# Aplicar permissões máximas novamente
+chmod -R 777 /var/www/html/storage
+chmod -R 777 /var/www/html/bootstrap
+
+# Permissões para logs do sistema
+chmod -R 755 /var/log/nginx 2>/dev/null || true
+chmod -R 755 /var/log/php-fpm 2>/dev/null || true
+chmod -R 755 /var/lib/nginx/tmp 2>/dev/null || true
+
+echo "✅ Permissões MÁXIMAS aplicadas!"
 
 # Configurar permissões dos diretórios temporários do Nginx
 chown -R www:www /var/lib/nginx/tmp
@@ -114,16 +122,32 @@ if [ ! -L /var/www/html/public/storage ]; then
     php /var/www/html/artisan storage:link
 fi
 
-# Configurar permissões finais (mais permissivas para garantir funcionamento)
-echo "🔧 Aplicando permissões finais..."
-chmod -R 777 /var/www/html/storage
-chmod -R 777 /var/www/html/bootstrap/cache
+# Configurar permissões finais MÁXIMAS
+echo "🔧 Aplicando permissões finais MÁXIMAS..."
 
-# Garantir que os diretórios críticos existam
+# Aplicar permissões 777 em TUDO que o Laravel precisa
+chmod -R 777 /var/www/html/storage
+chmod -R 777 /var/www/html/bootstrap
+
+# Garantir que TODOS os diretórios existam
 mkdir -p /var/www/html/storage/framework/views
 mkdir -p /var/www/html/storage/framework/cache
 mkdir -p /var/www/html/storage/framework/sessions
-chmod -R 777 /var/www/html/storage/framework
+mkdir -p /var/www/html/storage/logs
+mkdir -p /var/www/html/storage/app/public
+
+# Aplicar permissões 777 novamente para garantir
+chmod -R 777 /var/www/html/storage
+chmod -R 777 /var/www/html/bootstrap
+
+# Criar um arquivo de teste para verificar permissões
+echo "teste" > /var/www/html/storage/framework/views/test-write.txt 2>/dev/null && rm -f /var/www/html/storage/framework/views/test-write.txt
+if [ $? -eq 0 ]; then
+    echo "✅ Teste de escrita: SUCESSO"
+else
+    echo "❌ Teste de escrita: FALHOU - aplicando correção extrema"
+    chmod -R 777 /var/www/html/
+fi
 
 # Verificar se as permissões estão corretas
 echo "🔍 Verificando permissões..."

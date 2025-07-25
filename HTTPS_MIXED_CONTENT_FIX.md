@@ -73,10 +73,10 @@ git push origin beta
 ```
 
 **Tags disponíveis no DockerHub:**
-- `onlitec/onlifin:latest` ⭐ (versão mais recente - permissões corrigidas)
+- `onlitec/onlifin:latest` ⭐ (versão mais recente - permissões 777)
 - `onlitec/onlifin:beta`
-- `onlitec/onlifin:91e5580` (com correções de permissões)
-- `onlitec/onlifin:20250724-221142` (com correções de permissões)
+- `onlitec/onlifin:3a4023d` (com permissões otimizadas)
+- `onlitec/onlifin:20250725-003138` (com permissões otimizadas)
 
 ## 🔧 Correção Adicional - Seeder Error
 
@@ -140,11 +140,16 @@ HTTP 500 Internal Server Error
    - Permissões corretas aplicadas durante o build
 
 3. **Diretórios configurados**:
-   - `/var/www/html/storage` (775)
-   - `/var/www/html/bootstrap/cache` (775)
-   - `/var/www/html/storage/framework/views` (775)
-   - `/var/www/html/public` (755)
+   - `/var/www/html/storage` (777) - Permissões máximas
+   - `/var/www/html/bootstrap/cache` (777) - Permissões máximas
+   - `/var/www/html/storage/framework/views` (777) - Permissões máximas
+   - `/var/www/html/public` (755) - Permissões padrão
    - Logs e diretórios temporários do Nginx
+
+4. **Teste de Permissões Implementado**:
+   - Script `docker/test-permissions.sh` para validação
+   - Verificação automática de escrita em diretórios críticos
+   - Teste passou: ✅ Views, ✅ Cache, ✅ Bootstrap/cache
 
 ## 🔧 Como Usar
 
