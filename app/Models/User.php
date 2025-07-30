@@ -40,6 +40,9 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_confirmed_at',
         'two_factor_recovery_codes',
+        'api_enabled',
+        'api_rate_limit',
+        'api_token_expiration_days',
     ];
 
     protected $hidden = [
