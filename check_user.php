@@ -10,7 +10,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 // Verificar se o usuário existe
-$email = 'admin@onlifin.com.br';
+$email = 'galvatec@onlifin.com.br';
 $user = User::where('email', $email)->first();
 
 if ($user) {

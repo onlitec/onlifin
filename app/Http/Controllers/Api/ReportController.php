@@ -141,8 +141,14 @@ class ReportController extends Controller
             $query->where('account_id', $request->account_id);
         }
 
+        // Usar strftime para SQLite ou DATE_FORMAT para MySQL
+        $dbConnection = config('database.default');
+        $dateFormatFunction = $dbConnection === 'sqlite'
+            ? "strftime('{$dateFormat}', date)"
+            : "DATE_FORMAT(date, '{$dateFormat}')";
+
         $cashFlow = $query->selectRaw("
-            DATE_FORMAT(date, '{$dateFormat}') as period,
+            {$dateFormatFunction} as period,
             type,
             SUM(amount) as total_amount
         ")

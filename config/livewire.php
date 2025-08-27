@@ -4,7 +4,7 @@ return [
     'class_namespace' => 'App\\Livewire',
     'view_path' => resource_path('views/livewire'),
     'layout' => 'layouts.app',
-    'asset_url' => env('ASSET_URL'),
+    'asset_url' => null,
     'app_url' => env('APP_URL'),
     'middleware_group' => 'web',
     'inject_assets' => true,

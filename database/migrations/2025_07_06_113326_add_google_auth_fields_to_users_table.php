@@ -38,9 +38,17 @@ return new class extends Migration
                     $table->text('two_factor_recovery_codes')->nullable()->after('two_factor_confirmed_at');
                 }
 
-                // Índices para melhor performance
-                $table->index('google_id');
-                $table->index('two_factor_enabled');
+                // Índices para melhor performance (verificar se já existem)
+                // Verificar se índices já existem usando SQL direto
+                $indexExists = \DB::select("SHOW INDEX FROM users WHERE Key_name = 'users_google_id_index'");
+                if (empty($indexExists)) {
+                    $table->index('google_id');
+                }
+
+                $indexExists2 = \DB::select("SHOW INDEX FROM users WHERE Key_name = 'users_two_factor_enabled_index'");
+                if (empty($indexExists2)) {
+                    $table->index('two_factor_enabled');
+                }
             });
         }
     }

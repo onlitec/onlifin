@@ -41,6 +41,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\AdminAccess::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ],
 
         'api' => [
@@ -48,6 +49,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\ApiResponseMiddleware::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ],
     ];
 
@@ -70,6 +72,8 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
         'ai.timeout' => \App\Http\Middleware\IncreaseTimeoutForAIAnalysis::class,
+        'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
+        'throttle.login' => \App\Http\Middleware\ThrottleLoginAttempts::class,
     ];
 
     /**
@@ -90,6 +94,7 @@ class Kernel extends HttpKernel
         \Illuminate\Contracts\Session\Middleware\AuthenticatesSessions::class,
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
         \Illuminate\Auth\Middleware\Authorize::class,
+        \App\Http\Middleware\SecurityHeaders::class,
     ];
 
     /**
@@ -116,6 +121,8 @@ class Kernel extends HttpKernel
         'api.cors' => \App\Http\Middleware\ApiCorsMiddleware::class,
         'api.response' => \App\Http\Middleware\ApiResponseMiddleware::class,
         'api.rate_limit' => \App\Http\Middleware\ApiRateLimitMiddleware::class,
+        'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
+        'throttle.login' => \App\Http\Middleware\ThrottleLoginAttempts::class,
     ];
 
     protected function configureRateLimiting()

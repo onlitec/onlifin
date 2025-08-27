@@ -264,19 +264,34 @@ class DashboardController extends Controller
         // Determinar a granularidade (diária ou mensal) baseado na duração do período
         $periodDurationInDays = $startDate->diffInDays($endDate);
         $granularityFormat = 'Y-m-d'; // Default: Diário
-        $dbDateFormat = '%Y-%m-%d';
-        if ($periodDurationInDays > 62) { // Se > ~2 meses, agrupar por mês
-            $granularityFormat = 'Y-m';
-            $dbDateFormat = '%Y-%m';
+        $dbConnection = config('database.default');
+
+        if ($dbConnection === 'sqlite') {
+            $dbDateFormat = '%Y-%m-%d'; // SQLite usa strftime
+            if ($periodDurationInDays > 62) { // Se > ~2 meses, agrupar por mês
+                $granularityFormat = 'Y-m';
+                $dbDateFormat = '%Y-%m';
+            }
+        } else {
+            $dbDateFormat = '%Y-%m-%d'; // MySQL usa DATE_FORMAT
+            if ($periodDurationInDays > 62) { // Se > ~2 meses, agrupar por mês
+                $granularityFormat = 'Y-m';
+                $dbDateFormat = '%Y-%m';
+            }
         }
 
         // Buscar transações pagas no período
-        // Usar DATE_FORMAT para MariaDB/MySQL
+        // Usar strftime para SQLite ou DATE_FORMAT para MySQL
+        $dbConnection = config('database.default');
+        $dateFormatFunction = $dbConnection === 'sqlite'
+            ? "strftime('$dbDateFormat', date)"
+            : "DATE_FORMAT(date, '$dbDateFormat')";
+
         $periodTransactions = Transaction::where('user_id', $userId)
             ->where('status', 'paid') // CONFIGURAÇÃO CRÍTICA: Apenas transações pagas
             ->whereBetween('date', [$startDate, $endDate])
             ->select(
-                DB::raw("DATE_FORMAT(date, '$dbDateFormat') as period_key"),
+                DB::raw("$dateFormatFunction as period_key"),
                 'type',
                 DB::raw('SUM(amount) as total')
             )

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="72" cy="72" r="66" fill="url(#gradient)" stroke="#ffffff" stroke-width="3"/>
+  
+  <!-- Financial symbol -->
+  <g transform="translate(72,72)">
+    <!-- Dollar sign -->
+    <path d="M-6,-30 L-6,-22 M-6,22 L-6,30 M-15,-15 Q-15,-22 -7,-22 L7,-22 Q15,-22 15,-15 Q15,-7 7,-7 L-7,-7 Q-15,-7 -15,0 Q-15,7 -7,7 L7,7 Q15,7 15,15 Q15,22 7,22 L-7,22 Q-15,22 -15,15" 
+          stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Decorative elements -->
+  <circle cx="36" cy="36" r="3" fill="#ffffff" opacity="0.6"/>
+  <circle cx="108" cy="36" r="2" fill="#ffffff" opacity="0.4"/>
+  <circle cx="36" cy="108" r="2" fill="#ffffff" opacity="0.4"/>
+  <circle cx="108" cy="108" r="3" fill="#ffffff" opacity="0.6"/>
+</svg>
