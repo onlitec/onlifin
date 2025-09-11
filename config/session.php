@@ -32,9 +32,9 @@ return [
     |
     */
 
-    'lifetime' => env('SESSION_LIFETIME', 43200), // 30 dias
+    'lifetime' => env('SESSION_LIFETIME', 120), // 2 horas (mais seguro)
 
-    'expire_on_close' => false,
+    'expire_on_close' => true, // Sessão expira quando o navegador é fechado
 
     /*
     |--------------------------------------------------------------------------
@@ -47,7 +47,7 @@ return [
     |
     */
 
-    'encrypt' => false,
+    'encrypt' => env('SESSION_ENCRYPT', true), // Criptografar dados de sessão
 
     /*
     |--------------------------------------------------------------------------
@@ -169,7 +169,7 @@ return [
     |
     */
 
-    'secure' => false,
+    'secure' => env('SESSION_SECURE', true), // HTTPS apenas em produção
 
     /*
     |--------------------------------------------------------------------------
@@ -182,7 +182,7 @@ return [
     |
     */
 
-    'http_only' => true,
+    'http_only' => env('SESSION_HTTP_ONLY', true), // Prevenir acesso via JavaScript
 
     /*
     |--------------------------------------------------------------------------
@@ -199,7 +199,7 @@ return [
     |
     */
 
-    'same_site' => 'lax',
+    'same_site' => env('SESSION_SAME_SITE', 'strict'), // Proteção contra CSRF
 
     /*
     |--------------------------------------------------------------------------

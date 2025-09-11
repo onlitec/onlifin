@@ -1,33 +1,30 @@
 version: '3.8'
 
 services:
-  onlifin:
+  onlifin-app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: onlifin-app
     ports:
-      - "172.20.120.180:8080:80"
-      - "127.0.0.1:8080:80"
+      - "${APP_PORT:-8080}:80"
     volumes:
       - ./storage:/var/www/html/storage
       - ./.env:/var/www/html/.env
     environment:
-      - DB_CONNECTION=mysql
-      - DB_HOST=172.20.120.180
-      - DB_PORT=3306
-      - DB_DATABASE=onlifin
-      - DB_USERNAME=alfreire
-      - DB_PASSWORD=M3a74g20M
-      - DB_SSL_MODE=disabled
+      - DB_CONNECTION=${DB_CONNECTION:-mysql}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL_MODE=${DB_SSL_MODE:-disabled}
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
-networks:
-  default:
-    name: onlifin-network
