@@ -2,8 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.php": {
-      "runtime": "vercel-php@0.6.1",
-      "maxLambdaSize": "50mb"
+      "runtime": "vercel-php@0.6.1"
     }
   },
   "routes": [
