@@ -27,7 +27,7 @@
     "QUEUE_CONNECTION": "sync",
     "MAIL_MAILER": "log"
   },
-  "buildCommand": "npm run build && cp .env.production .env",
+  "buildCommand": "chmod +x vercel-build.sh && ./vercel-build.sh",
   "outputDirectory": "public",
   "framework": null
 }
