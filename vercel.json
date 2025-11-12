@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.6.1",
+      "maxLambdaSize": "50mb"
+    }
+  },
+  "routes": [
+    {
+      "src": "/build/(.*)",
+      "dest": "/public/build/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    }
+  ],
+  "env": {
+    "APP_NAME": "Onlifin",
+    "APP_ENV": "production",
+    "APP_DEBUG": "false",
+    "APP_URL": "https://onlifin.vercel.app",
+    "DB_CONNECTION": "sqlite",
+    "DB_DATABASE": "/var/task/database/database.sqlite",
+    "CACHE_STORE": "file",
+    "SESSION_DRIVER": "file",
+    "QUEUE_CONNECTION": "sync",
+    "MAIL_MAILER": "log"
+  },
+  "buildCommand": "npm run build && cp .env.production .env",
+  "outputDirectory": "public",
+  "framework": null
+}
