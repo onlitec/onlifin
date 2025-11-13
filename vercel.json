@@ -2,7 +2,32 @@
   "version": 2,
   "functions": {
     "api/index.php": {
-      "runtime": "vercel-php@0.7.3"
+      "runtime": "vercel-php@0.7.3",
+      "excludeFiles": [
+        "node_modules/**",
+        "tests/**",
+        "vendor/bin/**",
+        "vendor/phpunit/**",
+        "vendor/phpspec/**",
+        "vendor/sebastian/**",
+        "vendor/mockery/**",
+        "vendor/doctrine/instantiator/**",
+        "vendor/doctrine/deprecations/**",
+        "vendor/psy/psysh/**",
+        "vendor/filp/whoops/**",
+        "vendor/nunomaduro/collision/**",
+        "storage/logs/**",
+        "storage/debugbar/**",
+        "storage/framework/cache/**",
+        "storage/framework/sessions/**",
+        "storage/framework/views/**",
+        "*.md",
+        "*.txt",
+        "*.log",
+        "phpunit.xml",
+        "phpstan.neon",
+        ".*"
+      ]
     }
   },
   "routes": [
