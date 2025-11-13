@@ -16,6 +16,12 @@
         "vendor/psy/psysh/**",
         "vendor/filp/whoops/**",
         "vendor/nunomaduro/collision/**",
+        "vendor/google/**",
+        "vendor/phpdocumentor/**",
+        "vendor/ezyang/**",
+        "vendor/spiral/**",
+        "vendor/amphp/**",
+        "vendor/roadrunner-php/**",
         "storage/logs/**",
         "storage/debugbar/**",
         "storage/framework/cache/**",
@@ -26,7 +32,15 @@
         "*.log",
         "phpunit.xml",
         "phpstan.neon",
-        ".*"
+        ".*",
+        "_ide_helper*",
+        "composer.lock",
+        "package-lock.json",
+        "yarn.lock",
+        "webpack.mix.js",
+        "tailwind.config.js",
+        "postcss.config.js",
+        "vite.config.js"
       ]
     }
   },
