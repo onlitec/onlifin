@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { aiChatLogsApi, aiConfigApi } from '@/db/api';
 import { supabase } from '@/db/supabase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, MessageSquare, Settings, Shield, Download } from 'lucide-react';
+import { Bot, MessageSquare, Settings, Shield, Download, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import type { AIChatLog, AIConfiguration } from '@/types/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -182,6 +182,59 @@ export default function AIAdmin() {
         </TabsList>
 
         <TabsContent value="config" className="space-y-4 mt-4">
+          {/* Status Card */}
+          <Card className={config ? 'border-green-500/50 bg-green-500/5' : 'border-yellow-500/50 bg-yellow-500/5'}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                {config ? (
+                  <>
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <span>Modelo de IA Configurado</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    <span>Nenhum Modelo Configurado</span>
+                  </>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {config ? (
+                  <div className="space-y-1 mt-2">
+                    <p className="text-sm">
+                      <span className="font-medium">Modelo:</span> {config.model_name}
+                    </p>
+                    {config.endpoint && (
+                      <p className="text-sm">
+                        <span className="font-medium">Endpoint:</span> {config.endpoint}
+                      </p>
+                    )}
+                    <p className="text-sm">
+                      <span className="font-medium">Nível de Permissão:</span>{' '}
+                      {config.permission_level === 'read_aggregated' && 'Leitura Agregada'}
+                      {config.permission_level === 'read_transactional' && 'Leitura Transacional'}
+                      {config.permission_level === 'read_full' && 'Leitura Completa'}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-medium">Status:</span>{' '}
+                      <span className={config.is_active ? 'text-green-600' : 'text-red-600'}>
+                        {config.is_active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Última atualização: {format(new Date(config.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm mt-2">
+                    Configure um modelo de IA abaixo para ativar o assistente financeiro.
+                  </p>
+                )}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Configuration Form */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
