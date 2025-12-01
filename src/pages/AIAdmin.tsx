@@ -38,22 +38,35 @@ export default function AIAdmin() {
         aiConfigApi.getAllConfigs()
       ]);
 
-      setChatLogs(logs);
-      if (configurations.length > 0) {
+      setChatLogs(Array.isArray(logs) ? logs : []);
+      
+      if (Array.isArray(configurations) && configurations.length > 0) {
         const activeConfig = configurations[0];
         setConfig(activeConfig);
         setFormData({
-          model_name: activeConfig.model_name,
+          model_name: activeConfig.model_name || 'gemini-2.5-flash',
           endpoint: activeConfig.endpoint || '',
-          permission_level: activeConfig.permission_level
+          permission_level: activeConfig.permission_level || 'read_aggregated'
+        });
+      } else {
+        // Initialize with default values if no config exists
+        setConfig(null);
+        setFormData({
+          model_name: 'gemini-2.5-flash',
+          endpoint: '',
+          permission_level: 'read_aggregated'
         });
       }
     } catch (error: any) {
+      console.error('Erro ao carregar dados:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao carregar dados',
         variant: 'destructive'
       });
+      // Set empty arrays on error
+      setChatLogs([]);
+      setConfig(null);
     } finally {
       setIsLoading(false);
     }
