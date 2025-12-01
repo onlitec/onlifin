@@ -105,8 +105,8 @@ export default function AIAssistant() {
       )}
 
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-96 h-[500px] shadow-2xl flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 shrink-0">
             <CardTitle className="text-lg">Assistente Financeiro IA</CardTitle>
             <Button
               variant="ghost"
@@ -116,43 +116,53 @@ export default function AIAssistant() {
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-0">
-            <div className="flex-1 overflow-hidden px-4">
-              <div ref={scrollRef} className="h-full overflow-y-auto">
-                <div className="space-y-4 py-4">
-                  {messages.length === 0 && (
-                    <div className="text-center text-muted-foreground text-sm">
-                      <p>Olá! Sou seu assistente financeiro.</p>
-                      <p className="mt-2">Como posso ajudá-lo hoje?</p>
-                    </div>
-                  )}
-                  {messages.map((msg, idx) => (
+          <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+            <div 
+              ref={scrollRef} 
+              className="flex-1 overflow-y-auto px-4 py-4"
+              style={{ maxHeight: 'calc(600px - 140px)' }}
+            >
+              <div className="space-y-4">
+                {messages.length === 0 && (
+                  <div className="text-center text-muted-foreground text-sm">
+                    <p>Olá! 👋</p>
+                    <p className="mt-2">Entendido, vou atuar como assistente financeiro sem consultar a documentação do site.</p>
+                    <p className="mt-2">Estou aqui para ajudar você com:</p>
+                    <ul className="mt-2 text-left space-y-1">
+                      <li>💰 **Categorização de transações** (identificar e organizar seus gastos)</li>
+                      <li>💡 **Dicas de economia** (como economizar no dia a dia)</li>
+                      <li>📊 **Análise de gastos** (entender para onde vai seu dinheiro)</li>
+                      <li>📅 **Planejamento financeiro** (metas, orçamento, investimentos)</li>
+                      <li>🧮 **Conceitos financeiros** (explicar termos e estratégias)</li>
+                    </ul>
+                  </div>
+                )}
+                {messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
                     <div
-                      key={idx}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`max-w-[85%] rounded-lg px-4 py-2 ${
+                        msg.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
                     >
-                      <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                          msg.role === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      </div>
+                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                     </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-muted rounded-lg px-4 py-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg px-4 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="p-4 border-t">
+            <div className="p-4 border-t shrink-0 bg-background">
               <div className="flex gap-2">
                 <Input
                   value={input}
@@ -160,11 +170,13 @@ export default function AIAssistant() {
                   onKeyPress={handleKeyPress}
                   placeholder="Digite sua mensagem..."
                   disabled={isLoading}
+                  className="flex-1"
                 />
                 <Button
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
                   size="icon"
+                  className="shrink-0"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
