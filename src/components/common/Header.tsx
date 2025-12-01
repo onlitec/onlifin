@@ -23,17 +23,33 @@ export default function Header() {
 
   useEffect(() => {
     loadProfile();
+    
+    // Escutar mudanças no estado de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('🔄 Auth state changed:', _event, 'Session:', session);
+      if (session?.user) {
+        loadProfile();
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔍 User from auth:', user);
       if (user) {
         const userProfile = await profilesApi.getProfile(user.id);
+        console.log('👤 Profile loaded:', userProfile);
         setProfile(userProfile);
       }
     } catch (error) {
-      console.error('Erro ao carregar perfil:', error);
+      console.error('❌ Erro ao carregar perfil:', error);
     }
   };
 
@@ -130,6 +146,10 @@ export default function Header() {
                 </Link>
               );
             })}
+            {(() => {
+              console.log('🔐 Checking admin access - Profile:', profile, 'Role:', profile?.role, 'Is Admin:', profile?.role === 'admin');
+              return null;
+            })()}
             {profile?.role === 'admin' && (
               <Popover>
                 <PopoverTrigger asChild>
