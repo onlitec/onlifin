@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { aiChatLogsApi, aiConfigApi } from '@/db/api';
+import { supabase } from '@/db/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ export default function AIAdmin() {
     endpoint: '',
     permission_level: 'read_aggregated' as 'read_aggregated' | 'read_transactional' | 'read_full'
   });
+  const [apiKey, setApiKey] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,6 +61,21 @@ export default function AIAdmin() {
 
   const handleSaveConfig = async () => {
     try {
+      // Save API key to Supabase secrets if provided
+      if (apiKey) {
+        const { error: secretError } = await supabase.functions.invoke('save-api-key', {
+          body: { apiKey }
+        });
+        if (secretError) {
+          console.error('Erro ao salvar chave da API:', secretError);
+          toast({
+            title: 'Aviso',
+            description: 'Configuração salva, mas houve erro ao armazenar a chave da API',
+            variant: 'destructive'
+          });
+        }
+      }
+
       if (config) {
         await aiConfigApi.updateConfig(config.id, formData);
         toast({ title: 'Sucesso', description: 'Configuração atualizada com sucesso' });
@@ -172,6 +189,19 @@ export default function AIAdmin() {
                   onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
                   placeholder="gemini-2.5-flash"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="api_key">Chave da API</Label>
+                <Input
+                  id="api_key"
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Insira a chave da API do modelo de IA"
+                />
+                <p className="text-xs text-muted-foreground">
+                  A chave será armazenada de forma segura no Supabase
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endpoint">Endpoint da API (Opcional)</Label>

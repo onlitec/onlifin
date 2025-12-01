@@ -3,14 +3,27 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 const APP_ID = Deno.env.get('VITE_APP_ID') || 'app-7xkeeoe4bsap';
 const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse`;
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 Deno.serve(async (req: Request) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     const { message, userId } = await req.json();
 
     if (!message || !userId) {
       return new Response(
         JSON.stringify({ error: 'Message and userId are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
@@ -93,6 +106,7 @@ Seja conciso, claro e sempre forneça conselhos práticos e responsáveis.`;
       {
         status: 200,
         headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
           'Connection': 'keep-alive'
         }
@@ -104,7 +118,7 @@ Seja conciso, claro e sempre forneça conselhos práticos e responsáveis.`;
       JSON.stringify({ error: error.message || 'Internal server error' }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

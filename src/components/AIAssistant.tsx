@@ -4,7 +4,6 @@ import { aiChatLogsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 
@@ -47,8 +46,17 @@ export default function AIAssistant() {
       });
 
       if (error) {
-        const errorMsg = await error?.context?.text();
-        throw new Error(errorMsg || 'Erro ao chamar assistente de IA');
+        let errorMsg = 'Erro ao chamar assistente de IA';
+        try {
+          if (error.context && typeof error.context.text === 'function') {
+            errorMsg = await error.context.text();
+          } else if (error.message) {
+            errorMsg = error.message;
+          }
+        } catch (e) {
+          console.error('Erro ao processar mensagem de erro:', e);
+        }
+        throw new Error(errorMsg);
       }
 
       const assistantMessage = data.response || 'Desculpe, não consegui processar sua solicitação.';
@@ -109,39 +117,41 @@ export default function AIAssistant() {
             </Button>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col p-0">
-            <ScrollArea className="flex-1 px-4" ref={scrollRef}>
-              <div className="space-y-4 py-4">
-                {messages.length === 0 && (
-                  <div className="text-center text-muted-foreground text-sm">
-                    <p>Olá! Sou seu assistente financeiro.</p>
-                    <p className="mt-2">Como posso ajudá-lo hoje?</p>
-                  </div>
-                )}
-                {messages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+            <div className="flex-1 overflow-hidden px-4">
+              <div ref={scrollRef} className="h-full overflow-y-auto">
+                <div className="space-y-4 py-4">
+                  {messages.length === 0 && (
+                    <div className="text-center text-muted-foreground text-sm">
+                      <p>Olá! Sou seu assistente financeiro.</p>
+                      <p className="mt-2">Como posso ajudá-lo hoje?</p>
+                    </div>
+                  )}
+                  {messages.map((msg, idx) => (
                     <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                      key={idx}
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <div
+                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                          msg.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg px-4 py-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-muted rounded-lg px-4 py-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </ScrollArea>
+            </div>
             <div className="p-4 border-t">
               <div className="flex gap-2">
                 <Input
