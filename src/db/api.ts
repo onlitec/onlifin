@@ -470,13 +470,18 @@ export const aiConfigApi = {
 };
 
 export const aiChatLogsApi = {
-  async getChatLogs(userId: string, limit: number = 50): Promise<AIChatLog[]> {
-    const { data, error } = await supabase
+  async getChatLogs(userId?: string, limit: number = 50): Promise<AIChatLog[]> {
+    let query = supabase
       .from('ai_chat_logs')
       .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -502,6 +507,15 @@ export const aiChatLogsApi = {
     
     if (error) throw error;
     return data;
+  },
+
+  async deleteChatLog(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('ai_chat_logs')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   },
 
   async deleteChatLogs(userId: string): Promise<void> {

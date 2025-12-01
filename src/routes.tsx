@@ -1,7 +1,11 @@
 import Dashboard from './pages/Dashboard';
 import Accounts from './pages/Accounts';
+import Cards from './pages/Cards';
 import Transactions from './pages/Transactions';
+import Categories from './pages/Categories';
+import Reports from './pages/Reports';
 import Admin from './pages/Admin';
+import AIAdmin from './pages/AIAdmin';
 import Login from './pages/Login';
 import type { ReactNode } from 'react';
 
@@ -26,15 +30,39 @@ const routes: RouteConfig[] = [
     visible: true
   },
   {
+    name: 'Cartões',
+    path: '/cards',
+    element: <Cards />,
+    visible: true
+  },
+  {
     name: 'Transações',
     path: '/transactions',
     element: <Transactions />,
     visible: true
   },
   {
+    name: 'Categorias',
+    path: '/categories',
+    element: <Categories />,
+    visible: true
+  },
+  {
+    name: 'Relatórios',
+    path: '/reports',
+    element: <Reports />,
+    visible: true
+  },
+  {
     name: 'Admin',
     path: '/admin',
     element: <Admin />,
+    visible: false
+  },
+  {
+    name: 'IA Admin',
+    path: '/ai-admin',
+    element: <AIAdmin />,
     visible: false
   },
   {

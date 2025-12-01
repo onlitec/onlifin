@@ -1,0 +1,335 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/db/supabase';
+import { categoriesApi } from '@/db/api';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
+import type { Category } from '@/types/types';
+
+const EMOJI_OPTIONS = [
+  '💰', '💵', '💸', '💳', '🏦', '📈', '📊', '💼', '🎯', '🎁',
+  '🍔', '🍕', '🍜', '☕', '🛒', '🏠', '🚗', '⛽', '🚌', '✈️',
+  '🏥', '💊', '🏋️', '📚', '🎓', '📱', '💻', '🎮', '🎬', '🎵',
+  '👕', '👗', '👟', '💄', '🎨', '🔧', '⚡', '💡', '📄', '🎉'
+];
+
+const COLOR_OPTIONS = [
+  { name: 'Verde', value: '#27AE60' },
+  { name: 'Azul', value: '#2C3E50' },
+  { name: 'Vermelho', value: '#E74C3C' },
+  { name: 'Laranja', value: '#E67E22' },
+  { name: 'Roxo', value: '#9B59B6' },
+  { name: 'Amarelo', value: '#F39C12' },
+  { name: 'Rosa', value: '#E91E63' },
+  { name: 'Ciano', value: '#00BCD4' }
+];
+
+export default function Categories() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'expense' as 'income' | 'expense',
+    icon: '💰',
+    color: '#27AE60'
+  });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const data = await categoriesApi.getCategories();
+      setCategories(data);
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao carregar categorias',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (editingCategory) {
+        if (editingCategory.user_id === null) {
+          toast({
+            title: 'Erro',
+            description: 'Não é possível editar categorias do sistema',
+            variant: 'destructive'
+          });
+          return;
+        }
+        await categoriesApi.updateCategory(editingCategory.id, formData);
+        toast({ title: 'Sucesso', description: 'Categoria atualizada com sucesso' });
+      } else {
+        await categoriesApi.createCategory({
+          ...formData,
+          user_id: user.id
+        });
+        toast({ title: 'Sucesso', description: 'Categoria criada com sucesso' });
+      }
+
+      setIsDialogOpen(false);
+      resetForm();
+      loadCategories();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao salvar categoria',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDelete = async (category: Category) => {
+    if (category.user_id === null) {
+      toast({
+        title: 'Erro',
+        description: 'Não é possível excluir categorias do sistema',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
+
+    try {
+      await categoriesApi.deleteCategory(category.id);
+      toast({ title: 'Sucesso', description: 'Categoria excluída com sucesso' });
+      loadCategories();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao excluir categoria',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const openEditDialog = (category: Category) => {
+    if (category.user_id === null) {
+      toast({
+        title: 'Aviso',
+        description: 'Categorias do sistema não podem ser editadas',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setEditingCategory(category);
+    setFormData({
+      name: category.name,
+      type: category.type,
+      icon: category.icon || '💰',
+      color: category.color || '#27AE60'
+    });
+    setIsDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingCategory(null);
+    setFormData({
+      name: '',
+      type: 'expense',
+      icon: '💰',
+      color: '#27AE60'
+    });
+  };
+
+  const incomeCategories = categories.filter(c => c.type === 'income');
+  const expenseCategories = categories.filter(c => c.type === 'expense');
+  const userCategories = categories.filter(c => c.user_id !== null);
+  const systemCategories = categories.filter(c => c.user_id === null);
+
+  const CategoryCard = ({ category }: { category: Category }) => (
+    <Card>
+      <CardContent className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+            style={{ backgroundColor: `${category.color}20` }}
+          >
+            {category.icon}
+          </div>
+          <div>
+            <p className="font-medium">{category.name}</p>
+            <p className="text-sm text-muted-foreground">
+              {category.user_id === null ? 'Sistema' : 'Personalizada'}
+            </p>
+          </div>
+        </div>
+        {category.user_id !== null && (
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openEditDialog(category)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDelete(category)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Categorias</h1>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Categoria
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</DialogTitle>
+              <DialogDescription>
+                Crie categorias personalizadas para organizar suas transações
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome *</Label>
+                  <Input
+                    id="name"
+                    placeholder="Ex: Streaming"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo *</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: 'income' | 'expense') => setFormData({ ...formData, type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income">Receita</SelectItem>
+                      <SelectItem value="expense">Despesa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Ícone</Label>
+                  <div className="grid grid-cols-10 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+                    {EMOJI_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, icon: emoji })}
+                        className={`text-2xl p-2 rounded hover:bg-muted ${
+                          formData.icon === emoji ? 'bg-primary/20 ring-2 ring-primary' : ''
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cor</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {COLOR_OPTIONS.map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, color: color.value })}
+                        className={`p-3 rounded border-2 ${
+                          formData.color === color.value ? 'border-primary' : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: color.value }}
+                      >
+                        <span className="text-white text-xs font-medium">{color.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">{editingCategory ? 'Atualizar' : 'Criar'}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">Todas</TabsTrigger>
+          <TabsTrigger value="income">Receitas</TabsTrigger>
+          <TabsTrigger value="expense">Despesas</TabsTrigger>
+          <TabsTrigger value="custom">Personalizadas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="space-y-2 mt-4">
+          {categories.map(category => (
+            <CategoryCard key={category.id} category={category} />
+          ))}
+        </TabsContent>
+
+        <TabsContent value="income" className="space-y-2 mt-4">
+          {incomeCategories.map(category => (
+            <CategoryCard key={category.id} category={category} />
+          ))}
+        </TabsContent>
+
+        <TabsContent value="expense" className="space-y-2 mt-4">
+          {expenseCategories.map(category => (
+            <CategoryCard key={category.id} category={category} />
+          ))}
+        </TabsContent>
+
+        <TabsContent value="custom" className="space-y-2 mt-4">
+          {userCategories.length > 0 ? (
+            userCategories.map(category => (
+              <CategoryCard key={category.id} category={category} />
+            ))
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Tag className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-lg font-medium mb-2">Nenhuma categoria personalizada</p>
+                <p className="text-sm text-muted-foreground">
+                  Crie suas próprias categorias para melhor organização
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

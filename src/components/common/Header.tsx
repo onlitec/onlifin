@@ -85,16 +85,28 @@ export default function Header() {
               </Link>
             ))}
             {profile?.role === 'admin' && (
-              <Link
-                to="/admin"
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  location.pathname === '/admin'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-foreground hover:bg-muted'
-                }`}
-              >
-                Admin
-              </Link>
+              <>
+                <Link
+                  to="/admin"
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    location.pathname === '/admin'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Admin
+                </Link>
+                <Link
+                  to="/ai-admin"
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    location.pathname === '/ai-admin'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  IA Admin
+                </Link>
+              </>
             )}
           </div>
 
@@ -159,17 +171,30 @@ export default function Header() {
               </Link>
             ))}
             {profile?.role === 'admin' && (
-              <Link
-                to="/admin"
-                onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 text-base font-medium rounded-md ${
-                  location.pathname === '/admin'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-foreground hover:bg-muted'
-                }`}
-              >
-                Admin
-              </Link>
+              <>
+                <Link
+                  to="/admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block px-3 py-2 text-base font-medium rounded-md ${
+                    location.pathname === '/admin'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  Admin
+                </Link>
+                <Link
+                  to="/ai-admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block px-3 py-2 text-base font-medium rounded-md ${
+                    location.pathname === '/ai-admin'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  IA Admin
+                </Link>
+              </>
             )}
           </div>
         )}
