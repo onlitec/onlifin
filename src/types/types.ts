@@ -58,6 +58,7 @@ export interface Transaction {
   tags: string[] | null;
   is_recurring: boolean;
   recurrence_pattern: string | null;
+  is_installment: boolean;
   installment_number: number | null;
   total_installments: number | null;
   parent_transaction_id: string | null;

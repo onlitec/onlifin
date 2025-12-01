@@ -285,6 +285,7 @@ export default function Import() {
           date: transaction.date,
           is_recurring: false,
           recurrence_pattern: null,
+          is_installment: false,
           installment_number: null,
           total_installments: null,
           parent_transaction_id: null,
