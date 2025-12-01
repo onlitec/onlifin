@@ -7,6 +7,22 @@ import AIAssistant from '@/components/AIAssistant';
 import routes from './routes';
 
 function App() {
+  // Flatten routes to include children
+  const flattenRoutes = (routeList: typeof routes) => {
+    const flattened: typeof routes = [];
+    routeList.forEach(route => {
+      flattened.push(route);
+      if (route.children) {
+        route.children.forEach(child => {
+          flattened.push(child);
+        });
+      }
+    });
+    return flattened;
+  };
+
+  const allRoutes = flattenRoutes(routes);
+
   return (
     <Router>
       <AuthProvider client={supabase}>
@@ -16,7 +32,7 @@ function App() {
             <Header />
             <main className="flex-grow bg-background">
               <Routes>
-                {routes.map((route, index) => (
+                {allRoutes.map((route, index) => (
                   <Route
                     key={index}
                     path={route.path}
