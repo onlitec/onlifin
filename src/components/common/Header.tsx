@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Settings, Menu, X } from 'lucide-react';
+import { User, LogOut, Settings, Menu, X, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Profile } from '@/types/types';
 
@@ -57,6 +57,14 @@ export default function Header() {
     }
   };
 
+  const isActiveRoute = (path: string, children?: any[]) => {
+    if (location.pathname === path) return true;
+    if (children) {
+      return children.some(child => location.pathname === child.path);
+    }
+    return false;
+  };
+
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -71,42 +79,84 @@ export default function Header() {
           </div>
 
           <div className="hidden md:flex items-center space-x-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  location.pathname === item.path
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-foreground hover:bg-muted'
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map((item) => {
+              if (item.children && item.children.length > 0) {
+                return (
+                  <DropdownMenu key={item.path}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                          isActiveRoute(item.path, item.children)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {item.name}
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem asChild>
+                        <Link to={item.path} className="w-full cursor-pointer">
+                          {item.name}
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {item.children.map((child) => (
+                        <DropdownMenuItem key={child.path} asChild>
+                          <Link to={child.path} className="w-full cursor-pointer">
+                            {child.name}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    location.pathname === item.path
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
             {profile?.role === 'admin' && (
-              <>
-                <Link
-                  to="/admin"
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    location.pathname === '/admin'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`}
-                >
-                  Admin
-                </Link>
-                <Link
-                  to="/ai-admin"
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    location.pathname === '/ai-admin'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`}
-                >
-                  IA Admin
-                </Link>
-              </>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      location.pathname === '/admin' || location.pathname === '/ai-admin'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    Admin
+                    <ChevronDown className="ml-1 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="w-full cursor-pointer">
+                      Admin
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/ai-admin" className="w-full cursor-pointer">
+                      IA Admin
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
@@ -157,21 +207,40 @@ export default function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 space-y-2">
             {navigation.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsMenuOpen(false)}
-                className={`block px-3 py-2 text-base font-medium rounded-md ${
-                  location.pathname === item.path
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-foreground hover:bg-muted'
-                }`}
-              >
-                {item.name}
-              </Link>
+              <div key={item.path}>
+                <Link
+                  to={item.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block px-3 py-2 text-base font-medium rounded-md ${
+                    location.pathname === item.path
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+                {item.children && item.children.length > 0 && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.path}
+                        to={child.path}
+                        onClick={() => setIsMenuOpen(false)}
+                        className={`block px-3 py-2 text-sm font-medium rounded-md ${
+                          location.pathname === child.path
+                            ? 'bg-primary/80 text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
             {profile?.role === 'admin' && (
-              <>
+              <div>
                 <Link
                   to="/admin"
                   onClick={() => setIsMenuOpen(false)}
@@ -183,18 +252,20 @@ export default function Header() {
                 >
                   Admin
                 </Link>
-                <Link
-                  to="/ai-admin"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2 text-base font-medium rounded-md ${
-                    location.pathname === '/ai-admin'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`}
-                >
-                  IA Admin
-                </Link>
-              </>
+                <div className="ml-4 mt-1">
+                  <Link
+                    to="/ai-admin"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 text-sm font-medium rounded-md ${
+                      location.pathname === '/ai-admin'
+                        ? 'bg-primary/80 text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    IA Admin
+                  </Link>
+                </div>
+              </div>
             )}
           </div>
         )}

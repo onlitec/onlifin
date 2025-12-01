@@ -16,6 +16,7 @@ interface RouteConfig {
   path: string;
   element: ReactNode;
   visible?: boolean;
+  children?: RouteConfig[];
 }
 
 const routes: RouteConfig[] = [
@@ -41,7 +42,21 @@ const routes: RouteConfig[] = [
     name: 'Transações',
     path: '/transactions',
     element: <Transactions />,
-    visible: true
+    visible: true,
+    children: [
+      {
+        name: 'Importar',
+        path: '/import',
+        element: <Import />,
+        visible: true
+      },
+      {
+        name: 'Conciliação',
+        path: '/reconciliation',
+        element: <Reconciliation />,
+        visible: true
+      }
+    ]
   },
   {
     name: 'Categorias',
@@ -56,28 +71,18 @@ const routes: RouteConfig[] = [
     visible: true
   },
   {
-    name: 'Importar',
-    path: '/import',
-    element: <Import />,
-    visible: true
-  },
-  {
-    name: 'Conciliação',
-    path: '/reconciliation',
-    element: <Reconciliation />,
-    visible: true
-  },
-  {
     name: 'Admin',
     path: '/admin',
     element: <Admin />,
-    visible: false
-  },
-  {
-    name: 'IA Admin',
-    path: '/ai-admin',
-    element: <AIAdmin />,
-    visible: false
+    visible: false,
+    children: [
+      {
+        name: 'IA Admin',
+        path: '/ai-admin',
+        element: <AIAdmin />,
+        visible: false
+      }
+    ]
   },
   {
     name: 'Login',
