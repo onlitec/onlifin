@@ -59,13 +59,12 @@ export default {
                     DEFAULT: 'hsl(var(--card))',
                     foreground: 'hsl(var(--card-foreground))'
                 },
-                education: {
-                    blue: 'hsl(var(--education-blue))',
-                    green: 'hsl(var(--education-green))'
+                success: {
+                    DEFAULT: 'hsl(var(--success))',
+                    foreground: 'hsl(var(--success-foreground))'
                 },
-                success: 'hsl(var(--success))',
-                warning: 'hsl(var(--warning))',
-                info: 'hsl(var(--info))',
+                income: 'hsl(var(--income))',
+                expense: 'hsl(var(--expense))',
                 sidebar: {
                     DEFAULT: 'hsl(var(--sidebar-background))',
                     foreground: 'hsl(var(--sidebar-foreground))',
