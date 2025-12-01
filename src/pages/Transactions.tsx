@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
@@ -24,7 +25,11 @@ export default function Transactions() {
     description: '',
     category_id: '',
     account_id: '',
-    card_id: ''
+    card_id: '',
+    is_recurring: false,
+    recurrence_pattern: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
+    is_installment: false,
+    total_installments: '1'
   });
   const { toast } = useToast();
 
@@ -63,23 +68,54 @@ export default function Transactions() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await transactionsApi.createTransaction({
+      const baseTransaction = {
         ...formData,
         user_id: user.id,
         amount: Number(formData.amount),
         category_id: formData.category_id || null,
         account_id: formData.account_id || null,
         card_id: formData.card_id || null,
-        is_recurring: false,
+        is_recurring: formData.is_recurring,
         is_reconciled: false,
-        recurrence_pattern: null,
-        installment_number: null,
-        total_installments: null,
-        parent_transaction_id: null,
+        recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null,
         tags: null
-      });
+      };
 
-      toast({ title: 'Sucesso', description: 'Transação criada com sucesso' });
+      if (formData.is_installment && Number(formData.total_installments) > 1) {
+        // Create installments
+        const totalInstallments = Number(formData.total_installments);
+        const installmentAmount = Number(formData.amount) / totalInstallments;
+        
+        for (let i = 1; i <= totalInstallments; i++) {
+          const installmentDate = new Date(formData.date);
+          installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+          
+          await transactionsApi.createTransaction({
+            ...baseTransaction,
+            amount: installmentAmount,
+            date: installmentDate.toISOString().split('T')[0],
+            description: `${formData.description} (${i}/${totalInstallments})`,
+            installment_number: i,
+            total_installments: totalInstallments,
+            parent_transaction_id: null
+          });
+        }
+        toast({ 
+          title: 'Sucesso', 
+          description: `${totalInstallments} parcelas criadas com sucesso` 
+        });
+      } else {
+        // Create single transaction
+        await transactionsApi.createTransaction({
+          ...baseTransaction,
+          date: formData.date,
+          installment_number: null,
+          total_installments: null,
+          parent_transaction_id: null
+        });
+        toast({ title: 'Sucesso', description: 'Transação criada com sucesso' });
+      }
+
       setIsDialogOpen(false);
       resetForm();
       loadData();
@@ -100,7 +136,11 @@ export default function Transactions() {
       description: '',
       category_id: '',
       account_id: '',
-      card_id: ''
+      card_id: '',
+      is_recurring: false,
+      recurrence_pattern: 'monthly',
+      is_installment: false,
+      total_installments: '1'
     });
   };
 
@@ -220,6 +260,71 @@ export default function Transactions() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
+                
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="is_recurring"
+                    checked={formData.is_recurring}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, is_recurring: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="is_recurring" className="cursor-pointer">
+                    Transação recorrente
+                  </Label>
+                </div>
+
+                {formData.is_recurring && (
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence">Frequência</Label>
+                    <Select
+                      value={formData.recurrence_pattern}
+                      onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') => 
+                        setFormData({ ...formData, recurrence_pattern: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Diária</SelectItem>
+                        <SelectItem value="weekly">Semanal</SelectItem>
+                        <SelectItem value="monthly">Mensal</SelectItem>
+                        <SelectItem value="yearly">Anual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="is_installment"
+                    checked={formData.is_installment}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, is_installment: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="is_installment" className="cursor-pointer">
+                    Parcelar transação
+                  </Label>
+                </div>
+
+                {formData.is_installment && (
+                  <div className="space-y-2">
+                    <Label htmlFor="installments">Número de Parcelas</Label>
+                    <Input
+                      id="installments"
+                      type="number"
+                      min="2"
+                      max="48"
+                      value={formData.total_installments}
+                      onChange={(e) => setFormData({ ...formData, total_installments: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Valor por parcela: R$ {(Number(formData.amount) / Number(formData.total_installments) || 0).toFixed(2)}
+                    </p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button type="submit">Criar</Button>

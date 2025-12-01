@@ -4,6 +4,8 @@ import Cards from './pages/Cards';
 import Transactions from './pages/Transactions';
 import Categories from './pages/Categories';
 import Reports from './pages/Reports';
+import Import from './pages/Import';
+import Reconciliation from './pages/Reconciliation';
 import Admin from './pages/Admin';
 import AIAdmin from './pages/AIAdmin';
 import Login from './pages/Login';
@@ -51,6 +53,18 @@ const routes: RouteConfig[] = [
     name: 'Relatórios',
     path: '/reports',
     element: <Reports />,
+    visible: true
+  },
+  {
+    name: 'Importar',
+    path: '/import',
+    element: <Import />,
+    visible: true
+  },
+  {
+    name: 'Conciliação',
+    path: '/reconciliation',
+    element: <Reconciliation />,
     visible: true
   },
   {
