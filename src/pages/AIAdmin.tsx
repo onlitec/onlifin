@@ -61,21 +61,6 @@ export default function AIAdmin() {
 
   const handleSaveConfig = async () => {
     try {
-      // Save API key to Supabase secrets if provided
-      if (apiKey) {
-        const { error: secretError } = await supabase.functions.invoke('save-api-key', {
-          body: { apiKey }
-        });
-        if (secretError) {
-          console.error('Erro ao salvar chave da API:', secretError);
-          toast({
-            title: 'Aviso',
-            description: 'Configuração salva, mas houve erro ao armazenar a chave da API',
-            variant: 'destructive'
-          });
-        }
-      }
-
       if (config) {
         await aiConfigApi.updateConfig(config.id, formData);
         toast({ title: 'Sucesso', description: 'Configuração atualizada com sucesso' });
@@ -86,6 +71,17 @@ export default function AIAdmin() {
         });
         toast({ title: 'Sucesso', description: 'Configuração criada com sucesso' });
       }
+      
+      // Clear API key field after saving
+      if (apiKey) {
+        toast({ 
+          title: 'Informação', 
+          description: 'A chave da API deve ser configurada nas variáveis de ambiente do Supabase',
+          variant: 'default'
+        });
+        setApiKey('');
+      }
+      
       loadData();
     } catch (error: any) {
       toast({
@@ -191,7 +187,7 @@ export default function AIAdmin() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="api_key">Chave da API</Label>
+                <Label htmlFor="api_key">Chave da API (Referência)</Label>
                 <Input
                   id="api_key"
                   type="password"
@@ -200,7 +196,7 @@ export default function AIAdmin() {
                   placeholder="Insira a chave da API do modelo de IA"
                 />
                 <p className="text-xs text-muted-foreground">
-                  A chave será armazenada de forma segura no Supabase
+                  Para segurança, configure a chave nas variáveis de ambiente do Supabase (GEMINI_API_KEY)
                 </p>
               </div>
               <div className="space-y-2">
