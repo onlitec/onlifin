@@ -5,13 +5,10 @@ import { profilesApi } from '@/db/api';
 import routes from '@/routes';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { User, LogOut, Settings, Menu, X, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Profile } from '@/types/types';
@@ -82,8 +79,8 @@ export default function Header() {
             {navigation.map((item) => {
               if (item.children && item.children.length > 0) {
                 return (
-                  <DropdownMenu key={item.path}>
-                    <DropdownMenuTrigger asChild>
+                  <Popover key={item.path}>
+                    <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
                         className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -95,23 +92,28 @@ export default function Header() {
                         {item.name}
                         <ChevronDown className="ml-1 h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem asChild>
-                        <Link to={item.path} className="w-full cursor-pointer">
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-48 p-2">
+                      <div className="space-y-1">
+                        <Link
+                          to={item.path}
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                        >
                           {item.name}
                         </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {item.children.map((child) => (
-                        <DropdownMenuItem key={child.path} asChild>
-                          <Link to={child.path} className="w-full cursor-pointer">
+                        <div className="border-t border-border my-1" />
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                          >
                             {child.name}
                           </Link>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 );
               }
               return (
@@ -129,12 +131,12 @@ export default function Header() {
               );
             })}
             {profile?.role === 'admin' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname === '/admin' || location.pathname === '/ai-admin'
+                      location.pathname === '/admin' || location.pathname === '/ai-admin' || location.pathname === '/user-management'
                         ? 'bg-primary text-primary-foreground'
                         : 'text-foreground hover:bg-muted'
                     }`}
@@ -142,55 +144,71 @@ export default function Header() {
                     Admin
                     <ChevronDown className="ml-1 h-4 w-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin" className="w-full cursor-pointer">
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-48 p-2">
+                  <div className="space-y-1">
+                    <Link
+                      to="/admin"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
                       Admin
                     </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/ai-admin" className="w-full cursor-pointer">
+                    <div className="border-t border-border my-1" />
+                    <Link
+                      to="/user-management"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      Gestão de Usuários
+                    </Link>
+                    <Link
+                      to="/ai-admin"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
                       IA Admin
                     </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
 
           <div className="flex items-center space-x-4">
             {profile && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
                     <User className="h-5 w-5" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-2">
+                  <div className="space-y-1">
+                    <div className="px-3 py-2">
                       <p className="text-sm font-medium">{profile.username}</p>
                       <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>
                     </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {profile.role === 'admin' && (
-                    <>
-                      <DropdownMenuItem onClick={() => navigate('/admin')}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Administração
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <div className="border-t border-border my-1" />
+                    {profile.role === 'admin' && (
+                      <>
+                        <button
+                          onClick={() => navigate('/admin')}
+                          className="w-full flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          Administração
+                        </button>
+                        <div className="border-t border-border my-1" />
+                      </>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sair
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
 
             <Button
@@ -252,7 +270,18 @@ export default function Header() {
                 >
                   Admin
                 </Link>
-                <div className="ml-4 mt-1">
+                <div className="ml-4 mt-1 space-y-1">
+                  <Link
+                    to="/user-management"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 text-sm font-medium rounded-md ${
+                      location.pathname === '/user-management'
+                        ? 'bg-primary/80 text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    Gestão de Usuários
+                  </Link>
                   <Link
                     to="/ai-admin"
                     onClick={() => setIsMenuOpen(false)}
