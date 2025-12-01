@@ -58,6 +58,48 @@ export const profilesApi = {
     
     if (error) throw error;
     return data;
+  },
+
+  async createUser(username: string, password: string, role: string = 'user'): Promise<{ userId: string | null; error: any }> {
+    try {
+      const email = `${username}@miaoda.com`;
+      
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username
+          }
+        }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Falha ao criar usuário');
+
+      // Update profile role if not default
+      if (role !== 'user') {
+        await supabase
+          .from('profiles')
+          .update({ role })
+          .eq('id', authData.user.id);
+      }
+
+      return { userId: authData.user.id, error: null };
+    } catch (error: any) {
+      return { userId: null, error };
+    }
+  },
+
+  async deleteUser(userId: string): Promise<void> {
+    // Delete user profile (cascade will handle related data)
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+    
+    if (error) throw error;
   }
 };
 

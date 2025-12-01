@@ -8,6 +8,7 @@ import Import from './pages/Import';
 import Reconciliation from './pages/Reconciliation';
 import Admin from './pages/Admin';
 import AIAdmin from './pages/AIAdmin';
+import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 import type { ReactNode } from 'react';
 
@@ -76,6 +77,12 @@ const routes: RouteConfig[] = [
     element: <Admin />,
     visible: false,
     children: [
+      {
+        name: 'Gestão de Usuários',
+        path: '/user-management',
+        element: <UserManagement />,
+        visible: false
+      },
       {
         name: 'IA Admin',
         path: '/ai-admin',

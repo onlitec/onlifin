@@ -12,7 +12,6 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -43,42 +42,22 @@ export default function Login() {
     const email = `${username}@miaoda.com`;
 
     try {
-      if (isRegister) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              username
-            }
-          }
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: 'Sucesso!',
-          description: 'Conta criada com sucesso. Você já pode fazer login.'
-        });
-        setIsRegister(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: 'Bem-vindo!',
-          description: 'Login realizado com sucesso'
-        });
-        navigate('/');
-      }
+      toast({
+        title: 'Bem-vindo!',
+        description: 'Login realizado com sucesso'
+      });
+      navigate('/');
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.message || 'Ocorreu um erro. Tente novamente.',
+        description: error.message || 'Credenciais inválidas. Tente novamente.',
         variant: 'destructive'
       });
     } finally {
@@ -91,12 +70,10 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            {isRegister ? 'Criar Conta' : 'Login'}
+            Login
           </CardTitle>
           <CardDescription className="text-center">
-            {isRegister
-              ? 'Crie sua conta para começar a gerenciar suas finanças'
-              : 'Entre com suas credenciais para acessar sua conta'}
+            Entre com suas credenciais para acessar sua conta
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,20 +107,11 @@ export default function Login() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isRegister ? 'Criar Conta' : 'Entrar'}
+              Entrar
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            <button
-              type="button"
-              onClick={() => setIsRegister(!isRegister)}
-              className="text-primary hover:underline"
-              disabled={isLoading}
-            >
-              {isRegister
-                ? 'Já tem uma conta? Faça login'
-                : 'Não tem uma conta? Cadastre-se'}
-            </button>
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Não tem uma conta? Entre em contato com o administrador.
           </div>
         </CardContent>
       </Card>
