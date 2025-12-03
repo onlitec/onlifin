@@ -85,9 +85,9 @@ export default function Header() {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">F</span>
+                <span className="text-primary-foreground font-bold text-lg">O</span>
               </div>
-              <span className="text-xl font-bold text-primary">FinanceApp</span>
+              <span className="text-xl font-bold text-primary">OnliFin</span>
             </Link>
           </div>
 
