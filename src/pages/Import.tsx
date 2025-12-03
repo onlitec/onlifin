@@ -299,6 +299,21 @@ export default function Import() {
         description: `${selectedTransactions.length} transações importadas com sucesso`
       });
 
+      // Recalculate account balance to ensure accuracy
+      try {
+        await accountsApi.recalculateAccountBalance(selectedAccount);
+        toast({
+          title: 'Saldo Atualizado',
+          description: 'O saldo da conta foi recalculado com sucesso'
+        });
+      } catch (balanceError: any) {
+        console.error('Erro ao recalcular saldo:', balanceError);
+        // Don't fail the import if balance recalculation fails
+      }
+
+      // Reload accounts to show updated balance
+      await loadData();
+
       // Reset
       setFile(null);
       setParsedData([]);

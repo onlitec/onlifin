@@ -156,6 +156,24 @@ export const accountsApi = {
       .eq('id', id);
     
     if (error) throw error;
+  },
+
+  async recalculateAccountBalance(accountId: string): Promise<number> {
+    const { data, error } = await supabase.rpc('recalculate_account_balance', {
+      account_uuid: accountId
+    });
+    
+    if (error) throw error;
+    return data || 0;
+  },
+
+  async recalculateAllAccountBalances(userId: string): Promise<Array<{ account_id: string; old_balance: number; new_balance: number }>> {
+    const { data, error } = await supabase.rpc('recalculate_all_account_balances', {
+      user_uuid: userId
+    });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
   }
 };
 
