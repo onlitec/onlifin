@@ -62,12 +62,13 @@ export default function AIAssistant() {
       const assistantMessage = data.response || 'Desculpe, não consegui processar sua solicitação.';
       setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
 
+      // Registrar log com informações de acesso aos dados
       await aiChatLogsApi.createChatLog({
         user_id: user.id,
         message: userMessage,
         response: assistantMessage,
-        permission_level: 'read_aggregated',
-        data_accessed: null
+        permission_level: data.permission_level || 'read_aggregated',
+        data_accessed: data.data_accessed ? { fields: data.data_accessed } : null
       });
     } catch (error: any) {
       console.error('Erro no assistente de IA:', error);
