@@ -68,8 +68,18 @@ export default function AIAssistant() {
         message: userMessage,
         response: assistantMessage,
         permission_level: data.permission_level || 'read_aggregated',
+        action_type: data.action_type || 'read',
+        created_transaction_id: data.created_transaction_id || null,
         data_accessed: data.data_accessed ? { fields: data.data_accessed } : null
       });
+
+      // Se uma transação foi criada, mostrar notificação de sucesso
+      if (data.action_type === 'write' && data.created_transaction_id) {
+        toast({
+          title: '✅ Transação Criada',
+          description: 'A transação foi registrada com sucesso pela IA',
+        });
+      }
     } catch (error: any) {
       console.error('Erro no assistente de IA:', error);
       toast({

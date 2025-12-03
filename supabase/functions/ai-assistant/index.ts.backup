@@ -19,11 +19,10 @@ async function getUserFinancialData(supabaseClient: any, userId: string, permiss
   try {
     if (permissionLevel === 'read_aggregated') {
       // Apenas dados agregados (totais, somatórios, médias)
-      const [accounts, cards, transactions, categories] = await Promise.all([
+      const [accounts, cards, transactions] = await Promise.all([
         supabaseClient.from('accounts').select('id, name, balance, currency').eq('user_id', userId),
         supabaseClient.from('cards').select('id, name, card_limit, available_limit').eq('user_id', userId),
-        supabaseClient.from('transactions').select('type, amount, category_id, date').eq('user_id', userId),
-        supabaseClient.from('categories').select('id, name, type').eq('user_id', userId)
+        supabaseClient.from('transactions').select('type, amount, category_id, date').eq('user_id', userId)
       ]);
 
       // Calcular estatísticas agregadas
@@ -48,10 +47,6 @@ async function getUserFinancialData(supabaseClient: any, userId: string, permiss
         expenses_by_category: expensesByCategory,
         transaction_count: transactions.data?.length || 0
       };
-
-      // Incluir lista de contas e categorias para criação de transações
-      data.accounts_list = accounts.data?.map((a: any) => ({ id: a.id, name: a.name })) || [];
-      data.categories_list = categories.data?.map((c: any) => ({ id: c.id, name: c.name, type: c.type })) || [];
 
     } else if (permissionLevel === 'read_transactional') {
       // Dados transacionais (lista de transações com detalhes, mas sem informações sensíveis)
@@ -90,84 +85,6 @@ async function getUserFinancialData(supabaseClient: any, userId: string, permiss
   return data;
 }
 
-// Função para criar transação
-async function createTransaction(supabaseClient: any, userId: string, transactionData: any) {
-  try {
-    // Validar dados obrigatórios
-    if (!transactionData.type || !transactionData.amount || !transactionData.date) {
-      throw new Error('Dados obrigatórios faltando: type, amount, date');
-    }
-
-    // Validar tipo
-    if (transactionData.type !== 'income' && transactionData.type !== 'expense') {
-      throw new Error('Tipo de transação inválido. Use "income" ou "expense"');
-    }
-
-    // Validar valor
-    const amount = parseFloat(transactionData.amount);
-    if (isNaN(amount) || amount <= 0) {
-      throw new Error('Valor inválido. Deve ser um número positivo');
-    }
-
-    // Preparar dados da transação
-    const transaction = {
-      user_id: userId,
-      type: transactionData.type,
-      amount: amount,
-      date: transactionData.date,
-      description: transactionData.description || null,
-      account_id: transactionData.account_id || null,
-      card_id: transactionData.card_id || null,
-      category_id: transactionData.category_id || null,
-      tags: transactionData.tags || null,
-      is_recurring: false,
-      recurrence_pattern: null,
-      is_installment: false,
-      installment_number: null,
-      total_installments: null,
-      parent_transaction_id: null,
-      is_reconciled: false
-    };
-
-    // Inserir transação
-    const { data, error } = await supabaseClient
-      .from('transactions')
-      .insert(transaction)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Erro ao criar transação:', error);
-      throw new Error(`Erro ao criar transação: ${error.message}`);
-    }
-
-    // Atualizar saldo da conta se account_id foi fornecido
-    if (transaction.account_id) {
-      const balanceChange = transaction.type === 'income' ? amount : -amount;
-      
-      // Buscar saldo atual
-      const { data: accountData } = await supabaseClient
-        .from('accounts')
-        .select('balance')
-        .eq('id', transaction.account_id)
-        .single();
-
-      if (accountData) {
-        const newBalance = accountData.balance + balanceChange;
-        await supabaseClient
-          .from('accounts')
-          .update({ balance: newBalance })
-          .eq('id', transaction.account_id);
-      }
-    }
-
-    return { success: true, transaction: data };
-  } catch (error: any) {
-    console.error('Erro em createTransaction:', error);
-    return { success: false, error: error.message };
-  }
-}
-
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -195,14 +112,13 @@ Deno.serve(async (req: Request) => {
     // Buscar configuração de IA ativa
     const { data: configData } = await supabaseClient
       .from('ai_configurations')
-      .select('permission_level, can_write_transactions')
+      .select('permission_level')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     const permissionLevel = configData?.permission_level || 'read_aggregated';
-    const canWriteTransactions = configData?.can_write_transactions || false;
 
     // Buscar dados financeiros do usuário
     const userData = await getUserFinancialData(supabaseClient, userId, permissionLevel);
@@ -224,40 +140,6 @@ ${JSON.stringify(userData, null, 2)}
 Use esses dados para fornecer respostas personalizadas e relevantes ao contexto financeiro do usuário.
 Sempre que possível, referencie os dados reais do usuário em suas respostas.`;
 
-    // Adicionar instruções de criação de transações se permitido
-    if (canWriteTransactions) {
-      contextPrompt += `
-
-PERMISSÃO DE ESCRITA ATIVADA:
-Você tem permissão para criar transações em nome do usuário.
-
-Quando o usuário solicitar o cadastro de uma transação (ex: "registre uma despesa de R$ 150 no supermercado"), 
-você deve responder com um JSON no seguinte formato:
-
-{
-  "action": "create_transaction",
-  "transaction_data": {
-    "type": "expense" ou "income",
-    "amount": valor numérico (ex: 150.00),
-    "date": "YYYY-MM-DD" (use a data atual se não especificada),
-    "description": "descrição da transação",
-    "account_id": "id da conta" (use a primeira conta disponível se não especificada),
-    "category_id": "id da categoria" (tente identificar a categoria apropriada)
-  },
-  "confirmation_message": "Mensagem amigável confirmando o que será registrado"
-}
-
-IMPORTANTE:
-- Sempre confirme os detalhes antes de criar
-- Use as contas e categorias disponíveis nos dados do usuário
-- Se não houver conta ou categoria apropriada, informe o usuário
-- Valide que o valor é positivo
-- Use a data atual se não especificada
-
-Contas disponíveis: ${JSON.stringify(userData.accounts_list || [])}
-Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}`;
-    }
-
     const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
       headers: {
@@ -275,7 +157,7 @@ Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}`;
           {
             role: 'model',
             parts: [
-              { text: 'Entendido. Estou pronto para ajudar com questões financeiras usando os dados fornecidos.' + (canWriteTransactions ? ' Posso também criar transações quando solicitado.' : '') }
+              { text: 'Entendido. Estou pronto para ajudar com questões financeiras usando os dados fornecidos.' }
             ]
           },
           {
@@ -322,49 +204,10 @@ Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}`;
       }
     }
 
-    // Verificar se a resposta contém uma solicitação de criação de transação
-    let createdTransactionId = null;
-    let actionType = 'read';
-    let finalResponse = fullResponse || 'Desculpe, não consegui gerar uma resposta.';
-
-    if (canWriteTransactions && fullResponse.includes('"action": "create_transaction"')) {
-      try {
-        // Tentar extrair o JSON da resposta
-        const jsonMatch = fullResponse.match(/\{[\s\S]*"action":\s*"create_transaction"[\s\S]*\}/);
-        if (jsonMatch) {
-          const actionData = JSON.parse(jsonMatch[0]);
-          
-          if (actionData.transaction_data) {
-            // Criar a transação
-            const result = await createTransaction(supabaseClient, userId, actionData.transaction_data);
-            
-            if (result.success) {
-              createdTransactionId = result.transaction.id;
-              actionType = 'write';
-              finalResponse = actionData.confirmation_message || 
-                `✅ Transação registrada com sucesso!\n\n` +
-                `Tipo: ${result.transaction.type === 'income' ? 'Receita' : 'Despesa'}\n` +
-                `Valor: R$ ${result.transaction.amount.toFixed(2)}\n` +
-                `Descrição: ${result.transaction.description || 'Sem descrição'}\n` +
-                `Data: ${result.transaction.date}`;
-            } else {
-              finalResponse = `❌ Erro ao criar transação: ${result.error}\n\nPor favor, verifique os dados e tente novamente.`;
-            }
-          }
-        }
-      } catch (error: any) {
-        console.error('Erro ao processar criação de transação:', error);
-        finalResponse = `❌ Erro ao processar solicitação de criação de transação: ${error.message}`;
-      }
-    }
-
     return new Response(
       JSON.stringify({ 
-        response: finalResponse,
+        response: fullResponse || 'Desculpe, não consegui gerar uma resposta.',
         permission_level: permissionLevel,
-        can_write_transactions: canWriteTransactions,
-        action_type: actionType,
-        created_transaction_id: createdTransactionId,
         data_accessed: Object.keys(userData).filter(k => k !== 'permission_level' && k !== 'user_id')
       }),
       {
@@ -376,7 +219,7 @@ Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}`;
         }
       }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in ai-assistant function:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, MessageSquare, Settings, Shield, Download, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import type { AIChatLog, AIConfiguration } from '@/types/types';
@@ -21,7 +22,8 @@ export default function AIAdmin() {
   const [formData, setFormData] = useState({
     model_name: 'gemini-2.5-flash',
     endpoint: '',
-    permission_level: 'read_aggregated' as 'read_aggregated' | 'read_transactional' | 'read_full'
+    permission_level: 'read_aggregated' as 'read_aggregated' | 'read_transactional' | 'read_full',
+    can_write_transactions: false
   });
   const [apiKey, setApiKey] = useState('');
   const { toast } = useToast();
@@ -46,7 +48,8 @@ export default function AIAdmin() {
         setFormData({
           model_name: activeConfig.model_name || 'gemini-2.5-flash',
           endpoint: activeConfig.endpoint || '',
-          permission_level: activeConfig.permission_level || 'read_aggregated'
+          permission_level: activeConfig.permission_level || 'read_aggregated',
+          can_write_transactions: activeConfig.can_write_transactions || false
         });
       } else {
         // Initialize with default values if no config exists
@@ -54,7 +57,8 @@ export default function AIAdmin() {
         setFormData({
           model_name: 'gemini-2.5-flash',
           endpoint: '',
-          permission_level: 'read_aggregated'
+          permission_level: 'read_aggregated',
+          can_write_transactions: false
         });
       }
     } catch (error: any) {
@@ -216,6 +220,12 @@ export default function AIAdmin() {
                       {config.permission_level === 'read_full' && 'Leitura Completa'}
                     </p>
                     <p className="text-sm">
+                      <span className="font-medium">Criação de Transações:</span>{' '}
+                      <span className={config.can_write_transactions ? 'text-yellow-600' : 'text-muted-foreground'}>
+                        {config.can_write_transactions ? 'Ativada ⚠️' : 'Desativada'}
+                      </span>
+                    </p>
+                    <p className="text-sm">
                       <span className="font-medium">Status:</span>{' '}
                       <span className={config.is_active ? 'text-green-600' : 'text-red-600'}>
                         {config.is_active ? 'Ativo' : 'Inativo'}
@@ -308,6 +318,32 @@ export default function AIAdmin() {
                     <SelectItem value="read_full">Leitura Completa</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="can_write_transactions">Permitir Criação de Transações</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Permite que a IA crie transações em nome do usuário
+                    </p>
+                  </div>
+                  <Switch
+                    id="can_write_transactions"
+                    checked={formData.can_write_transactions}
+                    onCheckedChange={(checked) => setFormData({ ...formData, can_write_transactions: checked })}
+                  />
+                </div>
+                {formData.can_write_transactions && (
+                  <div className="p-3 border border-yellow-500/50 bg-yellow-500/10 rounded-lg">
+                    <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">
+                      ⚠️ Atenção: Com esta permissão ativada, a IA poderá criar transações automaticamente quando solicitado pelo usuário.
+                    </p>
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                      Todas as transações criadas pela IA serão registradas nos logs de auditoria.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 pt-4">

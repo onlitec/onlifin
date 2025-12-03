@@ -72,6 +72,7 @@ export interface AIConfiguration {
   model_name: string;
   endpoint: string | null;
   permission_level: AIPermissionLevel;
+  can_write_transactions: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -84,6 +85,8 @@ export interface AIChatLog {
   response: string | null;
   data_accessed: Record<string, unknown> | null;
   permission_level: AIPermissionLevel;
+  action_type: string;
+  created_transaction_id: string | null;
   created_at: string;
 }
 
