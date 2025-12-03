@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
 
 export default function Transactions() {
@@ -18,6 +18,7 @@ export default function Transactions() {
   const [cards, setCards] = useState<CardType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [formData, setFormData] = useState({
     type: 'expense' as 'income' | 'expense',
     amount: '',
@@ -68,63 +69,123 @@ export default function Transactions() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const baseTransaction = {
-        ...formData,
-        user_id: user.id,
-        amount: Number(formData.amount),
-        category_id: formData.category_id || null,
-        account_id: formData.account_id || null,
-        card_id: formData.card_id || null,
-        is_recurring: formData.is_recurring,
-        is_reconciled: false,
-        recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null,
-        tags: null
-      };
+      if (editingTransaction) {
+        // Update existing transaction
+        await transactionsApi.updateTransaction(editingTransaction.id, {
+          type: formData.type,
+          amount: Number(formData.amount),
+          date: formData.date,
+          description: formData.description,
+          category_id: formData.category_id || null,
+          account_id: formData.account_id || null,
+          card_id: formData.card_id || null,
+          is_recurring: formData.is_recurring,
+          recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null
+        });
+        toast({ title: 'Sucesso', description: 'Transação atualizada com sucesso' });
+      } else {
+        // Create new transaction
+        const baseTransaction = {
+          ...formData,
+          user_id: user.id,
+          amount: Number(formData.amount),
+          category_id: formData.category_id || null,
+          account_id: formData.account_id || null,
+          card_id: formData.card_id || null,
+          is_recurring: formData.is_recurring,
+          is_reconciled: false,
+          recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null,
+          tags: null
+        };
 
-      if (formData.is_installment && Number(formData.total_installments) > 1) {
-        // Create installments
-        const totalInstallments = Number(formData.total_installments);
-        const installmentAmount = Number(formData.amount) / totalInstallments;
-        
-        for (let i = 1; i <= totalInstallments; i++) {
-          const installmentDate = new Date(formData.date);
-          installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+        if (formData.is_installment && Number(formData.total_installments) > 1) {
+          // Create installments
+          const totalInstallments = Number(formData.total_installments);
+          const installmentAmount = Number(formData.amount) / totalInstallments;
           
+          for (let i = 1; i <= totalInstallments; i++) {
+            const installmentDate = new Date(formData.date);
+            installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+            
+            await transactionsApi.createTransaction({
+              ...baseTransaction,
+              amount: installmentAmount,
+              date: installmentDate.toISOString().split('T')[0],
+              description: `${formData.description} (${i}/${totalInstallments})`,
+              installment_number: i,
+              total_installments: totalInstallments,
+              parent_transaction_id: null
+            });
+          }
+          toast({ 
+            title: 'Sucesso', 
+            description: `${totalInstallments} parcelas criadas com sucesso` 
+          });
+        } else {
+          // Create single transaction
           await transactionsApi.createTransaction({
             ...baseTransaction,
-            amount: installmentAmount,
-            date: installmentDate.toISOString().split('T')[0],
-            description: `${formData.description} (${i}/${totalInstallments})`,
-            installment_number: i,
-            total_installments: totalInstallments,
+            date: formData.date,
+            installment_number: null,
+            total_installments: null,
             parent_transaction_id: null
           });
+          toast({ title: 'Sucesso', description: 'Transação criada com sucesso' });
         }
-        toast({ 
-          title: 'Sucesso', 
-          description: `${totalInstallments} parcelas criadas com sucesso` 
-        });
-      } else {
-        // Create single transaction
-        await transactionsApi.createTransaction({
-          ...baseTransaction,
-          date: formData.date,
-          installment_number: null,
-          total_installments: null,
-          parent_transaction_id: null
-        });
-        toast({ title: 'Sucesso', description: 'Transação criada com sucesso' });
       }
 
       setIsDialogOpen(false);
+      setEditingTransaction(null);
       resetForm();
       loadData();
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.message || 'Erro ao criar transação',
+        description: error.message || `Erro ao ${editingTransaction ? 'atualizar' : 'criar'} transação`,
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setFormData({
+      type: transaction.type,
+      amount: transaction.amount.toString(),
+      date: transaction.date,
+      description: transaction.description || '',
+      category_id: transaction.category_id || '',
+      account_id: transaction.account_id || '',
+      card_id: transaction.card_id || '',
+      is_recurring: transaction.is_recurring || false,
+      recurrence_pattern: (transaction.recurrence_pattern || 'monthly') as 'daily' | 'weekly' | 'monthly' | 'yearly',
+      is_installment: false,
+      total_installments: '1'
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta transação?')) return;
+    
+    try {
+      await transactionsApi.deleteTransaction(id);
+      toast({ title: 'Sucesso', description: 'Transação excluída com sucesso' });
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao excluir transação',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingTransaction(null);
+      resetForm();
     }
   };
 
@@ -159,10 +220,7 @@ export default function Transactions() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Transações</h1>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -171,9 +229,9 @@ export default function Transactions() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nova Transação</DialogTitle>
+              <DialogTitle>{editingTransaction ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
               <DialogDescription>
-                Registre uma nova receita ou despesa
+                {editingTransaction ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -296,20 +354,22 @@ export default function Transactions() {
                   </div>
                 )}
 
-                <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox
-                    id="is_installment"
-                    checked={formData.is_installment}
-                    onCheckedChange={(checked) => 
-                      setFormData({ ...formData, is_installment: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="is_installment" className="cursor-pointer">
-                    Parcelar transação
-                  </Label>
-                </div>
+                {!editingTransaction && (
+                  <>
+                    <div className="flex items-center space-x-2 pt-2">
+                      <Checkbox
+                        id="is_installment"
+                        checked={formData.is_installment}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, is_installment: checked as boolean })
+                        }
+                      />
+                      <Label htmlFor="is_installment" className="cursor-pointer">
+                        Parcelar transação
+                      </Label>
+                    </div>
 
-                {formData.is_installment && (
+                    {formData.is_installment && (
                   <div className="space-y-2">
                     <Label htmlFor="installments">Número de Parcelas</Label>
                     <Input
@@ -325,9 +385,11 @@ export default function Transactions() {
                     </p>
                   </div>
                 )}
+                  </>
+                )}
               </div>
               <DialogFooter>
-                <Button type="submit">Criar</Button>
+                <Button type="submit">{editingTransaction ? 'Atualizar' : 'Criar'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -357,8 +419,28 @@ export default function Transactions() {
                     </p>
                   </div>
                 </div>
-                <div className={`text-lg font-bold ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                  {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                <div className="flex items-center gap-4">
+                  <div className={`text-lg font-bold ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                    {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(tx)}
+                      title="Editar transação"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(tx.id)}
+                      title="Excluir transação"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

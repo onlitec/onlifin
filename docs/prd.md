@@ -1,28 +1,32 @@
-# Documento de Requisitos da Plataforma de Gestão Financeira Pessoal\n
+# Documento de Requisitos da Plataforma de Gestão Financeira Pessoal
+
 ## 1. Visão Geral
-\n### 1.1 Nome da Plataforma
+
+### 1.1 Nome da Plataforma
 Plataforma de Gestão Financeira Pessoal com Assistente de IA
-\n### 1.2 Descrição
+
+### 1.2 Descrição
 Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, e oferece um assistente de IA contextual acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados e registrar auditoria de interações.
 
 ## 2. Funcionalidades Principais
 
 ### 2.1 Gestão de Contas e Cartões
 - Cadastro de contas bancárias (nome, banco, agência, conta, moeda)
-- Cadastro de cartões de crédito (limite, data de fechamento, data de vencimento)
-- Visualização de saldos e limites disponíveis
-\n### 2.2 Importação e Conciliação\n- Importação de extratos bancários nos formatos CSV, OFX e QIF
+- Cadastro de cartões de crédito (limite, data de fechamento, data de vencimento)\n- Visualização de saldos e limites disponíveis
+\n### 2.2 Importação e Conciliação
+- Importação de extratos bancários nos formatos CSV, OFX e QIF
 - Mapeamento automático de transações importadas
 - Ferramenta de conciliação manual de lançamentos
 - Classificação automática de transações
 
-### 2.3 Movimentações Financeiras\n- Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
+### 2.3 Movimentações Financeiras
+- Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
+- **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
 - Suporte a pagamentos recorrentes\n- Suporte a receitas recorrentes
 - Controle de parcelamentos com acompanhamento de parcelas
 - Agendamento de compromissos e pagamentos
 - Sistema de alertas para vencimentos\n- **Cadastro de transações pelo modelo de IA: o assistente de IA pode criar transações na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes e parcelamentos**
-
-### 2.4 Controle Financeiro
+\n### 2.4 Controle Financeiro
 - Gestão de contas a pagar e receber
 - Visualização de fluxo de caixa
 - Previsões financeiras simples
@@ -34,7 +38,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 \n### 2.5 Assistente de IA Contextual
 - Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
-- Funcionalidades do assistente:
+- Funcionalidadesdo assistente:
   - Categorização automática de transações
   - Recomendações de economia\n  - Previsão de fluxo de caixa
   - Alertas de vencimentos
@@ -45,10 +49,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Consulta detalhada de extratos de transações
 - Análise de pagamentos e recebimentos
 - Geração e interpretação de relatórios\n- Consulta de saldos em tempo real
-
-### 2.6 Painel de Administração deIA
+\n### 2.6 Painel de Administração deIA
 - Indicador visual de status de configuração:\n  - Badge ou ícone na página de configurações indicando se há modelo de IA configurado
-  - Mensagem clara exibindo 'Modelo Configurado' (com ícone de check verde) ou 'Nenhum Modelo Configurado' (com ícone de alerta laranja)\n  - Exibição do nome do modelo ativo quando configurado
+  - Mensagem clara exibindo 'Modelo Configurado' (com ícone de check verde) ou 'Nenhum Modelo Configurado' (com ícone de alerta laranja)
+  - Exibição do nome do modelo ativo quando configurado
 - Configuração de modelos de IA (seleção de modelo, endpoint, chave de API)
 - Ajuste de prompts-padrão e templates de resposta
 - Controles de permissão de acesso total:\n  - Acesso completo a todas as contas cadastradas
@@ -58,7 +62,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Acesso completo a saldos das contas
   - Acesso completo a extratos de transações
   - **Permissão para cadastro de transações: toggle paraativar/desativar a capacidade do modelo de IA criar transações na plataforma**
-  - Toggle para ativar/desativar acesso total com confirmação e consentimento explícito do usuário
+  - Toggle paraativar/desativar acesso total com confirmação e consentimento explícito do usuário
 - Logs e histórico de conversas com IA
 - Registro de auditoria detalhado:\n  - Quem ativou o acesso total
   - Quando foi ativado
@@ -78,7 +82,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 ### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
 - RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário
-- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
+- Consentimento explícito e informado do usuário para conceder acesso total do modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
   - Transações completas
   - Pagamentos e recebimentos
   - Relatórios financeiros
@@ -88,8 +92,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Termo de consentimento detalhado explicando o escopo do acesso total e da permissão de cadastro
 - Opção de revogar acesso total e permissão de cadastro a qualquer momento
 
-### 3.3 Auditoria
-- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
+### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
 - Auditoria de ações de usuários humanos
 - Log de todas as consultas do modelo de IA aos dados da plataforma
 - **Log detalhado de todas as transações criadas pelo modelo de IA, incluindo timestamp, usuário solicitante, dados da transação e confirmação de execução**
@@ -106,15 +109,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 ### 5.1 Monitoramento
 - Sistema de logs estruturados
-- Métricas de uso do assistente de IA
+- Métricas de usodo assistente de IA
 - Alertas para erros e falhas de importação
-- Monitoramento de acessos do modelo de IA aos dados
-- **Monitoramento de transações criadas pelo modelo de IA**
+- Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de transações criadas pelo modelo de IA**
 \n### 5.2 Backup e Recuperação
 - Backup automático do banco de dados
 - Procedimentos documentados de recuperação de desastres
 \n## 6. Arquitetura Técnica
-\n### 6.1 Stack Tecnológica
+
+### 6.1 Stack Tecnológica
 - Backend: Flask ou FastAPI
 - Banco de dados: PostgreSQL
 - Frontend: React\n- Containerização: Docker / docker-compose
@@ -140,8 +143,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
-- Cadastro de contas e cartões\n- Importação de extratos CSV/OFX
-- CRUD de transações
+- Cadastro de contas e cartões
+- Importação de extratos CSV/OFX
+- CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
 - Conciliação manual\n- Dashboard básico com visualizações principais
 - Assistente de IA com acesso total configurável a:\n  - Todas as contas cadastradas
   - Todas as transações (receitas e despesas)
@@ -149,8 +153,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Saldos de todas as contas
   - Extratos completos de transações
   - **Permissão para cadastro de transações mediante solicitação do usuário**\n- Botão de chat comIA nas telas principais
-- Painel de administração com:\n  - Indicador visual de status de configuração
-  - Configuração de modelo de IA
+- Painel de administração com:
+  - Indicador visual de status de configuração\n  - Configuração de modelo de IA
   - Toggle de acesso total com termo de consentimento
   - **Toggle de permissão para cadastro de transações pelo modelo de IA**
   - Logs detalhados de chat e acessos do modelo de IA
@@ -159,7 +163,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 ### 7.2 Versões Futuras (1.1 / 1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
-- Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
+- Importação automatizada OFX
+- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
 - Aplicativo móvel\n\n## 8. Estilo de Design
 
 ### 8.1 Paleta de Cores
@@ -171,7 +176,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Sidebar fixa com navegação principal
 - Dashboard com grid responsivo para visualização de métricas
 \n### 8.3 Elementos Visuais
-- Ícones minimalistas para categorias e ações
+- Ícones minimalistas para categorias eações
 - Gráficos limpos e legíveis (linhas para fluxo de caixa, pizza para categorias)
 - Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito
 - Bordas suaves com raio de 8px para cards e botões
