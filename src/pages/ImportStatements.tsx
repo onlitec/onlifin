@@ -213,6 +213,11 @@ export default function ImportStatements() {
       if (catError) throw catError;
       setExistingCategories(categories || []);
 
+      console.log('Enviando para IA:', {
+        transactionCount: parsed.length,
+        categoryCount: categories?.length || 0
+      });
+
       // Send to AI for categorization
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
@@ -222,12 +227,25 @@ export default function ImportStatements() {
         },
       });
 
+      console.log('Resposta da IA:', { data, error });
+
       if (error) {
+        console.error('Erro da Edge Function:', error);
         const errorMsg = await error?.context?.text();
+        console.error('Mensagem de erro:', errorMsg);
         throw new Error(errorMsg || 'Erro ao analisar transações');
       }
 
+      if (!data) {
+        throw new Error('Resposta vazia da IA');
+      }
+
       const result = data;
+      
+      if (!result.categorizedTransactions || result.categorizedTransactions.length === 0) {
+        throw new Error('IA não retornou transações categorizadas');
+      }
+
       setCategorizedTransactions(result.categorizedTransactions || []);
       setNewCategorySuggestions(result.newCategories || []);
       setStep('review');
@@ -237,6 +255,7 @@ export default function ImportStatements() {
         description: `${parsed.length} transações analisadas e categorizadas`,
       });
     } catch (error: any) {
+      console.error('Erro completo:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao analisar transações',

@@ -7,6 +7,7 @@ import Reports from './pages/Reports';
 import Import from './pages/Import';
 import ImportStatements from './pages/ImportStatements';
 import Reconciliation from './pages/Reconciliation';
+import Chat from './pages/Chat';
 import Admin from './pages/Admin';
 import AIAdmin from './pages/AIAdmin';
 import UserManagement from './pages/UserManagement';
@@ -76,6 +77,12 @@ const routes: RouteConfig[] = [
     name: 'Relatórios',
     path: '/reports',
     element: <Reports />,
+    visible: true
+  },
+  {
+    name: 'Assistente IA',
+    path: '/chat',
+    element: <Chat />,
     visible: true
   },
   {

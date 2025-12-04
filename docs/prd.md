@@ -23,22 +23,34 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Visualização de limites disponíveis de cartões de crédito
 \n### 2.2 Importação e Conciliação\n- Importação de extratos bancários nos formatos CSV, OFX e QIF
 - **Importação de extratos diretamente no chat ou interface da plataforma**
+- **Importação de extratos via upload no chatbot do assistente de IA**
 - Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
 - Classificação automática de transações\n\n### 2.3 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
+  - **Trigger automático: ao concluir a importação de extrato (via interface principal ou chatbot), o sistema aciona automaticamente o modelo de IA para análise**
   - O modelo de IA analisa cada transação do extrato utilizando:
     - Descrição da transação
-    - Título ou nome do estabelecimento\n    - Valor e data da transação (opcional)
-  - Com base nessas informações, o modelo sugere a categoria apropriada para cada transação, escolhendo entre categorias já existentes no sistema\n- **Sugestão de novas categorias:**
-  - Quando o modelo identificar padrões ou estabelecimentos que não se encaixam nas categorias existentes, ele sugere a criação de uma nova categoria\n  - As categorias sugeridas são exibidas com checkboxes, permitindo ao usuário selecionar quais criar
+    - Título ou nomedo estabelecimento
+    - Valor e data da transação (opcional)
+  - Com base nessas informações, o modelo sugere a categoria apropriada para cada transação, escolhendo entre categorias já existentes no sistema
+- **Sugestão de novas categorias:**
+  - Quando o modelo identificar padrões ou estabelecimentos que não se encaixam nas categorias existentes, ele sugere a criação de uma nova categoria
+  - As categorias sugeridas são exibidas com checkboxes, permitindo ao usuário selecionar quais criar
 - **Cadastro automático de transações:**
-  - Ao clicar em 'Cadastrar Transações', o sistema:\n    - Cria automaticamente as categorias novas selecionadas pelo usuário
+  - Ao clicar em'Cadastrar Transações', o sistema:\n    - Cria automaticamente as categorias novas selecionadas pelo usuário
     - Registra as transações nas categorias correspondentes (existentes ou recém-criadas)
 - **Interface de revisão:**
-  - Exibiçãodo extrato com transações e categorias sugeridas lado a lado
-  - Possibilidade de edição manual antes do cadastro final\n- **Aprendizado contínuo:**
+  - Exibição do extrato com transações e categorias sugeridas lado a lado
+  - Possibilidade de edição manual antes do cadastro final
+- **Aprendizado contínuo:**
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
+- **Fluxo de análise via chatbot:**
+  - Usuário faz upload do extrato no chatbot
+  - Sistema processa o arquivo e aciona automaticamente a análise do modelo de IA
+  - Chatbot exibe as categorias sugeridas e permite revisão inline
+  - Usuário confirma ou edita as sugestões diretamente no chat
+  - Sistema cadastra as transações conforme aprovação do usuário
 
 ### 2.4 Movimentações Financeiras
 - Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
@@ -51,21 +63,25 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Gestão de contas a pagar e receber
 - Visualização de fluxo de caixa
 - Previsões financeiras simples
-- Relatórios e dashboards:\n  - Saldo por conta (com cálculo automático baseado em receitas e despesas)\n  - Despesas por categoria
-  - Histórico mensal
-  - Projeção de fluxo de caixa
+- Relatórios e dashboards:\n  - Saldo por conta (com cálculo automático baseado em receitas e despesas)
+  - Despesas por categoria
+  - Histórico mensal\n  - Projeção de fluxo de caixa
 - Exportação de relatórios em CSV, Excel e PDF
-
-### 2.6 Assistente de IA Contextual\n- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
+\n### 2.6 Assistente de IA Contextual
+- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
-- Funcionalidadesdo assistente:
-  - Categorização automática de transações
+- **Funcionalidade de upload de extrato bancário diretamente no chatbot:**
+  - Suporte aos formatos CSV, OFX e QIF
+  - Processamento automático do arquivo após upload
+  - Acionamento automático da análise e categorização pelo modelo de IA
+  - Exibição das sugestões de categorias diretamente no chat
+  - Interface de revisão e confirmação inline no chatbot
+- Funcionalidadesdo assistente:\n  - Categorização automática de transações
   - Recomendações de economia\n  - Previsão de fluxo de caixa
   - Alertas de vencimentos
   - Simulações de parcelamento
   - Sugestões de orçamento
-  - **Cadastro de transações mediante solicitação do usuário (receitas, despesas, pagamentos recorrentes, parcelamentos)**
-  - **Análise e categorização automática de extratos bancários importados**
+  - **Cadastro de transações mediante solicitação do usuário (receitas, despesas, pagamentos recorrentes, parcelamentos)**\n  - **Análise e categorização automática de extratos bancários importados (via interface ou chatbot)**
   - **Sugestão de novas categorias baseadas em padrões identificados**
 - Análise completa de contas cadastradas
 - Consulta detalhada de extratos de transações
@@ -89,14 +105,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Permissão para cadastro de transações: toggle paraativar/desativar a capacidade do modelo de IA criar transações na plataforma**
   - **Permissão para análise e categorização automática de extratos bancários**
   - Toggle para ativar/desativar acesso total com confirmação e consentimento explícito do usuário
-- Logs e histórico de conversas com IA
+- Logs e histórico de conversas comIA
 - Registro de auditoria detalhado:\n  - Quem ativou o acesso total
   - Quando foi ativado
   - Finalidade declarada
   - Histórico de consultas realizadas pelo modelo de IA
   - Dados acessados em cada interação
   - **Registro de todas as transações criadas pelo modelo de IA (data, hora, tipo, valor, usuário solicitante)**
-  - **Registro de análises e categorizações automáticas realizadas pelo modelo de IA**\n- Opções de apagar ou exportar histórico conforme políticas de retenção\n
+  - **Registro de análises e categorizações automáticas realizadas pelo modelo de IA**
+- Opções de apagar ou exportar histórico conforme políticas de retenção\n
 ### 2.8 Gestão de Plugins
 - **Cadastro e configuração de plugins na plataforma**
 - **Interface de gerenciamento de plugins com as seguintes funcionalidades:**
@@ -200,7 +217,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Atualiza saldo automaticamente ao registrar, editar ou excluir transações
   - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
 - **Módulo de análise e categorização automática:**
-  - Processa extratos importados e identifica padrões\n  - Sugere categorias existentes ou novas categorias\n  - Permite revisão e edição manual antes do cadastro\n  - Aprende com confirmações e correções do usuário
+  - **Trigger automático ao concluir importação de extrato (interface ou chatbot)**
+  - Processa extratos importados e identifica padrões\n  - Sugere categorias existentes ou novas categorias
+  - Permite revisão e edição manual antes do cadastro\n  - Aprende com confirmações e correções do usuário
+  - **Suporte a upload e processamento de extrato via chatbot**
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
 - Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**
 - **Módulo de validação e confirmação para transações criadas pelo modelo de IA**\n- **Módulo de validação e sandbox para execução segura de plugins**
@@ -211,17 +231,19 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Testes de acessodo modelo de IA aos dados
 - **Testes de cadastro de transações pelo modelo de IA, incluindo validação de dados e auditoria**
 - **Testes de análise e categorização automática:**
+  - Validação de trigger automático após importação
   - Validação de sugestões de categorias existentes
   - Validação de sugestões de novas categorias
   - Validação de cadastro automático de transações categorizadas
-  - Validação de aprendizado contínuo do modelo
+  - Validação de aprendizado contínuo do modelo\n  - **Validação de upload e processamento de extrato via chatbot**
 - **Testes de cálculo de saldo em tempo real:**
   - Validação de cálculo correto ao adicionar receitas (aumento de saldo)
   - Validação de cálculo correto ao adicionar despesas (diminuição de saldo)
   - Validação de atualização de saldo ao editar ou excluir transações
 - **Testes de integração com plugins**
 - **Testes de segurança e isolamento de plugins**
-\n## 7. Escopodo MVP
+
+## 7. Escopodo MVP
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
@@ -229,10 +251,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas e despesas pagas**
 - Importação de extratos CSV/OFX
 - **Importação de extratos diretamente no chat ou interface**
+- **Upload de extrato bancário via chatbotdo assistente de IA**
 - **Análise e categorização automática de transações comIA:**
-  - Sugestão de categorias existentes\n  - Sugestão de novas categorias com checkboxes
-  - Interface de revisão antes do cadastro\n  - Cadastro automático de transações categorizadas
+  - **Trigger automático ao concluir importação (interface ou chatbot)**
+  - Sugestão de categorias existentes
+  - Sugestão de novas categorias com checkboxes
+  - Interface de revisão antes do cadastro
+  - Cadastro automático de transações categorizadas
   - Aprendizado contínuo baseado em confirmações do usuário
+  - **Fluxo completo de análise via chatbot com revisão inline**
 - CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
 - Conciliação manual\n- Dashboard básico com visualizações principais
@@ -253,7 +280,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Configuração de permissões para plugins**
   - Logs detalhados de chat e acessos do modelo de IA
   - **Logs de transações criadas pelo modelo de IA**
-  - **Logs de análises e categorizações automáticas**\n  - **Logs de ações executadas por plugins**
+  - **Logs de análises e categorizações automáticas**\n  - **Logs deações executadas por plugins**
 - Relatório de auditoria de acessos
 \n### 7.2 Versões Futuras (1.1 / 1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
@@ -269,9 +296,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Sidebar fixa com navegação principal
 - Dashboard com grid responsivo para visualização de métricas
 \n### 8.3 Elementos Visuais
-- Ícones minimalistas para categorias e ações
+-Ícones minimalistas para categorias e ações
 - Gráficos limpos e legíveis (linhas para fluxo de caixa, pizza para categorias)
 - Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito
+- **Ícone de upload de arquivo no chatbot para importação de extrato**
 - Bordas suaves com raio de 8px para cards e botões
 - Sombras sutis para criar hierarquia visual
 - Badge de status com ícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração
@@ -281,7 +309,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Badge de status para plugins (ícone de check verde paraativo, ícone cinza para inativo)**
 - **Ícone de engrenagem para acesso às configurações de plugins**
 - **Exibição destacada do saldo atual da conta na página de contas com formatação clara (valor em negrito, cor verde para saldo positivo, cor vermelha para saldo negativo)**
-- **Interface de revisão de categorizações com checkboxes para seleção de novas categorias e botão 'Cadastrar Transações' em destaque**
+- **Interface de revisão de categorizações com checkboxes para seleção de novas categorias e botão'Cadastrar Transações' em destaque**
 
 ## 9. Referências de Interface
 

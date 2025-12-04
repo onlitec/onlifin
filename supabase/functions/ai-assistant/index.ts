@@ -171,6 +171,11 @@ async function createTransaction(supabaseClient: any, userId: string, transactio
 // Função para categorizar transações usando IA
 async function categorizeTransactions(transactions: any[], existingCategories: any[]) {
   try {
+    console.log('Iniciando categorização:', {
+      transactionCount: transactions.length,
+      categoryCount: existingCategories.length
+    });
+
     const APP_ID = Deno.env.get('VITE_APP_ID') || 'app-7xkeeoe4bsap';
     const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-2.5-flash:generateContent`;
 
@@ -224,6 +229,8 @@ REGRAS IMPORTANTES:
 
 Responda APENAS com o JSON, sem texto adicional.`;
 
+    console.log('Enviando requisição para Gemini API...');
+
     const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
       headers: {
@@ -241,19 +248,30 @@ Responda APENAS com o JSON, sem texto adicional.`;
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Erro da Gemini API:', errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('Resposta da Gemini API recebida');
+    
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('Texto da resposta:', text.substring(0, 200) + '...');
     
     // Extrair JSON da resposta
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error('Resposta não contém JSON:', text);
       throw new Error('Resposta da IA não contém JSON válido');
     }
 
     const result = JSON.parse(jsonMatch[0]);
+    console.log('JSON parseado com sucesso:', {
+      categorizedCount: result.categorizedTransactions?.length || 0,
+      newCategoriesCount: result.newCategories?.length || 0
+    });
+
     return result;
   } catch (error: any) {
     console.error('Erro ao categorizar transações:', error);
@@ -273,7 +291,13 @@ Deno.serve(async (req: Request) => {
 
     // Handle categorization action
     if (action === 'categorize_transactions') {
+      console.log('Recebida requisição de categorização:', {
+        transactionCount: transactions?.length || 0,
+        categoryCount: existingCategories?.length || 0
+      });
+
       if (!transactions || !Array.isArray(transactions)) {
+        console.error('Transactions array inválido');
         return new Response(
           JSON.stringify({ error: 'Transactions array is required' }),
           { 
@@ -285,6 +309,7 @@ Deno.serve(async (req: Request) => {
 
       try {
         const result = await categorizeTransactions(transactions, existingCategories || []);
+        console.log('Categorização concluída com sucesso');
         return new Response(
           JSON.stringify(result),
           { 
@@ -293,6 +318,7 @@ Deno.serve(async (req: Request) => {
           }
         );
       } catch (error: any) {
+        console.error('Erro na categorização:', error);
         return new Response(
           JSON.stringify({ error: error.message || 'Erro ao categorizar transações' }),
           { 

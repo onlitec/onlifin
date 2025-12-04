@@ -1,0 +1,397 @@
+import { useState, useRef, useEffect } from 'react';
+import { supabase } from '@/db/supabase';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
+import { Bot, User, Send, Loader2, Paperclip, FileText, X } from 'lucide-react';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export default function Chat() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: 'assistant',
+      content: 'Olá! Sou seu assistente financeiro. Como posso ajudar você hoje?\n\nVocê pode:\n• Fazer perguntas sobre suas finanças\n• Pedir análises de gastos\n• Solicitar dicas de economia\n• Enviar um extrato bancário para categorização automática',
+      timestamp: new Date()
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileContent, setFileContent] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    const validTypes = ['.csv', '.txt'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    
+    if (!validTypes.includes(fileExtension)) {
+      toast({
+        title: 'Arquivo inválido',
+        description: 'Por favor, envie um arquivo CSV ou TXT',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: 'O arquivo deve ter no máximo 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      setSelectedFile(file);
+      setFileContent(text);
+      toast({
+        title: 'Arquivo carregado',
+        description: `${file.name} pronto para envio`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao ler arquivo',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    setFileContent('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const parseCSV = (content: string) => {
+    const lines = content.trim().split('\n');
+    const transactions: any[] = [];
+    const startIndex = lines[0].toLowerCase().includes('data') ? 1 : 0;
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const fields: string[] = [];
+      let currentField = '';
+      let inQuotes = false;
+
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          fields.push(currentField.trim());
+          currentField = '';
+        } else {
+          currentField += char;
+        }
+      }
+      fields.push(currentField.trim());
+
+      if (fields.length >= 3) {
+        const [dateStr, description, amountStr] = fields;
+        const amount = Math.abs(parseFloat(amountStr.replace(/[^\d.,-]/g, '').replace(',', '.')));
+        
+        if (!isNaN(amount) && amount > 0) {
+          const isNegative = amountStr.includes('-');
+          const type = isNegative ? 'expense' : 'income';
+
+          transactions.push({
+            date: dateStr,
+            description: description.replace(/^"|"$/g, ''),
+            amount,
+            type,
+            merchant: description.replace(/^"|"$/g, '').split(' ')[0],
+          });
+        }
+      }
+    }
+
+    return transactions;
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() && !selectedFile) return;
+
+    const userMessage = selectedFile 
+      ? `${input || 'Analise este extrato bancário e categorize as transações'}\n\n[Arquivo anexado: ${selectedFile.name}]`
+      : input;
+
+    const newUserMessage: Message = {
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, newUserMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // If there's a file, process it for categorization
+      if (selectedFile && fileContent) {
+        const parsed = parseCSV(fileContent);
+        
+        if (parsed.length === 0) {
+          throw new Error('Nenhuma transação encontrada no arquivo');
+        }
+
+        // Get existing categories
+        const { data: categories } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('user_id', user.id);
+
+        // Send to AI for categorization
+        const { data, error } = await supabase.functions.invoke('ai-assistant', {
+          body: {
+            action: 'categorize_transactions',
+            transactions: parsed,
+            existingCategories: categories || [],
+          },
+        });
+
+        if (error) {
+          const errorMsg = await error?.context?.text();
+          throw new Error(errorMsg || 'Erro ao analisar transações');
+        }
+
+        const result = data;
+        const categorized = result.categorizedTransactions || [];
+        const newCategories = result.newCategories || [];
+
+        // Format response
+        let response = `✅ Análise concluída!\n\n`;
+        response += `📊 **${parsed.length} transações** encontradas no extrato\n\n`;
+        
+        if (newCategories.length > 0) {
+          response += `💡 **Novas categorias sugeridas:**\n`;
+          newCategories.forEach((cat: any) => {
+            response += `• ${cat.name} (${cat.type === 'income' ? 'Receita' : 'Despesa'})\n`;
+          });
+          response += `\n`;
+        }
+
+        response += `📋 **Resumo das transações:**\n\n`;
+        
+        // Group by category
+        const byCategory: any = {};
+        categorized.forEach((t: any) => {
+          const cat = t.suggestedCategory;
+          if (!byCategory[cat]) {
+            byCategory[cat] = { count: 0, total: 0, type: t.type };
+          }
+          byCategory[cat].count++;
+          byCategory[cat].total += t.amount;
+        });
+
+        Object.entries(byCategory).forEach(([cat, data]: [string, any]) => {
+          const emoji = data.type === 'income' ? '💰' : '💸';
+          response += `${emoji} **${cat}**: ${data.count} transações - R$ ${data.total.toFixed(2)}\n`;
+        });
+
+        response += `\n🔗 Para importar essas transações, acesse a página [Importar Extrato](/import-statements)`;
+
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: response,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        removeFile();
+      } else {
+        // Regular chat message
+        const { data, error } = await supabase.functions.invoke('ai-assistant', {
+          body: {
+            message: input,
+            userId: user.id,
+          },
+        });
+
+        if (error) {
+          const errorMsg = await error?.context?.text();
+          throw new Error(errorMsg || 'Erro ao enviar mensagem');
+        }
+
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.response || 'Desculpe, não consegui processar sua mensagem.',
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao enviar mensagem',
+        variant: 'destructive',
+      });
+
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: `❌ Erro: ${error.message || 'Não foi possível processar sua solicitação'}`,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-6 h-[calc(100vh-8rem)]">
+      <Card className="h-full flex flex-col">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-6 w-6" />
+            Assistente Financeiro IA
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+          <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
+            <div className="space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {message.role === 'assistant' && (
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <Bot className="h-5 w-5 text-primary-foreground" />
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[80%] rounded-lg p-4 ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                    <p className="text-xs opacity-70 mt-2">
+                      {message.timestamp.toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  {message.role === 'user' && (
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                        <User className="h-5 w-5" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex gap-3 justify-start">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                      <Bot className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div className="bg-muted rounded-lg p-4">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          {selectedFile && (
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+              <span className="flex-1 text-sm">{selectedFile.name}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={removeFile}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.txt"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+            >
+              <Paperclip className="h-5 w-5" />
+            </Button>
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Digite sua mensagem ou anexe um extrato bancário..."
+              className="flex-1 min-h-[60px] max-h-[120px]"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={handleSend}
+              disabled={isLoading || (!input.trim() && !selectedFile)}
+              size="icon"
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
