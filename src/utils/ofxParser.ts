@@ -40,13 +40,17 @@ function parseOFXAmount(amountStr: string): number {
  */
 function sgmlToXml(sgml: string): string {
   try {
+    console.log('=== INÍCIO DA CONVERSÃO SGML -> XML ===');
+    
     // Se já é XML válido, retorna como está
     if (sgml.includes('<?xml')) {
+      console.log('Arquivo já é XML válido, retornando sem conversão');
       return sgml;
     }
 
     // Remove headers OFX e pega apenas o conteúdo
     let content = sgml.replace(/^[\s\S]*?<OFX>/i, '<OFX>');
+    console.log('Conteúdo após remover headers (primeiros 300 chars):', content.substring(0, 300));
     
     // Remove quebras de linha para processar como stream contínuo
     // Mas mantém espaços para preservar estrutura
@@ -59,15 +63,25 @@ function sgmlToXml(sgml: string): string {
     const stack: string[] = [];
     let lastIndex = 0;
     let match;
+    let matchCount = 0;
     
     // Reset regex
     tagPattern.lastIndex = 0;
+    
+    console.log('Iniciando processamento de tags...');
     
     while ((match = tagPattern.exec(content)) !== null) {
       const fullMatch = match[0];
       const tagName = match[1];
       const afterTag = match[2];
       const isClosing = fullMatch.startsWith('</');
+      
+      matchCount++;
+      
+      // Log das primeiras 10 tags para debug
+      if (matchCount <= 10) {
+        console.log(`Tag ${matchCount}: ${isClosing ? 'CLOSE' : 'OPEN'} <${tagName}>, afterTag: "${afterTag.substring(0, 30)}${afterTag.length > 30 ? '...' : ''}"`);
+      }
       
       if (isClosing) {
         // Tag de fechamento - apenas adiciona
@@ -96,13 +110,21 @@ function sgmlToXml(sgml: string): string {
       lastIndex = tagPattern.lastIndex;
     }
     
+    console.log(`Total de tags processadas: ${matchCount}`);
+    console.log(`Tags ainda abertas no stack: ${stack.length > 0 ? stack.join(', ') : 'nenhuma'}`);
+    
     // Fecha tags que ficaram abertas (não deveria acontecer em OFX válido)
     while (stack.length > 0) {
       const tag = stack.pop();
+      console.log(`Fechando tag que ficou aberta: ${tag}`);
       result.push(`</${tag}>`);
     }
     
-    return result.join('\n');
+    const xmlResult = result.join('\n');
+    console.log('XML gerado (primeiros 500 chars):', xmlResult.substring(0, 500));
+    console.log('=== FIM DA CONVERSÃO ===');
+    
+    return xmlResult;
   } catch (error) {
     console.error('Erro na conversão SGML para XML:', error);
     return sgml;
@@ -114,19 +136,29 @@ function sgmlToXml(sgml: string): string {
  */
 function parseXML(xml: string): Document | null {
   try {
+    console.log('=== INÍCIO DO PARSE XML ===');
+    console.log('Tamanho do XML:', xml.length, 'caracteres');
+    
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'text/xml');
     
     // Verifica se houve erro no parsing
     const parserError = doc.querySelector('parsererror');
     if (parserError) {
-      console.error('Erro ao fazer parse do XML:', parserError.textContent);
+      console.error('❌ ERRO NO PARSE XML:');
+      console.error('Mensagem de erro:', parserError.textContent);
+      console.error('XML que causou o erro (primeiros 1000 chars):');
+      console.error(xml.substring(0, 1000));
       return null;
     }
     
+    console.log('✅ Parse XML bem-sucedido');
+    console.log('Root element:', doc.documentElement?.tagName);
+    console.log('=== FIM DO PARSE XML ===');
+    
     return doc;
   } catch (error) {
-    console.error('Erro ao fazer parse do XML:', error);
+    console.error('❌ Exceção ao fazer parse do XML:', error);
     return null;
   }
 }
