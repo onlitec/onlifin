@@ -46,18 +46,52 @@ function sgmlToXml(sgml: string): string {
     // Remove headers OFX e pega apenas o conteúdo
     let content = sgml.replace(/^[\s\S]*?<OFX>/i, '<OFX>');
     
-    // Regex para encontrar tags SGML: <TAG>valor ou <TAG> (sem fechamento)
-    // Substitui por XML válido: <TAG>valor</TAG>
-    content = content.replace(/<([A-Z0-9_.]+)>([^<\n]+)/gi, (match, tag, value) => {
-      // Se o valor já termina com tag de fechamento, não adiciona
-      if (value.trim().endsWith(`</${tag}>`)) {
-        return match;
-      }
-      // Adiciona tag de fechamento
-      return `<${tag}>${value.trim()}</${tag}>`;
-    });
+    // Processa linha por linha
+    const lines = content.split('\n');
+    const result: string[] = [];
     
-    return content;
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+      
+      // Pula linhas vazias
+      if (!line) {
+        result.push('');
+        continue;
+      }
+      
+      // Se já é uma tag de fechamento, mantém
+      if (line.match(/^<\/[A-Z0-9_.]+>$/i)) {
+        result.push(line);
+        continue;
+      }
+      
+      // Verifica se é uma tag de abertura com valor inline
+      const inlineMatch = line.match(/^<([A-Z0-9_.]+)>(.+)$/i);
+      if (inlineMatch) {
+        const tagName = inlineMatch[1];
+        const value = inlineMatch[2].trim();
+        
+        // Se o valor já tem tag de fechamento, mantém
+        if (value.includes(`</${tagName}>`)) {
+          result.push(line);
+        } else {
+          // Adiciona tag de fechamento
+          result.push(`<${tagName}>${value}</${tagName}>`);
+        }
+        continue;
+      }
+      
+      // Tag de abertura sem valor (container) - mantém como está
+      if (line.match(/^<[A-Z0-9_.]+>$/i)) {
+        result.push(line);
+        continue;
+      }
+      
+      // Qualquer outra linha, mantém
+      result.push(line);
+    }
+    
+    return result.join('\n');
   } catch (error) {
     console.error('Erro na conversão SGML para XML:', error);
     return sgml;
