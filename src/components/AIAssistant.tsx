@@ -137,15 +137,19 @@ export default function AIAssistant() {
                 {messages.length === 0 && (
                   <div className="text-center text-muted-foreground text-sm">
                     <p>Olá! 👋</p>
-                    <p className="mt-2">Entendido, vou atuar como assistente financeiro sem consultar a documentação do site.</p>
-                    <p className="mt-2">Estou aqui para ajudar você com:</p>
+                    <p className="mt-2">Sou seu assistente financeiro com IA.</p>
+                    <p className="mt-2">Posso ajudar você com:</p>
                     <ul className="mt-2 text-left space-y-1">
-                      <li>💰 **Categorização de transações** (identificar e organizar seus gastos)</li>
+                      <li>✅ **Criar transações** (ex: "registre uma despesa de R$ 150 no supermercado")</li>
+                      <li>🏷️ **Categorizar transações** (ex: "categorize minhas transações sem categoria")</li>
                       <li>💡 **Dicas de economia** (como economizar no dia a dia)</li>
                       <li>📊 **Análise de gastos** (entender para onde vai seu dinheiro)</li>
                       <li>📅 **Planejamento financeiro** (metas, orçamento, investimentos)</li>
                       <li>🧮 **Conceitos financeiros** (explicar termos e estratégias)</li>
                     </ul>
+                    <p className="mt-3 text-xs text-yellow-600">
+                      ⚠️ Permissões de escrita ativadas - posso criar e modificar dados
+                    </p>
                   </div>
                 )}
                 {messages.map((msg, idx) => (

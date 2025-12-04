@@ -6,7 +6,7 @@
 Plataforma de Gestão Financeira Pessoal com Assistente de IA
 
 ### 1.2 Descrição
-Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, e oferece um assistente de IA contextual acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados, configurar plugins e registrar auditoria de interações.
+Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, e oferece um assistente de IA contextual acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações.
 
 ## 2. Funcionalidades Principais
 
@@ -57,8 +57,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
       - Cada transação é registrada na categoria selecionada no dropdown correspondente
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
 - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações\n
-### 2.3 Análise e Categorização Automática de Transações com IA
+- Classificação automática de transações\n\n### 2.3 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
   - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
@@ -79,22 +78,20 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Aprendizado contínuo:**
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
-
-### 2.4 Movimentações Financeiras
+\n### 2.4 Movimentações Financeiras
 - Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
 - Suporte a pagamentos recorrentes\n- Suporte a receitas recorrentes
 - Controle de parcelamentos com acompanhamento de parcelas
 - Agendamento de compromissos e pagamentos
-- Sistema de alertas para vencimentos\n- **Cadastro de transações pelo modelo de IA: o assistente de IA pode criar transações na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes e parcelamentos**\n
+- Sistema de alertas para vencimentos\n- **Cadastro de transações pelo modelo de IA: o assistente de IA pode criar, editar e excluir transações na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes e parcelamentos**\n
 ### 2.5 Controle Financeiro
 - Gestão de contas a pagar e receber
 - Visualização de fluxo de caixa
 - Previsões financeiras simples
 - **Dashboard expandido com indicadores financeiros e gráficos:**
-  - **Seletor de mês para visualização de dados históricos:**
-    - Dropdown ou calendário para seleção de mês específico
+  - **Seletor de mês para visualização de dados históricos:**\n    - Dropdown ou calendário para seleção de mês específico
     - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
     - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
     - Possibilidade de comparar dados de diferentes meses lado a lado
@@ -147,7 +144,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Alertas de vencimentos
   - Simulações de parcelamento
   - Sugestões de orçamento
-  - **Cadastro de transações mediante solicitação do usuário (receitas, despesas, pagamentos recorrentes, parcelamentos)**
+  - **Cadastro, edição e exclusão de transações mediante solicitação do usuário (receitas, despesas, pagamentos recorrentes, parcelamentos)**
+  - **Criação, edição e exclusão de categorias mediante solicitação do usuário**
   - **Análise e categorização automática de extratos bancários importados via chatbot**
   - **Sugestão de novas categorias baseadas em padrões identificados**
   - **Interpretação de gráficos e indicadores do dashboard**
@@ -165,21 +163,29 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Exibição do nome do modelo ativo quando configurado
 - Configuração de modelos de IA (seleção de modelo, endpoint, chave de API)
 - Ajuste de prompts-padrão e templates de resposta
-- Controles de permissão de acesso total:\n  - Acesso completo a todas as contas cadastradas
-  - Acesso completo a todas as transações (receitas e despesas)
-  - Acesso completo a pagamentos e recebimentos
-  - Acesso completo a relatórios financeiros
-  - Acesso completo a saldos das contas
-  - Acesso completo a extratos de transações
-  - **Permissão para cadastro de transações: toggle paraativar/desativar a capacidade do modelo de IA criar transações na plataforma**
-  - **Permissão para análise e categorização automática de extratos bancários**\n  - Toggle para ativar/desativar acesso total com confirmação e consentimento explícito do usuário
+- **Controles de permissão de acesso completo (leitura e escrita):**
+  - **Permissão de leitura (read_full):**
+    - Acesso completo a todas as contas cadastradas
+    - Acesso completo a todas as transações (receitas e despesas)
+    - Acesso completo a pagamentos e recebimentos
+    - Acesso completo a relatórios financeiros
+    - Acesso completo a saldos das contas
+    - Acesso completo a extratos de transações
+  - **Permissão de escrita (write_full):**
+    - **Permissão para criar, editar e excluir transações: toggle paraativar/desativar a capacidade do modelo de IA modificar transações na plataforma**
+    - **Permissão para criar, editar e excluir categorias: toggle para ativar/desativar a capacidade do modelo de IA modificar categorias**
+    - **Permissão para análise e categorização automática de extratos bancários com cadastro direto no banco de dados**
+    - **Permissão para modificar contas e cartões (opcional, desabilitado por padrão)**
+  - Toggle para ativar/desativar acesso de leitura com confirmação e consentimento explícito do usuário
+  - **Toggle para ativar/desativar acesso de escrita com confirmação e consentimento explícito do usuário**
+  - **Termo de consentimento separado para permissões de leitura e escrita**
 - Logs e histórico de conversas com IA
-- Registro de auditoria detalhado:\n  - Quem ativou o acesso total
-  - Quando foi ativado
-  - Finalidade declarada
+- Registro de auditoria detalhado:\n  - Quem ativou o acesso total (leitura e escrita)
+  - Quando foi ativado\n  - Finalidade declarada
   - Histórico de consultas realizadas pelo modelo de IA
   - Dados acessados em cada interação
-  - **Registro de todas as transações criadas pelo modelo de IA (data, hora, tipo, valor, usuário solicitante)**
+  - **Registro de todas as transações criadas, editadas ou excluídas pelo modelo de IA (data, hora, tipo, valor, usuário solicitante,ação executada)**
+  - **Registro de todas as categorias criadas, editadas ou excluídas pelo modelo de IA**
   - **Registro de análises e categorizações automáticas realizadas pelo modelo de IA**
 - Opções de apagar ou exportar histórico conforme políticas de retenção\n\n### 2.8 Gestão de Plugins
 - **Cadastro e configuração de plugins na plataforma**
@@ -207,6 +213,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 ### 3.1 Proteção de Dados\n- TLS/HTTPS em todas as comunicações
 - Criptografia em repouso para dados sensíveis
 - Mascaramento e criptografia de números de conta e cartão\n- Transmissão segura de dados completos ao modelo de IA quando acesso total estiver ativado
+- **Transmissão segura de comandos de escrita ao modelo de IA quando permissão de escrita estiver ativada**
 - **Transmissão segura de dados a plugins conforme permissões configuradas**
 \n### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
@@ -216,30 +223,33 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Relatórios financeiros
   - Saldos das contas
   - Extratos de transações
-  - **Permissão para cadastro de transações pelo modelo de IA**
-  - **Permissão para análise e categorização automática de extratos**
+- **Consentimento explícito e separado para permissões de escrita do modelo de IA:**
+  - **Permissão para criar, editar e excluir transações**
+  - **Permissão para criar, editar e excluir categorias**
+  - **Permissão para análise e categorização automática de extratos com cadastro direto**
 - **Consentimento explícito para cada plugin com detalhamento de dados acessados**
-- Termo de consentimento detalhado explicando o escopo do acesso total e da permissão de cadastro
-- Opção de revogar acesso total e permissão de cadastro a qualquer momento
+- Termo de consentimento detalhado explicando o escopo do acesso total (leitura e escrita) e das permissões de cadastro\n- Opção de revogar acesso total e permissões de escrita a qualquer momento
 - **Opção de revogar permissões de plugins individualmente**
 
 ### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
-- Auditoria de ações de usuários humanos
-- Log de todas as consultas do modelo de IA aos dados da plataforma
-- **Log detalhado de todas as transações criadas pelo modelo de IA, incluindo timestamp, usuário solicitante, dados da transação e confirmação de execução**
+- Auditoria de ações de usuários humanos\n- Log de todas as consultas do modelo de IA aos dados da plataforma
+- **Log detalhado de todas as operações de escrita realizadas pelo modelo de IA:**
+  - **Transações criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da transação, ação executada)**
+  - **Categorias criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da categoria, ação executada)**
 - **Log de análises e categorizações automáticas realizadas pelo modelo de IA**
 - **Log completo de todas as ações executadas por plugins (acessos, modificações, chamadas de API)**
 - Middleware de validação e registro antes de enviar dados ao conector de IA
+- **Middleware de validação e registro para operações de escrita do modelo de IA**
 - **Middleware de validação e registro para comunicação com plugins**
 - Relatório de auditoria acessível ao usuário para transparência
 
 ## 4. Extensibilidade\n
 ### 4.1 API\n- API REST/GraphQL bemdocumentada\n- Suporte para integrações (apps móveis, plugins, serviços de contabilidade)
 - **Endpoints específicos para integração de plugins externos**
+- **Endpoints específicos para operações de escrita do modelo de IA (com autenticação e autorização rigorosas)**
 \n### 4.2 Webhooks
-- Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo
-  - Sugestão gerada pelo assistente\n  - **Transação criada pelo modelo de IA**
-  - **Categorização automática concluída**
+- Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo\n  - Sugestão gerada pelo assistente\n  - **Transação criada, editada ou excluída pelo modelo de IA**
+  - **Categoria criada, editada ou excluída pelo modelo de IA**\n  - **Categorização automática concluída**
   - **Ação executada por plugin**
 \n## 5. Observabilidade e Confiabilidade
 
@@ -247,14 +257,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Sistema de logs estruturados
 - Métricas de usodo assistente de IA
 - Alertas para erros e falhas de importação
-- Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de transações criadas pelo modelo de IA**
+- Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de operações de escrita realizadas pelo modelo de IA**\n- **Monitoramento de transações e categorias criadas, editadas ou excluídas pelo modelo de IA**
 - **Monitoramento de análises e categorizações automáticas**
 - **Monitoramento de performance e erros de plugins**
 - **Alertas para falhas de comunicação com plugins**
+- **Alertas para operações de escrita não autorizadas ou suspeitas**
 
 ### 5.2 Backup e Recuperação
 - Backup automático do banco de dados
 - Procedimentos documentados de recuperação de desastres
+- **Backup de logs de auditoria de operações de escrita do modelo de IA**
 \n## 6. Arquitetura Técnica
 
 ### 6.1 Stack Tecnológica
@@ -265,22 +277,28 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Conector que chama endpoints de modelos (OpenAI/compatíveis, instâncias privadas)
 - **Sistema de gerenciamento de plugins com arquitetura modular**
 - **Conector de plugins para comunicação segura com serviços externos**
-- Camada de acesso a dados que fornece ao modelo de IA:\n  - Dados completos de contas cadastradas
-  - Histórico completo de transações
-  - Registros de pagamentos e recebimentos
-  - Relatórios financeiros gerados\n  - Saldos atualizados das contas
-  - Extratos detalhados de transações
-  - **Interface de escrita para cadastro de transações pelo modelo de IA**
-  - **Interface de análise e categorização automática de extratos**
-  - **Dados históricos de meses anteriores para consulta e análise**
-- **Camada de acesso controlado para plugins conforme permissões configuradas**
-- **Módulo de cálculo de saldo em tempo real:**
+- Camada de acesso a dados que fornece ao modelo de IA:\n  - **Acesso de leitura (read_full):**
+    - Dados completos de contas cadastradas
+    - Histórico completo de transações
+    - Registros de pagamentos e recebimentos
+    - Relatórios financeiros gerados\n    - Saldos atualizados das contas
+    - Extratos detalhados de transações
+    - Dados históricos de meses anteriores para consulta e análise
+  - **Acesso de escrita (write_full):**
+    - **Interface de escrita para criar, editar e excluir transações**
+    - **Interface de escrita para criar, editar e excluir categorias**
+    - **Interface de escrita para cadastro direto de transações analisadas e categorizadas**
+    - **Validação de permissões antes de cada operação de escrita**
+    - **Registro de auditoria de todas as operações de escrita**
+- **Camada de acesso controlado para plugins conforme permissões configuradas**\n- **Módulo de cálculo de saldo em tempo real:**
   - Calcula saldo atual baseado em saldo inicial, receitas recebidas e despesas pagas
-  - Atualiza saldo automaticamente ao registrar, editar ou excluir transações\n  - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
+  - Atualiza saldo automaticamente ao registrar, editar ou excluir transações
+  - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
   - **Calcula saldo histórico para qualquer mês selecionado**
 - **Módulo de análise e categorização automática:**
   - **Trigger manual:acionado pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
-  - Processa extratos salvos e identifica padrões\n  - Sugere categorias existentes ou novas categorias\n  - Exibe resultados em popup com lista ordenada de transações por data
+  - Processa extratos salvos e identifica padrões\n  - Sugere categorias existentes ou novas categorias
+  - Exibe resultados em popup com lista ordenada de transações por data
   - Permite revisão e edição de categorias via dropdown antesdo cadastro
   - Aprende com confirmações e correções do usuário
 - **Módulo de importação de arquivos OFX:**
@@ -295,8 +313,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Geração de botão 'Analisar Extrato' após salvamento
 - **Módulo de popup de resultados de análise:**
   - Exibição de janela popup após análise do modelo de IA
-  - Lista ordenada de transações por data
-  - Dropdown de seleção de categoria para cada transação
+  - Lista ordenada de transações por data\n  - Dropdown de seleção de categoria para cada transação
   - Categoria sugerida pelo modelo de IA pré-selecionada
   - Botão 'Cadastrar Transações' na parte inferior\n  - Cadastro em lote de todas as transações nas categorias selecionadas
 - **Módulo de geração de gráficos e indicadores:**
@@ -309,7 +326,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Recálculo de indicadores e gráficos baseado no mês selecionado**
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
 - Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**
-- **Módulo de validação e confirmação para transações criadas pelo modelo de IA**\n- **Módulo de validação e sandbox para execução segura de plugins**
+- **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
+  - **Validação de permissões antes de cada operação**
+  - **Validação de dados antes de escrita no banco**
+  - **Registro de auditoria de todas as operações**
+  - **Rollback automático em caso de erro**
+- **Módulo de validação e sandbox para execução segura de plugins**
 - **Módulo de navegação temporal:**
   - Gerenciamento de seleção de mês no dashboard
   - Cálculo de dados históricos para mês selecionado
@@ -319,14 +341,23 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Cobertura de testes unitários e de integração
 - Testes de segurança (SAST/DAST)
 - Testes de acessodo modelo de IA aos dados
-- **Testes de cadastro de transações pelo modelo de IA, incluindo validação de dados e auditoria**
-- **Testes de análise e categorização automática:**
-  - Validação de trigger manual após upload e salvamento
+- **Testes de operações de escrita do modelo de IA:**
+  - **Validação de criação de transações**
+  - **Validação de edição de transações**
+  - **Validação de exclusão de transações**
+  - **Validação de criação de categorias**
+  - **Validação de edição de categorias**
+  - **Validação de exclusão de categorias**
+  - **Validação de permissões de escrita**
+  - **Validação de auditoria de operações de escrita**
+  - **Validação de rollback em caso de erro**
+- **Testes de análise e categorização automática:**\n  - Validação de trigger manual após upload e salvamento
   - Validação de sugestões de categorias existentes
   - Validação de sugestões de novas categorias
   - Validação de exibição de popup com lista ordenada de transações
   - Validação de dropdown de categorias com pré-seleção
-  - Validação de cadastro em lote de transações\n  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
+  - Validação de cadastro em lote de transações
+  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
   - Validação de parsing de OFX versões 1.x e 2.x
   - Validação de extração correta de transações
   - Validação de tratamento de erros para arquivos corrompidos
@@ -337,11 +368,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de atualização de saldo ao editar ou excluir transações
   - **Validação de cálculo de saldo histórico para meses anteriores**
 - **Testes de upload e salvamento de extrato no chatbot:**
-  - Validação de upload de arquivo via chatbot
-  - Validação de salvamento seguro na plataforma
+  - Validação de upload de arquivo via chatbot\n  - Validação de salvamento seguro na plataforma
   - Validação de feedback visual de progresso
-  - Validação de geração de botão 'Analisar Extrato'
-- **Testes de popup de resultados:**
+  - Validação de geração de botão 'Analisar Extrato'\n- **Testes de popup de resultados:**
   - Validação de exibição de popup após análise\n  - Validação de ordenação de transações por data
   - Validação de dropdown de categorias\n  - Validação de pré-seleção de categoria sugerida
   - Validação de cadastro em lote ao clicar em 'Cadastrar Transações'
@@ -353,7 +382,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de responsividade de gráficos
   - **Validação de seletor de mês e navegação entre meses**
   - **Validação de atualização de indicadores ao selecionar novo mês**
-  - **Validação de atualização de gráficos ao selecionar novo mês**\n  - **Validação de cálculo correto de dados históricos**
+  - **Validação de atualização de gráficos ao selecionar novo mês**
+  - **Validação de cálculo correto de dados históricos**
   - **Validação de comparação entre meses diferentes**
 - **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
 \n## 7. Escopodo MVP
@@ -392,29 +422,34 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Gráfico de projeção de fluxo de caixa (3 meses a partir do mês selecionado)
   - Top 5 categorias com maiores gastos (mês selecionado)
   - Indicadores de performance (taxa de economia, média de gastos diários) (mês selecionado)\n  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)
-- Assistente de IA com acesso total configurável a:\n  - Todas as contas cadastradas
-  - Todas as transações (receitas e despesas)
-  - Todos os pagamentos e recebimentos
-  - Todos os relatórios financeiros
-  - Saldos de todas as contas
-  - Extratos completos de transações
-  - **Dados históricos de meses anteriores**
-  - **Permissão para cadastro de transações mediante solicitação do usuário**
-  - **Permissão para análise e categorização automática de extratos**
-  - **Interpretação de gráficos e indicadores do dashboard**
+- Assistente de IA com acesso total configurável:\n  - **Acesso de leitura (read_full):**
+    - Todas as contas cadastradas
+    - Todas as transações (receitas e despesas)
+    - Todos os pagamentos e recebimentos
+    - Todos os relatórios financeiros
+    - Saldos de todas as contas
+    - Extratos completos de transações
+    - Dados históricos de meses anteriores
+  - **Acesso de escrita (write_full):**
+    - **Permissão para criar, editar e excluir transações mediante solicitação do usuário**
+    - **Permissão para criar, editar e excluir categorias mediante solicitação do usuário**
+    - **Permissão para análise e categorização automática de extratos com cadastro direto**
+    - **Interpretação de gráficos e indicadores do dashboard**
 - Botão de chat com IA nas telas principais
 - Painel de administração com:
   - Indicador visual de status de configuração
   - Configuração de modelo de IA
-  - Toggle de acesso total com termo de consentimento
-  - **Toggle de permissão para cadastro de transações pelo modelo de IA**
-  - **Toggle de permissão para análise e categorização automática**
-  - **Interface de gerenciamento de plugins**\n  - **Configuração de permissões para plugins**
+  - Toggle de acesso de leitura com termo de consentimento
+  - **Toggle de acesso de escrita com termo de consentimento separado**
+  - **Toggle de permissão para criar, editar e excluir transações pelo modelo de IA**
+  - **Toggle de permissão para criar, editar e excluir categorias pelo modelo de IA**\n  - **Toggle de permissão para análise e categorização automática com cadastro direto**
+  - **Interface de gerenciamento de plugins**
+  - **Configuração de permissões para plugins**
   - Logs detalhados de chat e acessos do modelo de IA
-  - **Logs de transações criadas pelo modelo de IA**
+  - **Logs de operações de escrita realizadas pelo modelo de IA (transações e categorias criadas, editadas ou excluídas)**
   - **Logs de análises e categorizações automáticas**
   - **Logs deações executadas por plugins**
-- Relatório de auditoria de acessos
+- Relatório de auditoria de acessos e operações de escrita
 \n### 7.2 Versões Futuras (1.1 / 1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
 - Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
@@ -457,8 +492,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Bordas suaves com raio de 8px para cards, botões e popup
 - Sombras sutis para criar hierarquia visual
 - Badge de status comícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração
-- Indicador visual de acesso total ativo (ícone de cadeado aberto verde) quando o modelo de IA tiver permissão completa
-- **Indicador visual de permissão de cadastro ativa (ícone de lápis verde) quando o modelo de IA tiver permissão para criar transações**
+- Indicador visual de acesso de leitura ativo (ícone de olho verde) quando o modelo de IA tiver permissão completa de leitura
+- **Indicador visual de acesso de escrita ativo (ícone de lápis verde) quando o modelo de IA tiver permissão completa de escrita**
+- **Indicador visual de permissão de cadastro ativa (ícone de check verde) quando o modelo de IA tiver permissão para criar transações**
 - **Indicador visual de permissão de análise ativa (ícone de lupa verde) quando o modelo de IA tiver permissão para analisar e categorizar extratos**
 - **Badge de status para plugins (ícone de check verde paraativo, ícone cinza para inativo)**
 - **Ícone de engrenagem para acesso às configurações de plugins**
@@ -474,653 +510,3 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 ### 9.1 Imagens de Referência
 - Exemplo de mensagem de erro de importação OFX: {2C7B1F61-7FE3-4148-B737-A544FBDEEF2D}.png
-\n## 10. Plano Detalhado de Implementação
-
-### 10.1 Sprint 1: Preparação do Ambiente (Semana 1)
-\n**Objetivo:** Configurar infraestrutura base e ambiente de desenvolvimento
-
-**Tarefas Backend:**
-1. Configurar repositório Git com estrutura de pastas
-2. Setupdo Docker e docker-compose com serviços:\n   - PostgreSQL (banco de dados)
-   - Backend (Flask/FastAPI)
-   - Frontend (React)\n3. Configurar CI/CD com GitHub Actions:\n   - Pipeline de build\n   - Pipeline de testes
-   - Pipeline de deploy
-4. Criar estrutura basedo backend:
-   - Configuração de rotas
-   - Configuração de banco de dados
-   - Middleware de autenticação
-   - Middleware de logging
-5. Implementar modelos de dados iniciais:
-   - Modelo de Usuário
-   - Modelo de Conta
-   - Modelo de Cartão
-   - Modelo de Transação
-   - Modelo de Categoria
-\n**Tarefas Frontend:**
-1. Setup do projeto React com TypeScript
-2. Configurar roteamento (React Router)
-3. Configurar gerenciamento de estado (Redux/Context API)
-4. Criar estrutura de componentes base:
-   - Layout principal
-   - Sidebar de navegação
-   - Header\n   - Footer
-5. Configurar biblioteca de UI (Material-UI/Ant Design)
-6. **Configurar biblioteca de gráficos (Chart.js/Recharts/D3.js)**
-\n**Tarefas DevOps:**
-1. Configurar ambiente de desenvolvimento local
-2. Configurar ambiente de staging
-3. Configurar ambiente de produção
-4. Implementar scripts de deploy automatizado
-5. Configurar monitoramento básico
-
-**Entregáveis:**
-- Repositório Git configurado
-- Ambiente Docker funcional
-- CI/CD pipelineativo
-- Estrutura base de backend e frontend
-- Documentação de setup
-\n### 10.2 Sprint 2: Módulo de Upload no Chatbot (Semana 2)
-
-**Objetivo:** Implementar funcionalidade de upload de extrato via chatbot
-
-**Tarefas Backend:**
-1. Criar endpoint POST /api/extracts/upload:\n   - Validação de formato de arquivo (CSV, OFX, QIF)
-   - Validação de tamanho de arquivo (máximo 10MB)
-   - Salvamento seguro do arquivo no servidor
-   - Geração de ID único para o arquivo
-   - Retorno de status de upload
-2. Implementar serviço de armazenamento de arquivos:
-   - Estrutura de pastas organizada por usuário e data
-   - Criptografia de arquivos em repouso
-   - Limpeza automática de arquivos antigos
-3. Criar endpoint GET /api/extracts/{id}/status:
-   - Retorna status do processamento do arquivo
-   - Retorna mensagens de erro se houver\n4. Implementar validação de integridade de arquivos:
-   - Verificação de formato\n   - Verificação de encoding
-   - Detecção de arquivos corrompidos
-\n**Tarefas Frontend:**
-1. Criar componente de chatbot flutuante:
-   - Botão flutuante no canto inferior direito
-   - Janela de chat expansível
-   - Interface de mensagens\n2. Implementar botão de upload no chatbot:
-   - Ícone de clipe ou upload
-   - Seletor de arquivo
-   - Filtro de tipos de arquivo (CSV, OFX, QIF)
-3. Implementar barra de progresso de upload:\n   - Indicador visual de progresso
-   - Mensagem de status
-   - Tratamento de erros
-4. Implementar feedback de upload concluído:
-   - Mensagem de confirmação
-   - Exibição de nome do arquivo
-   - Geração de botão 'Analisar Extrato'
-5. Implementar tratamento de erros:
-   - Mensagens de erro claras
-   - Sugestões de correção
-   - Opção de tentar novamente
-
-**Tarefas de Teste:**
-1. Testes unitários de validação de formato
-2. Testes de upload de arquivos válidos\n3. Testes de upload de arquivos inválidos
-4. Testes de limite de tamanho
-5. Testes de interface de upload
-6. Testes de barra de progresso
-7. Testes de mensagens de erro
-\n**Entregáveis:**
-- Endpoint de upload funcional
-- Componente de chatbot com upload\n- Testes automatizados
-- Documentação de API
-\n### 10.3 Sprint 3: Módulo de Análise de Extrato (Semana 3)
-
-**Objetivo:** Implementar análise automática de extratos com IA
-
-**Tarefas Backend:**
-1. Criar endpoint POST /api/extracts/{id}/analyze:
-   - Trigger manual de análise
-   - Validação de arquivo salvo
-   - Chamada ao modelo de IA
-   - Retorno de resultados de análise
-2. Implementar conector com modelo de IA:
-   - Configuração de endpoint deIA
-   - Autenticação com API de IA
-   - Formatação de dados para envio\n   - Parsing de resposta da IA
-3. Implementar lógica de sugestão de categorias:
-   - Busca de categorias existentes
-   - Matching de transações com categorias
-   - Cálculo de score de confiança
-4. Implementar lógica de sugestão de novas categorias:
-   - Identificação de padrões não categorizados
-   - Geração de nomes de categorias
-   - Validação de unicidade
-5. Criar endpoint GET /api/categories:
-   - Lista de categorias existentes
-   - Filtros e ordenação
-6. Implementar parser de arquivos:\n   - Parser CSV com detecção de delimitadores
-   - Parser OFX versões 1.x e 2.x
-   - Parser QIF
-   - Extração de dados de transações
-\n**Tarefas Frontend:**
-1. Implementar açãodo botão 'Analisar Extrato':
-   - Chamada ao endpoint de análise
-   - Feedback visual durante análise
-   - Spinner ou mensagem de carregamento
-2. Implementar tratamento de resposta de análise:
-   - Parsing de dados de transações
-   - Parsing de categorias sugeridas
-   - Preparação de dados para popup
-3. Implementar tratamento de erros de análise:
-   - Mensagens de erro claras
-   - Sugestões de correção
-   - Opção de tentar novamente
-\n**Tarefas de Teste:**
-1. Testes unitários de análise de transações
-2. Testes de integração com modelo de IA
-3. Testes de sugestão de categorias existentes
-4. Testes de sugestão de novas categorias
-5. Testes de parser CSV
-6. Testes de parser OFX 1.x\n7. Testes de parser OFX 2.x
-8. Testes de parser QIF
-9. Testes de tratamento de erros
-\n**Entregáveis:**
-- Endpoint de análise funcional
-- Conector com modelo de IA
-- Parsers de arquivos
-- Lógica de categorização
-- Testes automatizados
-- Documentação de API
-\n### 10.4 Sprint 4: Popup de Resultados (Semana 4)
-
-**Objetivo:** Implementar interface de revisão de transações analisadas
-
-**Tarefas Backend:**
-1. Criar endpoint GET /api/extracts/{id}/results:
-   - Retorna dados formatados para popup
-   - Ordenação de transações por data
-   - Lista de categorias disponíveis
-   - Categorias sugeridas por transação
-2. Implementar lógica de ordenação:
-   - Ordenação por data (mais antiga para mais recente)
-   - Ordenação secundária por valor
-3. Implementar lógica de pré-seleção:
-   - Categoria sugerida como padrão
-   - Score de confiança da sugestão
-\n**Tarefas Frontend:**
-1. Criar componente de popup:
-   - Modal centralizado\n   - Título'Resultado da Análise do Extrato'
-   - Botão de fechar
-   - Responsividade para mobile
-2. Implementar lista de transações:
-   - Renderização de lista ordenada
-   - Exibição de data, descrição e valor
-   - Layout responsivo
-3. Implementar dropdown de categorias:
-   - Dropdown ao lado de cada transação
-   - Lista de categorias existentes
-   - Categorias novas sugeridas
-   - Pré-seleção de categoria sugerida
-   - Indicador visual de categoria nova
-4. Implementar botão 'Cadastrar Transações':
-   - Posicionamento na parte inferior
-   - Estilo destacado
-   - Estado desabilitado durante processamento
-5. Implementar lógica de fechamento:
-   - Fechar ao clicar fora do popup
-   - Fechar ao clicar no botão de fechar
-   - Fechar após cadastro bem-sucedido
-
-**Tarefas de Teste:**
-1. Testes de renderização do popup
-2. Testes de ordenação de transações
-3. Testes de dropdown de categorias
-4. Testes de pré-seleção de categoria\n5. Testes de responsividade
-6. Testes de fechamento do popup
-7. Testes de acessibilidade
-
-**Entregáveis:**
-- Componente de popup funcional
-- Lista de transações ordenada
-- Dropdowns de categorias
-- Testes automatizados
-- Documentação de componentes
-
-### 10.5 Sprint 5: Cadastro em Lote de Transações (Semana 5)
-
-**Objetivo:** Implementar cadastro automático de transações categorizadas
-
-**Tarefas Backend:**
-1. Criar endpoint POST /api/transactions/batch:
-   - Recebe lista de transações com categorias
-   - Validação de dados
-   - Cadastro em lote
-   - Retorno de status de cadastro
-2. Implementar lógica de criação de categorias:
-   - Verificação de existência\n   - Criação de categorias novas
-   - Associação com usuário
-3. Implementar lógica de cadastro de transações:
-   - Criação de transações\n   - Associação com conta
-   - Associação com categoria
-   - Registro de timestamp
-4. Implementar atualização de saldo:
-   - Cálculo de saldo atual
-   - Atualização de saldo da conta
-   - Validação de saldo negativo
-5. Implementar registro de auditoria:
-   - Log de transações criadas
-   - Log de categorias criadas
-   - Log de usuário responsável
-   - Timestamp de operação
-6. Implementar transação de banco de dados:
-   - Rollback em caso de erro
-   - Garantia de consistência
-\n**Tarefas Frontend:**
-1. Implementar ação do botão 'Cadastrar Transações':\n   - Coleta de dados de transações e categorias
-   - Validação de dados
-   - Chamada ao endpoint de cadastro\n2. Implementar feedback visual:
-   - Spinner durante processamento
-   - Mensagem de carregamento
-   - Desabilitação de botões\n3. Implementar mensagem de confirmação:
-   - Mensagem de sucesso no chatbot
-   - Quantidade de transações cadastradas
-   - Quantidade de categorias criadas
-4. Implementar fechamento do popup:
-   - Fechamento automático após sucesso
-   - Limpeza de estado
-5. Implementar tratamento de erros:
-   - Mensagens de erro claras
-   - Detalhamento de transações com erro
-   - Opção de tentar novamente
-
-**Tarefas de Teste:**
-1. Testes unitários de cadastro em lote
-2. Testes de criação de categorias
-3. Testes de atualização de saldo
-4. Testes de auditoria
-5. Testes de transação de banco de dados
-6. Testes de rollback
-7. Testes de interface de cadastro
-8. Testes de mensagens de confirmação
-9. Testes de tratamento de erros
-
-**Entregáveis:**\n- Endpoint de cadastro em lote funcional
-- Lógica de criação de categorias
-- Lógica de atualização de saldo
-- Sistema de auditoria
-- Testes automatizados
-- Documentação de API
-\n### 10.6 Sprint 6: Dashboard Expandido com Indicadores e Gráficos (Semana 6)
-
-**Objetivo:** Implementar dashboard com indicadores financeiros e gráficos avançados
-
-**Tarefas Backend:**
-1. Criar endpoint GET /api/dashboard/indicators:
-   - **Parâmetro de mês (opcional, padrão: mês atual)**
-   - Cálculo de saldo total consolidado para o mês selecionado
-   - Cálculo de receitas e despesas totais do mês selecionado
-   - Cálculo de saldo líquido e variação percentual
-   - Cálculo de limite total disponível em cartões
-   - Cálculo de contas a pagar e receber
-- Cálculo de taxa de economia mensal
-   - Cálculo de média de gastos diários
-2. Criar endpoint GET /api/dashboard/charts/balance-evolution:
-   - **Parâmetro de mês base (opcional, padrão: mês atual)**
-   - Dados de evolução do saldo nos últimos 6 meses a partir do mês selecionado
-   - Agregação por mês\n   - Formatação para gráfico de linha
-3. Criar endpoint GET /api/dashboard/charts/expenses-by-category:
-   - **Parâmetro de mês (opcional, padrão: mês atual)**
-   - Distribuição de despesas por categoria no mês selecionado
-   - Agregação por categoria
-   - Formatação para gráfico de pizza
-4. Criar endpoint GET /api/dashboard/charts/income-vs-expenses:
-   - **Parâmetro de mês base (opcional, padrão: mês atual)**
-   - Comparação de receitas vs despesas nos últimos 6 meses a partir do mês selecionado
-   - Agregação por mês
-   - Formatação para gráfico de barras
-5. Criar endpoint GET /api/dashboard/charts/cashflow-projection:
-   - **Parâmetro de mês base (opcional, padrão: mês atual)**
-   - Projeção de fluxo de caixa para os próximos 3 meses a partir do mês selecionado
-   - Cálculo baseado em histórico e compromissos agendados
-   - Formatação para gráfico de área
-6. Criar endpoint GET /api/dashboard/charts/top-categories:
-   - **Parâmetro de mês (opcional, padrão: mês atual)**
-   - Top 5 categorias com maiores gastos no mês selecionado
-   - Agregação por categoria\n   - Formatação para gráfico de barras horizontais
-7. Implementar sistema de cache:
-   - Cache de dados agregados para performance
-   - Invalidação de cache ao cadastrar/editar transações
-   - TTL configurável\n   - **Cache separado por mês para dados históricos**
-8. **Implementar lógica de cálculo de saldo histórico:**
-   - Cálculo de saldo no final de cada mês
-   - Armazenamento de snapshots mensais de saldo
-   - Recálculo sob demanda quando necessário
-\n**Tarefas Frontend:**
-1. Criar componente de dashboard:
-   - Layout em grid responsivo
-   - **Seletor de mês no topo**
-   - Seção de indicadores principais
-   - Seção de gráficos
-   - Seção de alertas
-2. **Implementar seletor de mês:**
-   - Dropdown ou calendário para seleção de mês
-   - Botões de navegação (mês anterior, próximo mês)
-   - Exibição clarado mês e ano selecionado
-   - Botão 'Voltar ao Mês Atual' em destaque
-   - Indicador visual do mês atual
-3. **Implementar lógica de atualização ao selecionar mês:**
-   - Chamada aos endpoints com parâmetro de mês
-   - Atualização de todos os indicadores
-   - Atualização de todos os gráficos
-   - Feedback visual durante carregamento
-4. Implementar cards de indicadores:
-   - Card de saldo total consolidado
-   - Card de receitas totais do mês
-   - Card de despesas totais do mês\n   - Card de saldo líquido com variação percentual
-   - Card de limite disponível em cartões
-   - Card de contas a pagar e receber
-   -Ícones representativos para cada indicador
-   - Formatação de valores monetários
-   - Cores diferenciadas (verde para positivo, vermelho para negativo)
-5. Implementar gráfico de evolução do saldo:
-   - Gráfico de linha com dados dos últimos 6 meses a partir do mês selecionado
-   - Tooltips informativos
-   - Legenda clara
-   - Responsividade\n6. Implementar gráfico de distribuição de despesas:
-   - Gráfico de pizza com categorias do mês selecionado
-   - Cores distintas para cada categoria
-   - Percentuais exibidos
-   - Legenda com nomes de categorias
-7. Implementar gráfico de receitas vs despesas:
-   - Gráfico de barras agrupadas\n   - Barras para receitas e despesas
-   - Comparação visual clara
-   - Eixos com valores formatados
-8. Implementar gráfico de projeção de fluxo de caixa:
-   - Gráfico de área com projeção de3 meses a partir do mês selecionado
-   - Linha de tendência
-   - Área preenchida para visualização de volume
-9. Implementar gráfico de top categorias:
-   - Gráfico de barras horizontais\n   - Top 5 categorias com maiores gastos no mês selecionado
-   - Valores exibidos ao lado das barras
-10. Implementar alertas visuais:
-    - Alerta de contas próximas ao vencimento no mês selecionado
-    - Alerta de gastos acima da média\n    - Alerta de limite de cartão próximo ao máximo (>80%)
-    - Ícones e cores de destaque
-11. Implementar animações:\n    - Animações suaves de transição ao carregar gráficos
-    - Animações de hover em elementos interativos
-    - Feedback visual ao aplicar filtros ou mudar de mês
-\n**Tarefas de Teste:**
-1. Testes unitários de cálculo de indicadores
-2. Testes de endpoints de gráficos
-3. Testes de cache de dados
-4. **Testes de seletor de mês**
-5. **Testes de navegação entre meses**
-6. **Testes de atualização de indicadores ao mudar de mês**
-7. **Testes de atualização de gráficos ao mudar de mês**
-8. **Testes de cálculo de saldo histórico**
-9. Testes de renderização de gráficos
-10. Testes de responsividade de dashboard
-11. Testes de performance com grandes volumes de dados
-12. Testes de alertas visuais
-13. Testes de animações\n
-**Entregáveis:**
-- Endpoints de indicadores e gráficos funcionais com suporte a mês selecionado
-- Dashboard expandido com indicadores e gráficos\n- Seletor de mês funcional
-- Sistema de cache implementado
-- Testes automatizados
-- Documentação de API
-
-### 10.7 Sprint 7: Integração e Testes End-to-End (Semana 7)
-
-**Objetivo:** Integrar todos os módulos e validar fluxo completo\n
-**Tarefas de Integração:**
-1. Integrar módulo de upload com módulo de análise
-2. Integrar módulo de análise com popup de resultados
-3. Integrar popup com módulo de cadastro
-4. Integrar cadastro com atualização de dashboard
-5. **Integrar seletor de mês com todos os componentes do dashboard**
-6. Validar fluxo completo de ponta a ponta
-7. Ajustar interfaces entre módulos
-8. Otimizar performance de integração
-
-**Tarefas de Teste End-to-End:**
-1. Teste de fluxo completo:\n   - Upload de extrato CSV
-   - Análise automática
-   - Exibição de popup\n   - Revisão de categorias
-   - Cadastro de transações
-   - Atualização de dashboard
-   - Confirmação de sucesso
-2. Teste de fluxo completo com OFX 1.x
-3. Teste de fluxo completo com OFX 2.x
-4. Teste de fluxo completo com QIF
-5. Teste de criação de novas categorias
-6. Teste de atualização de saldo
-7. Teste de atualização de indicadores do dashboard
-8. Teste de atualização de gráficos
-9. **Teste de navegação entre meses no dashboard**
-10. **Teste de visualização de dados históricos**
-11. **Teste de comparação entre meses diferentes**
-12. Teste de auditoria completa
-13. Teste de tratamento de erros em cada etapa
-14. Teste de performance com arquivos grandes
-15. Teste de concorrência (múltiplos uploads simultâneos)
-16. Teste de alertas visuais
-
-**Tarefas de Usabilidade:**
-1. Teste de usabilidade com usuários reais\n2. Coleta de feedback\n3. Ajustes de interface baseados em feedback
-4. Validação de acessibilidade
-5. Validação de responsividade
-6. Validação de clareza de gráficos e indicadores
-7. **Validação de intuitividade do seletor de mês**
-\n**Tarefas de Performance:**
-1. Teste de carga do endpoint de upload
-2. Teste de carga do endpoint de análise
-3. Teste de carga do endpoint de cadastro
-4. Teste de carga dos endpoints de dashboard
-5. **Teste de carga de consultas de dados históricos**
-6. Otimização de queries de banco de dados
-7. Otimização de chamadas à API deIA
-8. Implementação de cache onde aplicável
-9. Otimização de renderização de gráficos
-10. **Otimização de cálculo de saldo histórico**
-
-**Tarefas de Segurança:**
-1. Teste de injeção SQL
-2. Teste de XSS
-3. Teste de CSRF
-4. Teste de autenticação e autorização
-5. Teste de criptografia de dados
-6. Validação de permissões de acesso
-7. Auditoria de logs de segurança
-\n**Entregáveis:**
-- Fluxo completo integrado e funcional
-- Dashboard expandido integrado com seletor de mês
-- Relatório de testes end-to-end
-- Relatório de usabilidade
-- Relatório de performance
-- Relatório de segurança
-- Documentação de integração
-
-### 10.8 Sprint 8: Ajustes Finais e Deploy (Semana 8)
-
-**Objetivo:** Corrigir bugs, finalizar documentação e realizar deploy
-
-**Tarefas de Correção:**\n1. Correção de bugs críticos identificados\n2. Correção de bugs de alta prioridade
-3. Ajustes de interface baseados em feedback
-4. Otimizações de performance
-5. Ajustes de segurança
-6. Ajustes de gráficos e indicadores
-7. **Ajustes do seletor de mês e navegação temporal**
-\n**Tarefas de Documentação:**
-1. Documentação técnica completa:\n   - Arquitetura do sistema
-   - Fluxo de dados
-   - Endpoints de API
-   - Modelos de dados
-   - Configuração de ambiente
-   - Documentação de gráficos e indicadores
-   - **Documentação de funcionalidade de visualização de meses anteriores**
-2. Documentação de usuário:
-   - Guia de uso do chatbot
-   - Guia de upload de extratos
-   - Guia de análise e categorização
-   - Guia de interpretação do dashboard
-   - **Guia de navegação entre meses no dashboard**\n   - FAQ\n3. Documentação de deploy:
-   - Procedimentos de deploy
-   - Configuração de ambiente de produção
-   - Procedimentos de rollback
-   - Monitoramento e alertas
-\n**Tarefas de Deploy:**
-1. Preparação do ambiente de produção:
-   - Configuração de servidores
-   - Configuração de banco de dados
-   - Configuração de SSL/TLS
-   - Configuração de firewall
-2. Deploy de backend:
-   - Build de imagem Docker
-   - Push para registry\n   - Deploy em produção
-   - Validação de saúde\n3. Deploy de frontend:
-   - Build de produção
-   - Deploy em CDN
-   - Validação de carregamento
-4. Configuração de monitoramento:
-   - Logs estruturados
-   - Métricas de performance
-   - Alertas de erro
-   - Dashboard de monitoramento
-5. Configuração de backup:
-   - Backup automático de banco de dados
-   - Backup de arquivos\n   - Procedimentos de recuperação
-
-**Tarefas de Validação Pós-Deploy:**
-1. Smoke tests em produção
-2. Validação de endpoints\n3. Validação de fluxo completo
-4. Validação de dashboard e gráficos
-5. **Validação de seletor de mês e dados históricos**
-6. Validação de performance
-7. Validação de monitoramento
-8. Validação de backup
-\n**Tarefas de Treinamento:**
-1. Treinamento de equipe de suporte
-2. Treinamento de usuários piloto
-3. Preparação de materiais de treinamento
-4. Treinamento sobre interpretação de gráficos e indicadores
-5. **Treinamento sobre uso do seletor de mês e análise de dados históricos**
-\n**Entregáveis:**
-- Sistema em produção\n- Dashboard expandido em produção com funcionalidade de visualização de meses anteriores
-- Documentação completa\n- Monitoramento ativo
-- Backup configurado
-- Equipe treinada
-- Relatório de deploy
-
-##11. Cronograma Resumido
-
-| Sprint | Semana | Foco | Entregáveis Principais |
-|--------|--------|------|------------------------|
-| Sprint 1 | Semana 1 | Preparação do Ambiente | Infraestrutura base, CI/CD, estrutura de código, biblioteca de gráficos |
-| Sprint 2 | Semana 2 | Upload no Chatbot | Endpoint de upload, componente de chatbot |
-| Sprint 3 | Semana 3 | Análise de Extrato | Conector deIA, parsers de arquivos, lógica de categorização |
-| Sprint 4 | Semana 4 | Popup de Resultados | Componente de popup, lista de transações, dropdowns |
-| Sprint 5 | Semana 5 | Cadastro em Lote | Endpoint de cadastro, atualização de saldo, auditoria |
-| Sprint 6 | Semana 6 | Dashboard Expandido | Indicadores financeiros, gráficos avançados, seletor de mês, filtros, alertas |
-| Sprint 7 | Semana 7 | Integração e Testes | Fluxo completo integrado, testes end-to-end, dashboard integrado com navegação temporal |
-| Sprint 8 | Semana 8 | Ajustes e Deploy | Sistema em produção, documentação completa |
-
-**Duração Total:** 8 semanas
-
-## 12. Recursos Necessários
-
-### 12.1 Equipe\n- 1 Desenvolvedor Backend (Flask/FastAPI, PostgreSQL) - 8 semanas
-- 1 Desenvolvedor Frontend (React, TypeScript, Chart.js/Recharts) - 8 semanas
-- 1 Engenheiro de IA (integração com modelo de IA) - 4 semanas (Sprints 3-6)
-- 1 QA Engineer (testes) - 8 semanas
-- 1 DevOps Engineer (CI/CD, deploy) - 8 semanas
-- 1 Product Owner (gestão de requisitos) - 8 semanas
-\n### 12.2 Infraestrutura
-- Servidor de desenvolvimento\n- Servidor de staging
-- Servidor de produção
-- Banco de dados PostgreSQL
-- Serviço de armazenamento de arquivos
-- API de modelo de IA (OpenAI ou similar)
-- Serviço de CI/CD (GitHub Actions)
-- Serviço de monitoramento\n\n### 12.3 Ferramentas
-- Git e GitHub
-- Docker e docker-compose
-- IDE (VS Code, PyCharm)
-- Postman ou similar para testes de API
-- Ferramenta de design (Figma)\n- Ferramenta de gerenciamento de projeto (Jira, Trello)
-- Biblioteca de gráficos (Chart.js/Recharts/D3.js)
-
-## 13. Riscos e Mitigações
-
-| Risco | Probabilidade | Impacto | Mitigação |
-|-------|---------------|---------|----------|
-| Complexidade de parsing de arquivos OFX | Média | Alto | Utilizar bibliotecas especializadas (ofxparse), realizar testes extensivos com diferentes versões de OFX |
-| Performance de análise de IA para extratos grandes | Média | Médio | Implementar processamento assíncrono, feedback visual de progresso, limitar tamanho de arquivo |
-| Usabilidade do popup em dispositivos móveis | Baixa | Médio | Design responsivo desde o início, testes em diferentes tamanhos de tela |
-| Segurança de dados durante upload e análise | Baixa | Alto | Criptografia de dados em trânsito e em repouso, validação rigorosa de arquivos, auditoria completa |
-| Atraso na integração com modelo de IA | Média | Alto | Definir interface clara desde o início, criar mock de IA para desenvolvimento paralelo |
-| Bugs críticos descobertos em produção | Baixa | Alto | Testes extensivos, deploy gradual, monitoramento ativo, procedimentos de rollback |
-| Indisponibilidade de API de IA | Baixa | Alto | Implementar retry logic, fallback para processamento manual, alertas de falha |
-| Performance de renderização de gráficos com grandes volumes de dados | Média | Médio | Implementar paginação, agregação de dados, cache, otimização de queries |
-| Complexidade de cálculo de indicadores financeiros | Média | Médio | Validação extensiva de fórmulas, testes com dados reais, revisão por especialista financeiro |
-| **Performance de consultas de dados históricos** | Média | Médio | Implementar cache de snapshots mensais, índices otimizados no banco de dados, agregação pré-calculada |
-| **Complexidade de cálculo de saldo histórico** | Média | Médio | Armazenar snapshots de saldo mensal, recálculo sob demanda apenas quando necessário, validação extensiva |
-\n## 14. Critérios de Sucesso
-
-### 14.1 Critérios Técnicos
-- Sistema em produção e estável
-- Cobertura de testes > 80%
-- Tempo de resposta de endpoints < 2 segundos
-- Tempo de carregamento de dashboard < 3 segundos
-- **Tempo de carregamento de dados históricos < 2 segundos**
-- Uptime > 99%
-- Zero vulnerabilidades críticas de segurança
-
-### 14.2 Critérios de Negócio
-- Usuários conseguem fazer upload de extratos via chatbot
-- Análise automática de transações funcional
-- Categorização com precisão > 80%
-- Cadastro em lote de transações funcional
-- Dashboard com indicadores e gráficos funcionais
-- **Navegação entre meses anteriores funcional**
-- **Visualização de dados históricos precisa**
-- Feedback positivo de usuários piloto
-
-### 14.3 Critérios de Usabilidade
-- Fluxo completo em menos de 5 cliques
-- Tempo médio de upload e análise < 30 segundos
-- Taxa de erro de usuário < 5%
-- Satisfação de usuário > 4/5
-- Gráficos e indicadores claros e compreensíveis
-- Dashboard responsivo em diferentes dispositivos
-- **Seletor de mês intuitivo e fácil de usar**
-- **Navegação entre meses fluida e sem travamentos**
-
-## 15. Próximos Passos Após MVP
-
-### 15.1 Versão 1.1 (Semanas 9-11)
-- Conciliação automática por Machine Learning
-- Aprendizado contínuo do modelo de IA
-- Relatórios avançados de categorização
-- Exportação de transações categorizadas
-- Gráficos adicionais:\n  - Análise de tendências por categoria ao longo do tempo
-  - Heatmap de padrão de gastos por dia da semana e hora
-- **Comparação lado a lado de múltiplos meses**
-- **Exportação de relatórios históricos**
-
-### 15.2 Versão 1.2 (Semanas 12-15)
-- Integração com APIs bancárias (Open Banking)
-- Importação automatizada OFX
-- Permissões granulares avançadas para modelos de IA
-- Marketplace de plugins\n- Gráficos avançados:
-  - Comparação de gastos entre diferentes períodos
-  - Previsão de gastos futuros baseada em histórico
-  - Análise de sazonalidade de despesas
-- **Visualização de tendências anuais**
-- **Dashboard customizável com períodos personalizados**
-
-### 15.3 Versão 2.0 (Semanas 16-21)
-- Aplicativo móvel (iOS e Android)
-- SDK para desenvolvimento de plugins personalizados
-- Análise preditiva de gastos
-- Recomendações personalizadas de economia
-- Dashboard personalizável com widgets arrastáveis
-- Relatórios customizáveis com exportação avançada
-- **Análise comparativa de múltiplos anos**
-- **Previsões financeiras de longo prazo**

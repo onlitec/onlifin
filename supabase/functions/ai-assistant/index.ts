@@ -168,6 +168,71 @@ async function createTransaction(supabaseClient: any, userId: string, transactio
   }
 }
 
+// Função para atualizar categoria de transação
+async function updateTransactionCategory(supabaseClient: any, userId: string, transactionId: string, categoryId: string) {
+  try {
+    // Verificar se a transação pertence ao usuário
+    const { data: transaction } = await supabaseClient
+      .from('transactions')
+      .select('id')
+      .eq('id', transactionId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada ou não pertence ao usuário');
+    }
+
+    // Atualizar categoria
+    const { data, error } = await supabaseClient
+      .from('transactions')
+      .update({ category_id: categoryId })
+      .eq('id', transactionId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Erro ao atualizar categoria: ${error.message}`);
+    }
+
+    return { success: true, transaction: data };
+  } catch (error: any) {
+    console.error('Erro em updateTransactionCategory:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Função para atualizar múltiplas transações (categorização em lote)
+async function batchUpdateTransactions(supabaseClient: any, userId: string, updates: Array<{id: string, category_id: string}>) {
+  try {
+    const results = [];
+    
+    for (const update of updates) {
+      const result = await updateTransactionCategory(supabaseClient, userId, update.id, update.category_id);
+      results.push({
+        transaction_id: update.id,
+        ...result
+      });
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+
+    return {
+      success: failCount === 0,
+      results,
+      summary: {
+        total: updates.length,
+        success: successCount,
+        failed: failCount
+      }
+    };
+  } catch (error: any) {
+    console.error('Erro em batchUpdateTransactions:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Função para categorizar transações usando IA
 async function categorizeTransactions(transactions: any[], existingCategories: any[]) {
   try {
@@ -382,10 +447,13 @@ Sempre que possível, referencie os dados reais do usuário em suas respostas.`;
       contextPrompt += `
 
 PERMISSÃO DE ESCRITA ATIVADA:
-Você tem permissão para criar transações em nome do usuário.
+Você tem permissão para criar e modificar transações em nome do usuário.
 
+## AÇÕES DISPONÍVEIS:
+
+### 1. CRIAR TRANSAÇÃO
 Quando o usuário solicitar o cadastro de uma transação (ex: "registre uma despesa de R$ 150 no supermercado"), 
-você deve responder com um JSON no seguinte formato:
+responda com um JSON no seguinte formato:
 
 {
   "action": "create_transaction",
@@ -400,15 +468,44 @@ você deve responder com um JSON no seguinte formato:
   "confirmation_message": "Mensagem amigável confirmando o que será registrado"
 }
 
+### 2. CATEGORIZAR TRANSAÇÃO
+Quando o usuário pedir para categorizar transações específicas (ex: "categorize a transação X como alimentação"),
+responda com um JSON no seguinte formato:
+
+{
+  "action": "update_category",
+  "transaction_id": "id da transação",
+  "category_id": "id da categoria",
+  "confirmation_message": "Mensagem confirmando a categorização"
+}
+
+### 3. CATEGORIZAR EM LOTE
+Quando o usuário pedir para categorizar múltiplas transações (ex: "categorize todas as transações sem categoria"),
+responda com um JSON no seguinte formato:
+
+{
+  "action": "batch_categorize",
+  "updates": [
+    {"id": "transaction_id_1", "category_id": "category_id_1"},
+    {"id": "transaction_id_2", "category_id": "category_id_2"}
+  ],
+  "confirmation_message": "Mensagem explicando as categorizações sugeridas"
+}
+
 IMPORTANTE:
-- Sempre confirme os detalhes antes de criar
+- Sempre confirme os detalhes antes de criar ou modificar
 - Use as contas e categorias disponíveis nos dados do usuário
 - Se não houver conta ou categoria apropriada, informe o usuário
 - Valide que o valor é positivo
 - Use a data atual se não especificada
+- Para categorização, analise a descrição e merchant da transação
+- Seja inteligente ao sugerir categorias baseado no contexto
 
 Contas disponíveis: ${JSON.stringify(userData.accounts_list || [])}
-Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}`;
+Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}
+
+TRANSAÇÕES DISPONÍVEIS PARA CATEGORIZAÇÃO:
+${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter((t: any) => !t.category_id).slice(0, 20) || [], null, 2) : 'Acesso limitado - solicite permissão read_full para ver transações'}`;
     }
 
     const response = await fetch(GEMINI_API_URL, {
@@ -475,20 +572,20 @@ Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}`;
       }
     }
 
-    // Verificar se a resposta contém uma solicitação de criação de transação
+    // Verificar se a resposta contém uma solicitação de ação
     let createdTransactionId = null;
     let actionType = 'read';
     let finalResponse = fullResponse || 'Desculpe, não consegui gerar uma resposta.';
 
-    if (canWriteTransactions && fullResponse.includes('"action": "create_transaction"')) {
+    if (canWriteTransactions && fullResponse.includes('"action":')) {
       try {
         // Tentar extrair o JSON da resposta
-        const jsonMatch = fullResponse.match(/\{[\s\S]*"action":\s*"create_transaction"[\s\S]*\}/);
+        const jsonMatch = fullResponse.match(/\{[\s\S]*"action":\s*"[^"]*"[\s\S]*\}/);
         if (jsonMatch) {
           const actionData = JSON.parse(jsonMatch[0]);
           
-          if (actionData.transaction_data) {
-            // Criar a transação
+          // CRIAR TRANSAÇÃO
+          if (actionData.action === 'create_transaction' && actionData.transaction_data) {
             const result = await createTransaction(supabaseClient, userId, actionData.transaction_data);
             
             if (result.success) {
@@ -504,10 +601,44 @@ Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}`;
               finalResponse = `❌ Erro ao criar transação: ${result.error}\n\nPor favor, verifique os dados e tente novamente.`;
             }
           }
+          
+          // ATUALIZAR CATEGORIA DE UMA TRANSAÇÃO
+          else if (actionData.action === 'update_category' && actionData.transaction_id && actionData.category_id) {
+            const result = await updateTransactionCategory(supabaseClient, userId, actionData.transaction_id, actionData.category_id);
+            
+            if (result.success) {
+              actionType = 'write';
+              finalResponse = actionData.confirmation_message || 
+                `✅ Categoria atualizada com sucesso!\n\n` +
+                `A transação foi categorizada.`;
+            } else {
+              finalResponse = `❌ Erro ao atualizar categoria: ${result.error}`;
+            }
+          }
+          
+          // CATEGORIZAR EM LOTE
+          else if (actionData.action === 'batch_categorize' && actionData.updates && Array.isArray(actionData.updates)) {
+            const result = await batchUpdateTransactions(supabaseClient, userId, actionData.updates);
+            
+            if (result.success) {
+              actionType = 'write';
+              finalResponse = actionData.confirmation_message || 
+                `✅ Categorização em lote concluída!\n\n` +
+                `Total: ${result.summary.total}\n` +
+                `Sucesso: ${result.summary.success}\n` +
+                `Falhas: ${result.summary.failed}`;
+            } else {
+              finalResponse = `⚠️ Categorização parcialmente concluída:\n\n` +
+                `Total: ${result.summary.total}\n` +
+                `Sucesso: ${result.summary.success}\n` +
+                `Falhas: ${result.summary.failed}\n\n` +
+                `Algumas transações não puderam ser categorizadas.`;
+            }
+          }
         }
       } catch (error: any) {
-        console.error('Erro ao processar criação de transação:', error);
-        finalResponse = `❌ Erro ao processar solicitação de criação de transação: ${error.message}`;
+        console.error('Erro ao processar ação:', error);
+        finalResponse = `❌ Erro ao processar solicitação: ${error.message}`;
       }
     }
 
