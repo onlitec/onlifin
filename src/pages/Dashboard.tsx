@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { 
   Wallet, 
   TrendingUp, 
@@ -17,7 +18,9 @@ import {
   ArrowDownRight,
   DollarSign,
   Percent,
-  Activity
+  Activity,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import type { DashboardStats, CategoryExpense, MonthlyData, TransactionWithDetails } from '@/types/types';
 import { 
@@ -71,19 +74,25 @@ export default function Dashboard() {
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<TransactionWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Estado para mês/ano selecionado
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [selectedDate]); // Recarregar quando o mês mudar
 
   const loadDashboardData = async () => {
     try {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      // Usar a data selecionada ao invés da data atual
+      const year = selectedDate.getFullYear();
+      const month = selectedDate.getMonth();
+      const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
+      const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
       // Carregar dados básicos
       const [dashboardStats, expenses, monthly] = await Promise.all([
@@ -97,10 +106,10 @@ export default function Dashboard() {
       setMonthlyData(monthly);
 
       // Calcular estatísticas avançadas
-      await loadEnhancedStats(user.id, dashboardStats, expenses);
-      await loadDailyBalance(user.id);
+      await loadEnhancedStats(user.id, dashboardStats, expenses, year, month);
+      await loadDailyBalance(user.id, year, month);
       await loadAccountBalances(user.id);
-      await loadRecentTransactions(user.id);
+      await loadRecentTransactions(user.id, firstDayOfMonth, lastDayOfMonth);
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
     } finally {
@@ -108,21 +117,47 @@ export default function Dashboard() {
     }
   };
 
-  const loadEnhancedStats = async (userId: string, baseStats: DashboardStats, expenses: CategoryExpense[]) => {
+  const loadEnhancedStats = async (
+    userId: string, 
+    baseStats: DashboardStats, 
+    expenses: CategoryExpense[],
+    year: number,
+    month: number
+  ) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const currentDay = now.getDate();
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+    const currentDay = isCurrentMonth ? now.getDate() : daysInMonth;
+
+    // Calcular receitas e despesas do mês selecionado
+    const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
+    const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('amount, type')
+      .eq('user_id', userId)
+      .gte('date', firstDay)
+      .lte('date', lastDay);
+
+    const monthlyIncome = transactions
+      ?.filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0) || 0;
+
+    const monthlyExpenses = transactions
+      ?.filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0) || 0;
 
     // Taxa de poupança
-    const savingsRate = baseStats.monthlyIncome > 0 
-      ? ((baseStats.monthlyIncome - baseStats.monthlyExpenses) / baseStats.monthlyIncome) * 100 
+    const savingsRate = monthlyIncome > 0 
+      ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 
       : 0;
 
     // Média de gastos diários
-    const averageDailyExpense = currentDay > 0 ? baseStats.monthlyExpenses / currentDay : 0;
+    const averageDailyExpense = currentDay > 0 ? monthlyExpenses / currentDay : 0;
 
-    // Projeção para fim do mês
-    const projectedMonthEnd = averageDailyExpense * daysInMonth;
+    // Projeção para fim do mês (só faz sentido para o mês atual)
+    const projectedMonthEnd = isCurrentMonth ? averageDailyExpense * daysInMonth : monthlyExpenses;
 
     // Maior categoria de despesa
     const topExpense = expenses.length > 0 
@@ -131,6 +166,8 @@ export default function Dashboard() {
 
     setEnhancedStats({
       ...baseStats,
+      monthlyIncome,
+      monthlyExpenses,
       savingsRate,
       averageDailyExpense,
       projectedMonthEnd,
@@ -139,11 +176,11 @@ export default function Dashboard() {
     });
   };
 
-  const loadDailyBalance = async (userId: string) => {
+  const loadDailyBalance = async (userId: string, year: number, month: number) => {
     try {
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
+      const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
 
       const { data: transactions } = await supabase
         .from('transactions')
@@ -175,7 +212,11 @@ export default function Dashboard() {
       let cumulativeBalance = 0;
       const dailyData: DailyBalance[] = [];
       
-      for (let i = 1; i <= new Date().getDate(); i++) {
+      const now = new Date();
+      const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+      const maxDay = isCurrentMonth ? now.getDate() : daysInMonth;
+      
+      for (let i = 1; i <= maxDay; i++) {
         const day = i.toString();
         const data = dailyMap.get(day) || { income: 0, expense: 0 };
         cumulativeBalance += data.income - data.expense;
@@ -218,9 +259,9 @@ export default function Dashboard() {
     }
   };
 
-  const loadRecentTransactions = async (userId: string) => {
+  const loadRecentTransactions = async (userId: string, startDate: string, endDate: string) => {
     try {
-      // Obter últimas 5 transações ordenadas por data
+      // Obter últimas 5 transações do mês selecionado
       const { data: transactions } = await supabase
         .from('transactions')
         .select(`
@@ -229,6 +270,8 @@ export default function Dashboard() {
           account:accounts(name)
         `)
         .eq('user_id', userId)
+        .gte('date', startDate)
+        .lte('date', endDate)
         .order('date', { ascending: false })
         .limit(5);
 
@@ -249,6 +292,40 @@ export default function Dashboard() {
 
   const formatPercent = (value: number) => {
     return `${value.toFixed(1)}%`;
+  };
+
+  // Funções de navegação de mês
+  const goToPreviousMonth = () => {
+    setSelectedDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() - 1);
+      return newDate;
+    });
+  };
+
+  const goToNextMonth = () => {
+    setSelectedDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
+  };
+
+  const goToCurrentMonth = () => {
+    setSelectedDate(new Date());
+  };
+
+  const isCurrentMonth = () => {
+    const now = new Date();
+    return selectedDate.getFullYear() === now.getFullYear() && 
+           selectedDate.getMonth() === now.getMonth();
+  };
+
+  const formatSelectedMonth = () => {
+    return selectedDate.toLocaleDateString('pt-BR', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
   };
 
   if (isLoading) {
@@ -272,22 +349,68 @@ export default function Dashboard() {
     );
   }
 
-  const balance = (stats?.monthlyIncome || 0) - (stats?.monthlyExpenses || 0);
+  const balance = (enhancedStats?.monthlyIncome || 0) - (enhancedStats?.monthlyExpenses || 0);
   const isPositiveBalance = balance >= 0;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
-          <p className="text-muted-foreground mt-1">
-            Visão geral das suas finanças em {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-          </p>
+      {/* Header com Seletor de Mês */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
+            <p className="text-muted-foreground mt-1">
+              Visão geral das suas finanças
+            </p>
+          </div>
+          <Badge variant={isPositiveBalance ? "default" : "destructive"} className="text-lg px-4 py-2">
+            {isPositiveBalance ? '✓ Positivo' : '⚠ Negativo'}
+          </Badge>
         </div>
-        <Badge variant={isPositiveBalance ? "default" : "destructive"} className="text-lg px-4 py-2">
-          {isPositiveBalance ? '✓ Positivo' : '⚠ Negativo'}
-        </Badge>
+
+        {/* Seletor de Mês */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between gap-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToPreviousMonth}
+                title="Mês anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-4 flex-1 justify-center">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <span className="text-xl font-semibold capitalize">
+                    {formatSelectedMonth()}
+                  </span>
+                </div>
+                {!isCurrentMonth() && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToCurrentMonth}
+                  >
+                    Mês Atual
+                  </Button>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToNextMonth}
+                disabled={isCurrentMonth()}
+                title="Próximo mês"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Cards de Indicadores Principais */}
@@ -313,7 +436,7 @@ export default function Dashboard() {
             <TrendingUp className="h-5 w-5 text-income" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-income">{formatCurrency(stats?.monthlyIncome || 0)}</div>
+            <div className="text-2xl font-bold text-income">{formatCurrency(enhancedStats?.monthlyIncome || 0)}</div>
             <div className="flex items-center gap-1 mt-1">
               <ArrowUpRight className="h-3 w-3 text-income" />
               <p className="text-xs text-muted-foreground">Entradas</p>
@@ -328,7 +451,7 @@ export default function Dashboard() {
             <TrendingDown className="h-5 w-5 text-expense" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-expense">{formatCurrency(stats?.monthlyExpenses || 0)}</div>
+            <div className="text-2xl font-bold text-expense">{formatCurrency(enhancedStats?.monthlyExpenses || 0)}</div>
             <div className="flex items-center gap-1 mt-1">
               <ArrowDownRight className="h-3 w-3 text-expense" />
               <p className="text-xs text-muted-foreground">Saídas</p>
@@ -470,7 +593,7 @@ export default function Dashboard() {
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
-                    label={(entry) => `${entry.category}: ${formatPercent((entry.amount / (stats?.monthlyExpenses || 1)) * 100)}`}
+                    label={(entry) => `${entry.category}: ${formatPercent((entry.amount / (enhancedStats?.monthlyExpenses || 1)) * 100)}`}
                   >
                     {categoryExpenses.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />

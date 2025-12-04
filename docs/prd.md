@@ -57,7 +57,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
       - Cada transação é registrada na categoria selecionada no dropdown correspondente
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
 - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações\n\n### 2.3 Análise e Categorização Automática de Transações com IA
+- Classificação automática de transações\n
+### 2.3 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
   - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
@@ -78,7 +79,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Aprendizado contínuo:**
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
-\n### 2.4 Movimentações Financeiras
+
+### 2.4 Movimentações Financeiras
 - Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
@@ -91,40 +93,43 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Visualização de fluxo de caixa
 - Previsões financeiras simples
 - **Dashboard expandido com indicadores financeiros e gráficos:**
-  - **Indicadores principais:**
-    - Saldo total consolidado de todas as contas (com cálculo automático baseado em receitas e despesas)
-    - Receitas totais do mês atual
-    - Despesas totais do mês atual
-    - Saldo líquido do mês (receitas - despesas)
-    - Variação percentual em relação ao mês anterior
-    - Limite total disponível em cartões de crédito
-- Valor total de contas a pagar no mês
-    - Valor total de contas a receber no mês
-  - **Gráficos e visualizações:**
-    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses
-    - Gráfico de pizza: distribuição de despesas por categoria no mês atual
-    - Gráfico de barras: comparação de receitas vs despesas nos últimos 6 meses\n    - Gráfico de área: projeção de fluxo de caixa para os próximos 3 meses
-    - Gráfico de barras horizontais: top 5 categorias com maiores gastos no mês\n    - Gráfico de linha: tendência de gastos por categoria ao longo do tempo
-    - Heatmap: padrão de gastos por dia da semana e hora do dia
-  - **Indicadores de performance:**
-    - Taxa de economia mensal (percentual de receitas não gastas)
-    - Média de gastos diários\n    - Comparação de gastos: mês atual vs média dos últimos 3 meses\n    - Indicador de saúde financeira (score baseado em saldo,dívidas e economia)
-  - **Alertas visuais:**
-    - Indicador de contas próximas ao vencimento (próximos 7 dias)
-    - Alerta de gastos acima da média em categorias específicas
-    - Indicador de limite de cartão de crédito próximo ao máximo (>80%)
-  - **Filtros e personalização:**
-    - Seleção de período (mês atual, últimos 3 meses, últimos 6 meses, ano atual)
-    - Filtro por conta específica
-    - Filtro por categoria
-    - Opção de ocultar/exibir gráficos específicos
+  - **Seletor de mês para visualização de dados históricos:**
+    - Dropdown ou calendário para seleção de mês específico
+    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
+    - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
+    - Possibilidade de comparar dados de diferentes meses lado a lado
+  - **Indicadores principais (ajustados conforme mês selecionado):**\n    - Saldo total consolidado de todas as contas no final do mês selecionado
+    - Receitas totais do mês selecionado
+    - Despesas totais do mês selecionado
+    - Saldo líquido do mês selecionado (receitas - despesas)
+    - Variação percentual em relação ao mês anterior ao selecionado
+    - Limite total disponível em cartões de crédito no mês selecionado
+- Valor total de contas a pagar no mês selecionado
+    - Valor total de contas a receber no mês selecionado
+  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
+    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partir do mês selecionado
+    - Gráfico de pizza: distribuição de despesas por categoria no mês selecionado
+    - Gráfico de barras: comparação de receitas vs despesas nos últimos 6 meses a partir do mês selecionado
+    - Gráfico de área: projeção de fluxo de caixa para os próximos 3 meses a partir do mês selecionado
+    - Gráfico de barras horizontais: top 5 categorias com maiores gastos no mês selecionado
+    - Gráfico de linha: tendência de gastos por categoria ao longo do tempo (6 meses a partir do mês selecionado)
+    - Heatmap: padrão de gastos por dia da semana e hora do dia no mês selecionado
+  - **Indicadores de performance (ajustados conforme mês selecionado):**
+    - Taxa de economia mensal (percentual de receitas não gastas) no mês selecionado\n    - Média de gastos diários no mês selecionado
+    - Comparação de gastos: mês selecionado vs média dos últimos 3 meses anteriores
+    - Indicador de saúde financeira (score baseado em saldo,dívidas e economia) no mês selecionado\n  - **Alertas visuais (ajustados conforme mês selecionado):**
+    - Indicador de contas próximas ao vencimento no mês selecionado
+    - Alerta de gastos acima da média em categorias específicas no mês selecionado
+    - Indicador de limite de cartão de crédito próximo ao máximo (>80%) no mês selecionado\n  - **Filtros e personalização:**
+    - Seleção de mês específico (navegação por meses anteriores e futuros)
+    - Filtro por conta específica\n    - Filtro por categoria\n    - Opção de ocultar/exibir gráficos específicos
+    - Botão de 'Voltar ao Mês Atual' para retornar rapidamente aos dados do mês corrente
 - Exportação de relatórios em CSV, Excel e PDF
 \n### 2.6 Assistente de IA Contextual\n- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
 - **Funcionalidade de upload de extrato bancário diretamente no chatbot:**
   - **Botão de upload de arquivo visível no chatbot flutuante (ícone de clipe ou upload)**
-  - **Suporte aos formatos CSV, OFX e QIF**
-  - **Fluxo de importação e análise:**
+  - **Suporte aos formatos CSV, OFX e QIF**\n  - **Fluxo de importação e análise:**
     1. Usuário clica no botão de upload e seleciona arquivo
     2. Sistema salva o extrato na plataforma e exibe confirmação
     3. Botão 'Analisar Extrato' surge no chatbot
@@ -147,6 +152,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Sugestão de novas categorias baseadas em padrões identificados**
   - **Interpretação de gráficos e indicadores do dashboard**
   - **Análise de tendências financeiras e insights personalizados**
+  - **Consulta de dados históricos de meses anteriores**
 - Análise completa de contas cadastradas
 - Consulta detalhada de extratos de transações
 - Análise de pagamentos e recebimentos
@@ -179,9 +185,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Cadastro e configuração de plugins na plataforma**
 - **Interface de gerenciamento de plugins com as seguintes funcionalidades:**
   - Lista de plugins disponíveis e instalados
-  - Ativação/desativação de plugins
-  - Configuração de parâmetros específicos de cada plugin (chaves de API, endpoints, credenciais)
-  - Indicador visual de status (ativo/inativo) comícone de check verde ou alerta laranja
+  - Ativação/desativação de plugins\n  - Configuração de parâmetros específicos de cada plugin (chaves de API, endpoints, credenciais)
+  - Indicador visual de status (ativo/inativo) com ícone de check verde ou alerta laranja
 - **Permissões de acesso para plugins:**
   - Controle granular de quais dados da plataforma cada plugin pode acessar
   - Toggle individual para cada tipo de acesso (contas, transações, relatórios, etc.)
@@ -199,8 +204,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Criptografia de dados sensíveis transmitidos a plugins
   - Isolamento de execução para prevenir interferências entre plugins
 \n##3. Segurança e Privacidade\n
-### 3.1 Proteção de Dados
-- TLS/HTTPS em todas as comunicações
+### 3.1 Proteção de Dados\n- TLS/HTTPS em todas as comunicações
 - Criptografia em repouso para dados sensíveis
 - Mascaramento e criptografia de números de conta e cartão\n- Transmissão segura de dados completos ao modelo de IA quando acesso total estiver ativado
 - **Transmissão segura de dados a plugins conforme permissões configuradas**
@@ -268,12 +272,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Extratos detalhados de transações
   - **Interface de escrita para cadastro de transações pelo modelo de IA**
   - **Interface de análise e categorização automática de extratos**
+  - **Dados históricos de meses anteriores para consulta e análise**
 - **Camada de acesso controlado para plugins conforme permissões configuradas**
 - **Módulo de cálculo de saldo em tempo real:**
   - Calcula saldo atual baseado em saldo inicial, receitas recebidas e despesas pagas
   - Atualiza saldo automaticamente ao registrar, editar ou excluir transações\n  - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
+  - **Calcula saldo histórico para qualquer mês selecionado**
 - **Módulo de análise e categorização automática:**
-  - **Trigger manual:acionado pelo usuário atravésdo botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
+  - **Trigger manual:acionado pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - Processa extratos salvos e identifica padrões\n  - Sugere categorias existentes ou novas categorias\n  - Exibe resultados em popup com lista ordenada de transações por data
   - Permite revisão e edição de categorias via dropdown antesdo cadastro
   - Aprende com confirmações e correções do usuário
@@ -299,9 +305,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Processamento de dados históricos para tendências
   - Cache de dados agregados para performance
   - API de dados para visualizações no frontend
+  - **Suporte a consulta de dados de meses anteriores**
+  - **Recálculo de indicadores e gráficos baseado no mês selecionado**
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
 - Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**
 - **Módulo de validação e confirmação para transações criadas pelo modelo de IA**\n- **Módulo de validação e sandbox para execução segura de plugins**
+- **Módulo de navegação temporal:**
+  - Gerenciamento de seleção de mês no dashboard
+  - Cálculo de dados históricos para mês selecionado
+  - Cache de dados históricos para performance
+  - API para consulta de dados de meses específicos
 \n### 6.3 Testes
 - Cobertura de testes unitários e de integração
 - Testes de segurança (SAST/DAST)
@@ -313,8 +326,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de sugestões de novas categorias
   - Validação de exibição de popup com lista ordenada de transações
   - Validação de dropdown de categorias com pré-seleção
-  - Validação de cadastro em lote de transações
-  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
+  - Validação de cadastro em lote de transações\n  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
   - Validação de parsing de OFX versões 1.x e 2.x
   - Validação de extração correta de transações
   - Validação de tratamento de erros para arquivos corrompidos
@@ -323,6 +335,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de cálculo correto ao adicionar receitas (aumento de saldo)
   - Validação de cálculo correto ao adicionar despesas (diminuição de saldo)
   - Validação de atualização de saldo ao editar ou excluir transações
+  - **Validação de cálculo de saldo histórico para meses anteriores**
 - **Testes de upload e salvamento de extrato no chatbot:**
   - Validação de upload de arquivo via chatbot
   - Validação de salvamento seguro na plataforma
@@ -338,6 +351,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de filtros de período e categoria
   - Validação de performance com grandes volumes de dados
   - Validação de responsividade de gráficos
+  - **Validação de seletor de mês e navegação entre meses**
+  - **Validação de atualização de indicadores ao selecionar novo mês**
+  - **Validação de atualização de gráficos ao selecionar novo mês**\n  - **Validação de cálculo correto de dados históricos**
+  - **Validação de comparação entre meses diferentes**
 - **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
 \n## 7. Escopodo MVP
 
@@ -364,22 +381,24 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
 - Conciliação manual\n- **Dashboard expandido com indicadores financeiros e gráficos:**
-  - Saldo total consolidado
-  - Receitas e despesas totais do mês
-  - Saldo líquido e variação percentual
-  - Gráfico de evolução do saldo (6 meses)
-  - Gráfico de distribuição de despesas por categoria
-  - Gráfico de comparação receitas vs despesas (6 meses)
-  - Gráfico de projeção de fluxo de caixa (3 meses)
-  - Top 5 categorias com maiores gastos
-  - Indicadores de performance (taxa de economia, média de gastos diários)
-  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão)
+  - **Seletor de mês para visualização de dados históricos**
+  - **Navegação entre meses anteriores e futuros**
+  - **Botão 'Voltar ao Mês Atual'**
+  - Saldo total consolidado (ajustado para o mês selecionado)
+  - Receitas e despesas totais do mês (ajustado para o mês selecionado)
+  - Saldo líquido e variação percentual (ajustado para o mês selecionado)
+  - Gráfico de evolução do saldo (6 meses a partir do mês selecionado)\n  - Gráfico de distribuição de despesas por categoria (mês selecionado)
+  - Gráfico de comparação receitas vs despesas (6 meses a partir do mês selecionado)
+  - Gráfico de projeção de fluxo de caixa (3 meses a partir do mês selecionado)
+  - Top 5 categorias com maiores gastos (mês selecionado)
+  - Indicadores de performance (taxa de economia, média de gastos diários) (mês selecionado)\n  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)
 - Assistente de IA com acesso total configurável a:\n  - Todas as contas cadastradas
   - Todas as transações (receitas e despesas)
   - Todos os pagamentos e recebimentos
   - Todos os relatórios financeiros
   - Saldos de todas as contas
   - Extratos completos de transações
+  - **Dados históricos de meses anteriores**
   - **Permissão para cadastro de transações mediante solicitação do usuário**
   - **Permissão para análise e categorização automática de extratos**
   - **Interpretação de gráficos e indicadores do dashboard**
@@ -390,14 +409,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Toggle de acesso total com termo de consentimento
   - **Toggle de permissão para cadastro de transações pelo modelo de IA**
   - **Toggle de permissão para análise e categorização automática**
-  - **Interface de gerenciamento de plugins**
-  - **Configuração de permissões para plugins**
+  - **Interface de gerenciamento de plugins**\n  - **Configuração de permissões para plugins**
   - Logs detalhados de chat e acessos do modelo de IA
   - **Logs de transações criadas pelo modelo de IA**
   - **Logs de análises e categorizações automáticas**
-  - **Logs de ações executadas por plugins**
+  - **Logs deações executadas por plugins**
 - Relatório de auditoria de acessos
-\n### 7.2 Versões Futuras (1.1/ 1.2)\n- Conciliação automática por Machine Learning
+\n### 7.2 Versões Futuras (1.1 / 1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
 - Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
 - **Marketplace de plugins com plugins pré-aprovados**
@@ -416,6 +434,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 \n### 8.2 Layout\n- Layout em cards para organização modular de informações financeiras
 - Sidebar fixa com navegação principal
 - **Dashboard com grid responsivo para visualização de métricas e gráficos:**
+  - **Seletor de mês no topo do dashboard com navegação intuitiva**
   - Seção superior com indicadores principais em cards destacados
   - Seção intermediária com gráficos principais em grid 2x2
   - Seção inferior com gráficos secundários e alertas
@@ -446,8 +465,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Exibição destacada do saldo atual da conta na página de contas com formatação clara (valor em negrito, cor verde para saldo positivo, cor vermelha para saldo negativo)**
 - **Cards de indicadores comícones representativos e valores em destaque**
 - **Animações suaves de transição ao carregar gráficos**
-
-## 9. Referências de Interface
+- **Seletor de mês com dropdown ou calendário estilizado:**
+  - Botões de navegação (setas para mês anterior e próximo)
+  - Exibição clara do mês e ano selecionado
+  - Botão 'Voltar ao Mês Atual' em destaque
+  - Indicador visual do mês atual
+\n## 9. Referências de Interface
 
 ### 9.1 Imagens de Referência
 - Exemplo de mensagem de erro de importação OFX: {2C7B1F61-7FE3-4148-B737-A544FBDEEF2D}.png
@@ -462,7 +485,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
    - Backend (Flask/FastAPI)
    - Frontend (React)\n3. Configurar CI/CD com GitHub Actions:\n   - Pipeline de build\n   - Pipeline de testes
    - Pipeline de deploy
-4. Criar estrutura basedo backend:\n   - Configuração de rotas
+4. Criar estrutura basedo backend:
+   - Configuração de rotas
    - Configuração de banco de dados
    - Middleware de autenticação
    - Middleware de logging
@@ -543,8 +567,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 7. Testes de mensagens de erro
 \n**Entregáveis:**
 - Endpoint de upload funcional
-- Componente de chatbot com upload
-- Testes automatizados
+- Componente de chatbot com upload\n- Testes automatizados
 - Documentação de API
 \n### 10.3 Sprint 3: Módulo de Análise de Extrato (Semana 3)
 
@@ -584,7 +607,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
    - Parsing de dados de transações
    - Parsing de categorias sugeridas
    - Preparação de dados para popup
-3. Implementar tratamento de erros de análise:\n   - Mensagens de erro claras
+3. Implementar tratamento de erros de análise:
+   - Mensagens de erro claras
    - Sugestões de correção
    - Opção de tentar novamente
 \n**Tarefas de Teste:**
@@ -621,8 +645,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
    - Score de confiança da sugestão
 \n**Tarefas Frontend:**
 1. Criar componente de popup:
-   - Modal centralizado
-   - Título'Resultado da Análise do Extrato'
+   - Modal centralizado\n   - Título'Resultado da Análise do Extrato'
    - Botão de fechar
    - Responsividade para mobile
 2. Implementar lista de transações:
@@ -729,44 +752,64 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 **Tarefas Backend:**
 1. Criar endpoint GET /api/dashboard/indicators:
-   - Cálculo de saldo total consolidado
-   - Cálculo de receitas e despesas totais do mês
+   - **Parâmetro de mês (opcional, padrão: mês atual)**
+   - Cálculo de saldo total consolidado para o mês selecionado
+   - Cálculo de receitas e despesas totais do mês selecionado
    - Cálculo de saldo líquido e variação percentual
    - Cálculo de limite total disponível em cartões
    - Cálculo de contas a pagar e receber
 - Cálculo de taxa de economia mensal
    - Cálculo de média de gastos diários
 2. Criar endpoint GET /api/dashboard/charts/balance-evolution:
-   - Dados de evolução do saldo nos últimos 6 meses
+   - **Parâmetro de mês base (opcional, padrão: mês atual)**
+   - Dados de evolução do saldo nos últimos 6 meses a partir do mês selecionado
    - Agregação por mês\n   - Formatação para gráfico de linha
 3. Criar endpoint GET /api/dashboard/charts/expenses-by-category:
-   - Distribuição de despesas por categoria no mês atual
+   - **Parâmetro de mês (opcional, padrão: mês atual)**
+   - Distribuição de despesas por categoria no mês selecionado
    - Agregação por categoria
    - Formatação para gráfico de pizza
 4. Criar endpoint GET /api/dashboard/charts/income-vs-expenses:
-   - Comparação de receitas vs despesas nos últimos 6 meses\n   - Agregação por mês
+   - **Parâmetro de mês base (opcional, padrão: mês atual)**
+   - Comparação de receitas vs despesas nos últimos 6 meses a partir do mês selecionado
+   - Agregação por mês
    - Formatação para gráfico de barras
 5. Criar endpoint GET /api/dashboard/charts/cashflow-projection:
-   - Projeção de fluxo de caixa para os próximos 3 meses
+   - **Parâmetro de mês base (opcional, padrão: mês atual)**
+   - Projeção de fluxo de caixa para os próximos 3 meses a partir do mês selecionado
    - Cálculo baseado em histórico e compromissos agendados
    - Formatação para gráfico de área
 6. Criar endpoint GET /api/dashboard/charts/top-categories:
-   - Top 5 categorias com maiores gastos no mês\n   - Agregação por categoria
-   - Formatação para gráfico de barras horizontais
+   - **Parâmetro de mês (opcional, padrão: mês atual)**
+   - Top 5 categorias com maiores gastos no mês selecionado
+   - Agregação por categoria\n   - Formatação para gráfico de barras horizontais
 7. Implementar sistema de cache:
    - Cache de dados agregados para performance
    - Invalidação de cache ao cadastrar/editar transações
-   - TTL configurável
-8. Implementar filtros de período:
-   - Suporte a filtros: mês atual, últimos 3 meses, últimos 6 meses, ano atual
-   - Recálculo de indicadores e gráficos baseado no período selecionado
-
-**Tarefas Frontend:**\n1. Criar componente de dashboard:
+   - TTL configurável\n   - **Cache separado por mês para dados históricos**
+8. **Implementar lógica de cálculo de saldo histórico:**
+   - Cálculo de saldo no final de cada mês
+   - Armazenamento de snapshots mensais de saldo
+   - Recálculo sob demanda quando necessário
+\n**Tarefas Frontend:**
+1. Criar componente de dashboard:
    - Layout em grid responsivo
+   - **Seletor de mês no topo**
    - Seção de indicadores principais
    - Seção de gráficos
    - Seção de alertas
-2. Implementar cards de indicadores:
+2. **Implementar seletor de mês:**
+   - Dropdown ou calendário para seleção de mês
+   - Botões de navegação (mês anterior, próximo mês)
+   - Exibição clarado mês e ano selecionado
+   - Botão 'Voltar ao Mês Atual' em destaque
+   - Indicador visual do mês atual
+3. **Implementar lógica de atualização ao selecionar mês:**
+   - Chamada aos endpoints com parâmetro de mês
+   - Atualização de todos os indicadores
+   - Atualização de todos os gráficos
+   - Feedback visual durante carregamento
+4. Implementar cards de indicadores:
    - Card de saldo total consolidado
    - Card de receitas totais do mês
    - Card de despesas totais do mês\n   - Card de saldo líquido com variação percentual
@@ -775,53 +818,51 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
    -Ícones representativos para cada indicador
    - Formatação de valores monetários
    - Cores diferenciadas (verde para positivo, vermelho para negativo)
-3. Implementar gráfico de evolução do saldo:
-   - Gráfico de linha com dados dos últimos 6 meses\n   - Tooltips informativos
+5. Implementar gráfico de evolução do saldo:
+   - Gráfico de linha com dados dos últimos 6 meses a partir do mês selecionado
+   - Tooltips informativos
    - Legenda clara
-   - Responsividade\n4. Implementar gráfico de distribuição de despesas:
-   - Gráfico de pizza com categorias
+   - Responsividade\n6. Implementar gráfico de distribuição de despesas:
+   - Gráfico de pizza com categorias do mês selecionado
    - Cores distintas para cada categoria
    - Percentuais exibidos
    - Legenda com nomes de categorias
-5. Implementar gráfico de receitas vs despesas:
+7. Implementar gráfico de receitas vs despesas:
    - Gráfico de barras agrupadas\n   - Barras para receitas e despesas
    - Comparação visual clara
    - Eixos com valores formatados
-6. Implementar gráfico de projeção de fluxo de caixa:
-   - Gráfico de área com projeção de3 meses
+8. Implementar gráfico de projeção de fluxo de caixa:
+   - Gráfico de área com projeção de3 meses a partir do mês selecionado
    - Linha de tendência
    - Área preenchida para visualização de volume
-7. Implementar gráfico de top categorias:
-   - Gráfico de barras horizontais
-   - Top 5 categorias com maiores gastos
+9. Implementar gráfico de top categorias:
+   - Gráfico de barras horizontais\n   - Top 5 categorias com maiores gastos no mês selecionado
    - Valores exibidos ao lado das barras
-8. Implementar filtros de período:
-   - Dropdown de seleção de período
-   - Atualização automática de indicadores e gráficos
-   - Feedback visual durante carregamento
-9. Implementar alertas visuais:
-   - Alerta de contas próximas ao vencimento (próximos 7 dias)
-   - Alerta de gastos acima da média\n   - Alerta de limite de cartão próximo ao máximo (>80%)
-   - Ícones e cores de destaque
-10. Implementar animações:\n    - Animações suaves de transição ao carregar gráficos
+10. Implementar alertas visuais:
+    - Alerta de contas próximas ao vencimento no mês selecionado
+    - Alerta de gastos acima da média\n    - Alerta de limite de cartão próximo ao máximo (>80%)
+    - Ícones e cores de destaque
+11. Implementar animações:\n    - Animações suaves de transição ao carregar gráficos
     - Animações de hover em elementos interativos
-    - Feedback visual ao aplicar filtros
-
-**Tarefas de Teste:**
+    - Feedback visual ao aplicar filtros ou mudar de mês
+\n**Tarefas de Teste:**
 1. Testes unitários de cálculo de indicadores
 2. Testes de endpoints de gráficos
 3. Testes de cache de dados
-4. Testes de filtros de período
-5. Testes de renderização de gráficos
-6. Testes de responsividade de dashboard
-7. Testes de performance com grandes volumes de dados
-8. Testes de alertas visuais
-9. Testes de animações
-\n**Entregáveis:**
-- Endpoints de indicadores e gráficos funcionais
-- Dashboard expandido com indicadores e gráficos
+4. **Testes de seletor de mês**
+5. **Testes de navegação entre meses**
+6. **Testes de atualização de indicadores ao mudar de mês**
+7. **Testes de atualização de gráficos ao mudar de mês**
+8. **Testes de cálculo de saldo histórico**
+9. Testes de renderização de gráficos
+10. Testes de responsividade de dashboard
+11. Testes de performance com grandes volumes de dados
+12. Testes de alertas visuais
+13. Testes de animações\n
+**Entregáveis:**
+- Endpoints de indicadores e gráficos funcionais com suporte a mês selecionado
+- Dashboard expandido com indicadores e gráficos\n- Seletor de mês funcional
 - Sistema de cache implementado
-- Filtros de período funcionais
 - Testes automatizados
 - Documentação de API
 
@@ -831,43 +872,53 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 **Tarefas de Integração:**
 1. Integrar módulo de upload com módulo de análise
 2. Integrar módulo de análise com popup de resultados
-3. Integrar popup com módulo de cadastro\n4. Integrar cadastro com atualização de dashboard
-5. Validar fluxo completo de ponta a ponta
-6. Ajustar interfaces entre módulos
-7. Otimizar performance de integração
+3. Integrar popup com módulo de cadastro
+4. Integrar cadastro com atualização de dashboard
+5. **Integrar seletor de mês com todos os componentes do dashboard**
+6. Validar fluxo completo de ponta a ponta
+7. Ajustar interfaces entre módulos
+8. Otimizar performance de integração
 
 **Tarefas de Teste End-to-End:**
 1. Teste de fluxo completo:\n   - Upload de extrato CSV
-   - Análise automática\n   - Exibição de popup\n   - Revisão de categorias
+   - Análise automática
+   - Exibição de popup\n   - Revisão de categorias
    - Cadastro de transações
    - Atualização de dashboard
    - Confirmação de sucesso
-2. Teste de fluxo completo com OFX 1.x\n3. Teste de fluxo completo com OFX 2.x
+2. Teste de fluxo completo com OFX 1.x
+3. Teste de fluxo completo com OFX 2.x
 4. Teste de fluxo completo com QIF
 5. Teste de criação de novas categorias
 6. Teste de atualização de saldo
 7. Teste de atualização de indicadores do dashboard
 8. Teste de atualização de gráficos
-9. Teste de auditoria completa
-10. Teste de tratamento de erros em cada etapa
-11. Teste de performance com arquivos grandes
-12. Teste de concorrência (múltiplos uploads simultâneos)
-13. Teste de filtros de período no dashboard
-14. Teste de alertas visuais
-\n**Tarefas de Usabilidade:**
+9. **Teste de navegação entre meses no dashboard**
+10. **Teste de visualização de dados históricos**
+11. **Teste de comparação entre meses diferentes**
+12. Teste de auditoria completa
+13. Teste de tratamento de erros em cada etapa
+14. Teste de performance com arquivos grandes
+15. Teste de concorrência (múltiplos uploads simultâneos)
+16. Teste de alertas visuais
+
+**Tarefas de Usabilidade:**
 1. Teste de usabilidade com usuários reais\n2. Coleta de feedback\n3. Ajustes de interface baseados em feedback
 4. Validação de acessibilidade
 5. Validação de responsividade
 6. Validação de clareza de gráficos e indicadores
+7. **Validação de intuitividade do seletor de mês**
 \n**Tarefas de Performance:**
 1. Teste de carga do endpoint de upload
 2. Teste de carga do endpoint de análise
 3. Teste de carga do endpoint de cadastro
 4. Teste de carga dos endpoints de dashboard
-5. Otimização de queries de banco de dados
-6. Otimização de chamadas à API deIA
-7. Implementação de cache onde aplicável
-8. Otimização de renderização de gráficos
+5. **Teste de carga de consultas de dados históricos**
+6. Otimização de queries de banco de dados
+7. Otimização de chamadas à API deIA
+8. Implementação de cache onde aplicável
+9. Otimização de renderização de gráficos
+10. **Otimização de cálculo de saldo histórico**
 
 **Tarefas de Segurança:**
 1. Teste de injeção SQL
@@ -879,7 +930,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 7. Auditoria de logs de segurança
 \n**Entregáveis:**
 - Fluxo completo integrado e funcional
-- Dashboard expandido integrado
+- Dashboard expandido integrado com seletor de mês
 - Relatório de testes end-to-end
 - Relatório de usabilidade
 - Relatório de performance
@@ -890,12 +941,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 **Objetivo:** Corrigir bugs, finalizar documentação e realizar deploy
 
-**Tarefas de Correção:**\n1. Correção de bugs críticos identificados
-2. Correção de bugs de alta prioridade
+**Tarefas de Correção:**\n1. Correção de bugs críticos identificados\n2. Correção de bugs de alta prioridade
 3. Ajustes de interface baseados em feedback
 4. Otimizações de performance
 5. Ajustes de segurança
 6. Ajustes de gráficos e indicadores
+7. **Ajustes do seletor de mês e navegação temporal**
 \n**Tarefas de Documentação:**
 1. Documentação técnica completa:\n   - Arquitetura do sistema
    - Fluxo de dados
@@ -903,13 +954,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
    - Modelos de dados
    - Configuração de ambiente
    - Documentação de gráficos e indicadores
+   - **Documentação de funcionalidade de visualização de meses anteriores**
 2. Documentação de usuário:
-   - Guia de usodo chatbot
+   - Guia de uso do chatbot
    - Guia de upload de extratos
    - Guia de análise e categorização
    - Guia de interpretação do dashboard
-   - FAQ
-3. Documentação de deploy:
+   - **Guia de navegação entre meses no dashboard**\n   - FAQ\n3. Documentação de deploy:
    - Procedimentos de deploy
    - Configuração de ambiente de produção
    - Procedimentos de rollback
@@ -923,8 +974,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 2. Deploy de backend:
    - Build de imagem Docker
    - Push para registry\n   - Deploy em produção
-   - Validação de saúde
-3. Deploy de frontend:
+   - Validação de saúde\n3. Deploy de frontend:
    - Build de produção
    - Deploy em CDN
    - Validação de carregamento
@@ -935,23 +985,24 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
    - Dashboard de monitoramento
 5. Configuração de backup:
    - Backup automático de banco de dados
-   - Backup de arquivos
-   - Procedimentos de recuperação
+   - Backup de arquivos\n   - Procedimentos de recuperação
 
 **Tarefas de Validação Pós-Deploy:**
 1. Smoke tests em produção
 2. Validação de endpoints\n3. Validação de fluxo completo
 4. Validação de dashboard e gráficos
-5. Validação de performance
-6. Validação de monitoramento
-7. Validação de backup
+5. **Validação de seletor de mês e dados históricos**
+6. Validação de performance
+7. Validação de monitoramento
+8. Validação de backup
 \n**Tarefas de Treinamento:**
 1. Treinamento de equipe de suporte
 2. Treinamento de usuários piloto
 3. Preparação de materiais de treinamento
 4. Treinamento sobre interpretação de gráficos e indicadores
+5. **Treinamento sobre uso do seletor de mês e análise de dados históricos**
 \n**Entregáveis:**
-- Sistema em produção\n- Dashboard expandido em produção
+- Sistema em produção\n- Dashboard expandido em produção com funcionalidade de visualização de meses anteriores
 - Documentação completa\n- Monitoramento ativo
 - Backup configurado
 - Equipe treinada
@@ -963,18 +1014,18 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 |--------|--------|------|------------------------|
 | Sprint 1 | Semana 1 | Preparação do Ambiente | Infraestrutura base, CI/CD, estrutura de código, biblioteca de gráficos |
 | Sprint 2 | Semana 2 | Upload no Chatbot | Endpoint de upload, componente de chatbot |
-| Sprint 3 | Semana 3 | Análise de Extrato | Conector de IA, parsers de arquivos, lógica de categorização |
+| Sprint 3 | Semana 3 | Análise de Extrato | Conector deIA, parsers de arquivos, lógica de categorização |
 | Sprint 4 | Semana 4 | Popup de Resultados | Componente de popup, lista de transações, dropdowns |
 | Sprint 5 | Semana 5 | Cadastro em Lote | Endpoint de cadastro, atualização de saldo, auditoria |
-| Sprint 6 | Semana 6 | Dashboard Expandido | Indicadores financeiros, gráficos avançados, filtros, alertas |
-| Sprint 7 | Semana 7 | Integração e Testes | Fluxo completo integrado, testes end-to-end, dashboard integrado |
+| Sprint 6 | Semana 6 | Dashboard Expandido | Indicadores financeiros, gráficos avançados, seletor de mês, filtros, alertas |
+| Sprint 7 | Semana 7 | Integração e Testes | Fluxo completo integrado, testes end-to-end, dashboard integrado com navegação temporal |
 | Sprint 8 | Semana 8 | Ajustes e Deploy | Sistema em produção, documentação completa |
 
 **Duração Total:** 8 semanas
 
 ## 12. Recursos Necessários
 
-###12.1 Equipe\n- 1 Desenvolvedor Backend (Flask/FastAPI, PostgreSQL) - 8 semanas
+### 12.1 Equipe\n- 1 Desenvolvedor Backend (Flask/FastAPI, PostgreSQL) - 8 semanas
 - 1 Desenvolvedor Frontend (React, TypeScript, Chart.js/Recharts) - 8 semanas
 - 1 Engenheiro de IA (integração com modelo de IA) - 4 semanas (Sprints 3-6)
 - 1 QA Engineer (testes) - 8 semanas
@@ -1008,6 +1059,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 | Indisponibilidade de API de IA | Baixa | Alto | Implementar retry logic, fallback para processamento manual, alertas de falha |
 | Performance de renderização de gráficos com grandes volumes de dados | Média | Médio | Implementar paginação, agregação de dados, cache, otimização de queries |
 | Complexidade de cálculo de indicadores financeiros | Média | Médio | Validação extensiva de fórmulas, testes com dados reais, revisão por especialista financeiro |
+| **Performance de consultas de dados históricos** | Média | Médio | Implementar cache de snapshots mensais, índices otimizados no banco de dados, agregação pré-calculada |
+| **Complexidade de cálculo de saldo histórico** | Média | Médio | Armazenar snapshots de saldo mensal, recálculo sob demanda apenas quando necessário, validação extensiva |
 \n## 14. Critérios de Sucesso
 
 ### 14.1 Critérios Técnicos
@@ -1015,14 +1068,18 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Cobertura de testes > 80%
 - Tempo de resposta de endpoints < 2 segundos
 - Tempo de carregamento de dashboard < 3 segundos
+- **Tempo de carregamento de dados históricos < 2 segundos**
 - Uptime > 99%
 - Zero vulnerabilidades críticas de segurança
-\n### 14.2 Critérios de Negócio
+
+### 14.2 Critérios de Negócio
 - Usuários conseguem fazer upload de extratos via chatbot
 - Análise automática de transações funcional
 - Categorização com precisão > 80%
 - Cadastro em lote de transações funcional
 - Dashboard com indicadores e gráficos funcionais
+- **Navegação entre meses anteriores funcional**
+- **Visualização de dados históricos precisa**
 - Feedback positivo de usuários piloto
 
 ### 14.3 Critérios de Usabilidade
@@ -1032,6 +1089,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Satisfação de usuário > 4/5
 - Gráficos e indicadores claros e compreensíveis
 - Dashboard responsivo em diferentes dispositivos
+- **Seletor de mês intuitivo e fácil de usar**
+- **Navegação entre meses fluida e sem travamentos**
 
 ## 15. Próximos Passos Após MVP
 
@@ -1042,7 +1101,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Exportação de transações categorizadas
 - Gráficos adicionais:\n  - Análise de tendências por categoria ao longo do tempo
   - Heatmap de padrão de gastos por dia da semana e hora
-\n### 15.2 Versão 1.2 (Semanas 12-15)
+- **Comparação lado a lado de múltiplos meses**
+- **Exportação de relatórios históricos**
+
+### 15.2 Versão 1.2 (Semanas 12-15)
 - Integração com APIs bancárias (Open Banking)
 - Importação automatizada OFX
 - Permissões granulares avançadas para modelos de IA
@@ -1050,6 +1112,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Comparação de gastos entre diferentes períodos
   - Previsão de gastos futuros baseada em histórico
   - Análise de sazonalidade de despesas
+- **Visualização de tendências anuais**
+- **Dashboard customizável com períodos personalizados**
 
 ### 15.3 Versão 2.0 (Semanas 16-21)
 - Aplicativo móvel (iOS e Android)
@@ -1058,3 +1122,5 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Recomendações personalizadas de economia
 - Dashboard personalizável com widgets arrastáveis
 - Relatórios customizáveis com exportação avançada
+- **Análise comparativa de múltiplos anos**
+- **Previsões financeiras de longo prazo**
