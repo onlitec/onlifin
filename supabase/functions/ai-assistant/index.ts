@@ -352,7 +352,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const requestBody = await req.json();
-    const { message, userId, action, transactions, existingCategories } = requestBody;
+    const { message, userId, action, transactions, existingCategories, conversationHistory } = requestBody;
 
     // Handle categorization action
     if (action === 'categorize_transactions') {
@@ -508,6 +508,46 @@ TRANSAÇÕES DISPONÍVEIS PARA CATEGORIZAÇÃO:
 ${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter((t: any) => !t.category_id).slice(0, 20) || [], null, 2) : 'Acesso limitado - solicite permissão read_full para ver transações'}`;
     }
 
+    // Construir histórico de conversa para a API
+    const conversationContents = [
+      // Mensagem inicial do sistema com contexto
+      {
+        role: 'user',
+        parts: [
+          { text: contextPrompt }
+        ]
+      },
+      {
+        role: 'model',
+        parts: [
+          { text: 'Entendido. Estou pronto para ajudar com questões financeiras usando os dados fornecidos.' + (canWriteTransactions ? ' Posso também criar transações quando solicitado.' : '') }
+        ]
+      }
+    ];
+
+    // Adicionar histórico de conversa anterior se existir
+    if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      // Limitar histórico aos últimos 10 pares de mensagens (20 mensagens no total)
+      const recentHistory = conversationHistory.slice(-20);
+      
+      for (const msg of recentHistory) {
+        conversationContents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [
+            { text: msg.content }
+          ]
+        });
+      }
+    } else {
+      // Se não houver histórico, adicionar apenas a mensagem atual
+      conversationContents.push({
+        role: 'user',
+        parts: [
+          { text: message }
+        ]
+      });
+    }
+
     const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
       headers: {
@@ -515,26 +555,7 @@ ${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter
         'X-App-Id': APP_ID
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: contextPrompt }
-            ]
-          },
-          {
-            role: 'model',
-            parts: [
-              { text: 'Entendido. Estou pronto para ajudar com questões financeiras usando os dados fornecidos.' + (canWriteTransactions ? ' Posso também criar transações quando solicitado.' : '') }
-            ]
-          },
-          {
-            role: 'user',
-            parts: [
-              { text: message }
-            ]
-          }
-        ]
+        contents: conversationContents
       })
     });
 

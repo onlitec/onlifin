@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Trash2 } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,6 +20,28 @@ export default function AIAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Carregar histórico do localStorage ao montar o componente
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('ai_conversation_history');
+    if (savedHistory) {
+      try {
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed)) {
+          setMessages(parsed);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar histórico:', error);
+      }
+    }
+  }, []);
+
+  // Salvar histórico no localStorage sempre que mudar
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('ai_conversation_history', JSON.stringify(messages));
+    }
+  }, [messages]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -31,17 +53,22 @@ export default function AIAssistant() {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    
+    // Adicionar mensagem do usuário ao histórico
+    const updatedMessages = [...messages, { role: 'user' as const, content: userMessage }];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      // Enviar histórico completo da conversa para a IA
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           message: userMessage,
-          userId: user.id
+          userId: user.id,
+          conversationHistory: updatedMessages // Incluir histórico completo
         }
       });
 
@@ -96,6 +123,16 @@ export default function AIAssistant() {
     }
   };
 
+  // Função para limpar o histórico de conversa
+  const handleClearHistory = () => {
+    setMessages([]);
+    localStorage.removeItem('ai_conversation_history');
+    toast({
+      title: 'Histórico Limpo',
+      description: 'O histórico da conversa foi apagado',
+    });
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -119,13 +156,25 @@ export default function AIAssistant() {
         <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 shrink-0">
             <CardTitle className="text-lg">Assistente Financeiro IA</CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleClearHistory}
+                  title="Limpar histórico"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col p-0 min-h-0">
             <div 
@@ -149,6 +198,9 @@ export default function AIAssistant() {
                     </ul>
                     <p className="mt-3 text-xs text-yellow-600">
                       ⚠️ Permissões de escrita ativadas - posso criar e modificar dados
+                    </p>
+                    <p className="mt-2 text-xs text-blue-600">
+                      🧠 Memória ativada - lembro de nossas conversas anteriores
                     </p>
                   </div>
                 )}

@@ -6,7 +6,7 @@
 Plataforma de Gestão Financeira Pessoal com Assistente de IA
 
 ### 1.2 Descrição
-Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, e oferece um assistente de IA contextual acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações.
+Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, e oferece um assistente de IA contextual com memória persistente acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações.
 
 ## 2. Funcionalidades Principais
 
@@ -23,7 +23,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Visualização de limites disponíveis de cartões de crédito
 \n### 2.2 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
   - **Suporte completo ao formato OFX (Open Financial Exchange):**
-    - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)\n    - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
+    - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)
+    - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
     - Identificação automática de conta bancária associada através de informações do arquivo OFX
     - Validação de integridade do arquivo OFX antesdo processamento
     - Tratamento de erros e feedback claro em caso de arquivo corrompido ou formato inválido
@@ -35,7 +36,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Importação de extratos diretamente na interface da plataforma**
 - **Importação de extratos via chatbot flutuante com novo fluxo:**
   - **Passo 1: Upload do extrato**
-    - Botão de upload de arquivo visível no chatbot flutuante (ícone de clipe ou upload)\n    - Suporte aos formatos CSV, OFX e QIF\n    - Após seleção do arquivo, sistema salva o extrato na plataforma
+    - Botão de upload de arquivo visível no chatbot flutuante (ícone de clipe ou upload)
+    - Suporte aos formatos CSV, OFX e QIF
+    - Após seleção do arquivo, sistema salva o extrato na plataforma
     - Feedback visual de upload concluído (barra de progresso e mensagem de confirmação)
   - **Passo 2: Comando de análise**
     - Após salvamento do extrato, surge botão 'Analisar Extrato' no chatbot\n    - Usuário clica no botão para acionar análise do modelo de IA
@@ -57,7 +60,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
       - Cada transação é registrada na categoria selecionada no dropdown correspondente
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
 - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações\n\n### 2.3 Análise e Categorização Automática de Transações com IA
+- Classificação automática de transações\n
+### 2.3 Análise e Categorização Automática de Transações comIA
 - **Análise automática de transações importadas:**
   - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
@@ -87,14 +91,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Agendamento de compromissos e pagamentos
 - Sistema de alertas para vencimentos\n- **Cadastro de transações pelo modelo de IA: o assistente de IA pode criar, editar e excluir transações na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes e parcelamentos**\n
 ### 2.5 Controle Financeiro
-- Gestão de contas a pagar e receber
-- Visualização de fluxo de caixa
+- Gestão de contas a pagar e receber\n- Visualização de fluxo de caixa
 - Previsões financeiras simples
 - **Dashboard expandido com indicadores financeiros e gráficos:**
-  - **Seletor de mês para visualização de dados históricos:**\n    - Dropdown ou calendário para seleção de mês específico
-    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
+  - **Seletor de mês para visualização de dados históricos:**
+    - Dropdown ou calendário para seleção de mês específico
+    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clara do mês selecionado no topo do dashboard
     - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
-    - Possibilidade de comparar dados de diferentes meses lado a lado
+- Possibilidade de comparar dados de diferentes meses lado a lado
   - **Indicadores principais (ajustados conforme mês selecionado):**\n    - Saldo total consolidado de todas as contas no final do mês selecionado
     - Receitas totais do mês selecionado
     - Despesas totais do mês selecionado
@@ -120,26 +124,51 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Indicador de limite de cartão de crédito próximo ao máximo (>80%) no mês selecionado\n  - **Filtros e personalização:**
     - Seleção de mês específico (navegação por meses anteriores e futuros)
     - Filtro por conta específica\n    - Filtro por categoria\n    - Opção de ocultar/exibir gráficos específicos
-    - Botão de 'Voltar ao Mês Atual' para retornar rapidamente aos dados do mês corrente
+    - Botão de 'Voltar ao Mês Atual' para retornar rapidamente aos dadosdo mês corrente
 - Exportação de relatórios em CSV, Excel e PDF
-\n### 2.6 Assistente de IA Contextual\n- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
+\n### 2.6 Assistente de IA Contextual com Memória Persistente
+- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
+- **Sistema de memória persistente para o modelo de IA:**
+  - **Armazenamento de histórico completo de conversas:**
+    - Todas as mensagens do usuário são armazenadas no banco de dados
+    - Todas as respostas do modelo de IA são armazenadas no banco de dados
+    - Timestamp de cada interação\n    - Contexto da conversa (página onde ocorreu, dados acessados)\n  - **Armazenamento de solicitações eações executadas:**
+    - Registro de todas as solicitações do usuário (criar transação, analisar extrato, consultar saldo, etc.)
+    - Registro de todas as ações executadas pelo modelo de IA em resposta às solicitações
+    - Resultado de cada ação (sucesso, erro, dados retornados)
+    - Parâmetros utilizados em cada solicitação
+  - **Recuperação de contexto em novas conversas:**
+    - Ao iniciar nova conversa, modelo de IA carrega histórico relevante
+    - Acesso a conversas anteriores para manter continuidade\n    - Referência a solicitações passadas para melhor compreensão do contexto
+  - **Consulta de histórico pelo usuário:**
+    - Interface para visualizar histórico completo de conversas
+    - Busca por palavra-chave em conversas anteriores
+    - Filtro por data, tipo de solicitação ouação executada
+    - Exportação de histórico de conversas\n  - **Aprendizado baseado em histórico:**
+    - Modelo de IA utiliza histórico para personalizar respostas
+    - Identificação de padrões de uso e preferências do usuário
+    - Sugestões proativas baseadas em solicitações anteriores
+  - **Gestão de memória:**
+    - Configuração de período de retenção de histórico
+    - Opção de limpar histórico de conversas
+    - Opção de excluir conversas específicas
+    - Backup automático de histórico de conversas
 - **Funcionalidade de upload de extrato bancário diretamente no chatbot:**
   - **Botão de upload de arquivo visível no chatbot flutuante (ícone de clipe ou upload)**
-  - **Suporte aos formatos CSV, OFX e QIF**\n  - **Fluxo de importação e análise:**
+  - **Suporte aos formatos CSV, OFX e QIF**
+  - **Fluxo de importação e análise:**
     1. Usuário clica no botão de upload e seleciona arquivo
     2. Sistema salva o extrato na plataforma e exibe confirmação
     3. Botão 'Analisar Extrato' surge no chatbot
     4. Usuário clica no botão para acionar análise do modelo de IA
     5. Modelo de IA processa o arquivo salvo e identifica categorias
-    6. Sistema exibe popup com lista de transações ordenadas por data
-    7. Cada transação possui dropdown de categoria com sugestão pré-selecionada
+    6. Sistema exibe popup com lista de transações ordenadas por data\n    7. Cada transação possui dropdown de categoria com sugestão pré-selecionada
     8. Usuário revisa e ajusta categorias conforme necessário
     9. Usuário clica em 'Cadastrar Transações' no popup
     10. Sistema cadastra todas as transações nas categorias selecionadas
     11. Popup é fechado e chatbot exibe mensagem de confirmação
-- Funcionalidadesdo assistente:
-  - Categorização automática de transações
+- Funcionalidadesdo assistente:\n  - Categorização automática de transações
   - Recomendações de economia\n  - Previsão de fluxo de caixa
   - Alertas de vencimentos
   - Simulações de parcelamento
@@ -151,6 +180,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Interpretação de gráficos e indicadores do dashboard**
   - **Análise de tendências financeiras e insights personalizados**
   - **Consulta de dados históricos de meses anteriores**
+  - **Referência a conversas e solicitações anteriores para continuidade contextual**
 - Análise completa de contas cadastradas
 - Consulta detalhada de extratos de transações
 - Análise de pagamentos e recebimentos
@@ -158,11 +188,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Integração com plugins configurados para funcionalidades estendidas**
 
 ### 2.7 Painel de Administração deIA
-- Indicador visual de status de configuração:\n  - Badge ouícone na página de configurações indicando se há modelo de IA configurado
+- Indicador visual de status de configuração:\n  - Badge ou ícone na página de configurações indicando se há modelo de IA configurado
   - Mensagem clara exibindo 'Modelo Configurado' (com ícone de check verde) ou 'Nenhum Modelo Configurado' (com ícone de alerta laranja)
   - Exibição do nome do modelo ativo quando configurado
 - Configuração de modelos de IA (seleção de modelo, endpoint, chave de API)
 - Ajuste de prompts-padrão e templates de resposta
+- **Configuração de sistema de memória:**
+  - **Ativação/desativação de memória persistente**
+  - **Configuração de período de retenção de histórico (dias, meses, ilimitado)**
+  - **Configuração de limite de armazenamento de conversas**
+  - **Opção de incluir/excluir tipos específicos de dados no contexto de memória**
 - **Controles de permissão de acesso completo (leitura e escrita):**
   - **Permissão de leitura (read_full):**
     - Acesso completo a todas as contas cadastradas
@@ -171,6 +206,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Acesso completo a relatórios financeiros
     - Acesso completo a saldos das contas
     - Acesso completo a extratos de transações
+    - **Acesso completo ao histórico de conversas e solicitações**
   - **Permissão de escrita (write_full):**
     - **Permissão para criar, editar e excluir transações: toggle paraativar/desativar a capacidade do modelo de IA modificar transações na plataforma**
     - **Permissão para criar, editar e excluir categorias: toggle para ativar/desativar a capacidade do modelo de IA modificar categorias**
@@ -179,7 +215,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Toggle para ativar/desativar acesso de leitura com confirmação e consentimento explícito do usuário
   - **Toggle para ativar/desativar acesso de escrita com confirmação e consentimento explícito do usuário**
   - **Termo de consentimento separado para permissões de leitura e escrita**
-- Logs e histórico de conversas com IA
+- Logs e histórico de conversas comIA
+- **Visualização de histórico de memória do modelo de IA:**
+  - **Interface para consultar todas as conversas armazenadas**
+  - **Busca e filtro por data, palavra-chave ou tipo de solicitação**
+  - **Visualização detalhada de cada conversa com timestamp e contexto**
+  - **Estatísticas de uso da memória (número de conversas, tamanho de armazenamento)**
 - Registro de auditoria detalhado:\n  - Quem ativou o acesso total (leitura e escrita)
   - Quando foi ativado\n  - Finalidade declarada
   - Histórico de consultas realizadas pelo modelo de IA
@@ -187,11 +228,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Registro de todas as transações criadas, editadas ou excluídas pelo modelo de IA (data, hora, tipo, valor, usuário solicitante,ação executada)**
   - **Registro de todas as categorias criadas, editadas ou excluídas pelo modelo de IA**
   - **Registro de análises e categorizações automáticas realizadas pelo modelo de IA**
+  - **Registro de acesso ao histórico de memória pelo modelo de IA**
 - Opções de apagar ou exportar histórico conforme políticas de retenção\n\n### 2.8 Gestão de Plugins
 - **Cadastro e configuração de plugins na plataforma**
 - **Interface de gerenciamento de plugins com as seguintes funcionalidades:**
   - Lista de plugins disponíveis e instalados
-  - Ativação/desativação de plugins\n  - Configuração de parâmetros específicos de cada plugin (chaves de API, endpoints, credenciais)
+  - Ativação/desativação de plugins
+  - Configuração de parâmetros específicos de cada plugin (chaves de API, endpoints, credenciais)
   - Indicador visual de status (ativo/inativo) com ícone de check verde ou alerta laranja
 - **Permissões de acesso para plugins:**
   - Controle granular de quais dados da plataforma cada plugin pode acessar
@@ -215,6 +258,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Mascaramento e criptografia de números de conta e cartão\n- Transmissão segura de dados completos ao modelo de IA quando acesso total estiver ativado
 - **Transmissão segura de comandos de escrita ao modelo de IA quando permissão de escrita estiver ativada**
 - **Transmissão segura de dados a plugins conforme permissões configuradas**
+- **Criptografia de histórico de conversas armazenado no banco de dados**
+- **Proteção de dados de memória do modelo de IA com controles de acesso rigorosos**
 \n### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
 - RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário\n- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
@@ -223,14 +268,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Relatórios financeiros
   - Saldos das contas
   - Extratos de transações
+  - **Histórico completo de conversas e solicitações**
 - **Consentimento explícito e separado para permissões de escrita do modelo de IA:**
   - **Permissão para criar, editar e excluir transações**
   - **Permissão para criar, editar e excluir categorias**
   - **Permissão para análise e categorização automática de extratos com cadastro direto**
 - **Consentimento explícito para cada plugin com detalhamento de dados acessados**
+- **Consentimento explícito para armazenamento e uso de histórico de conversas**
 - Termo de consentimento detalhado explicando o escopo do acesso total (leitura e escrita) e das permissões de cadastro\n- Opção de revogar acesso total e permissões de escrita a qualquer momento
 - **Opção de revogar permissões de plugins individualmente**
-
+- **Opção de limpar histórico de memória do modelo de IA**\n
 ### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
 - Auditoria de ações de usuários humanos\n- Log de todas as consultas do modelo de IA aos dados da plataforma
 - **Log detalhado de todas as operações de escrita realizadas pelo modelo de IA:**
@@ -238,19 +285,27 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Categorias criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da categoria, ação executada)**
 - **Log de análises e categorizações automáticas realizadas pelo modelo de IA**
 - **Log completo de todas as ações executadas por plugins (acessos, modificações, chamadas de API)**
+- **Log de acesso ao histórico de memória pelo modelo de IA:**
+  - **Timestamp de cada acesso**
+  - **Conversas recuperadas**
+  - **Contexto utilizado**
+  - **Finalidade do acesso**
 - Middleware de validação e registro antes de enviar dados ao conector de IA
 - **Middleware de validação e registro para operações de escrita do modelo de IA**
 - **Middleware de validação e registro para comunicação com plugins**
+- **Middleware de validação e registro para acesso ao sistema de memória**
 - Relatório de auditoria acessível ao usuário para transparência
 
 ## 4. Extensibilidade\n
 ### 4.1 API\n- API REST/GraphQL bemdocumentada\n- Suporte para integrações (apps móveis, plugins, serviços de contabilidade)
 - **Endpoints específicos para integração de plugins externos**
 - **Endpoints específicos para operações de escrita do modelo de IA (com autenticação e autorização rigorosas)**
+- **Endpoints para consulta e gestão de histórico de memória do modelo de IA**
 \n### 4.2 Webhooks
 - Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo\n  - Sugestão gerada pelo assistente\n  - **Transação criada, editada ou excluída pelo modelo de IA**
   - **Categoria criada, editada ou excluída pelo modelo de IA**\n  - **Categorização automática concluída**
   - **Ação executada por plugin**
+  - **Nova conversa armazenada no histórico de memória**
 \n## 5. Observabilidade e Confiabilidade
 
 ### 5.1 Monitoramento
@@ -262,11 +317,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Monitoramento de performance e erros de plugins**
 - **Alertas para falhas de comunicação com plugins**
 - **Alertas para operações de escrita não autorizadas ou suspeitas**
-
-### 5.2 Backup e Recuperação
+- **Monitoramento de usodo sistema de memória:**
+  - **Volume de conversas armazenadas**
+  - **Tamanho de armazenamento utilizado**
+  - **Frequência de acesso ao histórico**
+  - **Performance de recuperação de contexto**
+- **Alertas para limite de armazenamento de memória próximo ao máximo**
+\n### 5.2 Backup e Recuperação
 - Backup automático do banco de dados
 - Procedimentos documentados de recuperação de desastres
 - **Backup de logs de auditoria de operações de escrita do modelo de IA**
+- **Backup de histórico de conversas e memória do modelo de IA**\n- **Procedimentos de recuperação de histórico de memória em caso de falha**
 \n## 6. Arquitetura Técnica
 
 ### 6.1 Stack Tecnológica
@@ -277,13 +338,28 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Conector que chama endpoints de modelos (OpenAI/compatíveis, instâncias privadas)
 - **Sistema de gerenciamento de plugins com arquitetura modular**
 - **Conector de plugins para comunicação segura com serviços externos**
-- Camada de acesso a dados que fornece ao modelo de IA:\n  - **Acesso de leitura (read_full):**
+- **Sistema de memória persistente para o modelo de IA:**
+  - **Módulo de armazenamento de conversas:**
+    - Tabela de conversas no banco de dados com campos: id, user_id, timestamp, mensagem_usuario, resposta_ia, contexto, página, dados_acessados
+    - Índices otimizados para busca rápida por data, palavra-chave e usuário
+    - Compressão de dados para otimizar armazenamento
+  - **Módulo de armazenamento de solicitações:**
+    - Tabela de solicitações com campos: id, conversa_id, timestamp, tipo_solicitacao, parametros, acao_executada, resultado, status
+    - Relacionamento com tabela de conversas\n  - **Módulo de recuperação de contexto:**
+    - Algoritmo de busca semântica para recuperar conversas relevantes
+    - Cache de contexto frequentemente acessado
+    - Limite configurável de conversas recuperadas por consulta
+  - **Módulo de gestão de memória:**
+    - Interface para configurar período de retenção\n    - Processo automatizado de limpeza de histórico antigo
+    - Exportação de histórico em formato JSON ou CSV
+    - Estatísticas de uso de memória\n- Camada de acesso a dados que fornece ao modelo de IA:\n  - **Acesso de leitura (read_full):**
     - Dados completos de contas cadastradas
     - Histórico completo de transações
     - Registros de pagamentos e recebimentos
     - Relatórios financeiros gerados\n    - Saldos atualizados das contas
     - Extratos detalhados de transações
     - Dados históricos de meses anteriores para consulta e análise
+    - **Histórico completo de conversas e solicitações anteriores**
   - **Acesso de escrita (write_full):**
     - **Interface de escrita para criar, editar e excluir transações**
     - **Interface de escrita para criar, editar e excluir categorias**
@@ -296,7 +372,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
   - **Calcula saldo histórico para qualquer mês selecionado**
 - **Módulo de análise e categorização automática:**
-  - **Trigger manual:acionado pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
+  - **Trigger manual:acionado pelo usuário atravésdo botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - Processa extratos salvos e identifica padrões\n  - Sugere categorias existentes ou novas categorias
   - Exibe resultados em popup com lista ordenada de transações por data
   - Permite revisão e edição de categorias via dropdown antesdo cadastro
@@ -325,7 +401,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Suporte a consulta de dados de meses anteriores**
   - **Recálculo de indicadores e gráficos baseado no mês selecionado**
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
-- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**
+- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**
 - **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
   - **Validação de permissões antes de cada operação**
   - **Validação de dados antes de escrita no banco**
@@ -356,8 +432,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de sugestões de novas categorias
   - Validação de exibição de popup com lista ordenada de transações
   - Validação de dropdown de categorias com pré-seleção
-  - Validação de cadastro em lote de transações
-  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
+  - Validação de cadastro em lote de transações\n  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
   - Validação de parsing de OFX versões 1.x e 2.x
   - Validação de extração correta de transações
   - Validação de tratamento de erros para arquivos corrompidos
@@ -386,12 +461,22 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de cálculo correto de dados históricos**
   - **Validação de comparação entre meses diferentes**
 - **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
+- **Testes do sistema de memória do modelo de IA:**
+  - **Validação de armazenamento correto de conversas**
+  - **Validação de armazenamento correto de solicitações**
+  - **Validação de recuperação de contexto relevante**
+  - **Validação de busca por palavra-chave no histórico**
+  - **Validação de filtros por data e tipo de solicitação**
+  - **Validação de limpeza de histórico antigo**
+  - **Validação de exportação de histórico**
+  - **Validação de performance com grande volume de conversas**
+  - **Validação de criptografia de dados de memória**
+  - **Validação de controles de acesso ao histórico**
 \n## 7. Escopodo MVP
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
-- Cadastro de contas e cartões
-- **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas e despesas pagas**
+- Cadastro de contas e cartões\n- **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas e despesas pagas**
 - **Importação de extratos CSV, OFX e QIF com suporte completo ao formato OFX (versões 1.x e 2.x)**
 - **Importação de extratos diretamente na interface**
 - **Upload de extrato bancário via chatbot flutuante (CSV, OFX e QIF) com novo fluxo:**
@@ -421,8 +506,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Gráfico de comparação receitas vs despesas (6 meses a partir do mês selecionado)
   - Gráfico de projeção de fluxo de caixa (3 meses a partir do mês selecionado)
   - Top 5 categorias com maiores gastos (mês selecionado)
-  - Indicadores de performance (taxa de economia, média de gastos diários) (mês selecionado)\n  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)
-- Assistente de IA com acesso total configurável:\n  - **Acesso de leitura (read_full):**
+  - Indicadores de performance (taxa de economia, média de gastos diários) (mês selecionado)\n  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)\n- Assistente de IA com acesso total configurável e memória persistente:\n  - **Acesso de leitura (read_full):**
     - Todas as contas cadastradas
     - Todas as transações (receitas e despesas)
     - Todos os pagamentos e recebimentos
@@ -430,15 +514,23 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Saldos de todas as contas
     - Extratos completos de transações
     - Dados históricos de meses anteriores
+    - **Histórico completo de conversas e solicitações anteriores**
   - **Acesso de escrita (write_full):**
     - **Permissão para criar, editar e excluir transações mediante solicitação do usuário**
-    - **Permissão para criar, editar e excluir categorias mediante solicitação do usuário**
-    - **Permissão para análise e categorização automática de extratos com cadastro direto**
+    - **Permissão para criar, editar e excluir categorias mediante solicitação do usuário**\n    - **Permissão para análise e categorização automática de extratos com cadastro direto**
     - **Interpretação de gráficos e indicadores do dashboard**
+  - **Sistema de memória:**
+    - **Armazenamento automático de todas as conversas**
+    - **Armazenamento de todas as solicitações eações executadas**
+    - **Recuperação de contexto em novas conversas**
+    - **Interface de consulta de histórico pelo usuário**
+    - **Busca por palavra-chave no histórico**
+    - **Filtro por data e tipo de solicitação**
 - Botão de chat com IA nas telas principais
 - Painel de administração com:
   - Indicador visual de status de configuração
   - Configuração de modelo de IA
+  - **Configuração de sistema de memória (ativação, período de retenção, limite de armazenamento)**
   - Toggle de acesso de leitura com termo de consentimento
   - **Toggle de acesso de escrita com termo de consentimento separado**
   - **Toggle de permissão para criar, editar e excluir transações pelo modelo de IA**
@@ -449,6 +541,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Logs de operações de escrita realizadas pelo modelo de IA (transações e categorias criadas, editadas ou excluídas)**
   - **Logs de análises e categorizações automáticas**
   - **Logs deações executadas por plugins**
+  - **Visualização de histórico de memória do modelo de IA**
+  - **Estatísticas de uso de memória**
+  - **Opção de limpar histórico de memória**
+  - **Opção de exportar histórico de memória**
 - Relatório de auditoria de acessos e operações de escrita
 \n### 7.2 Versões Futuras (1.1 / 1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
@@ -460,6 +556,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Comparação de gastos entre diferentes períodos
   - Previsão de gastos futuros baseada em histórico
   - Análise de sazonalidade de despesas
+- **Funcionalidades avançadas de memória:**
+  - Análise semântica de conversas para insights automáticos
+  - Sugestões proativas baseadas em padrões de uso
+  - Resumos automáticos de conversas longas
+  - Compartilhamento seletivo de histórico entre usuários
 \n## 8. Estilo de Design
 
 ### 8.1 Paleta de Cores
@@ -474,6 +575,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Seção intermediária com gráficos principais em grid 2x2
   - Seção inferior com gráficos secundários e alertas
 - **Popup centralizado para exibição de resultados de análise de extrato**
+- **Interface de histórico de conversas com layout de timeline**
 \n### 8.3 Elementos Visuais
 -Ícones minimalistas para categorias e ações
 - **Gráficos limpos e legíveis:**
@@ -506,6 +608,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Exibição clara do mês e ano selecionado
   - Botão 'Voltar ao Mês Atual' em destaque
   - Indicador visual do mês atual
+- **Indicador visual de memória ativa (ícone de cérebro ou banco de dados verde) quando sistema de memória estiver habilitado**
+- **Badge com número de conversas armazenadas no histórico**
+- **Ícone de histórico para acesso rápido às conversas anteriores**
 \n## 9. Referências de Interface
 
 ### 9.1 Imagens de Referência
