@@ -13,7 +13,7 @@
 
 **Como usar:**
 1. Clique no ícone 📎
-2. Selecione seu arquivo CSV/TXT
+2. Selecione seu arquivo CSV/TXT/OFX
 3. Clique em Enviar ✈
 4. Veja o resumo em segundos
 
@@ -38,7 +38,7 @@
 - ✅ Criar novas categorias
 
 **Como usar:**
-1. Faça upload do CSV ou cole o texto
+1. Faça upload do CSV/TXT/OFX ou cole o texto
 2. Clique em "Analisar com IA"
 3. Revise a tabela de transações
 4. Ajuste categorias se necessário
@@ -70,7 +70,24 @@
 
 ## 📝 Formato do Arquivo
 
-### CSV (Recomendado)
+### OFX (Mais Preciso) ⭐
+```xml
+<OFX>
+  <STMTTRN>
+    <TRNTYPE>DEBIT</TRNTYPE>
+    <DTPOSTED>20241201</DTPOSTED>
+    <TRNAMT>-150.00</TRNAMT>
+    <NAME>Supermercado ABC</NAME>
+  </STMTTRN>
+</OFX>
+```
+**Vantagens:**
+- ✅ Formato padrão dos bancos
+- ✅ Mais preciso e confiável
+- ✅ Informações completas
+- ✅ Detecção automática
+
+### CSV (Simples)
 ```csv
 Data,Descrição,Valor
 01/12/2024,Supermercado ABC,-150.00
@@ -89,7 +106,7 @@ Data,Descrição,Valor
 - ✅ Valores negativos = Despesas
 - ✅ Valores positivos = Receitas
 - ✅ Máximo 5MB
-- ✅ Formatos: CSV ou TXT
+- ✅ Formatos: OFX, CSV ou TXT
 
 ---
 
@@ -155,7 +172,7 @@ Importação (/import-statements)
 **Antes de importar:**
 - [ ] Tenho uma conta cadastrada
 - [ ] Tenho categorias básicas criadas
-- [ ] Meu arquivo está em CSV ou TXT
+- [ ] Meu arquivo está em OFX, CSV ou TXT
 - [ ] O arquivo tem menos de 5MB
 - [ ] Revisei o formato do arquivo
 
@@ -181,9 +198,20 @@ Importação (/import-statements)
 3. **Importe regularmente** (semanal ou mensal)
 4. **Revise sempre** antes de confirmar
 5. **Use nomes consistentes** para categorias
+6. **Prefira OFX** quando disponível no seu banco
+
+---
+
+## 📚 Documentação Adicional
+
+- **IMPORTACAO_OFX.md** - Guia completo de importação OFX
+- **IMPORTACAO_EXTRATOS_IA.md** - Detalhes da categorização com IA
+- **CHAT_IA_UPLOAD.md** - Guia do chat com upload de arquivos
+- **RESUMO_ATUALIZACOES.md** - Histórico de atualizações
 
 ---
 
 **Última atualização:** 01/12/2024  
-**Versão:** 1.0.0  
-**Status:** ✅ OPERACIONAL
+**Versão:** 1.1.0  
+**Status:** ✅ OPERACIONAL  
+**Formatos:** OFX, CSV, TXT
