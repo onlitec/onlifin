@@ -37,54 +37,31 @@ function parseOFXAmount(amountStr: string): number {
  * OFX pode vir em formato SGML (sem tags de fechamento)
  */
 function sgmlToXml(sgml: string): string {
-  // Se já é XML válido, retorna como está
-  if (sgml.includes('<?xml')) {
+  try {
+    // Se já é XML válido, retorna como está
+    if (sgml.includes('<?xml')) {
+      return sgml;
+    }
+
+    // Remove headers OFX e pega apenas o conteúdo
+    let content = sgml.replace(/^[\s\S]*?<OFX>/i, '<OFX>');
+    
+    // Regex para encontrar tags SGML: <TAG>valor ou <TAG> (sem fechamento)
+    // Substitui por XML válido: <TAG>valor</TAG>
+    content = content.replace(/<([A-Z0-9_.]+)>([^<\n]+)/gi, (match, tag, value) => {
+      // Se o valor já termina com tag de fechamento, não adiciona
+      if (value.trim().endsWith(`</${tag}>`)) {
+        return match;
+      }
+      // Adiciona tag de fechamento
+      return `<${tag}>${value.trim()}</${tag}>`;
+    });
+    
+    return content;
+  } catch (error) {
+    console.error('Erro na conversão SGML para XML:', error);
     return sgml;
   }
-
-  // Remove headers OFX
-  let content = sgml.replace(/^[\s\S]*?<OFX>/i, '<OFX>');
-  
-  // Adiciona tags de fechamento para elementos sem filhos
-  const lines = content.split('\n');
-  const result: string[] = [];
-  const stack: string[] = [];
-  
-  for (let line of lines) {
-    line = line.trim();
-    if (!line) continue;
-    
-    // Tag de abertura
-    const openMatch = line.match(/^<([A-Z0-9]+)>(.*)$/i);
-    if (openMatch) {
-      const tagName = openMatch[1];
-      const value = openMatch[2];
-      
-      if (value) {
-        // Tag com valor inline
-        result.push(`<${tagName}>${value}</${tagName}>`);
-      } else {
-        // Tag de abertura sem valor
-        result.push(`<${tagName}>`);
-        stack.push(tagName);
-      }
-    }
-    // Tag de fechamento
-    else if (line.match(/^<\/[A-Z0-9]+>$/i)) {
-      if (stack.length > 0) {
-        stack.pop();
-      }
-      result.push(line);
-    }
-  }
-  
-  // Fecha tags abertas
-  while (stack.length > 0) {
-    const tag = stack.pop();
-    result.push(`</${tag}>`);
-  }
-  
-  return result.join('\n');
 }
 
 /**
@@ -243,17 +220,27 @@ function extractTransactions(doc: Document): OFXTransaction[] {
 export function parseOFX(content: string): OFXTransaction[] {
   try {
     console.log('Iniciando parse de arquivo OFX...');
+    console.log('Tamanho do arquivo:', content.length, 'bytes');
     
     // Remove BOM se existir
     content = content.replace(/^\uFEFF/, '');
     
+    // Log das primeiras linhas para debug
+    const firstLines = content.substring(0, 500);
+    console.log('Primeiras linhas do arquivo:', firstLines);
+    
     // Converte SGML para XML se necessário
     const xml = sgmlToXml(content);
+    
+    // Log do XML convertido (primeiras linhas)
+    const xmlPreview = xml.substring(0, 500);
+    console.log('XML após conversão:', xmlPreview);
     
     // Parse XML
     const doc = parseXML(xml);
     if (!doc) {
-      throw new Error('Não foi possível fazer parse do arquivo OFX');
+      console.error('Falha no parse XML. Conteúdo:', xml.substring(0, 1000));
+      throw new Error('Não foi possível fazer parse do arquivo OFX. Verifique se o arquivo está correto.');
     }
     
     // Extrai transações
@@ -262,12 +249,14 @@ export function parseOFX(content: string): OFXTransaction[] {
     console.log(`${transactions.length} transações extraídas do arquivo OFX`);
     
     if (transactions.length === 0) {
+      console.warn('Nenhuma transação encontrada. Estrutura do documento:', doc.documentElement?.tagName);
       throw new Error('Nenhuma transação encontrada no arquivo OFX');
     }
     
     return transactions;
   } catch (error: any) {
     console.error('Erro ao fazer parse do OFX:', error);
+    console.error('Erro completo:', error);
     throw new Error(error.message || 'Erro ao processar arquivo OFX');
   }
 }
