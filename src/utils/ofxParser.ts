@@ -279,7 +279,12 @@ export function parseOFX(content: string): OFXTransaction[] {
     const doc = parseXML(xml);
     if (!doc) {
       console.error('Falha no parse XML. Conteúdo:', xml.substring(0, 1000));
-      throw new Error('Não foi possível fazer parse do arquivo OFX. Verifique se o arquivo está correto.');
+      throw new Error(
+        'Não foi possível processar o arquivo OFX. ' +
+        'O arquivo pode estar corrompido ou em um formato não suportado. ' +
+        'Tente exportar novamente do banco ou use o formato CSV. ' +
+        'Consulte o guia SOLUCAO_PROBLEMAS_OFX.md para mais ajuda.'
+      );
     }
     
     // Extrai transações
@@ -289,14 +294,27 @@ export function parseOFX(content: string): OFXTransaction[] {
     
     if (transactions.length === 0) {
       console.warn('Nenhuma transação encontrada. Estrutura do documento:', doc.documentElement?.tagName);
-      throw new Error('Nenhuma transação encontrada no arquivo OFX');
+      throw new Error(
+        'Nenhuma transação encontrada no arquivo OFX. ' +
+        'Verifique se o arquivo contém transações ou tente um período diferente.'
+      );
     }
     
     return transactions;
   } catch (error: any) {
     console.error('Erro ao fazer parse do OFX:', error);
     console.error('Erro completo:', error);
-    throw new Error(error.message || 'Erro ao processar arquivo OFX');
+    
+    // Se já é uma mensagem de erro nossa, repassa
+    if (error.message && error.message.includes('Não foi possível processar')) {
+      throw error;
+    }
+    
+    // Caso contrário, cria mensagem mais amigável
+    throw new Error(
+      'Erro ao processar arquivo OFX: ' + (error.message || 'Formato inválido') + '. ' +
+      'Tente exportar o arquivo novamente do banco ou use o formato CSV como alternativa.'
+    );
   }
 }
 
