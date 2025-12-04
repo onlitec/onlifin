@@ -1,4 +1,4 @@
-# Documento de Requisitos da Plataforma de Gestão Financeira Pessoal
+# Documento de Requisitos e Implementação da Plataforma de Gestão Financeira Pessoal
 
 ## 1. Visão Geral
 
@@ -36,14 +36,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Importação de extratos diretamente na interface da plataforma**
 - **Importação de extratos via chatbot flutuante com novo fluxo:**
   - **Passo 1: Upload do extrato**
-    - Botão de upload de arquivo visível no chatbot flutuante (ícone de clipe ou upload)\n    - Suporte aos formatos CSV, OFX e QIF
+    - Botão de upload de arquivo visível no chatbot flutuante (ícone de clipe ou upload)
+    - Suporte aos formatos CSV, OFX e QIF
     - Após seleção do arquivo, sistema salva o extrato na plataforma
     - Feedback visual de upload concluído (barra de progresso e mensagem de confirmação)
   - **Passo 2: Comando de análise**
-    - Após salvamento do extrato, surge botão 'Analisar Extrato' no chatbot\n    - Usuário clica no botão para acionar análise do modelo de IA
+    - Após salvamento do extrato, surge botão 'Analisar Extrato' no chatbot
+    - Usuário clica no botão para acionar análise do modelo de IA
     - Modelo de IA analisa o arquivo já salvo na plataforma
   - **Passo 3: Exibição de resultados em popup**
-    - Após análise, sistema exibe janela popup com resultados\n    - **Estrutura do popup:**
+    - Após análise, sistema exibe janela popup com resultados
+    - **Estrutura do popup:**
       - Título:'Resultado da Análise do Extrato'
       - Lista de transações ordenadas por data (da mais antiga para a mais recente)
       - Cada transação exibida com:
@@ -58,8 +61,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
       - Cadastra todas as transações listadas no popup
       - Cada transação é registrada na categoria selecionada no dropdown correspondente
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
-      - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações\n\n### 2.3 Análise e Categorização Automática de Transações com IA
+- Saldo das contas é atualizado automaticamente
+- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
+- Classificação automática de transações\n
+### 2.3 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
   - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
@@ -80,7 +85,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Aprendizado contínuo:**
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
-\n### 2.4 Movimentações Financeiras
+
+### 2.4 Movimentações Financeiras
 - Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
@@ -111,8 +117,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     8. Usuário revisa e ajusta categorias conforme necessário
     9. Usuário clica em 'Cadastrar Transações' no popup
     10. Sistema cadastra todas as transações nas categorias selecionadas
-    11. Popup é fechado e chatbot exibe mensagem de confirmação
-- Funcionalidadesdo assistente:\n  - Categorização automática de transações
+11. Popup é fechado e chatbot exibe mensagem de confirmação
+- Funcionalidadesdo assistente:
+  - Categorização automática de transações
   - Recomendações de economia\n  - Previsão de fluxo de caixa
   - Alertas de vencimentos
   - Simulações de parcelamento
@@ -173,8 +180,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de credenciais e autenticação de plugins
   - Criptografia de dados sensíveis transmitidos a plugins
   - Isolamento de execução para prevenir interferências entre plugins
-
-## 3. Segurança e Privacidade\n
+\n## 3. Segurança e Privacidade\n
 ### 3.1 Proteção de Dados
 - TLS/HTTPS em todas as comunicações
 - Criptografia em repouso para dados sensíveis
@@ -184,8 +190,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 ### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
-- RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário
-- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
+- RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário\n- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
   - Transações completas
   - Pagamentos e recebimentos
   - Relatórios financeiros\n  - Saldos das contas
@@ -391,115 +396,481 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 ## 9. Referências de Interface
 
 ### 9.1 Imagens de Referência
-- Interfacedo Assistente Financeiro IA: {7FFF7068-4DCD-48E0-8714-FF810EA6906F}.png
-- Exemplo de mensagem de erro do sistema: {9C49DCD9-E33F-45CE-86FB-3A635D5A7630}.png
 - Exemplo de mensagem de erro de importação OFX: {2C7B1F61-7FE3-4148-B737-A544FBDEEF2D}.png
+\n## 10. Plano Detalhado de Implementação
 
----
+### 10.1 Sprint 1: Preparação do Ambiente (Semana 1)
+\n**Objetivo:** Configurar infraestrutura base e ambiente de desenvolvimento
 
-## 10. Planejamento Detalhado de Implementação
+**Tarefas Backend:**
+1. Configurar repositório Git com estrutura de pastas
+2. Setupdo Docker e docker-compose com serviços:\n   - PostgreSQL (banco de dados)
+   - Backend (Flask/FastAPI)
+   - Frontend (React)
+3. Configurar CI/CD com GitHub Actions:\n   - Pipeline de build\n   - Pipeline de testes
+   - Pipeline de deploy
+4. Criar estrutura basedo backend:\n   - Configuração de rotas
+   - Configuração de banco de dados
+   - Middleware de autenticação
+   - Middleware de logging
+5. Implementar modelos de dados iniciais:
+   - Modelo de Usuário
+   - Modelo de Conta
+   - Modelo de Cartão
+   - Modelo de Transação
+   - Modelo de Categoria
+\n**Tarefas Frontend:**
+1. Setup do projeto React com TypeScript
+2. Configurar roteamento (React Router)
+3. Configurar gerenciamento de estado (Redux/Context API)
+4. Criar estrutura de componentes base:
+   - Layout principal
+   - Sidebar de navegação
+   - Header\n   - Footer
+5. Configurar biblioteca de UI (Material-UI/Ant Design)
+\n**Tarefas DevOps:**
+1. Configurar ambiente de desenvolvimento local
+2. Configurar ambiente de staging
+3. Configurar ambiente de produção
+4. Implementar scripts de deploy automatizado
+5. Configurar monitoramento básico
 
-### 10.1 Fase 1: Preparação do Ambiente (Sprint 1)
-- Configuração do ambiente de desenvolvimento
-- Setup do repositório Git e CI/CD
-- Configuração do Docker e docker-compose
-- Setup do banco de dados PostgreSQL
-- Configuração do backend (Flask/FastAPI)
-- Configuração do frontend (React)
-\n### 10.2 Fase 2: Implementação do Módulo de Upload no Chatbot (Sprint 2)\n- **Backend:**
-  - Criar endpoint para upload de arquivo via chatbot
-  - Implementar validação de formato de arquivo (CSV, OFX, QIF)\n  - Implementar salvamento seguro do arquivo na plataforma
-  - Criar endpoint para retornar status de upload
-- **Frontend:**
-  - Adicionar botão de upload de arquivo no chatbot flutuante (ícone de clipe ou upload)
-  - Implementar interface de seleção de arquivo
-  - Implementar barra de progresso de upload
-  - Exibir mensagem de confirmação após salvamento
-  - Gerar botão 'Analisar Extrato' após upload bem-sucedido
-- **Testes:**
-  - Testes unitários de validação de formato
-  - Testes de integração de upload e salvamento
-  - Testes de interface de upload no chatbot
-\n### 10.3 Fase 3: Implementação do Módulo de Análise de Extrato (Sprint 3)\n- **Backend:**
-  - Criar endpoint para acionar análise do modelo de IA
-  - Implementar integração com modelo de IA para análise de extrato salvo
-  - Implementar lógica de sugestão de categorias existentes
-  - Implementar lógica de sugestão de novas categorias
-  - Criar endpoint para retornar resultados de análise
-- **Frontend:**
-  - Implementar açãodo botão 'Analisar Extrato' no chatbot\n  - Exibir feedback visual durante análise (spinner ou mensagem de carregamento)
-- **Testes:**
-  - Testes unitários de análise de transações
-  - Testes de integração com modelo de IA
-  - Testes de sugestão de categorias
-\n### 10.4 Fase 4: Implementação do Popup de Resultados (Sprint 4)
-- **Backend:**
-  - Criar endpoint para fornecer dados formatados para o popup
-  - Implementar ordenação de transações por data
-  - Implementar lógica de pré-seleção de categoria sugerida
-- **Frontend:**
-  - Criar componente de popup centralizado
-  - Implementar lista ordenada de transações por data
-  - Implementar dropdown de categoria para cada transação
-  - Pré-selecionar categoria sugerida pelo modelo de IA no dropdown
-  - Adicionar botão 'Cadastrar Transações' na parte inferior do popup
-  - Implementar lógica de fechamento do popup após cadastro
-- **Testes:**
-  - Testes de renderização do popup
-  - Testes de ordenação de transações
-  - Testes de dropdown de categorias
-  - Testes de pré-seleção de categoria
-\n### 10.5 Fase 5: Implementação do Cadastro em Lote de Transações (Sprint 5)\n- **Backend:**
-  - Criar endpoint para cadastro em lote de transações
-  - Implementar lógica de criação de novas categorias (se selecionadas)
-  - Implementar lógica de cadastro de transações nas categorias selecionadas
-  - Implementar atualização automática de saldo das contas
-  - Implementar registro de auditoria de transações cadastradas
-- **Frontend:**\n  - Implementar ação do botão 'Cadastrar Transações' no popup\n  - Exibir feedback visual durante cadastro (spinner ou mensagem de carregamento)
-  - Exibir mensagem de confirmação no chatbot após cadastro
-  - Fechar popup após cadastro bem-sucedido
-- **Testes:**
-  - Testes unitários de cadastro em lote
-  - Testes de criação de novas categorias
-  - Testes de atualização de saldo
-  - Testes de auditoria\n
-### 10.6 Fase 6: Integração e Testes End-to-End (Sprint 6)
-- **Integração:**
-  - Integrar todos os módulos (upload, análise, popup, cadastro)\n  - Validar fluxo completo de ponta a ponta
-- **Testes:**
-  - Testes end-to-end do fluxo completo:\n    1. Upload de extrato via chatbot
-    2. Salvamento do arquivo\n    3. Acionamento de análise\n    4. Exibição de popup com resultados
-    5. Revisão e ajuste de categorias
-    6. Cadastro em lote de transações\n    7. Confirmação e fechamento do popup
-  - Testes de usabilidade
-  - Testes de performance
-  - Testes de segurança
+**Entregáveis:**
+- Repositório Git configurado
+- Ambiente Docker funcional
+- CI/CD pipelineativo
+- Estrutura base de backend e frontend
+- Documentação de setup
+\n### 10.2 Sprint 2: Módulo de Upload no Chatbot (Semana 2)
 
-### 10.7 Fase 7: Ajustes Finais e Deploy (Sprint 7)
-- Correção de bugs identificados nos testes
-- Ajustes de interface e experiência do usuário
-- Documentação técnica e de usuário
-- Deploy em ambiente de produção
-- Monitoramento pós-deploy
+**Objetivo:** Implementar funcionalidade de upload de extrato via chatbot
 
-### 10.8 Cronograma Resumido
-- **Sprint 1:** Preparação do Ambiente (1 semana)
-- **Sprint 2:** Módulo de Upload no Chatbot (1 semana)
-- **Sprint 3:** Módulo de Análise de Extrato (1 semana)
-- **Sprint 4:** Popup de Resultados (1 semana)
-- **Sprint 5:** Cadastro em Lote de Transações (1 semana)
-- **Sprint 6:** Integração e Testes End-to-End (1 semana)\n- **Sprint 7:** Ajustes Finais e Deploy (1 semana)
-- **Total:** 7 semanas
+**Tarefas Backend:**
+1. Criar endpoint POST /api/extracts/upload:\n   - Validação de formato de arquivo (CSV, OFX, QIF)
+   - Validação de tamanho de arquivo (máximo 10MB)
+   - Salvamento seguro do arquivo no servidor
+   - Geração de ID único para o arquivo
+   - Retorno de status de upload
+2. Implementar serviço de armazenamento de arquivos:
+   - Estrutura de pastas organizada por usuário e data
+   - Criptografia de arquivos em repouso
+   - Limpeza automática de arquivos antigos
+3. Criar endpoint GET /api/extracts/{id}/status:
+   - Retorna status do processamento do arquivo
+   - Retorna mensagens de erro se houver\n4. Implementar validação de integridade de arquivos:
+   - Verificação de formato\n   - Verificação de encoding
+   - Detecção de arquivos corrompidos
+\n**Tarefas Frontend:**
+1. Criar componente de chatbot flutuante:
+   - Botão flutuante no canto inferior direito
+   - Janela de chat expansível
+   - Interface de mensagens\n2. Implementar botão de upload no chatbot:
+   - Ícone de clipe ou upload\n   - Seletor de arquivo
+   - Filtro de tipos de arquivo (CSV, OFX, QIF)
+3. Implementar barra de progresso de upload:\n   - Indicador visual de progresso
+   - Mensagem de status
+   - Tratamento de erros
+4. Implementar feedback de upload concluído:
+   - Mensagem de confirmação
+   - Exibição de nome do arquivo
+   - Geração de botão 'Analisar Extrato'
+5. Implementar tratamento de erros:
+   - Mensagens de erro claras
+   - Sugestões de correção
+   - Opção de tentar novamente
 
-### 10.9 Recursos Necessários
-- 1 Desenvolvedor Backend (Flask/FastAPI, PostgreSQL)
-- 1 Desenvolvedor Frontend (React)\n- 1 Engenheiro de IA (integração com modelo de IA)
-- 1 QA Engineer (testes)\n- 1 DevOps Engineer (CI/CD, deploy)
-- 1 Product Owner (gestão de requisitos)
-\n### 10.10 Riscos e Mitigações\n- **Risco:** Complexidade de parsing de arquivos OFX
-- **Mitigação:** Utilizar bibliotecas especializadas e realizar testes extensivos com diferentes versões de OFX
-- **Risco:** Performance de análise de IA para extratos grandes
-  - **Mitigação:** Implementar processamento assíncrono e feedback visual de progresso
-- **Risco:** Usabilidade do popup em dispositivos móveis
-  - **Mitigação:** Design responsivo e testes em diferentes tamanhos de tela\n- **Risco:** Segurança de dados durante upload e análise
-  - **Mitigação:** Criptografia de dados em trânsito e em repouso, validação rigorosa de arquivos
+**Tarefas de Teste:**
+1. Testes unitários de validação de formato
+2. Testes de upload de arquivos válidos
+3. Testes de upload de arquivos inválidos
+4. Testes de limite de tamanho
+5. Testes de interface de upload
+6. Testes de barra de progresso
+7. Testes de mensagens de erro
+\n**Entregáveis:**
+- Endpoint de upload funcional
+- Componente de chatbot com upload\n- Testes automatizados
+- Documentação de API
+
+### 10.3 Sprint 3: Módulo de Análise de Extrato (Semana 3)
+
+**Objetivo:** Implementar análise automática de extratos com IA
+
+**Tarefas Backend:**
+1. Criar endpoint POST /api/extracts/{id}/analyze:
+   - Trigger manual de análise
+   - Validação de arquivo salvo
+   - Chamada ao modelo de IA
+   - Retorno de resultados de análise
+2. Implementar conector com modelo de IA:
+   - Configuração de endpoint deIA
+   - Autenticação com API de IA
+   - Formatação de dados para envio\n   - Parsing de resposta da IA
+3. Implementar lógica de sugestão de categorias:
+   - Busca de categorias existentes
+   - Matching de transações com categorias
+   - Cálculo de score de confiança
+4. Implementar lógica de sugestão de novas categorias:
+   - Identificação de padrões não categorizados
+   - Geração de nomes de categorias
+   - Validação de unicidade
+5. Criar endpoint GET /api/categories:
+   - Lista de categorias existentes
+   - Filtros e ordenação
+6. Implementar parser de arquivos:\n   - Parser CSV com detecção de delimitadores
+   - Parser OFX versões 1.x e 2.x
+   - Parser QIF
+   - Extração de dados de transações
+\n**Tarefas Frontend:**
+1. Implementar açãodo botão 'Analisar Extrato':
+   - Chamada ao endpoint de análise
+   - Feedback visual durante análise
+   - Spinner ou mensagem de carregamento
+2. Implementar tratamento de resposta de análise:
+   - Parsing de dados de transações
+   - Parsing de categorias sugeridas
+   - Preparação de dados para popup
+3. Implementar tratamento de erros de análise:
+   - Mensagens de erro claras
+   - Sugestões de correção
+   - Opção de tentar novamente
+\n**Tarefas de Teste:**
+1. Testes unitários de análise de transações
+2. Testes de integração com modelo de IA
+3. Testes de sugestão de categorias existentes
+4. Testes de sugestão de novas categorias
+5. Testes de parser CSV
+6. Testes de parser OFX 1.x\n7. Testes de parser OFX 2.x
+8. Testes de parser QIF
+9. Testes de tratamento de erros
+\n**Entregáveis:**
+- Endpoint de análise funcional
+- Conector com modelo de IA
+- Parsers de arquivos
+- Lógica de categorização
+- Testes automatizados
+- Documentação de API
+\n### 10.4 Sprint 4: Popup de Resultados (Semana 4)
+
+**Objetivo:** Implementar interface de revisão de transações analisadas
+
+**Tarefas Backend:**
+1. Criar endpoint GET /api/extracts/{id}/results:
+   - Retorna dados formatados para popup
+   - Ordenação de transações por data
+   - Lista de categorias disponíveis
+   - Categorias sugeridas por transação
+2. Implementar lógica de ordenação:
+   - Ordenação por data (mais antiga para mais recente)
+   - Ordenação secundária por valor
+3. Implementar lógica de pré-seleção:
+   - Categoria sugerida como padrão
+   - Score de confiança da sugestão
+\n**Tarefas Frontend:**
+1. Criar componente de popup:
+   - Modal centralizado\n   - Título'Resultado da Análise do Extrato'
+   - Botão de fechar
+   - Responsividade para mobile
+2. Implementar lista de transações:
+   - Renderização de lista ordenada
+   - Exibição de data, descrição e valor
+   - Layout responsivo
+3. Implementar dropdown de categorias:
+   - Dropdown ao lado de cada transação
+   - Lista de categorias existentes
+   - Categorias novas sugeridas
+   - Pré-seleção de categoria sugerida
+   - Indicador visual de categoria nova
+4. Implementar botão 'Cadastrar Transações':
+   - Posicionamento na parte inferior
+   - Estilo destacado
+   - Estado desabilitado durante processamento
+5. Implementar lógica de fechamento:
+   - Fechar ao clicar fora do popup\n   - Fechar ao clicar no botão de fechar
+   - Fechar após cadastro bem-sucedido
+
+**Tarefas de Teste:**
+1. Testes de renderização do popup
+2. Testes de ordenação de transações
+3. Testes de dropdown de categorias
+4. Testes de pré-seleção de categoria\n5. Testes de responsividade
+6. Testes de fechamento do popup
+7. Testes de acessibilidade
+
+**Entregáveis:**
+- Componente de popup funcional
+- Lista de transações ordenada
+- Dropdowns de categorias
+- Testes automatizados
+- Documentação de componentes
+
+### 10.5 Sprint 5: Cadastro em Lote de Transações (Semana 5)
+
+**Objetivo:** Implementar cadastro automático de transações categorizadas
+
+**Tarefas Backend:**
+1. Criar endpoint POST /api/transactions/batch:
+   - Recebe lista de transações com categorias
+   - Validação de dados
+   - Cadastro em lote
+   - Retorno de status de cadastro
+2. Implementar lógica de criação de categorias:
+   - Verificação de existência\n   - Criação de categorias novas
+   - Associação com usuário
+3. Implementar lógica de cadastro de transações:
+   - Criação de transações\n   - Associação com conta
+   - Associação com categoria
+   - Registro de timestamp
+4. Implementar atualização de saldo:
+   - Cálculo de saldo atual
+   - Atualização de saldo da conta
+   - Validação de saldo negativo
+5. Implementar registro de auditoria:
+   - Log de transações criadas
+   - Log de categorias criadas
+   - Log de usuário responsável
+   - Timestamp de operação
+6. Implementar transação de banco de dados:
+   - Rollback em caso de erro
+   - Garantia de consistência
+
+**Tarefas Frontend:**
+1. Implementar ação do botão 'Cadastrar Transações':\n   - Coleta de dados de transações e categorias
+   - Validação de dados
+   - Chamada ao endpoint de cadastro\n2. Implementar feedback visual:
+   - Spinner durante processamento
+   - Mensagem de carregamento
+   - Desabilitação de botões\n3. Implementar mensagem de confirmação:
+   - Mensagem de sucesso no chatbot
+   - Quantidade de transações cadastradas
+   - Quantidade de categorias criadas
+4. Implementar fechamento do popup:
+   - Fechamento automático após sucesso
+   - Limpeza de estado
+5. Implementar tratamento de erros:
+   - Mensagens de erro claras
+   - Detalhamento de transações com erro
+   - Opção de tentar novamente
+
+**Tarefas de Teste:**
+1. Testes unitários de cadastro em lote
+2. Testes de criação de categorias
+3. Testes de atualização de saldo
+4. Testes de auditoria
+5. Testes de transação de banco de dados
+6. Testes de rollback
+7. Testes de interface de cadastro
+8. Testes de mensagens de confirmação
+9. Testes de tratamento de erros
+
+**Entregáveis:**\n- Endpoint de cadastro em lote funcional
+- Lógica de criação de categorias
+- Lógica de atualização de saldo
+- Sistema de auditoria
+- Testes automatizados
+- Documentação de API
+\n### 10.6 Sprint 6: Integração e Testes End-to-End (Semana 6)
+
+**Objetivo:** Integrar todos os módulos e validar fluxo completo\n
+**Tarefas de Integração:**
+1. Integrar módulo de upload com módulo de análise
+2. Integrar módulo de análise com popup de resultados
+3. Integrar popup com módulo de cadastro\n4. Validar fluxo completo de ponta a ponta
+5. Ajustar interfaces entre módulos
+6. Otimizar performance de integração
+
+**Tarefas de Teste End-to-End:**
+1. Teste de fluxo completo:\n   - Upload de extrato CSV
+   - Análise automática
+   - Exibição de popup\n   - Revisão de categorias
+   - Cadastro de transações
+   - Confirmação de sucesso
+2. Teste de fluxo completo com OFX 1.x\n3. Teste de fluxo completo com OFX 2.x
+4. Teste de fluxo completo com QIF
+5. Teste de criação de novas categorias
+6. Teste de atualização de saldo
+7. Teste de auditoria completa
+8. Teste de tratamento de erros em cada etapa
+9. Teste de performance com arquivos grandes
+10. Teste de concorrência (múltiplos uploads simultâneos)
+
+**Tarefas de Usabilidade:**
+1. Teste de usabilidade com usuários reais
+2. Coleta de feedback\n3. Ajustes de interface baseados em feedback
+4. Validação de acessibilidade
+5. Validação de responsividade
+\n**Tarefas de Performance:**
+1. Teste de carga do endpoint de upload
+2. Teste de carga do endpoint de análise
+3. Teste de carga do endpoint de cadastro
+4. Otimização de queries de banco de dados
+5. Otimização de chamadas à API de IA
+6. Implementação de cache onde aplicável
+
+**Tarefas de Segurança:**
+1. Teste de injeção SQL
+2. Teste de XSS
+3. Teste de CSRF
+4. Teste de autenticação e autorização
+5. Teste de criptografia de dados
+6. Validação de permissões de acesso
+7. Auditoria de logs de segurança
+
+**Entregáveis:**
+- Fluxo completo integrado e funcional
+- Relatório de testes end-to-end
+- Relatório de usabilidade
+- Relatório de performance
+- Relatório de segurança
+- Documentação de integração
+
+### 10.7 Sprint 7: Ajustes Finais e Deploy (Semana 7)
+
+**Objetivo:** Corrigir bugs, finalizar documentação e realizar deploy
+
+**Tarefas de Correção:**\n1. Correção de bugs críticos identificados
+2. Correção de bugs de alta prioridade
+3. Ajustes de interface baseados em feedback
+4. Otimizações de performance
+5. Ajustes de segurança
+\n**Tarefas de Documentação:**
+1. Documentação técnica completa:\n   - Arquitetura do sistema
+   - Fluxo de dados
+   - Endpoints de API
+   - Modelos de dados
+   - Configuração de ambiente
+2. Documentação de usuário:\n   - Guia de usodo chatbot
+   - Guia de upload de extratos
+   - Guia de análise e categorização
+   - FAQ
+3. Documentação de deploy:
+   - Procedimentos de deploy
+   - Configuração de ambiente de produção
+   - Procedimentos de rollback
+   - Monitoramento e alertas
+
+**Tarefas de Deploy:**
+1. Preparação do ambiente de produção:
+   - Configuração de servidores
+   - Configuração de banco de dados
+   - Configuração de SSL/TLS
+   - Configuração de firewall
+2. Deploy de backend:
+   - Build de imagem Docker
+   - Push para registry
+   - Deploy em produção
+   - Validação de saúde
+3. Deploy de frontend:
+   - Build de produção
+   - Deploy em CDN
+   - Validação de carregamento
+4. Configuração de monitoramento:
+   - Logs estruturados
+   - Métricas de performance
+   - Alertas de erro
+   - Dashboard de monitoramento
+5. Configuração de backup:
+   - Backup automático de banco de dados
+   - Backup de arquivos
+   - Procedimentos de recuperação
+
+**Tarefas de Validação Pós-Deploy:**
+1. Smoke tests em produção
+2. Validação de endpoints\n3. Validação de fluxo completo
+4. Validação de performance
+5. Validação de monitoramento
+6. Validação de backup
+\n**Tarefas de Treinamento:**
+1. Treinamento de equipe de suporte
+2. Treinamento de usuários piloto
+3. Preparação de materiais de treinamento
+\n**Entregáveis:**
+- Sistema em produção\n- Documentação completa
+- Monitoramento ativo
+- Backup configurado
+- Equipe treinada
+- Relatório de deploy
+
+##11. Cronograma Resumido
+
+| Sprint | Semana | Foco | Entregáveis Principais |
+|--------|--------|------|------------------------|
+| Sprint 1 | Semana 1 | Preparação do Ambiente | Infraestrutura base, CI/CD, estrutura de código |
+| Sprint 2 | Semana 2 | Upload no Chatbot | Endpoint de upload, componente de chatbot |
+| Sprint 3 | Semana 3 | Análise de Extrato | Conector de IA, parsers de arquivos, lógica de categorização |
+| Sprint 4 | Semana 4 | Popup de Resultados | Componente de popup, lista de transações, dropdowns |
+| Sprint 5 | Semana 5 | Cadastro em Lote | Endpoint de cadastro, atualização de saldo, auditoria |
+| Sprint 6 | Semana 6 | Integração e Testes | Fluxo completo integrado, testes end-to-end |
+| Sprint 7 | Semana 7 | Ajustes e Deploy | Sistema em produção, documentação completa |
+
+**Duração Total:** 7 semanas
+
+## 12. Recursos Necessários
+
+###12.1 Equipe\n- 1 Desenvolvedor Backend (Flask/FastAPI, PostgreSQL) - 7 semanas
+- 1 Desenvolvedor Frontend (React, TypeScript) - 7 semanas
+- 1 Engenheiro de IA (integração com modelo de IA) - 4 semanas (Sprints 3-6)
+- 1 QA Engineer (testes) - 7 semanas
+- 1 DevOps Engineer (CI/CD, deploy) - 7 semanas
+- 1 Product Owner (gestão de requisitos) - 7 semanas
+\n### 12.2 Infraestrutura
+- Servidor de desenvolvimento\n- Servidor de staging
+- Servidor de produção
+- Banco de dados PostgreSQL
+- Serviço de armazenamento de arquivos
+- API de modelo de IA (OpenAI ou similar)
+- Serviço de CI/CD (GitHub Actions)
+- Serviço de monitoramento\n\n### 12.3 Ferramentas
+- Git e GitHub
+- Docker e docker-compose
+- IDE (VS Code, PyCharm)
+- Postman ou similar para testes de API
+- Ferramenta de design (Figma)\n- Ferramenta de gerenciamento de projeto (Jira, Trello)
+\n## 13. Riscos e Mitigações
+
+| Risco | Probabilidade | Impacto | Mitigação |
+|-------|---------------|---------|----------|
+| Complexidade de parsing de arquivos OFX | Média | Alto | Utilizar bibliotecas especializadas (ofxparse), realizar testes extensivos com diferentes versões de OFX |
+| Performance de análise de IA para extratos grandes | Média | Médio | Implementar processamento assíncrono, feedback visual de progresso, limitar tamanho de arquivo |
+| Usabilidade do popup em dispositivos móveis | Baixa | Médio | Design responsivo desde o início, testes em diferentes tamanhos de tela |\n| Segurança de dados durante upload e análise | Baixa | Alto | Criptografia de dados em trânsito e em repouso, validação rigorosa de arquivos, auditoria completa |
+| Atraso na integração com modelo de IA | Média | Alto | Definir interface clara desde o início, criar mock de IA para desenvolvimento paralelo |
+| Bugs críticos descobertos em produção | Baixa | Alto | Testes extensivos, deploy gradual, monitoramento ativo, procedimentos de rollback |
+| Indisponibilidade de API de IA | Baixa | Alto | Implementar retry logic, fallback para processamento manual, alertas de falha |
+
+## 14. Critérios de Sucesso
+
+### 14.1 Critérios Técnicos
+- Sistema em produção e estável
+- Cobertura de testes > 80%
+- Tempo de resposta de endpoints < 2 segundos
+- Uptime > 99%
+- Zero vulnerabilidades críticas de segurança
+\n### 14.2 Critérios de Negócio
+- Usuários conseguem fazer upload de extratos via chatbot
+- Análise automática de transações funcional
+- Categorização com precisão > 80%
+- Cadastro em lote de transações funcional
+- Feedback positivo de usuários piloto
+
+### 14.3 Critérios de Usabilidade
+- Fluxo completo em menos de 5 cliques
+- Tempo médio de upload e análise < 30 segundos
+- Taxa de erro de usuário < 5%
+- Satisfação de usuário > 4/5
+
+## 15. Próximos Passos Após MVP
+
+### 15.1 Versão 1.1 (Semanas 8-10)
+- Conciliação automática por Machine Learning
+- Aprendizado contínuo do modelo de IA
+- Relatórios avançados de categorização
+- Exportação de transações categorizadas
+\n### 15.2 Versão 1.2 (Semanas 11-14)
+- Integração com APIs bancárias (Open Banking)
+- Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA
+- Marketplace de plugins\n
+### 15.3 Versão 2.0 (Semanas 15-20)
+- Aplicativo móvel (iOS e Android)
+- SDK para desenvolvimento de plugins personalizados
+- Análise preditiva de gastos
+- Recomendações personalizadas de economia
