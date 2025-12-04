@@ -35,6 +35,8 @@ function parseOFXAmount(amountStr: string): number {
 /**
  * Converte OFX SGML para XML
  * OFX pode vir em formato SGML (sem tags de fechamento)
+ * 
+ * Nova abordagem: processa o conteúdo inteiro, não linha por linha
  */
 function sgmlToXml(sgml: string): string {
   try {
@@ -46,54 +48,58 @@ function sgmlToXml(sgml: string): string {
     // Remove headers OFX e pega apenas o conteúdo
     let content = sgml.replace(/^[\s\S]*?<OFX>/i, '<OFX>');
     
-    // Processa linha por linha
-    const lines = content.split('\n');
-    const result: string[] = [];
+    // Remove quebras de linha para processar como stream contínuo
+    // Mas mantém espaços para preservar estrutura
+    content = content.replace(/\r\n/g, '\n');
     
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
+    // Estratégia: processar tag por tag
+    // Regex para encontrar todas as tags: <TAG> ou </TAG> ou <TAG>valor
+    const tagPattern = /<\/?([A-Z0-9_.]+)>([^<]*)/gi;
+    const result: string[] = [];
+    const stack: string[] = [];
+    let lastIndex = 0;
+    let match;
+    
+    // Reset regex
+    tagPattern.lastIndex = 0;
+    
+    while ((match = tagPattern.exec(content)) !== null) {
+      const fullMatch = match[0];
+      const tagName = match[1];
+      const afterTag = match[2];
+      const isClosing = fullMatch.startsWith('</');
       
-      // Pula linhas vazias
-      if (!line) {
-        result.push('');
-        continue;
-      }
-      
-      // Se já é uma tag de fechamento, mantém
-      if (line.match(/^<\/[A-Z0-9_.]+>$/i)) {
-        result.push(line);
-        continue;
-      }
-      
-      // Processa tags na linha
-      // Regex para encontrar todas as tags: <TAG>valor ou <TAG>
-      let processedLine = line;
-      
-      // Primeiro, protege tags que já estão fechadas
-      const alreadyClosed: string[] = [];
-      processedLine = processedLine.replace(/<([A-Z0-9_.]+)>([^<]+)<\/\1>/gi, (match) => {
-        const placeholder = `__CLOSED_${alreadyClosed.length}__`;
-        alreadyClosed.push(match);
-        return placeholder;
-      });
-      
-      // Agora processa tags que precisam de fechamento
-      // Padrão: <TAG>valor (onde valor não contém <)
-      processedLine = processedLine.replace(/<([A-Z0-9_.]+)>([^<>\n]+)/gi, (match, tag, value) => {
-        // Se o valor está vazio ou é só espaços, é uma tag container
-        if (!value.trim()) {
-          return `<${tag}>`;
+      if (isClosing) {
+        // Tag de fechamento - apenas adiciona
+        result.push(`</${tagName}>`);
+        // Remove do stack se estiver lá
+        const stackIndex = stack.lastIndexOf(tagName);
+        if (stackIndex !== -1) {
+          stack.splice(stackIndex, 1);
         }
-        // Adiciona tag de fechamento
-        return `<${tag}>${value.trim()}</${tag}>`;
-      });
+      } else {
+        // Tag de abertura
+        const value = afterTag.trim();
+        
+        if (value && !value.startsWith('<')) {
+          // Tem valor inline - é uma tag leaf
+          // Adiciona com fechamento
+          result.push(`<${tagName}>${value}</${tagName}>`);
+        } else {
+          // Sem valor ou próximo caractere é <
+          // É uma tag container
+          result.push(`<${tagName}>`);
+          stack.push(tagName);
+        }
+      }
       
-      // Restaura tags que já estavam fechadas
-      alreadyClosed.forEach((closed, index) => {
-        processedLine = processedLine.replace(`__CLOSED_${index}__`, closed);
-      });
-      
-      result.push(processedLine);
+      lastIndex = tagPattern.lastIndex;
+    }
+    
+    // Fecha tags que ficaram abertas (não deveria acontecer em OFX válido)
+    while (stack.length > 0) {
+      const tag = stack.pop();
+      result.push(`</${tag}>`);
     }
     
     return result.join('\n');
