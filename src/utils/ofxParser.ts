@@ -65,30 +65,35 @@ function sgmlToXml(sgml: string): string {
         continue;
       }
       
-      // Verifica se é uma tag de abertura com valor inline
-      const inlineMatch = line.match(/^<([A-Z0-9_.]+)>(.+)$/i);
-      if (inlineMatch) {
-        const tagName = inlineMatch[1];
-        const value = inlineMatch[2].trim();
-        
-        // Se o valor já tem tag de fechamento, mantém
-        if (value.includes(`</${tagName}>`)) {
-          result.push(line);
-        } else {
-          // Adiciona tag de fechamento
-          result.push(`<${tagName}>${value}</${tagName}>`);
+      // Processa tags na linha
+      // Regex para encontrar todas as tags: <TAG>valor ou <TAG>
+      let processedLine = line;
+      
+      // Primeiro, protege tags que já estão fechadas
+      const alreadyClosed: string[] = [];
+      processedLine = processedLine.replace(/<([A-Z0-9_.]+)>([^<]+)<\/\1>/gi, (match) => {
+        const placeholder = `__CLOSED_${alreadyClosed.length}__`;
+        alreadyClosed.push(match);
+        return placeholder;
+      });
+      
+      // Agora processa tags que precisam de fechamento
+      // Padrão: <TAG>valor (onde valor não contém <)
+      processedLine = processedLine.replace(/<([A-Z0-9_.]+)>([^<>\n]+)/gi, (match, tag, value) => {
+        // Se o valor está vazio ou é só espaços, é uma tag container
+        if (!value.trim()) {
+          return `<${tag}>`;
         }
-        continue;
-      }
+        // Adiciona tag de fechamento
+        return `<${tag}>${value.trim()}</${tag}>`;
+      });
       
-      // Tag de abertura sem valor (container) - mantém como está
-      if (line.match(/^<[A-Z0-9_.]+>$/i)) {
-        result.push(line);
-        continue;
-      }
+      // Restaura tags que já estavam fechadas
+      alreadyClosed.forEach((closed, index) => {
+        processedLine = processedLine.replace(`__CLOSED_${index}__`, closed);
+      });
       
-      // Qualquer outra linha, mantém
-      result.push(line);
+      result.push(processedLine);
     }
     
     return result.join('\n');
