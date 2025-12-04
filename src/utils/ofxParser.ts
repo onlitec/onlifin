@@ -54,15 +54,34 @@ function sgmlToXml(sgml: string): string {
     
     // Remove todas as linhas de header (que não começam com <)
     const lines = content.split('\n');
-    let startIndex = 0;
+    let startIndex = -1;
+    
+    console.log(`Total de linhas no arquivo: ${lines.length}`);
+    console.log('Procurando pela tag <OFX>...');
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
+      
+      // Debug: mostra as primeiras 20 linhas
+      if (i < 20) {
+        console.log(`Linha ${i}: "${line.substring(0, 50)}${line.length > 50 ? '...' : ''}"`);
+      }
+      
       // Encontrou a tag <OFX>, começa daqui
       if (line.toUpperCase().startsWith('<OFX>')) {
         startIndex = i;
+        console.log(`✅ Tag <OFX> encontrada na linha ${i}`);
         break;
       }
+    }
+    
+    if (startIndex === -1) {
+      console.error('❌ Tag <OFX> não encontrada no arquivo!');
+      console.error('Primeiras 10 linhas do arquivo:');
+      lines.slice(0, 10).forEach((line, i) => {
+        console.error(`  ${i}: "${line}"`);
+      });
+      throw new Error('Arquivo OFX inválido: tag <OFX> não encontrada');
     }
     
     // Reconstrói o conteúdo a partir da tag <OFX>
