@@ -60,6 +60,7 @@ export default function ImportStatements() {
   const [newCategorySuggestions, setNewCategorySuggestions] = useState<NewCategorySuggestion[]>([]);
   const [existingCategories, setExistingCategories] = useState<Category[]>([]);
   const [step, setStep] = useState<'upload' | 'review' | 'complete'>('upload');
+  const [ofxError, setOfxError] = useState<string>('');
   const { toast } = useToast();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,10 +195,18 @@ export default function ImportStatements() {
       // Verifica se é OFX
       if (isValidOFX(content)) {
         console.log('Arquivo OFX detectado, fazendo parse...');
-        parsed = parseOFX(content);
+        try {
+          parsed = parseOFX(content);
+          setOfxError(''); // Limpa erro anterior se houver
+        } catch (ofxErr: any) {
+          // Captura erro específico do OFX e mostra ajuda
+          setOfxError(ofxErr.message || 'Erro ao processar arquivo OFX');
+          throw ofxErr;
+        }
       }
       // Caso contrário, tenta CSV ou texto
       else {
+        setOfxError(''); // Limpa erro OFX se não for OFX
         parsed = fileContent ? parseCSV(fileContent) : parseTextContent(textContent);
       }
       
@@ -585,6 +594,24 @@ export default function ImportStatements() {
                   <CheckCircle2 className="h-4 w-4" />
                   <AlertDescription>
                     Arquivo carregado com sucesso. Clique em "Analisar com IA" para continuar.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {ofxError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="space-y-2">
+                    <p className="font-semibold">Erro ao processar arquivo OFX</p>
+                    <p className="text-sm">{ofxError}</p>
+                    <div className="mt-3 space-y-1 text-sm">
+                      <p className="font-medium">Soluções alternativas:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Exporte o arquivo novamente do banco</li>
+                        <li>Tente um período menor (ex: 1 mês)</li>
+                        <li>Use o formato CSV como alternativa</li>
+                        <li>Consulte o console do navegador (F12) para mais detalhes</li>
+                      </ul>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
