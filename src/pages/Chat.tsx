@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import { Bot, User, Send, Loader2, Paperclip, FileText, X } from 'lucide-react';
 
 interface Message {
@@ -41,13 +42,13 @@ export default function Chat() {
     if (!file) return;
 
     // Check file type
-    const validTypes = ['.csv', '.txt'];
+    const validTypes = ['.csv', '.txt', '.ofx'];
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
     
     if (!validTypes.includes(fileExtension)) {
       toast({
         title: 'Arquivo inválido',
-        description: 'Por favor, envie um arquivo CSV ou TXT',
+        description: 'Por favor, envie um arquivo CSV, TXT ou OFX',
         variant: 'destructive',
       });
       return;
@@ -159,7 +160,15 @@ export default function Chat() {
 
       // If there's a file, process it for categorization
       if (selectedFile && fileContent) {
-        const parsed = parseCSV(fileContent);
+        // Detecta e faz parse baseado no formato
+        let parsed;
+        
+        if (isValidOFX(fileContent)) {
+          console.log('Arquivo OFX detectado no chat');
+          parsed = parseOFX(fileContent);
+        } else {
+          parsed = parseCSV(fileContent);
+        }
         
         if (parsed.length === 0) {
           throw new Error('Nenhuma transação encontrada no arquivo');
@@ -358,7 +367,7 @@ export default function Chat() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.txt"
+              accept=".csv,.txt,.ofx"
               onChange={handleFileSelect}
               className="hidden"
             />

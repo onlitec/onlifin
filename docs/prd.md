@@ -4,8 +4,7 @@
 
 ### 1.1 Nome da Plataforma
 Plataforma de Gestão Financeira Pessoal com Assistente de IA
-
-### 1.2 Descrição
+\n### 1.2 Descrição
 Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, e oferece um assistente de IA contextual acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados, configurar plugins e registrar auditoria de interações.
 
 ## 2. Funcionalidades Principais
@@ -21,9 +20,19 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Exibição clara do saldo atual na página de contas (https://onlifin.onlitec.com.br/accounts)
   - Atualização automática do saldo sempre que uma transação for registrada, editada ou excluída
 - Visualização de limites disponíveis de cartões de crédito
-\n### 2.2 Importação e Conciliação\n- Importação de extratos bancários nos formatos CSV, OFX e QIF
+\n### 2.2 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
+  - **Suporte completo ao formato OFX (Open Financial Exchange):**
+    - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)\n    - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
+    - Identificação automática de conta bancária associada através de informações do arquivo OFX
+    - Validação de integridade do arquivo OFX antes do processamento
+    - Tratamento de erros e feedback claro em caso de arquivo corrompido ou formato inválido
+  - **Suporte ao formato CSV:**
+    - Mapeamento flexível de colunas (data, descrição, valor, tipo)\n    - Detecção automática de delimitadores (vírgula, ponto e vírgula, tabulação)
+  - **Suporte ao formato QIF (Quicken Interchange Format):**
+    - Parsing de arquivos QIF com extração de transações
+    - Mapeamento de campos QIF para estrutura interna da plataforma
 - **Importação de extratos diretamente no chat ou interface da plataforma**
-- **Importação de extratos via upload no chatbot do assistente de IA**
+- **Importação de extratos via upload no chatbot do assistente de IA (CSV, OFX e QIF)**
 - Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
 - Classificação automática de transações\n\n### 2.3 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
@@ -37,7 +46,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Quando o modelo identificar padrões ou estabelecimentos que não se encaixam nas categorias existentes, ele sugere a criação de uma nova categoria
   - As categorias sugeridas são exibidas com checkboxes, permitindo ao usuário selecionar quais criar
 - **Cadastro automático de transações:**
-  - Ao clicar em'Cadastrar Transações', o sistema:\n    - Cria automaticamente as categorias novas selecionadas pelo usuário
+  - Ao clicar em 'Cadastrar Transações', o sistema:\n    - Cria automaticamente as categorias novas selecionadas pelo usuário
     - Registra as transações nas categorias correspondentes (existentes ou recém-criadas)
 - **Interface de revisão:**
   - Exibição do extrato com transações e categorias sugeridas lado a lado
@@ -46,13 +55,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
 - **Fluxo de análise via chatbot:**
-  - Usuário faz upload do extrato no chatbot
+  - Usuário faz upload do extrato no chatbot (CSV, OFX ou QIF)
   - Sistema processa o arquivo e aciona automaticamente a análise do modelo de IA
   - Chatbot exibe as categorias sugeridas e permite revisão inline
   - Usuário confirma ou edita as sugestões diretamente no chat
   - Sistema cadastra as transações conforme aprovação do usuário
-
-### 2.4 Movimentações Financeiras
+\n### 2.4 Movimentações Financeiras
 - Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
@@ -63,17 +71,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Gestão de contas a pagar e receber
 - Visualização de fluxo de caixa
 - Previsões financeiras simples
-- Relatórios e dashboards:\n  - Saldo por conta (com cálculo automático baseado em receitas e despesas)
-  - Despesas por categoria
+- Relatórios e dashboards:\n  - Saldo por conta (com cálculo automático baseado em receitas e despesas)\n  - Despesas por categoria
   - Histórico mensal\n  - Projeção de fluxo de caixa
 - Exportação de relatórios em CSV, Excel e PDF
-\n### 2.6 Assistente de IA Contextual
-- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
+\n### 2.6 Assistente de IA Contextual\n- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
 - **Funcionalidade de upload de extrato bancário diretamente no chatbot:**
-  - Suporte aos formatos CSV, OFX e QIF
-  - Processamento automático do arquivo após upload
-  - Acionamento automático da análise e categorização pelo modelo de IA
+  - **Suporte aos formatos CSV, OFX e QIF**
+  - **Processamento automático de arquivos OFX com parsing completo de transações**
+  -Acionamento automático da análise e categorização pelo modelo de IA
   - Exibição das sugestões de categorias diretamente no chat
   - Interface de revisão e confirmação inline no chatbot
 - Funcionalidadesdo assistente:\n  - Categorização automática de transações
@@ -81,13 +87,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Alertas de vencimentos
   - Simulações de parcelamento
   - Sugestões de orçamento
-  - **Cadastro de transações mediante solicitação do usuário (receitas, despesas, pagamentos recorrentes, parcelamentos)**\n  - **Análise e categorização automática de extratos bancários importados (via interface ou chatbot)**
+  - **Cadastro de transações mediante solicitação do usuário (receitas, despesas, pagamentos recorrentes, parcelamentos)**
+  - **Análise e categorização automática de extratos bancários importados (via interface ou chatbot)**
   - **Sugestão de novas categorias baseadas em padrões identificados**
 - Análise completa de contas cadastradas
 - Consulta detalhada de extratos de transações
 - Análise de pagamentos e recebimentos
-- Geração e interpretação de relatórios
-- Consulta de saldos em tempo real
+- Geração e interpretação de relatórios\n- Consulta de saldos em tempo real
 - **Integração com plugins configurados para funcionalidades estendidas**
 
 ### 2.7 Painel de Administração deIA
@@ -158,8 +164,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Permissão para cadastro de transações pelo modelo de IA**
   - **Permissão para análise e categorização automática de extratos**
 - **Consentimento explícito para cada plugin com detalhamento de dados acessados**
-- Termo de consentimento detalhado explicando o escopo do acesso total e da permissão de cadastro
-- Opção de revogar acesso total e permissão de cadastro a qualquer momento
+- Termo de consentimento detalhado explicando o escopo do acesso total e da permissão de cadastro\n- Opção de revogar acesso total e permissão de cadastro a qualquer momento
 - **Opção de revogar permissões de plugins individualmente**
 
 ### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
@@ -196,7 +201,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Backup automático do banco de dados
 - Procedimentos documentados de recuperação de desastres
 \n## 6. Arquitetura Técnica
-\n### 6.1 Stack Tecnológica
+
+### 6.1 Stack Tecnológica
 - Backend: Flask ou FastAPI
 - Banco de dados: PostgreSQL\n- Frontend: React\n- Containerização: Docker / docker-compose
 - CI/CD: GitHub Actions
@@ -221,6 +227,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Processa extratos importados e identifica padrões\n  - Sugere categorias existentes ou novas categorias
   - Permite revisão e edição manual antes do cadastro\n  - Aprende com confirmações e correções do usuário
   - **Suporte a upload e processamento de extrato via chatbot**
+- **Módulo de importação de arquivos OFX:**
+  - Parser OFX para versões1.x (SGML) e 2.x (XML)\n  - Extração de dados de transações: data, descrição, valor, tipo, saldo
+  - Validação de integridade e tratamento de erros
+  - Mapeamento automático de conta bancária
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
 - Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**
 - **Módulo de validação e confirmação para transações criadas pelo modelo de IA**\n- **Módulo de validação e sandbox para execução segura de plugins**
@@ -236,26 +246,28 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de sugestões de novas categorias
   - Validação de cadastro automático de transações categorizadas
   - Validação de aprendizado contínuo do modelo\n  - **Validação de upload e processamento de extrato via chatbot**
+- **Testes de importação de arquivos OFX:**
+  - Validação de parsing de OFX versões 1.x e 2.x
+  - Validação de extração correta de transações
+  - Validação de tratamento de erros para arquivos corrompidos
+  - Validação de mapeamento automático de conta bancária
 - **Testes de cálculo de saldo em tempo real:**
   - Validação de cálculo correto ao adicionar receitas (aumento de saldo)
   - Validação de cálculo correto ao adicionar despesas (diminuição de saldo)
   - Validação de atualização de saldo ao editar ou excluir transações
-- **Testes de integração com plugins**
-- **Testes de segurança e isolamento de plugins**
-
-## 7. Escopodo MVP
+- **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
+\n## 7. Escopodo MVP
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
 - Cadastro de contas e cartões
 - **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas e despesas pagas**
-- Importação de extratos CSV/OFX
+- **Importação de extratos CSV, OFX e QIF com suporte completo ao formato OFX (versões 1.x e 2.x)**
 - **Importação de extratos diretamente no chat ou interface**
-- **Upload de extrato bancário via chatbotdo assistente de IA**
+- **Upload de extrato bancário via chatbot do assistente de IA (CSV, OFX e QIF)**
 - **Análise e categorização automática de transações comIA:**
   - **Trigger automático ao concluir importação (interface ou chatbot)**
-  - Sugestão de categorias existentes
-  - Sugestão de novas categorias com checkboxes
+  - Sugestão de categorias existentes\n  - Sugestão de novas categorias com checkboxes
   - Interface de revisão antes do cadastro
   - Cadastro automático de transações categorizadas
   - Aprendizado contínuo baseado em confirmações do usuário
@@ -270,8 +282,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Extratos completos de transações
   - **Permissão para cadastro de transações mediante solicitação do usuário**\n  - **Permissão para análise e categorização automática de extratos**
 - Botão de chat comIA nas telas principais
-- Painel de administração com:
-  - Indicador visual de status de configuração
+- Painel de administração com:\n  - Indicador visual de status de configuração
   - Configuração de modelo de IA
   - Toggle de acesso total com termo de consentimento
   - **Toggle de permissão para cadastro de transações pelo modelo de IA**
@@ -284,7 +295,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Relatório de auditoria de acessos
 \n### 7.2 Versões Futuras (1.1 / 1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
-- Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
+- Importação automatizada OFX
+- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
 - **Marketplace de plugins com plugins pré-aprovados**
 - **SDK para desenvolvimento de plugins personalizados**
 - Aplicativo móvel\n\n## 8. Estilo de Design
@@ -299,7 +311,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 -Ícones minimalistas para categorias e ações
 - Gráficos limpos e legíveis (linhas para fluxo de caixa, pizza para categorias)
 - Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito
-- **Ícone de upload de arquivo no chatbot para importação de extrato**
+- **Ícone de upload de arquivo no chatbot para importação de extrato (CSV, OFX e QIF)**
 - Bordas suaves com raio de 8px para cards e botões
 - Sombras sutis para criar hierarquia visual
 - Badge de status com ícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração

@@ -25,6 +25,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import type { Category } from '@/types/types';
 
 interface ParsedTransaction {
@@ -186,8 +187,19 @@ export default function ImportStatements() {
     setIsAnalyzing(true);
 
     try {
-      // Parse the content
-      const parsed = fileContent ? parseCSV(fileContent) : parseTextContent(textContent);
+      // Detecta e faz parse do conteúdo baseado no formato
+      let parsed: ParsedTransaction[] = [];
+      const content = fileContent || textContent;
+      
+      // Verifica se é OFX
+      if (isValidOFX(content)) {
+        console.log('Arquivo OFX detectado, fazendo parse...');
+        parsed = parseOFX(content);
+      }
+      // Caso contrário, tenta CSV ou texto
+      else {
+        parsed = fileContent ? parseCSV(fileContent) : parseTextContent(textContent);
+      }
       
       if (parsed.length === 0) {
         toast({
@@ -557,15 +569,15 @@ export default function ImportStatements() {
             </TabsList>
             <TabsContent value="file" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="file">Arquivo CSV</Label>
+                <Label htmlFor="file">Arquivo de Extrato</Label>
                 <Input
                   id="file"
                   type="file"
-                  accept=".csv,.txt"
+                  accept=".csv,.txt,.ofx"
                   onChange={handleFileUpload}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Formato esperado: Data, Descrição, Valor (uma transação por linha)
+                  Formatos aceitos: CSV, TXT ou OFX
                 </p>
               </div>
               {fileContent && (
