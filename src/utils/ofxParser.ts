@@ -48,8 +48,26 @@ function sgmlToXml(sgml: string): string {
       return sgml;
     }
 
-    // Remove headers OFX e pega apenas o conteúdo
-    let content = sgml.replace(/^[\s\S]*?<OFX>/i, '<OFX>');
+    // Remove headers OFX - procura por linhas de header e remove até encontrar <OFX>
+    // Headers típicos: OFXHEADER:, DATA:, VERSION:, etc.
+    let content = sgml;
+    
+    // Remove todas as linhas de header (que não começam com <)
+    const lines = content.split('\n');
+    let startIndex = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      // Encontrou a tag <OFX>, começa daqui
+      if (line.toUpperCase().startsWith('<OFX>')) {
+        startIndex = i;
+        break;
+      }
+    }
+    
+    // Reconstrói o conteúdo a partir da tag <OFX>
+    content = lines.slice(startIndex).join('\n');
+    
     console.log('Conteúdo após remover headers (primeiros 300 chars):', content.substring(0, 300));
     
     // Remove quebras de linha para processar como stream contínuo
