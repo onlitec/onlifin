@@ -6,8 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Building2, RefreshCw } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Plus, Pencil, Trash2, Building2, RefreshCw, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import type { Account } from '@/types/types';
 
 export default function Accounts() {
@@ -241,6 +248,9 @@ export default function Accounts() {
                     onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    O saldo será atualizado automaticamente conforme você registra receitas e despesas
+                  </p>
                 </div>
               </div>
               <DialogFooter>
@@ -251,6 +261,24 @@ export default function Accounts() {
         </Dialog>
         </div>
       </div>
+
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription className="flex items-center gap-2">
+          <span>
+            Os saldos das contas são atualizados automaticamente:
+          </span>
+          <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+            <TrendingUp className="h-3 w-3" />
+            Receitas aumentam
+          </span>
+          <span>•</span>
+          <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+            <TrendingDown className="h-3 w-3" />
+            Despesas diminuem
+          </span>
+        </AlertDescription>
+      </Alert>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {accounts.map((account) => (
@@ -269,7 +297,28 @@ export default function Accounts() {
                     Ag: {account.agency} / Conta: {account.account_number}
                   </p>
                 )}
-                <p className="text-2xl font-bold">{formatCurrency(account.balance)}</p>
+                <div className="flex items-center gap-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Saldo Atual</p>
+                    <p className={`text-2xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(account.balance)}
+                    </p>
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">
+                          O saldo é atualizado automaticamente com suas transações:
+                          <br />• Receitas aumentam o saldo
+                          <br />• Despesas diminuem o saldo
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <div className="flex gap-2 pt-2">
                   <Button
                     variant="outline"

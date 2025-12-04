@@ -1,7 +1,6 @@
 # Documento de Requisitos da Plataforma de Gestão Financeira Pessoal
 
-## 1. Visão Geral
-
+## 1. Visão Geral\n
 ### 1.1 Nome da Plataforma
 Plataforma de Gestão Financeira Pessoal com Assistente de IA
 \n### 1.2 Descrição
@@ -12,31 +11,33 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 ### 2.1 Gestão de Contas e Cartões
 - Cadastro de contas bancárias (nome, banco, agência, conta, moeda)
 - Cadastro de cartões de crédito (limite, data de fechamento, data de vencimento)
-- Visualização de saldos e limites disponíveis
-\n### 2.2 Importação e Conciliação
-- Importação de extratos bancários nos formatos CSV, OFX e QIF
-- Mapeamento automático de transações importadas
-- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações
-
-### 2.3 Movimentações Financeiras
+- **Visualização de saldo atual da conta com cálculo automático:**
+  - Saldo inicial da conta
+  - Saldo atualizado em tempo real considerando:\n    - Despesas pagas: diminuem o saldo da conta
+    - Receitas recebidas: aumentam o saldo da conta
+  - Fórmula: Saldo Atual = Saldo Inicial + Receitas Recebidas - Despesas Pagas
+  - Exibição clara do saldo atual na página de contas (https://onlifin.onlitec.com.br/accounts)\n  - Atualização automática do saldo sempre que uma transação for registrada, editada ou excluída
+- Visualização de limites disponíveis de cartões de crédito
+\n### 2.2 Importação e Conciliação\n- Importação de extratos bancários nos formatos CSV, OFX e QIF
+- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
+- Classificação automática de transações\n\n### 2.3 Movimentações Financeiras
 - Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
-- Suporte a pagamentos recorrentes
-- Suporte a receitas recorrentes
+- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
+- Suporte a pagamentos recorrentes\n- Suporte a receitas recorrentes
 - Controle de parcelamentos com acompanhamento de parcelas
 - Agendamento de compromissos e pagamentos
-- Sistema de alertas para vencimentos\n- **Cadastro de transações pelo modelo de IA: o assistente de IA pode criar transações na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes e parcelamentos**\n
-### 2.4 Controle Financeiro
+- Sistema de alertas para vencimentos\n- **Cadastro de transações pelo modelo de IA: o assistente de IA pode criar transações na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes e parcelamentos**
+\n### 2.4 Controle Financeiro
 - Gestão de contas a pagar e receber
-- Visualização de fluxo de caixa\n- Previsões financeiras simples
-- Relatórios e dashboards:\n  - Saldo por conta
+- Visualização de fluxo de caixa
+- Previsões financeiras simples
+- Relatórios e dashboards:\n  - Saldo por conta (com cálculo automático baseado em receitas e despesas)
   - Despesas por categoria
-  - Histórico mensal
-  - Projeção de fluxo de caixa
+  - Histórico mensal\n  - Projeção de fluxo de caixa
 - Exportação de relatórios em CSV, Excel e PDF
-\n### 2.5 Assistente de IA Contextual
-- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
+
+### 2.5 Assistente de IA Contextual\n- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
 - Funcionalidades do assistente:
   - Categorização automática de transações
@@ -56,14 +57,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Mensagem clara exibindo 'Modelo Configurado' (com ícone de check verde) ou 'Nenhum Modelo Configurado' (com ícone de alerta laranja)
   - Exibição do nome do modelo ativo quando configurado
 - Configuração de modelos de IA (seleção de modelo, endpoint, chave de API)
-- Ajuste de prompts-padrão e templates de resposta
-- Controles de permissão de acesso total:\n  - Acesso completo a todas as contas cadastradas
+- Ajuste de prompts-padrão e templates de resposta\n- Controles de permissão de acesso total:\n  - Acesso completo a todas as contas cadastradas
   - Acesso completo a todas as transações (receitas e despesas)
   - Acesso completo a pagamentos e recebimentos
   - Acesso completo a relatórios financeiros
   - Acesso completo a saldos das contas
   - Acesso completo a extratos de transações
-  - **Permissão para cadastro de transações: toggle paraativar/desativar a capacidade do modelo de IA criar transações na plataforma**
+  - **Permissão para cadastro de transações: toggle paraativar/desativar a capacidadedo modelo de IA criar transações na plataforma**
   - Toggle para ativar/desativar acesso total com confirmação e consentimento explícito do usuário
 - Logs e histórico de conversas com IA
 - Registro de auditoria detalhado:\n  - Quem ativou o acesso total
@@ -77,14 +77,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Cadastro e configuração de plugins na plataforma**
 - **Interface de gerenciamento de plugins com as seguintes funcionalidades:**
   - Lista de plugins disponíveis e instalados
-  - Ativação/desativação de plugins\n  - Configuração de parâmetros específicos de cada plugin (chaves de API, endpoints, credenciais)
+  - Ativação/desativação de plugins
+  - Configuração de parâmetros específicos de cada plugin (chaves de API, endpoints, credenciais)
   - Indicador visual de status (ativo/inativo) com ícone de check verde ou alerta laranja
 - **Permissões de acesso para plugins:**
   - Controle granular de quais dados da plataforma cada plugin pode acessar
   - Toggle individual para cada tipo de acesso (contas, transações, relatórios, etc.)
   - Termo de consentimento específico para cada plugin
-- **Integração de plugins com o assistente de IA:**
-  - Plugins podem estender funcionalidades do assistente de IA
+- **Integração de plugins com o assistente de IA:**\n  - Plugins podem estender funcionalidades do assistente de IA
   - Assistente pode invocar funções de plugins mediante solicitação do usuário
   - Registro de auditoria de todas as chamadas a plugins
 - **Logs e auditoria de plugins:**
@@ -103,14 +103,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Criptografia em repouso para dados sensíveis
 - Mascaramento e criptografia de números de conta e cartão
 - Transmissão segura de dados completos ao modelo de IA quando acesso total estiver ativado
-- **Transmissão segura de dados a plugins conforme permissões configuradas**
-
+- **Transmissão segura de dados a plugins conforme permissões configuradas**\n
 ### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
 - RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário
 - Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
   - Transações completas
-  - Pagamentos e recebimentos\n  - Relatórios financeiros
+  - Pagamentos e recebimentos
+  - Relatórios financeiros
   - Saldos das contas
   - Extratos de transações
   - **Permissão para cadastro de transações pelo modelo de IA**
@@ -143,10 +143,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Sistema de logs estruturados
 - Métricas de usodo assistente de IA
 - Alertas para erros e falhas de importação
-- Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de transações criadas pelo modelo de IA**
+- Monitoramento de acessos do modelo de IA aos dados
+- **Monitoramento de transações criadas pelo modelo de IA**
 - **Monitoramento de performance e erros de plugins**
-- **Alertas para falhas de comunicação com plugins**
-
+- **Alertas para falhas de comunicação com plugins**\n
 ### 5.2 Backup e Recuperação
 - Backup automático do banco de dados
 - Procedimentos documentados de recuperação de desastres
@@ -167,6 +167,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Extratos detalhados de transações
   - **Interface de escrita para cadastro de transações pelo modelo de IA**
 - **Camada de acesso controlado para plugins conforme permissões configuradas**
+- **Módulo de cálculo de saldo em tempo real:**
+  - Calcula saldo atual baseado em saldo inicial, receitas recebidas e despesas pagas
+  - Atualiza saldo automaticamente ao registrar, editar ou excluir transações
+  - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
 - Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**
 - **Módulo de validação e confirmação para transações criadas pelo modelo de IA**\n- **Módulo de validação e sandbox para execução segura de plugins**
@@ -176,15 +180,20 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Testes de segurança (SAST/DAST)
 - Testes de acessodo modelo de IA aos dados
 - **Testes de cadastro de transações pelo modelo de IA, incluindo validação de dados e auditoria**
+- **Testes de cálculo de saldo em tempo real:**
+  - Validação de cálculo correto ao adicionar receitas (aumento de saldo)
+  - Validação de cálculo correto ao adicionar despesas (diminuição de saldo)
+  - Validação de atualização de saldo ao editar ou excluir transações
 - **Testes de integração com plugins**
 - **Testes de segurança e isolamento de plugins**
-
-## 7. Escopo do MVP
+\n## 7. Escopo do MVP
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
-- Cadastro de contas e cartões\n- Importação de extratos CSV/OFX
-- CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
+- Cadastro de contas e cartões
+- **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas e despesas pagas**
+- Importação de extratos CSV/OFX\n- CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
+- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
 - Conciliação manual\n- Dashboard básico com visualizações principais
 - Assistente de IA com acesso total configurável a:\n  - Todas as contas cadastradas
   - Todas as transações (receitas e despesas)
@@ -192,8 +201,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Saldos de todas as contas
   - Extratos completos de transações
   - **Permissão para cadastro de transações mediante solicitação do usuário**\n- Botão de chat comIA nas telas principais
-- Painel de administração com:
-  - Indicador visual de status de configuração
+- Painel de administração com:\n  - Indicador visual de status de configuração
   - Configuração de modelo de IA
   - Toggle de acesso total com termo de consentimento
   - **Toggle de permissão para cadastro de transações pelo modelo de IA**
@@ -205,8 +213,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Relatório de auditoria de acessos
 \n### 7.2 Versões Futuras (1.1 / 1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
-- Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
-- **Marketplace de plugins com plugins pré-aprovados**
+- Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso\n- **Marketplace de plugins com plugins pré-aprovados**
 - **SDK para desenvolvimento de plugins personalizados**
 - Aplicativo móvel\n\n## 8. Estilo de Design
 
@@ -228,6 +235,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Indicador visual de permissão de cadastro ativa (ícone de lápis verde) quando o modelo de IA tiver permissão para criar transações**
 - **Badge de status para plugins (ícone de check verde paraativo, ícone cinza para inativo)**
 - **Ícone de engrenagem para acesso às configurações de plugins**
+- **Exibição destacada do saldo atual da conta na página de contas com formatação clara (valor em negrito, cor verde para saldo positivo, cor vermelha para saldo negativo)**
 
 ## 9. Referências de Interface
 
