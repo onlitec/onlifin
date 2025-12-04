@@ -5,6 +5,7 @@ import Transactions from './pages/Transactions';
 import Categories from './pages/Categories';
 import Reports from './pages/Reports';
 import Import from './pages/Import';
+import ImportStatements from './pages/ImportStatements';
 import Reconciliation from './pages/Reconciliation';
 import Admin from './pages/Admin';
 import AIAdmin from './pages/AIAdmin';
@@ -45,6 +46,12 @@ const routes: RouteConfig[] = [
     element: <Transactions />,
     visible: true,
     children: [
+      {
+        name: 'Importar Extrato',
+        path: '/import-statements',
+        element: <ImportStatements />,
+        visible: true
+      },
       {
         name: 'Importar',
         path: '/import',

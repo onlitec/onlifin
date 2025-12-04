@@ -168,6 +168,99 @@ async function createTransaction(supabaseClient: any, userId: string, transactio
   }
 }
 
+// Função para categorizar transações usando IA
+async function categorizeTransactions(transactions: any[], existingCategories: any[]) {
+  try {
+    const APP_ID = Deno.env.get('VITE_APP_ID') || 'app-7xkeeoe4bsap';
+    const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-2.5-flash:generateContent`;
+
+    const prompt = `Você é um especialista em categorização de transações financeiras.
+
+Analise as seguintes transações e sugira a categoria mais apropriada para cada uma.
+
+CATEGORIAS EXISTENTES:
+${JSON.stringify(existingCategories, null, 2)}
+
+TRANSAÇÕES PARA CATEGORIZAR:
+${JSON.stringify(transactions, null, 2)}
+
+Para cada transação, você deve:
+1. Analisar a descrição, merchant e valor
+2. Identificar a categoria mais apropriada das categorias existentes
+3. Se nenhuma categoria existente se encaixar bem, sugerir uma nova categoria
+
+Responda APENAS com um JSON válido no seguinte formato:
+{
+  "categorizedTransactions": [
+    {
+      "date": "data da transação",
+      "description": "descrição",
+      "amount": valor,
+      "type": "income" ou "expense",
+      "merchant": "estabelecimento",
+      "suggestedCategory": "nome da categoria",
+      "suggestedCategoryId": "id da categoria existente ou null se for nova",
+      "isNewCategory": true ou false,
+      "confidence": 0.0 a 1.0 (confiança na sugestão)
+    }
+  ],
+  "newCategories": [
+    {
+      "name": "nome da nova categoria",
+      "type": "income" ou "expense",
+      "selected": true
+    }
+  ]
+}
+
+REGRAS IMPORTANTES:
+- Seja preciso na categorização
+- Sugira novas categorias apenas quando realmente necessário
+- Use categorias existentes sempre que possível
+- A confiança deve refletir quão certa está a categorização
+- Todas as novas categorias devem vir com selected: true por padrão
+- Não invente categorias genéricas demais
+- Considere o contexto brasileiro (nomes de estabelecimentos, padrões de gastos)
+
+Responda APENAS com o JSON, sem texto adicional.`;
+
+    const response = await fetch(GEMINI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-App-Id': APP_ID
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Extrair JSON da resposta
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Resposta da IA não contém JSON válido');
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    return result;
+  } catch (error: any) {
+    console.error('Erro ao categorizar transações:', error);
+    throw error;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -175,8 +268,42 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { message, userId } = await req.json();
+    const requestBody = await req.json();
+    const { message, userId, action, transactions, existingCategories } = requestBody;
 
+    // Handle categorization action
+    if (action === 'categorize_transactions') {
+      if (!transactions || !Array.isArray(transactions)) {
+        return new Response(
+          JSON.stringify({ error: 'Transactions array is required' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      try {
+        const result = await categorizeTransactions(transactions, existingCategories || []);
+        return new Response(
+          JSON.stringify(result),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      } catch (error: any) {
+        return new Response(
+          JSON.stringify({ error: error.message || 'Erro ao categorizar transações' }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    }
+
+    // Handle chat messages
     if (!message || !userId) {
       return new Response(
         JSON.stringify({ error: 'Message and userId are required' }),
