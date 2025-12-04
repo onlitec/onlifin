@@ -507,8 +507,8 @@ export default function ImportStatements() {
                                 {cat.name}
                               </SelectItem>
                             ))}
-                          {transaction.isNewCategory && (
-                            <SelectItem value={transaction.suggestedCategoryId || ''}>
+                          {transaction.isNewCategory && transaction.suggestedCategory && (
+                            <SelectItem value={transaction.suggestedCategoryId || `new_${transaction.suggestedCategory}`}>
                               {transaction.suggestedCategory} (Nova)
                             </SelectItem>
                           )}
