@@ -290,6 +290,8 @@ export default function Import() {
           total_installments: null,
           parent_transaction_id: null,
           is_reconciled: false,
+          is_transfer: false,
+          transfer_destination_account_id: null,
           tags: ['importado']
         });
       }

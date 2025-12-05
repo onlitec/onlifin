@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft } from 'lucide-react';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
 
 export default function Transactions() {
@@ -31,13 +31,14 @@ export default function Transactions() {
   const [showFilters, setShowFilters] = useState(false);
   
   const [formData, setFormData] = useState({
-    type: 'expense' as 'income' | 'expense',
+    type: 'expense' as 'income' | 'expense' | 'transfer',
     amount: '',
     date: new Date().toISOString().split('T')[0],
     description: '',
     category_id: '',
     account_id: '',
     card_id: '',
+    destination_account_id: '', // Para transferências
     is_recurring: false,
     recurrence_pattern: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
     is_installment: false,
@@ -80,7 +81,45 @@ export default function Transactions() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Validação para transferências
+      if (formData.type === 'transfer') {
+        if (!formData.account_id) {
+          toast({
+            title: 'Erro',
+            description: 'Selecione a conta de origem',
+            variant: 'destructive'
+          });
+          return;
+        }
+        if (!formData.destination_account_id) {
+          toast({
+            title: 'Erro',
+            description: 'Selecione a conta de destino',
+            variant: 'destructive'
+          });
+          return;
+        }
+        if (formData.account_id === formData.destination_account_id) {
+          toast({
+            title: 'Erro',
+            description: 'As contas de origem e destino devem ser diferentes',
+            variant: 'destructive'
+          });
+          return;
+        }
+      }
+
       if (editingTransaction) {
+        // Não permitir editar transferências (devem ser excluídas e recriadas)
+        if (editingTransaction.is_transfer) {
+          toast({
+            title: 'Erro',
+            description: 'Transferências não podem ser editadas. Exclua e crie uma nova.',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
         // Update existing transaction
         await transactionsApi.updateTransaction(editingTransaction.id, {
           type: formData.type,
@@ -95,53 +134,71 @@ export default function Transactions() {
         });
         toast({ title: 'Sucesso', description: 'Transação atualizada com sucesso' });
       } else {
-        // Create new transaction
-        const baseTransaction = {
-          ...formData,
-          user_id: user.id,
-          amount: Number(formData.amount),
-          category_id: formData.category_id || null,
-          account_id: formData.account_id || null,
-          card_id: formData.card_id || null,
-          is_recurring: formData.is_recurring,
-          is_reconciled: false,
-          recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null,
-          tags: null
-        };
-
-        if (formData.is_installment && Number(formData.total_installments) > 1) {
-          // Create installments
-          const totalInstallments = Number(formData.total_installments);
-          const installmentAmount = Number(formData.amount) / totalInstallments;
-          
-          for (let i = 1; i <= totalInstallments; i++) {
-            const installmentDate = new Date(formData.date);
-            installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
-            
-            await transactionsApi.createTransaction({
-              ...baseTransaction,
-              amount: installmentAmount,
-              date: installmentDate.toISOString().split('T')[0],
-              description: `${formData.description} (${i}/${totalInstallments})`,
-              installment_number: i,
-              total_installments: totalInstallments,
-              parent_transaction_id: null
-            });
-          }
+        // Criar transferência
+        if (formData.type === 'transfer') {
+          await transactionsApi.createTransfer({
+            userId: user.id,
+            sourceAccountId: formData.account_id,
+            destinationAccountId: formData.destination_account_id,
+            amount: Number(formData.amount),
+            date: formData.date,
+            description: formData.description || 'Transferência entre contas'
+          });
           toast({ 
             title: 'Sucesso', 
-            description: `${totalInstallments} parcelas criadas com sucesso` 
+            description: 'Transferência realizada com sucesso' 
           });
         } else {
-          // Create single transaction
-          await transactionsApi.createTransaction({
-            ...baseTransaction,
-            date: formData.date,
-            installment_number: null,
-            total_installments: null,
-            parent_transaction_id: null
-          });
-          toast({ title: 'Sucesso', description: 'Transação criada com sucesso' });
+          // Create new transaction (income or expense)
+          const baseTransaction = {
+            ...formData,
+            user_id: user.id,
+            amount: Number(formData.amount),
+            category_id: formData.category_id || null,
+            account_id: formData.account_id || null,
+            card_id: formData.card_id || null,
+            is_recurring: formData.is_recurring,
+            is_reconciled: false,
+            is_transfer: false,
+            transfer_destination_account_id: null,
+            recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null,
+            tags: null
+          };
+
+          if (formData.is_installment && Number(formData.total_installments) > 1) {
+            // Create installments
+            const totalInstallments = Number(formData.total_installments);
+            const installmentAmount = Number(formData.amount) / totalInstallments;
+            
+            for (let i = 1; i <= totalInstallments; i++) {
+              const installmentDate = new Date(formData.date);
+              installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+              
+              await transactionsApi.createTransaction({
+                ...baseTransaction,
+                amount: installmentAmount,
+                date: installmentDate.toISOString().split('T')[0],
+                description: `${formData.description} (${i}/${totalInstallments})`,
+                installment_number: i,
+                total_installments: totalInstallments,
+                parent_transaction_id: null
+              });
+            }
+            toast({ 
+              title: 'Sucesso', 
+              description: `${totalInstallments} parcelas criadas com sucesso` 
+            });
+          } else {
+            // Create single transaction
+            await transactionsApi.createTransaction({
+              ...baseTransaction,
+              date: formData.date,
+              installment_number: null,
+              total_installments: null,
+              parent_transaction_id: null
+            });
+            toast({ title: 'Sucesso', description: 'Transação criada com sucesso' });
+          }
         }
       }
 
@@ -168,6 +225,7 @@ export default function Transactions() {
       category_id: transaction.category_id || '',
       account_id: transaction.account_id || '',
       card_id: transaction.card_id || '',
+      destination_account_id: transaction.transfer_destination_account_id || '',
       is_recurring: transaction.is_recurring || false,
       recurrence_pattern: (transaction.recurrence_pattern || 'monthly') as 'daily' | 'weekly' | 'monthly' | 'yearly',
       is_installment: false,
@@ -209,6 +267,7 @@ export default function Transactions() {
       category_id: '',
       account_id: '',
       card_id: '',
+      destination_account_id: '',
       is_recurring: false,
       recurrence_pattern: 'monthly',
       is_installment: false,
@@ -237,9 +296,13 @@ export default function Transactions() {
       filtered = filtered.filter(tx => tx.category_id === filterCategory);
     }
 
-    // Filtro por tipo (receita/despesa)
+    // Filtro por tipo (receita/despesa/transferência)
     if (filterType && filterType !== 'all') {
-      filtered = filtered.filter(tx => tx.type === filterType);
+      if (filterType === 'transfer') {
+        filtered = filtered.filter(tx => tx.is_transfer);
+      } else {
+        filtered = filtered.filter(tx => tx.type === filterType && !tx.is_transfer);
+      }
     }
 
     // Filtro por data (de)
@@ -326,7 +389,7 @@ export default function Transactions() {
                   <Label htmlFor="type">Tipo *</Label>
                   <Select
                     value={formData.type}
-                    onValueChange={(value: 'income' | 'expense') => setFormData({ ...formData, type: value })}
+                    onValueChange={(value: 'income' | 'expense' | 'transfer') => setFormData({ ...formData, type: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -334,6 +397,7 @@ export default function Transactions() {
                     <SelectContent>
                       <SelectItem value="income">Receita</SelectItem>
                       <SelectItem value="expense">Despesa</SelectItem>
+                      <SelectItem value="transfer">Transferência</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -358,28 +422,32 @@ export default function Transactions() {
                     required
                   />
                 </div>
+                
+                {formData.type !== 'transfer' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Categoria</Label>
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories
+                          .filter(c => c.type === formData.type)
+                          .map(cat => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.icon} {cat.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select
-                    value={formData.category_id}
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories
-                        .filter(c => c.type === formData.type)
-                        .map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.icon} {cat.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="account">Conta</Label>
+                  <Label htmlFor="account">{formData.type === 'transfer' ? 'Conta de Origem *' : 'Conta'}</Label>
                   <Select
                     value={formData.account_id}
                     onValueChange={(value) => setFormData({ ...formData, account_id: value })}
@@ -396,6 +464,30 @@ export default function Transactions() {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {formData.type === 'transfer' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="destination_account">Conta de Destino *</Label>
+                    <Select
+                      value={formData.destination_account_id}
+                      onValueChange={(value) => setFormData({ ...formData, destination_account_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a conta de destino" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts
+                          .filter(acc => acc.id !== formData.account_id)
+                          .map(acc => (
+                            <SelectItem key={acc.id} value={acc.id}>
+                              {acc.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="description">Descrição</Label>
                   <Input
@@ -405,72 +497,76 @@ export default function Transactions() {
                   />
                 </div>
                 
-                <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox
-                    id="is_recurring"
-                    checked={formData.is_recurring}
-                    onCheckedChange={(checked) => 
-                      setFormData({ ...formData, is_recurring: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="is_recurring" className="cursor-pointer">
-                    Transação recorrente
-                  </Label>
-                </div>
-
-                {formData.is_recurring && (
-                  <div className="space-y-2">
-                    <Label htmlFor="recurrence">Frequência</Label>
-                    <Select
-                      value={formData.recurrence_pattern}
-                      onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') => 
-                        setFormData({ ...formData, recurrence_pattern: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Diária</SelectItem>
-                        <SelectItem value="weekly">Semanal</SelectItem>
-                        <SelectItem value="monthly">Mensal</SelectItem>
-                        <SelectItem value="yearly">Anual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {!editingTransaction && (
+                {formData.type !== 'transfer' && (
                   <>
                     <div className="flex items-center space-x-2 pt-2">
                       <Checkbox
-                        id="is_installment"
-                        checked={formData.is_installment}
+                        id="is_recurring"
+                        checked={formData.is_recurring}
                         onCheckedChange={(checked) => 
-                          setFormData({ ...formData, is_installment: checked as boolean })
+                          setFormData({ ...formData, is_recurring: checked as boolean })
                         }
                       />
-                      <Label htmlFor="is_installment" className="cursor-pointer">
-                        Parcelar transação
+                      <Label htmlFor="is_recurring" className="cursor-pointer">
+                        Transação recorrente
                       </Label>
                     </div>
 
-                    {formData.is_installment && (
-                  <div className="space-y-2">
-                    <Label htmlFor="installments">Número de Parcelas</Label>
-                    <Input
-                      id="installments"
-                      type="number"
-                      min="2"
-                      max="48"
-                      value={formData.total_installments}
-                      onChange={(e) => setFormData({ ...formData, total_installments: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Valor por parcela: R$ {(Number(formData.amount) / Number(formData.total_installments) || 0).toFixed(2)}
-                    </p>
-                  </div>
-                )}
+                    {formData.is_recurring && (
+                      <div className="space-y-2">
+                        <Label htmlFor="recurrence">Frequência</Label>
+                        <Select
+                          value={formData.recurrence_pattern}
+                          onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') => 
+                            setFormData({ ...formData, recurrence_pattern: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Diária</SelectItem>
+                            <SelectItem value="weekly">Semanal</SelectItem>
+                            <SelectItem value="monthly">Mensal</SelectItem>
+                            <SelectItem value="yearly">Anual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {!editingTransaction && (
+                      <>
+                        <div className="flex items-center space-x-2 pt-2">
+                          <Checkbox
+                            id="is_installment"
+                            checked={formData.is_installment}
+                            onCheckedChange={(checked) => 
+                              setFormData({ ...formData, is_installment: checked as boolean })
+                            }
+                          />
+                          <Label htmlFor="is_installment" className="cursor-pointer">
+                            Parcelar transação
+                          </Label>
+                        </div>
+
+                        {formData.is_installment && (
+                          <div className="space-y-2">
+                            <Label htmlFor="installments">Número de Parcelas</Label>
+                            <Input
+                              id="installments"
+                              type="number"
+                              min="2"
+                              max="48"
+                              value={formData.total_installments}
+                              onChange={(e) => setFormData({ ...formData, total_installments: e.target.value })}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Valor por parcela: R$ {(Number(formData.amount) / Number(formData.total_installments) || 0).toFixed(2)}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -529,6 +625,7 @@ export default function Transactions() {
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="income">Receitas</SelectItem>
                     <SelectItem value="expense">Despesas</SelectItem>
+                    <SelectItem value="transfer">Transferências</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -627,13 +724,24 @@ export default function Transactions() {
         {filteredAndSortedTransactions.map((tx) => {
           const category = categories.find(c => c.id === tx.category_id);
           const account = accounts.find(a => a.id === tx.account_id);
+          const destinationAccount = tx.is_transfer && tx.transfer_destination_account_id 
+            ? accounts.find(a => a.id === tx.transfer_destination_account_id)
+            : null;
           
           return (
             <Card key={tx.id}>
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-full ${tx.type === 'income' ? 'bg-income/10' : 'bg-expense/10'}`}>
-                    {tx.type === 'income' ? (
+                  <div className={`p-2 rounded-full ${
+                    tx.is_transfer 
+                      ? 'bg-primary/10' 
+                      : tx.type === 'income' 
+                        ? 'bg-income/10' 
+                        : 'bg-expense/10'
+                  }`}>
+                    {tx.is_transfer ? (
+                      <ArrowRightLeft className="h-5 w-5 text-primary" />
+                    ) : tx.type === 'income' ? (
                       <TrendingUp className="h-5 w-5 text-income" />
                     ) : (
                       <TrendingDown className="h-5 w-5 text-expense" />
@@ -642,23 +750,39 @@ export default function Transactions() {
                   <div>
                     <p className="font-medium">{tx.description || 'Sem descrição'}</p>
                     <p className="text-sm text-muted-foreground">
-                      {category?.icon} {category?.name || 'Sem categoria'} • {account?.name || 'Sem conta'} • {formatDate(tx.date)}
+                      {tx.is_transfer ? (
+                        <>
+                          Transferência: {account?.name || 'Conta origem'} → {destinationAccount?.name || 'Conta destino'} • {formatDate(tx.date)}
+                        </>
+                      ) : (
+                        <>
+                          {category?.icon} {category?.name || 'Sem categoria'} • {account?.name || 'Sem conta'} • {formatDate(tx.date)}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className={`text-lg font-bold ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
-                    {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                  <div className={`text-lg font-bold ${
+                    tx.is_transfer 
+                      ? 'text-primary' 
+                      : tx.type === 'income' 
+                        ? 'text-income' 
+                        : 'text-expense'
+                  }`}>
+                    {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(tx)}
-                      title="Editar transação"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    {!tx.is_transfer && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(tx)}
+                        title="Editar transação"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

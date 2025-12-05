@@ -469,6 +469,49 @@ export const transactionsApi = {
     }
 
     return result;
+  },
+
+  async createTransfer(params: {
+    userId: string;
+    sourceAccountId: string;
+    destinationAccountId: string;
+    amount: number;
+    date: string;
+    description: string;
+  }): Promise<{ success: boolean; sourceTransactionId: string; destinationTransactionId: string }> {
+    const { data, error } = await supabase.rpc('create_transfer', {
+      p_user_id: params.userId,
+      p_source_account_id: params.sourceAccountId,
+      p_destination_account_id: params.destinationAccountId,
+      p_amount: params.amount,
+      p_date: params.date,
+      p_description: params.description
+    });
+
+    if (error) throw error;
+    
+    return {
+      success: data.success,
+      sourceTransactionId: data.source_transaction_id,
+      destinationTransactionId: data.destination_transaction_id
+    };
+  },
+
+  async getTransferPair(transactionId: string): Promise<{
+    sourceTransactionId: string;
+    destinationTransactionId: string;
+    sourceAccountId: string;
+    destinationAccountId: string;
+    amount: number;
+    date: string;
+    description: string;
+  } | null> {
+    const { data, error } = await supabase.rpc('get_transfer_pair', {
+      p_transaction_id: transactionId
+    });
+
+    if (error) throw error;
+    return data && data.length > 0 ? data[0] : null;
   }
 };
 

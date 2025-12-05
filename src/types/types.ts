@@ -1,5 +1,6 @@
 export type UserRole = 'user' | 'financeiro' | 'admin';
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'income' | 'expense' | 'transfer';
+export type CategoryType = 'income' | 'expense';
 export type AIPermissionLevel = 'read_aggregated' | 'read_transactional' | 'read_full';
 
 export interface Profile {
@@ -39,7 +40,7 @@ export interface Category {
   id: string;
   user_id: string | null;
   name: string;
-  type: TransactionType;
+  type: CategoryType;
   icon: string | null;
   color: string | null;
   created_at: string;
@@ -63,6 +64,8 @@ export interface Transaction {
   total_installments: number | null;
   parent_transaction_id: string | null;
   is_reconciled: boolean;
+  is_transfer: boolean;
+  transfer_destination_account_id: string | null;
   created_at: string;
   updated_at: string;
 }

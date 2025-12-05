@@ -6,7 +6,7 @@
 Plataforma de Gestão Financeira Pessoal com Assistente de IA
 
 ### 1.2 Descrição
-Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, e oferece um assistente de IA contextual com memória persistente acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações.
+Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, realizar transferências entre contas cadastradas, e oferece um assistente de IA contextual com memória persistente acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações.
 
 ## 2. Funcionalidades Principais
 
@@ -17,13 +17,46 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Saldo inicial da conta
   - Saldo atualizado em tempo real considerando:\n    - Despesas pagas: diminuem o saldo da conta
     - Receitas recebidas: aumentam o saldo da conta
-  - Fórmula: Saldo Atual = Saldo Inicial + Receitas Recebidas - Despesas Pagas
-  - Exibição clara do saldo atual na página de contas (https://onlifin.onlitec.com.br/accounts)
+    - Transferências enviadas: diminuem o saldo da conta de origem
+    - Transferências recebidas: aumentam o saldo da conta de destino\n  - Fórmula: Saldo Atual = Saldo Inicial + Receitas Recebidas - Despesas Pagas - Transferências Enviadas + Transferências Recebidas\n  - Exibição clara do saldo atual na página de contas (https://onlifin.onlitec.com.br/accounts)
   - Atualização automática do saldo sempre que uma transação for registrada, editada ou excluída
 - Visualização de limites disponíveis de cartões de crédito
-\n### 2.2 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
+\n### 2.2 Sistema de Transferências entre Contas
+- **Cadastro de transferências entre contas cadastradas na plataforma:**
+  - Interface dedicada para registro de transferências
+  - Seleção de conta de origem (dropdown com lista de contas cadastradas)
+  - Seleção de conta de destino (dropdown com lista de contas cadastradas, excluindo a conta de origem)
+  - Campo de valor da transferência com validação\n  - Campo de data da transferência
+  - Campo de descrição ou observação (opcional)
+  - Validação de saldo suficiente na conta de origem antes de confirmar transferência
+  - Mensagem de erro clara caso saldo seja insuficiente
+- **Processamento automático de transferências:**\n  - Ao confirmar transferência, sistema registra duas movimentações vinculadas:\n    - Débito na conta de origem (diminui saldo)
+    - Crédito na conta de destino (aumenta saldo)
+  - Ambas as movimentações são registradas com a mesma data e valor
+  - Vínculo entre as duas movimentações para rastreabilidade
+  - Atualização automática dos saldos das contas envolvidas
+- **Visualização de transferências:**
+  - Transferências aparecem na lista de transações de ambas as contas (origem e destino)
+  - Identificação visual clara de que se trata de uma transferência (ícone ou tag específica)
+  - Exibição da conta de origem e destino em cada movimentação
+  - Filtro específico para visualizar apenas transferências na página de transações
+- **Edição e exclusão de transferências:**
+  - Possibilidade de editar valor, data e descrição de transferências existentes
+  - Ao editar transferência, ambas as movimentações vinculadas são atualizadas automaticamente
+  - Ao excluir transferência, ambas as movimentações vinculadas são removidas
+  - Saldos das contas são recalculados automaticamente após edição ou exclusão
+- **Categorização de transferências:**
+  - Categoria padrão 'Transferência' criada automaticamente no sistema
+  - Transferências são automaticamente categorizadas como 'Transferência'\n  - Possibilidade de criar subcategorias de transferência (ex: 'Transferência para Poupança', 'Transferência para Investimentos')
+- **Integração com assistente de IA:**
+  - Assistente de IA pode criar, editar e excluir transferências mediante solicitação do usuário
+  - Assistente valida saldo suficiente antes de criar transferência
+  - Assistente fornece feedback claro sobre transferências realizadas
+  - Assistente pode consultar histórico de transferências entre contas específicas
+\n### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
   - **Suporte completo ao formato OFX (Open Financial Exchange):**
-    - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)\n    - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
+    - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)
+    - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
     - Identificação automática de conta bancária associada através de informações do arquivo OFX
     - Validação de integridade do arquivo OFX antesdo processamento
     - Tratamento de erros e feedback claro em caso de arquivo corrompido ou formato inválido
@@ -59,8 +92,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
       - Cada transação é registrada na categoria selecionada no dropdown correspondente
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
 - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações\n
-### 2.3 Análise e Categorização Automática de Transações com IA
+- Classificação automática de transações
+\n### 2.4 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
   - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
@@ -81,25 +114,27 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Aprendizado contínuo:**
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
-\n### 2.4 Movimentações Financeiras
+\n### 2.5 Movimentações Financeiras
 - Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
+- **Cadastro de transferências entre contas cadastradas (valor, data, conta origem, conta destino, descrição)**
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
-- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
+- **Edição de transferências existentes: permite alterar valor, data e descrição, com atualização automática das movimentações vinculadas**\n- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
 - Suporte a pagamentos recorrentes\n- Suporte a receitas recorrentes
 - Controle de parcelamentos com acompanhamento de parcelas
 - Agendamento de compromissos e pagamentos
-- Sistema de alertas para vencimentos\n- **Cadastro de transações pelo modelo de IA: o assistente de IA pode criar, editar e excluir transações na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes e parcelamentos**\n- **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas de filtragem, busca e ordenação:**
+- Sistema de alertas para vencimentos\n- **Cadastro de transações e transferências pelo modelo de IA: o assistente de IA pode criar, editar e excluir transações e transferências na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes, parcelamentos e transferências entre contas**
+- **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas de filtragem, busca e ordenação:**
   - **Campo de busca de transações:**
-    - Campo de texto para busca por descrição, título ou estabelecimento
-    - Busca em tempo real com atualização automática da lista
+    - Campo de texto para busca por descrição, título ou estabelecimento\n    - Busca em tempo real com atualização automática da lista
     - Destaque visual dos termos encontrados nos resultados
     - Posicionamento proeminente no topo da página
   - **Filtros de transações:**
     - **Filtro por conta bancária:** dropdown com lista de todas as contas cadastradas, permitindo selecionar uma ou múltiplas contas
     - **Filtro por categoria:** dropdown com lista de todas as categorias cadastradas, permitindo selecionar uma ou múltiplas categorias
-    - **Filtro por tipo de transação:** opções para filtrar por receita, despesa ou ambos (checkboxes ou botões de seleção)
+    - **Filtro por tipo de transação:** opções para filtrar por receita, despesa, transferência ou combinações (checkboxes ou botões de seleção)
     - **Filtro por data:** seletor de intervalo de datas (data inicial e data final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)\n    - Botão 'Limpar Filtros' para resetar todos os filtros aplicados
-    - Indicador visual de filtros ativos (badge com número de filtros aplicados)\n    - Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
+    - Indicador visual de filtros ativos (badge com número de filtros aplicados)
+- Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
   - **Opções de ordenação:**
     - **Ordenar por data:** crescente (mais antiga primeiro) ou decrescente (mais recente primeiro)
     - **Ordenar por categoria:** ordem alfabética crescente ou decrescente
@@ -112,23 +147,25 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Paginação para grandes volumes de dados
     - Opção de exportar resultados filtrados em CSV ou Excel
     - Exibição clara de cada transação com data, descrição, categoria, valor e conta associada
-\n### 2.5 Controle Financeiro
+    - **Identificação visual de transferências com ícone específico e exibição de conta origem/destino**
+\n### 2.6 Controle Financeiro
 - Gestão de contas a pagar e receber
 - Visualização de fluxo de caixa
 - Previsões financeiras simples
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos:**
     - Dropdown ou calendário para seleção de mês específico
-    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clara do mês selecionado no topo do dashboard
+    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
     - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
     - Possibilidade de comparar dados de diferentes meses lado a lado
   - **Indicadores principais (ajustados conforme mês selecionado):**\n    - Saldo total consolidado de todas as contas no final do mês selecionado
     - Receitas totais do mês selecionado
     - Despesas totais do mês selecionado
+    - **Total de transferências realizadas no mês selecionado**
     - Saldo líquido do mês selecionado (receitas - despesas)
     - Variação percentual em relação ao mês anterior ao selecionado
     - Limite total disponível em cartões de crédito no mês selecionado
-- Valor total de contas a pagar no mês selecionado
+    - Valor total de contas a pagar no mês selecionado
     - Valor total de contas a receber no mês selecionado
   - **Gráficos e visualizações (ajustados conforme mês selecionado):**
     - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partir do mês selecionado
@@ -138,6 +175,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Gráfico de barras horizontais: top 5 categorias com maiores gastos no mês selecionado
     - Gráfico de linha: tendência de gastos por categoria ao longo do tempo (6 meses a partir do mês selecionado)
     - Heatmap: padrão de gastos por dia da semana e hora do dia no mês selecionado
+    - **Gráfico de fluxo: visualização de transferências entre contas no mês selecionado**
   - **Indicadores de performance (ajustados conforme mês selecionado):**
     - Taxa de economia mensal (percentual de receitas não gastas) no mês selecionado\n    - Média de gastos diários no mês selecionado
     - Comparação de gastos: mês selecionado vs média dos últimos 3 meses anteriores
@@ -147,9 +185,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Indicador de limite de cartão de crédito próximo ao máximo (>80%) no mês selecionado\n  - **Filtros e personalização:**
     - Seleção de mês específico (navegação por meses anteriores e futuros)
     - Filtro por conta específica\n    - Filtro por categoria\n    - Opção de ocultar/exibir gráficos específicos
-    - Botão de'Voltar ao Mês Atual' para retornar rapidamente aos dados do mês corrente
+    - Botão de'Voltar ao Mês Atual' para retornar rapidamente aos dadosdo mês corrente
 - Exportação de relatórios em CSV, Excel e PDF
-\n### 2.6 Assistente de IA Contextual com Memória Persistente
+\n### 2.7 Assistente de IA Contextual com Memória Persistente
 - Elemento visível em todas as páginas (botão flutuante ouícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
 - **Sistema de memória persistente para o modelo de IA:**
@@ -157,13 +195,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Todas as mensagens do usuário são armazenadas no banco de dados
     - Todas as respostas do modelo de IA são armazenadas no banco de dados
     - Timestamp de cada interação\n    - Contexto da conversa (página onde ocorreu, dados acessados)\n  - **Armazenamento de solicitações eações executadas:**
-    - Registro de todas as solicitações do usuário (criar transação, analisar extrato, consultar saldo, etc.)
+    - Registro de todas as solicitações do usuário (criar transação, criar transferência, analisar extrato, consultar saldo, etc.)
     - Registro de todas as ações executadas pelo modelo de IA em resposta às solicitações
     - Resultado de cada ação (sucesso, erro, dados retornados)
     - Parâmetros utilizados em cada solicitação
   - **Recuperação de contexto em novas conversas:**
     - Ao iniciar nova conversa, modelo de IA carrega histórico relevante
-    - Acesso a conversas anteriores para manter continuidade\n    - Referência a solicitações passadas para melhor compreensão do contexto
+    - Acesso a conversas anteriores para manter continuidade\n    - Referência a solicitações passadas para melhor compreensãodo contexto
   - **Consulta de histórico pelo usuário:**
     - Interface para visualizar histórico completo de conversas
     - Busca por palavra-chave em conversas anteriores
@@ -186,7 +224,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     3. Botão 'Analisar Extrato' surge no chatbot
     4. Usuário clica no botão para acionar análise do modelo de IA
     5. Modelo de IA processa o arquivo salvo e identifica categorias
-    6. Sistema exibe popup com lista de transações ordenadas por data\n    7. Cada transação possui dropdown de categoria com sugestão pré-selecionada
+    6. Sistema exibe popup com lista de transações ordenadas por data
+    7. Cada transação possui dropdown de categoria com sugestão pré-selecionada
     8. Usuário revisa e ajusta categorias conforme necessário
     9. Usuário clica em 'Cadastrar Transações' no popup
     10. Sistema cadastra todas as transações nas categorias selecionadas
@@ -197,22 +236,24 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Simulações de parcelamento
   - Sugestões de orçamento
   - **Cadastro, edição e exclusão de transações mediante solicitação do usuário (receitas, despesas, pagamentos recorrentes, parcelamentos)**
-  - **Criação, edição e exclusão de categorias mediante solicitação do usuário**
-  - **Análise e categorização automática de extratos bancários importados via chatbot**
+  - **Cadastro, edição e exclusão de transferências entre contas mediante solicitação do usuário**
+  - **Validação de saldo suficiente antes de criar transferências**
+  - **Consulta de histórico de transferências entre contas específicas**
+  - **Criação, edição e exclusão de categorias mediante solicitação do usuário**\n  - **Análise e categorização automática de extratos bancários importados via chatbot**
   - **Sugestão de novas categorias baseadas em padrões identificados**
   - **Interpretação de gráficos e indicadores do dashboard**
   - **Análise de tendências financeiras e insights personalizados**
   - **Consulta de dados históricos de meses anteriores**
   - **Referência a conversas e solicitações anteriores para continuidade contextual**
-- Análise completa de contas cadastradas
-- Consulta detalhada de extratos de transações
+- Análise completa de contas cadastradas\n- Consulta detalhada de extratos de transações
 - Análise de pagamentos e recebimentos
+- **Análise de transferências entre contas**
 - Geração e interpretação de relatórios\n- Consulta de saldos em tempo real
 - **Integração com plugins configurados para funcionalidades estendidas**
 
-### 2.7 Painel de Administração deIA
-- Indicador visual de status de configuração:\n  - Badge ouícone na página de configurações indicando se há modelo de IA configurado
-  - Mensagem clara exibindo 'Modelo Configurado' (comícone de check verde) ou 'Nenhum Modelo Configurado' (com ícone de alerta laranja)
+### 2.8 Painel de Administração deIA
+- Indicador visual de status de configuração:\n  - Badge ou ícone na página de configurações indicando se há modelo de IA configurado
+  - Mensagem clara exibindo 'Modelo Configurado' (com ícone de check verde) ou 'Nenhum Modelo Configurado' (com ícone de alerta laranja)
   - Exibição do nome do modelo ativo quando configurado
 - Configuração de modelos de IA (seleção de modelo, endpoint, chave de API)
 - Ajuste de prompts-padrão e templates de resposta
@@ -224,7 +265,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Controles de permissão de acesso completo (leitura e escrita):**
   - **Permissão de leitura (read_full):**
     - Acesso completo a todas as contas cadastradas
-    - Acesso completo a todas as transações (receitas e despesas)
+    - Acesso completo a todas as transações (receitas, despesas e transferências)
     - Acesso completo a pagamentos e recebimentos
     - Acesso completo a relatórios financeiros
     - Acesso completo a saldos das contas
@@ -232,13 +273,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Acesso completo ao histórico de conversas e solicitações**
   - **Permissão de escrita (write_full):**
     - **Permissão para criar, editar e excluir transações: toggle paraativar/desativar a capacidade do modelo de IA modificar transações na plataforma**
+    - **Permissão para criar, editar e excluir transferências: toggle para ativar/desativar a capacidade do modelo de IA modificar transferências entre contas**
     - **Permissão para criar, editar e excluir categorias: toggle para ativar/desativar a capacidade do modelo de IA modificar categorias**
     - **Permissão para análise e categorização automática de extratos bancários com cadastro direto no banco de dados**
     - **Permissão para modificar contas e cartões (opcional, desabilitado por padrão)**
   - Toggle para ativar/desativar acesso de leitura com confirmação e consentimento explícito do usuário
   - **Toggle para ativar/desativar acesso de escrita com confirmação e consentimento explícito do usuário**
-  - **Termo de consentimento separado para permissões de leitura e escrita**
-- Logs e histórico de conversas comIA
+  - **Termo de consentimento separado para permissões de leitura e escrita**\n- Logs e histórico de conversas comIA
 - **Visualização de histórico de memória do modelo de IA:**
   - **Interface para consultar todas as conversas armazenadas**
   - **Busca e filtro por data, palavra-chave ou tipo de solicitação**
@@ -248,20 +289,21 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Quando foi ativado\n  - Finalidade declarada
   - Histórico de consultas realizadas pelo modelo de IA
   - Dados acessados em cada interação
-  - **Registro de todas as transações criadas, editadas ou excluídas pelo modelo de IA (data, hora, tipo, valor, usuário solicitante, ação executada)**
+  - **Registro de todas as transações criadas, editadas ou excluídas pelo modelo de IA (data, hora, tipo, valor, usuário solicitante,ação executada)**
+  - **Registro de todas as transferências criadas, editadas ou excluídas pelo modelo de IA (data, hora, conta origem, conta destino, valor, usuário solicitante, ação executada)**
   - **Registro de todas as categorias criadas, editadas ou excluídas pelo modelo de IA**
   - **Registro de análises e categorizações automáticas realizadas pelo modelo de IA**
   - **Registro de acesso ao histórico de memória pelo modelo de IA**
-- Opções de apagar ou exportar histórico conforme políticas de retenção\n\n### 2.8 Gestão de Plugins
+- Opções de apagar ou exportar histórico conforme políticas de retenção\n\n### 2.9 Gestão de Plugins
 - **Cadastro e configuração de plugins na plataforma**
 - **Interface de gerenciamento de plugins com as seguintes funcionalidades:**
   - Lista de plugins disponíveis e instalados
   - Ativação/desativação de plugins
   - Configuração de parâmetros específicos de cada plugin (chaves de API, endpoints, credenciais)
-  - Indicador visual de status (ativo/inativo) comícone de check verde ou alerta laranja
+  - Indicador visual de status (ativo/inativo) com ícone de check verde ou alerta laranja
 - **Permissões de acesso para plugins:**
   - Controle granular de quais dados da plataforma cada plugin pode acessar
-  - Toggle individual para cada tipo de acesso (contas, transações, relatórios, etc.)
+  - Toggle individual para cada tipo de acesso (contas, transações, transferências, relatórios, etc.)
   - Termo de consentimento específico para cada plugin
 - **Integração de plugins com o assistente de IA:**
   - Plugins podem estender funcionalidades do assistente de IA
@@ -269,24 +311,25 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Registro de auditoria de todas as chamadas a plugins
 - **Logs e auditoria de plugins:**
   - Registro detalhado de todas as ações executadas por plugins
-  - Histórico de acessos aos dados da plataforma\n  - Monitoramento de erros e falhas de plugins
+  - Histórico de acessos aos dados da plataforma
+  - Monitoramento de erros e falhas de plugins
 - **Segurança de plugins:**
   - Validação de credenciais e autenticação de plugins
   - Criptografia de dados sensíveis transmitidos a plugins
   - Isolamento de execução para prevenir interferências entre plugins
-\n## 3. Segurança e Privacidade\n
-### 3.1 Proteção de Dados\n- TLS/HTTPS em todas as comunicações
+\n##3. Segurança e Privacidade\n
+### 3.1 Proteção de Dados
+- TLS/HTTPS em todas as comunicações
 - Criptografia em repouso para dados sensíveis
 - Mascaramento e criptografia de números de conta e cartão\n- Transmissão segura de dados completos ao modelo de IA quando acesso total estiver ativado
 - **Transmissão segura de comandos de escrita ao modelo de IA quando permissão de escrita estiver ativada**
 - **Transmissão segura de dados a plugins conforme permissões configuradas**
 - **Criptografia de histórico de conversas armazenado no banco de dados**
 - **Proteção de dados de memória do modelo de IA com controles de acesso rigorosos**
-
-### 3.2 Autenticação e Autorização
+\n### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
 - RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário\n- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
-  - Transações completas
+  - Transações completas (receitas, despesas e transferências)
   - Pagamentos e recebimentos
   - Relatórios financeiros
   - Saldos das contas
@@ -294,17 +337,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Histórico completo de conversas e solicitações**
 - **Consentimento explícito e separado para permissões de escrita do modelo de IA:**
   - **Permissão para criar, editar e excluir transações**
+  - **Permissão para criar, editar e excluir transferências**
   - **Permissão para criar, editar e excluir categorias**
   - **Permissão para análise e categorização automática de extratos com cadastro direto**
 - **Consentimento explícito para cada plugin com detalhamento de dados acessados**
 - **Consentimento explícito para armazenamento e uso de histórico de conversas**
 - Termo de consentimento detalhado explicando o escopo do acesso total (leitura e escrita) e das permissões de cadastro\n- Opção de revogar acesso total e permissões de escrita a qualquer momento
 - **Opção de revogar permissões de plugins individualmente**
-- **Opção de limpar histórico de memória do modelo de IA**\n
-### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
+- **Opção de limpar histórico de memória do modelo de IA**\n\n### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
 - Auditoria de ações de usuários humanos\n- Log de todas as consultas do modelo de IA aos dados da plataforma
 - **Log detalhado de todas as operações de escrita realizadas pelo modelo de IA:**
-  - **Transações criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da transação, ação executada)**
+  - **Transações criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da transação, ação executada)**\n  - **Transferências criadas, editadas ou excluídas (timestamp, usuário solicitante, conta origem, conta destino, valor, ação executada)**
   - **Categorias criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da categoria, ação executada)**
 - **Log de análises e categorizações automáticas realizadas pelo modelo de IA**
 - **Log completo de todas as ações executadas por plugins (acessos, modificações, chamadas de API)**
@@ -318,14 +361,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Middleware de validação e registro para comunicação com plugins**
 - **Middleware de validação e registro para acesso ao sistema de memória**
 - Relatório de auditoria acessível ao usuário para transparência
-
-## 4. Extensibilidade\n
+\n## 4. Extensibilidade\n
 ### 4.1 API\n- API REST/GraphQL bemdocumentada\n- Suporte para integrações (apps móveis, plugins, serviços de contabilidade)
 - **Endpoints específicos para integração de plugins externos**
 - **Endpoints específicos para operações de escrita do modelo de IA (com autenticação e autorização rigorosas)**
 - **Endpoints para consulta e gestão de histórico de memória do modelo de IA**
+- **Endpoints para criação, edição e exclusão de transferências entre contas**
 \n### 4.2 Webhooks
 - Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo\n  - Sugestão gerada pelo assistente\n  - **Transação criada, editada ou excluída pelo modelo de IA**
+  - **Transferência criada, editada ou excluída pelo modelo de IA**
   - **Categoria criada, editada ou excluída pelo modelo de IA**\n  - **Categorização automática concluída**
   - **Ação executada por plugin**
   - **Nova conversa armazenada no histórico de memória**
@@ -336,7 +380,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Métricas de usodo assistente de IA
 - Alertas para erros e falhas de importação
 - Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de operações de escrita realizadas pelo modelo de IA**\n- **Monitoramento de transações e categorias criadas, editadas ou excluídas pelo modelo de IA**
-- **Monitoramento de análises e categorizações automáticas**
+- **Monitoramento de transferências criadas, editadas ou excluídas pelo modelo de IA**\n- **Monitoramento de análises e categorizações automáticas**
 - **Monitoramento de performance e erros de plugins**
 - **Alertas para falhas de comunicação com plugins**
 - **Alertas para operações de escrita não autorizadas ou suspeitas**
@@ -367,17 +411,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Índices otimizados para busca rápida por data, palavra-chave e usuário
     - Compressão de dados para otimizar armazenamento
   - **Módulo de armazenamento de solicitações:**
-    - Tabela de solicitações com campos: id, conversa_id, timestamp, tipo_solicitacao, parametros, acao_executada, resultado, status
-    - Relacionamento com tabela de conversas\n  - **Módulo de recuperação de contexto:**
+    - Tabela de solicitações com campos: id, conversa_id, timestamp, tipo_solicitacao, parametros, acao_executada, resultado, status\n    - Relacionamento com tabela de conversas\n  - **Módulo de recuperação de contexto:**
     - Algoritmo de busca semântica para recuperar conversas relevantes
     - Cache de contexto frequentemente acessado
     - Limite configurável de conversas recuperadas por consulta
   - **Módulo de gestão de memória:**
     - Interface para configurar período de retenção\n    - Processo automatizado de limpeza de histórico antigo
     - Exportação de histórico em formato JSON ou CSV
-    - Estatísticas de uso de memória\n- Camada de acesso a dados que fornece ao modelo de IA:\n  - **Acesso de leitura (read_full):**
+    - Estatísticas de uso de memória
+- Camada de acesso a dados que fornece ao modelo de IA:\n  - **Acesso de leitura (read_full):**
     - Dados completos de contas cadastradas
-    - Histórico completo de transações
+    - Histórico completo de transações (receitas, despesas e transferências)
     - Registros de pagamentos e recebimentos
     - Relatórios financeiros gerados\n    - Saldos atualizados das contas
     - Extratos detalhados de transações
@@ -385,16 +429,24 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Histórico completo de conversas e solicitações anteriores**
   - **Acesso de escrita (write_full):**
     - **Interface de escrita para criar, editar e excluir transações**
-    - **Interface de escrita para criar, editar e excluir categorias**
-    - **Interface de escrita para cadastro direto de transações analisadas e categorizadas**
+    - **Interface de escrita para criar, editar e excluir transferências entre contas**
+    - **Validação de saldo suficiente antes de criar transferências**
+    - **Interface de escrita para criar, editar e excluir categorias**\n    - **Interface de escrita para cadastro direto de transações analisadas e categorizadas**
     - **Validação de permissões antes de cada operação de escrita**
     - **Registro de auditoria de todas as operações de escrita**
 - **Camada de acesso controlado para plugins conforme permissões configuradas**\n- **Módulo de cálculo de saldo em tempo real:**
-  - Calcula saldo atual baseado em saldo inicial, receitas recebidas e despesas pagas
-  - Atualiza saldo automaticamente ao registrar, editar ou excluir transações\n  - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
+  - Calcula saldo atual baseado em saldo inicial, receitas recebidas, despesas pagas, transferências enviadas e transferências recebidas
+  - Atualiza saldo automaticamente ao registrar, editar ou excluir transações e transferências
+  - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
   - **Calcula saldo histórico para qualquer mês selecionado**
-- **Módulo de análise e categorização automática:**
-  - **Trigger manual:acionado pelo usuário atravésdo botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
+- **Módulo de gestão de transferências:**
+  - **Validação de saldo suficiente na conta de origem antes de criar transferência**
+  - **Criação automática de duas movimentações vinculadas (débito na origem e crédito no destino)**
+  - **Atualização automática de ambas as movimentações ao editar transferência**
+  - **Exclusão automática de ambas as movimentações ao excluir transferência**
+  - **Recálculo de saldos das contas envolvidas após cada operação**
+  - **Registro de auditoria de todas as operações de transferência**
+- **Módulo de análise e categorização automática:**\n  - **Trigger manual:acionado pelo usuário atravésdo botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - Processa extratos salvos e identifica padrões\n  - Sugere categorias existentes ou novas categorias
   - Exibe resultados em popup com lista ordenada de transações por data
   - Permite revisão e edição de categorias via dropdown antesdo cadastro
@@ -417,14 +469,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Módulo de geração de gráficos e indicadores:**
   - Cálculo de indicadores financeiros em tempo real
   - Geração de gráficos de linha, pizza, barras e área
-  - Processamento de dados históricos para tendências
-  - Cache de dados agregados para performance
+  - **Geração de gráfico de fluxo para visualização de transferências entre contas**
+  - Processamento de dados históricos para tendências\n  - Cache de dados agregados para performance
   - API de dados para visualizações no frontend
   - **Suporte a consulta de dados de meses anteriores**
   - **Recálculo de indicadores e gráficos baseado no mês selecionado**
 - **Módulo de filtragem e busca de transações:**
   - **Sistema de busca em tempo real por descrição, título ou estabelecimento**
-  - **Motor de filtragem por conta bancária, categoria, tipo de transação (receita/despesa) e intervalo de datas**
+  - **Motor de filtragem por conta bancária, categoria, tipo de transação (receita/despesa/transferência) e intervalo de datas**
   - **Sistema de ordenação por data, categoria e valor (crescente/decrescente)**\n  - **Cache de resultados de filtros frequentes para performance**
   - **API de consulta com suporte a múltiplos filtros simultâneos**
   - **Paginação otimizada para grandes volumes de dados**
@@ -432,10 +484,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Índices de banco de dados otimizados para busca e filtragem rápida**
   - **Validação de parâmetros de filtro e ordenação**
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
-- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**
+- Design modular: módulo de importação, processamento, API, UI, conectorIA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**, **gerenciador de transferências**
 - **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
   - **Validação de permissões antes de cada operação**
   - **Validação de dados antes de escrita no banco**
+  - **Validação de saldo suficiente antes de criar transferências**
   - **Registro de auditoria de todas as operações**
   - **Rollback automático em caso de erro**
 - **Módulo de validação e sandbox para execução segura de plugins**
@@ -452,18 +505,32 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de criação de transações**
   - **Validação de edição de transações**
   - **Validação de exclusão de transações**
+  - **Validação de criação de transferências**
+  - **Validação de edição de transferências**
+  - **Validação de exclusão de transferências**
+  - **Validação de saldo suficiente antes de criar transferências**
   - **Validação de criação de categorias**
   - **Validação de edição de categorias**
   - **Validação de exclusão de categorias**
   - **Validação de permissões de escrita**
   - **Validação de auditoria de operações de escrita**
   - **Validação de rollback em caso de erro**
-- **Testes de análise e categorização automática:**\n  - Validação de trigger manual após upload e salvamento
-  - Validação de sugestões de categorias existentes
-  - Validação de sugestões de novas categorias
-  - Validação de exibição de popup com lista ordenada de transações
-  - Validação de dropdown de categorias com pré-seleção
-  - Validação de cadastro em lote de transações\n  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
+- **Testes do sistema de transferências:**
+  - **Validação de criação de transferência com saldo suficiente**
+  - **Validação de erro ao tentar criar transferência com saldo insuficiente**
+  - **Validação de criação automática de duas movimentações vinculadas (débito e crédito)**
+  - **Validação de atualização de saldos das contas envolvidas**
+  - **Validação de edição de transferência com atualização de ambas as movimentações**
+  - **Validação de exclusão de transferência com remoção de ambas as movimentações**
+  - **Validação de recálculo de saldos após edição ou exclusão**
+  - **Validação de vínculo entre movimentações de débito e crédito**
+  - **Validação de exibição de transferências na lista de transações**
+  - **Validação de filtro específico para transferências**
+  - **Validação de identificação visual de transferências**
+- **Testes de análise e categorização automática:**\n  - Validação de trigger manual após upload e salvamento\n  - Validação de sugestões de categorias existentes\n  - Validação de sugestões de novas categorias
+  - Validação de exibição de popup com lista ordenada de transações\n  - Validação de dropdown de categorias com pré-seleção
+  - Validação de cadastro em lote de transações
+  - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
   - Validação de parsing de OFX versões 1.x e 2.x
   - Validação de extração correta de transações
   - Validação de tratamento de erros para arquivos corrompidos
@@ -471,8 +538,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Testes de cálculo de saldo em tempo real:**
   - Validação de cálculo correto ao adicionar receitas (aumento de saldo)
   - Validação de cálculo correto ao adicionar despesas (diminuição de saldo)
+  - **Validação de cálculo correto ao adicionar transferências enviadas (diminuição de saldo da origem)**
+  - **Validação de cálculo correto ao adicionar transferências recebidas (aumento de saldo do destino)**
   - Validação de atualização de saldo ao editar ou excluir transações
-  - **Validação de cálculo de saldo histórico para meses anteriores**
+  - **Validação de atualização de saldo ao editar ou excluir transferências**\n  - **Validação de cálculo de saldo histórico para meses anteriores**
 - **Testes de upload e salvamento de extrato no chatbot:**
   - Validação de upload de arquivo via chatbot\n  - Validação de salvamento seguro na plataforma
   - Validação de feedback visual de progresso
@@ -482,20 +551,23 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de cadastro em lote ao clicar em 'Cadastrar Transações'
 - **Testes de dashboard expandido:**
   - Validação de cálculo de indicadores financeiros
+  - **Validação de cálculo de total de transferências realizadas**
   - Validação de geração de gráficos de linha, pizza, barras e área
+  - **Validação de geração de gráfico de fluxo de transferências**
   - Validação de filtros de período e categoria
   - Validação de performance com grandes volumes de dados
   - Validação de responsividade de gráficos
   - **Validação de seletor de mês e navegação entre meses**
   - **Validação de atualização de indicadores ao selecionar novo mês**
-  - **Validação de atualização de gráficos ao selecionar novo mês**\n  - **Validação de cálculo correto de dados históricos**
+  - **Validação de atualização de gráficos ao selecionar novo mês**
+  - **Validação de cálculo correto de dados históricos**
   - **Validação de comparação entre meses diferentes**
 - **Testes de filtragem e busca de transações:**
   - **Validação de busca em tempo real por descrição, título e estabelecimento**
   - **Validação de destaque visual dos termos encontrados**
   - **Validação de filtro por conta bancária (seleção única e múltipla)**
   - **Validação de filtro por categoria (seleção única e múltipla)**
-  - **Validação de filtro por tipo de transação (receita, despesa, ambos)**
+  - **Validação de filtro por tipo de transação (receita, despesa, transferência, combinações)**
   - **Validação de filtro por intervalo de datas**
   - **Validação de filtros predefinidos (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)**
   - **Validação de ordenação por data (crescente e decrescente)**
@@ -523,11 +595,20 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de exportação de histórico**
   - **Validação de performance com grande volume de conversas**
   - **Validação de criptografia de dados de memória**
-  - **Validação de controles de acesso ao histórico**\n\n## 7. Escopo do MVP
+  - **Validação de controles de acesso ao histórico**
+\n## 7. Escopo do MVP
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
-- Cadastro de contas e cartões\n- **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas e despesas pagas**
+- Cadastro de contas e cartões
+- **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas, despesas pagas, transferências enviadas e transferências recebidas**
+- **Sistema completo de transferências entre contas cadastradas:**
+  - Interface de cadastro de transferências
+  - Validação de saldo suficiente\n  - Criação automática de movimentações vinculadas
+  - Atualização automática de saldos
+  - Edição e exclusão de transferências
+  - Visualização de transferências na lista de transações
+  - Filtro específico para transferências
 - **Importação de extratos CSV, OFX e QIF com suporte completo ao formato OFX (versões 1.x e 2.x)**
 - **Importação de extratos diretamente na interface**
 - **Upload de extrato bancário via chatbot flutuante (CSV, OFX e QIF) com novo fluxo:**
@@ -540,12 +621,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Botão 'Cadastrar Transações' no popup para cadastro em lote
 - **Análise e categorização automática de transações comIA:**
   - Trigger manual via botão 'Analisar Extrato' no chatbot
-  - Sugestão de categorias existentes\n  - Sugestão de novas categorias incluídas no dropdown
+  - Sugestão de categorias existentes
+  - Sugestão de novas categorias incluídas no dropdown
   - Interface de revisão em popup antes do cadastro
   - Cadastro em lote de transações categorizadas
   - Aprendizado contínuo baseado em confirmações do usuário
 - CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
-- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
+- **CRUD de transferências (incluindo edição de valor, data e descrição)**
+- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
 - Conciliação manual\n- **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas:**
   - **Campo de busca em tempo real:**
     - Busca por descrição, título ou estabelecimento
@@ -555,7 +638,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Filtros completos:**
     - **Filtro por conta bancária:** dropdown com seleção única ou múltipla de contas cadastradas
     - **Filtro por categoria:** dropdown com seleção única ou múltipla de categorias cadastradas
-    - **Filtro por tipo de transação:** checkboxes ou botões para selecionar receita, despesa ou ambos\n    - **Filtro por data:** seletor de intervalo (data inicial e final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)
+    - **Filtro por tipo de transação:** checkboxes ou botões para selecionar receita, despesa, transferência ou combinações
+    - **Filtro por data:** seletor de intervalo (data inicial e final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)
     - Botão 'Limpar Filtros' para resetar todos os filtros
     - Badge visual indicando número de filtros ativos
     - Seção de filtros organizada em linha horizontal ou painel lateral retrátil
@@ -571,22 +655,23 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Paginação para grandes volumes de dados
     - Opção de exportar resultados filtrados em CSV ou Excel
     - Exibição clara de cada transação com data, descrição, categoria, valor e conta
+    - **Identificação visual de transferências comícone específico e exibição de conta origem/destino**
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos**\n  - **Navegação entre meses anteriores e futuros**
   - **Botão 'Voltar ao Mês Atual'**
   - Saldo total consolidado (ajustado para o mês selecionado)
   - Receitas e despesas totais do mês (ajustado para o mês selecionado)
+  - **Total de transferências realizadas no mês (ajustado para o mês selecionado)**
   - Saldo líquido e variação percentual (ajustado para o mês selecionado)
   - Gráfico de evolução do saldo (6 meses a partirdo mês selecionado)
   - Gráfico de distribuição de despesas por categoria (mês selecionado)
   - Gráfico de comparação receitas vs despesas (6 meses a partir do mês selecionado)
-  - Gráfico de projeção de fluxo de caixa (3 meses a partir do mês selecionado)
+  - **Gráfico de fluxo de transferências entre contas (mês selecionado)**\n  - Gráfico de projeção de fluxo de caixa (3 meses a partir do mês selecionado)
   - Top 5 categorias com maiores gastos (mês selecionado)
-  - Indicadores de performance (taxa de economia, média de gastos diários) (mês selecionado)
-  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)
+  - Indicadores de performance (taxa de economia, média de gastos diários) (mês selecionado)\n  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)
 - Assistente de IA com acesso total configurável e memória persistente:\n  - **Acesso de leitura (read_full):**
     - Todas as contas cadastradas
-    - Todas as transações (receitas e despesas)
+    - Todas as transações (receitas, despesas e transferências)
     - Todos os pagamentos e recebimentos
     - Todos os relatórios financeiros
     - Saldos de todas as contas
@@ -595,7 +680,10 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Histórico completo de conversas e solicitações anteriores**
   - **Acesso de escrita (write_full):**
     - **Permissão para criar, editar e excluir transações mediante solicitação do usuário**
-    - **Permissão para criar, editar e excluir categorias mediante solicitação do usuário**\n    - **Permissão para análise e categorização automática de extratos com cadastro direto**
+    - **Permissão para criar, editar e excluir transferências mediante solicitação do usuário**
+    - **Validação de saldo suficiente antes de criar transferências**
+    - **Permissão para criar, editar e excluir categorias mediante solicitação do usuário**
+    - **Permissão para análise e categorização automática de extratos com cadastro direto**
     - **Interpretação de gráficos e indicadores do dashboard**
   - **Sistema de memória:**
     - **Armazenamento automático de todas as conversas**
@@ -612,11 +700,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Toggle de acesso de leitura com termo de consentimento
   - **Toggle de acesso de escrita com termo de consentimento separado**
   - **Toggle de permissão para criar, editar e excluir transações pelo modelo de IA**
-  - **Toggle de permissão para criar, editar e excluir categorias pelo modelo de IA**\n  - **Toggle de permissão para análise e categorização automática com cadastro direto**
+  - **Toggle de permissão para criar, editar e excluir transferências pelo modelo de IA**\n  - **Toggle de permissão para criar, editar e excluir categorias pelo modelo de IA**
+  - **Toggle de permissão para análise e categorização automática com cadastro direto**
   - **Interface de gerenciamento de plugins**
   - **Configuração de permissões para plugins**
   - Logs detalhados de chat e acessos do modelo de IA
-  - **Logs de operações de escrita realizadas pelo modelo de IA (transações e categorias criadas, editadas ou excluídas)**
+  - **Logs de operações de escrita realizadas pelo modelo de IA (transações, transferências e categorias criadas, editadas ou excluídas)**
   - **Logs de análises e categorizações automáticas**
   - **Logs deações executadas por plugins**
   - **Visualização de histórico de memória do modelo de IA**
@@ -624,7 +713,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Opção de limpar histórico de memória**
   - **Opção de exportar histórico de memória**
 - Relatório de auditoria de acessos e operações de escrita
-\n### 7.2 Versões Futuras (1.1/1.2)\n- Conciliação automática por Machine Learning
+\n### 7.2 Versões Futuras (1.1/1.2)
+- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
 - Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
 - **Marketplace de plugins com plugins pré-aprovados**
@@ -634,6 +724,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Comparação de gastos entre diferentes períodos
   - Previsão de gastos futuros baseada em histórico
   - Análise de sazonalidade de despesas
+  - **Análise de padrões de transferências entre contas**
 - **Funcionalidades avançadas de memória:**
   - Análise semântica de conversas para insights automáticos
   - Sugestões proativas baseadas em padrões de uso
@@ -645,7 +736,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Cores principais: azul profissional (#2C3E50) e verde financeiro (#27AE60) para transmitir confiança e estabilidade
 - Cores de apoio: cinza claro (#ECF0F1) para fundos e branco (#FFFFFF) para cards
 - **Cores para gráficos: paleta harmoniosa com azul (#3498DB), verde (#27AE60), laranja (#E67E22), roxo (#9B59B6) e vermelho (#E74C3C)**
-\n### 8.2 Layout\n- Layout em cards para organização modular de informações financeiras
+- **Cor específica para transferências: azul claro (#5DADE2) para diferenciação visual**
+
+### 8.2 Layout\n- Layout em cards para organização modular de informações financeiras
 - Sidebar fixa com navegação principal
 - **Dashboard com grid responsivo para visualização de métricas e gráficos:**
   - **Seletor de mês no topo do dashboard com navegação intuitiva**
@@ -667,25 +760,32 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Lista de transações com espaçamento adequado:**
     - Cards ou linhas de tabela para cada transação
     - Exibição clara de data, descrição, categoria, valor e conta
+    - **Identificação visual de transferências com ícone de setas bidirecionais e exibição de conta origem/destino**
     - Destaque visual para termos de busca encontrados
   - **Contador de resultados com formatação clara:**
     - Exibição de 'Exibindo X de Y transações' no topo ou rodapé da lista
   - **Paginação na parte inferior para navegação entre páginas**
   - **Botões de exportação (CSV e Excel) visíveis e acessíveis**
+- **Interface de cadastro de transferências:**
+  - Modal ou página dedicada com campos claros\n  - Dropdowns para seleção de conta origem e destino
+  - Campo de valor com validação\n  - Campo de data com seletor de calendário
+  - Campo de descrição opcional
+  - Exibição de saldo disponível na conta origem
+  - Mensagem de erro clara em caso de saldo insuficiente
 \n### 8.3 Elementos Visuais
 - Ícones minimalistas para categorias e ações
 - **Gráficos limpos e legíveis:**
   - Linhas suaves para gráficos de evolução
   - Cores distintas para gráficos de pizza
   - Barras com espaçamento adequado
+  - **Gráfico de fluxo com setas indicando direção das transferências**
   - Tooltips informativos ao passar o mouse
   - Legendas claras e posicionadas estrategicamente
 - Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito
 - **Botão de upload de arquivo no chatbot (ícone de clipe ou upload)**
 - **Botão 'Analisar Extrato' no chatbot após upload (ícone de lupa ou análise)**
 - **Popup de resultados com:**
-  - Lista ordenada de transações por data
-  - Dropdown de categoria ao lado de cada transação
+  - Lista ordenada de transações por data\n  - Dropdown de categoria ao lado de cada transação
   - Categoria sugerida pré-selecionada no dropdown
   - Botão 'Cadastrar Transações' em destaque na parte inferior
 - Bordas suaves com raio de 8px para cards, botões e popup
@@ -702,18 +802,20 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Animações suaves de transição ao carregar gráficos**
 - **Seletor de mês com dropdown ou calendário estilizado:**
   - Botões de navegação (setas para mês anterior e próximo)
-  - Exibição clarado mês e ano selecionado
+  - Exibição clara do mês e ano selecionado
   - Botão 'Voltar ao Mês Atual' em destaque
   - Indicador visual do mês atual
 - **Indicador visual de memória ativa (ícone de cérebro ou banco de dados verde) quando sistema de memória estiver habilitado**
 - **Badge com número de conversas armazenadas no histórico**
 - **Ícone de histórico para acesso rápido às conversas anteriores**
+- **Ícone específico para transferências: setas bidirecionais em azul claro (#5DADE2)**
+- **Tag visual 'Transferência' em cards de transações que são transferências**
 - **Elementos de filtragem e busca na página de transações:**
   - **Campo de busca com ícone de lupa e placeholder claro ('Buscar por descrição, título ou estabelecimento')**
   - **Dropdowns de filtro com ícones representativos:**
     - Ícone de banco para filtro de conta bancária
     - Ícone de tag para filtro de categoria
-    - Ícone de seta para cima/baixo para filtro de tipo (receita/despesa)
+    - Ícone de seta para cima/baixo para filtro de tipo (receita/despesa/transferência)
     - Ícone de calendário para filtro de data
 - **Chips ou tags visuais para filtros ativos:**\n    - Exibição de cada filtro aplicado como chip colorido
     - Ícone X em cada chip para remoção individual
