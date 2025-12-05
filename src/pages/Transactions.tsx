@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/db/supabase';
 import { transactionsApi, accountsApi, cardsApi, categoriesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown } from 'lucide-react';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
 
 export default function Transactions() {
@@ -19,6 +19,17 @@ export default function Transactions() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  
+  // Filtros e busca
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterAccount, setFilterAccount] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterType, setFilterType] = useState<string>('all'); // all, income, expense
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('date-desc'); // date-desc, date-asc, category, amount-desc, amount-asc
+  const [showFilters, setShowFilters] = useState(false);
+  
   const [formData, setFormData] = useState({
     type: 'expense' as 'income' | 'expense',
     amount: '',
@@ -204,6 +215,81 @@ export default function Transactions() {
       total_installments: '1'
     });
   };
+
+  // Filtrar e ordenar transações
+  const filteredAndSortedTransactions = useMemo(() => {
+    let filtered = [...transactions];
+
+    // Filtro de busca (descrição)
+    if (searchTerm) {
+      filtered = filtered.filter(tx => 
+        tx.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtro por conta
+    if (filterAccount && filterAccount !== 'all') {
+      filtered = filtered.filter(tx => tx.account_id === filterAccount);
+    }
+
+    // Filtro por categoria
+    if (filterCategory && filterCategory !== 'all') {
+      filtered = filtered.filter(tx => tx.category_id === filterCategory);
+    }
+
+    // Filtro por tipo (receita/despesa)
+    if (filterType && filterType !== 'all') {
+      filtered = filtered.filter(tx => tx.type === filterType);
+    }
+
+    // Filtro por data (de)
+    if (filterDateFrom) {
+      filtered = filtered.filter(tx => tx.date >= filterDateFrom);
+    }
+
+    // Filtro por data (até)
+    if (filterDateTo) {
+      filtered = filtered.filter(tx => tx.date <= filterDateTo);
+    }
+
+    // Ordenação
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'date-asc':
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case 'category': {
+          const catA = categories.find(c => c.id === a.category_id)?.name || '';
+          const catB = categories.find(c => c.id === b.category_id)?.name || '';
+          return catA.localeCompare(catB);
+        }
+        case 'amount-desc':
+          return b.amount - a.amount;
+        case 'amount-asc':
+          return a.amount - b.amount;
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [transactions, searchTerm, filterAccount, filterCategory, filterType, filterDateFrom, filterDateTo, sortBy, categories]);
+
+  // Limpar todos os filtros
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterAccount('all');
+    setFilterCategory('all');
+    setFilterType('all');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setSortBy('date-desc');
+  };
+
+  // Verificar se há filtros ativos
+  const hasActiveFilters = searchTerm || filterAccount !== 'all' || filterCategory !== 'all' || 
+    filterType !== 'all' || filterDateFrom || filterDateTo || sortBy !== 'date-desc';
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -396,8 +482,149 @@ export default function Transactions() {
         </Dialog>
       </div>
 
+      {/* Barra de Busca e Filtros */}
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          {/* Busca e botões de ação */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar transações por descrição..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              Filtros
+            </Button>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                onClick={clearFilters}
+                title="Limpar filtros"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpar
+              </Button>
+            )}
+          </div>
+
+          {/* Painel de Filtros */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t">
+              {/* Filtro por Tipo */}
+              <div className="space-y-2">
+                <Label>Tipo</Label>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="income">Receitas</SelectItem>
+                    <SelectItem value="expense">Despesas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro por Conta */}
+              <div className="space-y-2">
+                <Label>Conta Bancária</Label>
+                <Select value={filterAccount} onValueChange={setFilterAccount}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as contas</SelectItem>
+                    {accounts.map(acc => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro por Categoria */}
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.icon} {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro por Data (De) */}
+              <div className="space-y-2">
+                <Label>Data Inicial</Label>
+                <Input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                />
+              </div>
+
+              {/* Filtro por Data (Até) */}
+              <div className="space-y-2">
+                <Label>Data Final</Label>
+                <Input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                />
+              </div>
+
+              {/* Ordenação */}
+              <div className="space-y-2">
+                <Label>Ordenar Por</Label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date-desc">Data (mais recente)</SelectItem>
+                    <SelectItem value="date-asc">Data (mais antiga)</SelectItem>
+                    <SelectItem value="category">Categoria</SelectItem>
+                    <SelectItem value="amount-desc">Valor (maior para menor)</SelectItem>
+                    <SelectItem value="amount-asc">Valor (menor para maior)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Contador de resultados */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
+            <span>
+              {filteredAndSortedTransactions.length} {filteredAndSortedTransactions.length === 1 ? 'transação encontrada' : 'transações encontradas'}
+            </span>
+            {hasActiveFilters && (
+              <span className="flex items-center gap-1">
+                <Filter className="h-3 w-3" />
+                Filtros ativos
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="space-y-2">
-        {transactions.map((tx) => {
+        {filteredAndSortedTransactions.map((tx) => {
           const category = categories.find(c => c.id === tx.category_id);
           const account = accounts.find(a => a.id === tx.account_id);
           
@@ -447,6 +674,20 @@ export default function Transactions() {
           );
         })}
       </div>
+
+      {filteredAndSortedTransactions.length === 0 && transactions.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-lg font-medium mb-2">Nenhuma transação encontrada</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Tente ajustar os filtros ou buscar por outros termos
+            </p>
+            <Button variant="outline" onClick={clearFilters}>
+              Limpar Filtros
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {transactions.length === 0 && (
         <Card>
