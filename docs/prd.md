@@ -93,23 +93,25 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Campo de texto para busca por descrição, título ou estabelecimento
     - Busca em tempo real com atualização automática da lista
     - Destaque visual dos termos encontrados nos resultados
+    - Posicionamento proeminente no topo da página
   - **Filtros de transações:**
     - **Filtro por conta bancária:** dropdown com lista de todas as contas cadastradas, permitindo selecionar uma ou múltiplas contas
     - **Filtro por categoria:** dropdown com lista de todas as categorias cadastradas, permitindo selecionar uma ou múltiplas categorias
-    - **Filtro por tipo de transação:** opções para filtrar por receita, despesa ou ambos
+    - **Filtro por tipo de transação:** opções para filtrar por receita, despesa ou ambos (checkboxes ou botões de seleção)
     - **Filtro por data:** seletor de intervalo de datas (data inicial e data final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)\n    - Botão 'Limpar Filtros' para resetar todos os filtros aplicados
-    - Indicador visual de filtros ativos (badge com número de filtros aplicados)
+    - Indicador visual de filtros ativos (badge com número de filtros aplicados)\n    - Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
   - **Opções de ordenação:**
     - **Ordenar por data:** crescente (mais antiga primeiro) ou decrescente (mais recente primeiro)
     - **Ordenar por categoria:** ordem alfabética crescente ou decrescente
     - **Ordenar por valor:** crescente (menor para maior) ou decrescente (maior para menor)
     - Seletor de ordenação visível no topo da lista de transações
-    - Indicador visual da ordenação ativa (seta para cima ou para baixo)
+    - Indicador visual da ordenação ativa (seta para cima ou para baixo ao lado do critério selecionado)
   - **Exibição de resultados:**
     - Lista de transações atualizada em tempo real conforme filtros e ordenação aplicados
-    - Contador de transações exibidas vs total de transações
+    - Contador de transações exibidas vs total de transações (ex: 'Exibindo 25 de 150 transações')
     - Paginação para grandes volumes de dados
     - Opção de exportar resultados filtrados em CSV ou Excel
+    - Exibição clara de cada transação com data, descrição, categoria, valor e conta associada
 \n### 2.5 Controle Financeiro
 - Gestão de contas a pagar e receber
 - Visualização de fluxo de caixa
@@ -148,7 +150,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Botão de'Voltar ao Mês Atual' para retornar rapidamente aos dados do mês corrente
 - Exportação de relatórios em CSV, Excel e PDF
 \n### 2.6 Assistente de IA Contextual com Memória Persistente
-- Elemento visível em todas as páginas (botão flutuante ou ícone de chat)
+- Elemento visível em todas as páginas (botão flutuante ouícone de chat)
 - Chat contextual com acesso total aos dados da plataforma
 - **Sistema de memória persistente para o modelo de IA:**
   - **Armazenamento de histórico completo de conversas:**
@@ -184,8 +186,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     3. Botão 'Analisar Extrato' surge no chatbot
     4. Usuário clica no botão para acionar análise do modelo de IA
     5. Modelo de IA processa o arquivo salvo e identifica categorias
-    6. Sistema exibe popup com lista de transações ordenadas por data
-    7. Cada transação possui dropdown de categoria com sugestão pré-selecionada
+    6. Sistema exibe popup com lista de transações ordenadas por data\n    7. Cada transação possui dropdown de categoria com sugestão pré-selecionada
     8. Usuário revisa e ajusta categorias conforme necessário
     9. Usuário clica em 'Cadastrar Transações' no popup
     10. Sistema cadastra todas as transações nas categorias selecionadas
@@ -281,7 +282,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Transmissão segura de dados a plugins conforme permissões configuradas**
 - **Criptografia de histórico de conversas armazenado no banco de dados**
 - **Proteção de dados de memória do modelo de IA com controles de acesso rigorosos**
-\n### 3.2 Autenticação e Autorização
+
+### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
 - RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário\n- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
   - Transações completas
@@ -427,6 +429,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **API de consulta com suporte a múltiplos filtros simultâneos**
   - **Paginação otimizada para grandes volumes de dados**
   - **Exportação de resultados filtrados em CSV e Excel**
+  - **Índices de banco de dados otimizados para busca e filtragem rápida**
+  - **Validação de parâmetros de filtro e ordenação**
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
 - Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**
 - **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
@@ -488,21 +492,26 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de comparação entre meses diferentes**
 - **Testes de filtragem e busca de transações:**
   - **Validação de busca em tempo real por descrição, título e estabelecimento**
+  - **Validação de destaque visual dos termos encontrados**
   - **Validação de filtro por conta bancária (seleção única e múltipla)**
   - **Validação de filtro por categoria (seleção única e múltipla)**
   - **Validação de filtro por tipo de transação (receita, despesa, ambos)**
   - **Validação de filtro por intervalo de datas**
-  - **Validação de filtros predefinidos (hoje, esta semana, este mês, etc.)**
+  - **Validação de filtros predefinidos (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)**
   - **Validação de ordenação por data (crescente e decrescente)**
   - **Validação de ordenação por categoria (alfabética crescente e decrescente)**
   - **Validação de ordenação por valor (crescente e decrescente)**
+  - **Validação de indicador visual da ordenação ativa**
   - **Validação de combinação de múltiplos filtros simultâneos**
   - **Validação de botão 'Limpar Filtros'**
-  - **Validação de indicador visual de filtros ativos**
+  - **Validação de indicador visual de filtros ativos (badge com número)**
   - **Validação de contador de transações exibidas vs total**
   - **Validação de paginação com grandes volumes de dados**
-  - **Validação de exportação de resultados filtrados em CSV e Excel**
+  - **Validação de exportação de resultados filtrados em CSV**
+  - **Validação de exportação de resultados filtrados em Excel**
   - **Validação de performance com múltiplos filtros aplicados**
+  - **Validação de atualização em tempo real da lista ao aplicar filtros**
+  - **Validação de persistência de filtros ao navegar entre páginas**
 - **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
 - **Testes do sistema de memória do modelo de IA:**
   - **Validação de armazenamento correto de conversas**
@@ -514,8 +523,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de exportação de histórico**
   - **Validação de performance com grande volume de conversas**
   - **Validação de criptografia de dados de memória**
-  - **Validação de controles de acesso ao histórico**
-\n## 7. Escopo do MVP
+  - **Validação de controles de acesso ao histórico**\n\n## 7. Escopo do MVP
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
@@ -539,22 +547,30 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações**
 - Conciliação manual\n- **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas:**
-  - **Campo de busca em tempo real por descrição, título ou estabelecimento**
-  - **Filtros:**
-    - Filtro por conta bancária (seleção única ou múltipla)
-    - Filtro por categoria (seleção única ou múltipla)\n    - Filtro por tipo de transação (receita, despesa ou ambos)
-    - Filtro por intervalo de datas (data inicial e final) ou opções predefinidas
-    - Botão 'Limpar Filtros'\n    - Indicador visual de filtros ativos
-  - **Ordenação:**
-    - Ordenar por data (crescente ou decrescente)
-    - Ordenar por categoria (alfabética crescente ou decrescente)
-    - Ordenar por valor (crescente ou decrescente)
+  - **Campo de busca em tempo real:**
+    - Busca por descrição, título ou estabelecimento
+    - Atualização automática da lista conforme digitação
+    - Destaque visual dos termos encontrados nos resultados
+    - Posicionamento proeminente no topo da página
+  - **Filtros completos:**
+    - **Filtro por conta bancária:** dropdown com seleção única ou múltipla de contas cadastradas
+    - **Filtro por categoria:** dropdown com seleção única ou múltipla de categorias cadastradas
+    - **Filtro por tipo de transação:** checkboxes ou botões para selecionar receita, despesa ou ambos\n    - **Filtro por data:** seletor de intervalo (data inicial e final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)
+    - Botão 'Limpar Filtros' para resetar todos os filtros
+    - Badge visual indicando número de filtros ativos
+    - Seção de filtros organizada em linha horizontal ou painel lateral retrátil
+  - **Ordenação flexível:**
+    - **Ordenar por data:** crescente (mais antiga primeiro) ou decrescente (mais recente primeiro)
+    - **Ordenar por categoria:** ordem alfabética crescente ou decrescente
+    - **Ordenar por valor:** crescente (menor para maior) ou decrescente (maior para menor)
     - Seletor de ordenação visível no topo da lista
-    - Indicador visual da ordenação ativa
+    - Indicador visual da ordenação ativa (seta para cima ou para baixo)
   - **Exibição de resultados:**
-    - Lista atualizada em tempo real conforme filtros e ordenação
-    - Contador de transações exibidas vs total
-    - Paginação para grandes volumes\n    - Exportação de resultados filtrados em CSV ou Excel
+    - Lista de transações atualizada em tempo real conforme filtros e ordenação
+    - Contador de transações exibidas vs total (ex: 'Exibindo 25 de 150 transações')
+    - Paginação para grandes volumes de dados
+    - Opção de exportar resultados filtrados em CSV ou Excel
+    - Exibição clara de cada transação com data, descrição, categoria, valor e conta
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos**\n  - **Navegação entre meses anteriores e futuros**
   - **Botão 'Voltar ao Mês Atual'**
@@ -567,7 +583,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Gráfico de projeção de fluxo de caixa (3 meses a partir do mês selecionado)
   - Top 5 categorias com maiores gastos (mês selecionado)
   - Indicadores de performance (taxa de economia, média de gastos diários) (mês selecionado)
-- Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)\n- Assistente de IA com acesso total configurável e memória persistente:\n  - **Acesso de leitura (read_full):**
+  - Alertas visuais (vencimentos, gastos acima da média, limite de cartão) (mês selecionado)
+- Assistente de IA com acesso total configurável e memória persistente:\n  - **Acesso de leitura (read_full):**
     - Todas as contas cadastradas
     - Todas as transações (receitas e despesas)
     - Todos os pagamentos e recebimentos
@@ -588,7 +605,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Busca por palavra-chave no histórico**
     - **Filtro por data e tipo de solicitação**
 - Botão de chat com IA nas telas principais
-- Painel de administração com:\n  - Indicador visual de status de configuração
+- Painel de administração com:
+  - Indicador visual de status de configuração
   - Configuração de modelo de IA
   - **Configuração de sistema de memória (ativação, período de retenção, limite de armazenamento)**
   - Toggle de acesso de leitura com termo de consentimento
@@ -606,7 +624,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Opção de limpar histórico de memória**
   - **Opção de exportar histórico de memória**
 - Relatório de auditoria de acessos e operações de escrita
-\n### 7.2 Versões Futuras (1.1/ 1.2)\n- Conciliação automática por Machine Learning
+\n### 7.2 Versões Futuras (1.1/1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
 - Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
 - **Marketplace de plugins com plugins pré-aprovados**
@@ -636,12 +654,25 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Seção inferior com gráficos secundários e alertas
 - **Popup centralizado para exibição de resultados de análise de extrato**
 - **Interface de histórico de conversas com layout de timeline**
-- **Página de transações com layout limpo:**
-  - Barra de busca proeminente no topo
-  - Seção de filtros organizada em linha ou painel lateral retrátil
-  - Seletor de ordenação visível e acessível
-  - Lista de transações com espaçamento adequado
-  - Paginação na parte inferior\n\n### 8.3 Elementos Visuais
+- **Página de transações com layout limpo e funcional:**
+  - **Barra de busca proeminente no topo comícone de lupa e placeholder claro**
+  - **Seção de filtros organizada em linha horizontal ou painel lateral retrátil:**
+    - Dropdowns de filtro comícones representativos (conta, categoria, tipo, data)
+    - Chips ou tags visuais para filtros ativos com opção de remoção individual (ícone X)
+    - Badge com número de filtros ativos
+    - Botão 'Limpar Filtros' em destaque quando filtros estiverem aplicados
+  - **Seletor de ordenação visível e acessível no topo da lista:**
+    - Dropdown ou botões para selecionar critério de ordenação
+    -Ícone de setas indicando direção (crescente/decrescente)
+  - **Lista de transações com espaçamento adequado:**
+    - Cards ou linhas de tabela para cada transação
+    - Exibição clara de data, descrição, categoria, valor e conta
+    - Destaque visual para termos de busca encontrados
+  - **Contador de resultados com formatação clara:**
+    - Exibição de 'Exibindo X de Y transações' no topo ou rodapé da lista
+  - **Paginação na parte inferior para navegação entre páginas**
+  - **Botões de exportação (CSV e Excel) visíveis e acessíveis**
+\n### 8.3 Elementos Visuais
 - Ícones minimalistas para categorias e ações
 - **Gráficos limpos e legíveis:**
   - Linhas suaves para gráficos de evolução
@@ -653,12 +684,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Botão de upload de arquivo no chatbot (ícone de clipe ou upload)**
 - **Botão 'Analisar Extrato' no chatbot após upload (ícone de lupa ou análise)**
 - **Popup de resultados com:**
-  - Lista ordenada de transações por data\n  - Dropdown de categoria ao lado de cada transação
+  - Lista ordenada de transações por data
+  - Dropdown de categoria ao lado de cada transação
   - Categoria sugerida pré-selecionada no dropdown
   - Botão 'Cadastrar Transações' em destaque na parte inferior
 - Bordas suaves com raio de 8px para cards, botões e popup
 - Sombras sutis para criar hierarquia visual
-- Badge de status comícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração
+- Badge de status com ícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração
 - Indicador visual de acesso de leitura ativo (ícone de olho verde) quando o modelo de IA tiver permissão completa de leitura
 - **Indicador visual de acesso de escrita ativo (ícone de lápis verde) quando o modelo de IA tiver permissão completa de escrita**
 - **Indicador visual de permissão de cadastro ativa (ícone de check verde) quando o modelo de IA tiver permissão para criar transações**
@@ -670,20 +702,41 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Animações suaves de transição ao carregar gráficos**
 - **Seletor de mês com dropdown ou calendário estilizado:**
   - Botões de navegação (setas para mês anterior e próximo)
-  - Exibição clara do mês e ano selecionado
+  - Exibição clarado mês e ano selecionado
   - Botão 'Voltar ao Mês Atual' em destaque
   - Indicador visual do mês atual
 - **Indicador visual de memória ativa (ícone de cérebro ou banco de dados verde) quando sistema de memória estiver habilitado**
 - **Badge com número de conversas armazenadas no histórico**
 - **Ícone de histórico para acesso rápido às conversas anteriores**
-- **Elementos de filtragem e busca:**
-  - Campo de busca comícone de lupa e placeholder claro
-  - Dropdowns de filtro comícones representativos (conta, categoria, tipo, data)
-  - Chips ou tags visuais para filtros ativos com opção de remoção individual (ícone X)
-  - Badge com número de filtros ativos
-  - Botão 'Limpar Filtros' em destaque quando filtros estiverem aplicados
-  - Seletor de ordenação com ícone de setas indicando direção (crescente/decrescente)
-  - Contador de resultados com formatação clara (ex: 'Exibindo 25 de 150 transações')
+- **Elementos de filtragem e busca na página de transações:**
+  - **Campo de busca com ícone de lupa e placeholder claro ('Buscar por descrição, título ou estabelecimento')**
+  - **Dropdowns de filtro com ícones representativos:**
+    - Ícone de banco para filtro de conta bancária
+    - Ícone de tag para filtro de categoria
+    - Ícone de seta para cima/baixo para filtro de tipo (receita/despesa)
+    - Ícone de calendário para filtro de data
+- **Chips ou tags visuais para filtros ativos:**\n    - Exibição de cada filtro aplicado como chip colorido
+    - Ícone X em cada chip para remoção individual
+    - Cor de destaque para diferenciar de outros elementos
+  - **Badge com número de filtros ativos:**
+    - Círculo ou retângulo com número de filtros aplicados
+    - Posicionado próximo ao botão de filtros ou no topo da lista
+  - **Botão 'Limpar Filtros' em destaque:**
+    - Visível apenas quando há filtros aplicados
+    - Cor de destaque (ex: vermelho ou laranja) para chamar atenção
+    - Ícone de X ou borracha para indicar ação de limpeza
+  - **Seletor de ordenação com indicador visual:**
+    - Dropdown ou botões para selecionar critério (data, categoria, valor)
+    - Seta para cima (crescente) ou para baixo (decrescente) ao lado do critério selecionado
+    - Cor de destaque para indicar ordenação ativa
+  - **Contador de resultados com formatação clara:**
+    - Texto em destaque:'Exibindo 25 de 150 transações'
+    - Posicionado no topo ou rodapé da lista
+    - Atualização em tempo real conforme filtros aplicados
+  - **Botões de exportação (CSV e Excel):**
+    - Ícones de download ou arquivo
+    - Posicionados próximos ao contador de resultados
+    - Tooltip explicativo ao passar o mouse
 \n## 9. Referências de Interface
 
 ### 9.1 Imagens de Referência
