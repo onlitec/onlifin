@@ -239,23 +239,22 @@ export default function Dashboard() {
     try {
       const { data: accounts } = await supabase
         .from('accounts')
-        .select('name, current_balance')
-        .eq('user_id', userId)
-        .eq('is_active', true);
+        .select('name, balance')
+        .eq('user_id', userId);
 
       if (!accounts || accounts.length === 0) return;
 
-      const total = accounts.reduce((sum, acc) => sum + acc.current_balance, 0);
+      const total = accounts.reduce((sum, acc) => sum + acc.balance, 0);
       
       const balances: AccountBalance[] = accounts.map(acc => ({
         name: acc.name,
-        balance: acc.current_balance,
-        percentage: total > 0 ? (acc.current_balance / total) * 100 : 0
+        balance: acc.balance,
+        percentage: total > 0 ? (acc.balance / total) * 100 : 0
       }));
 
       setAccountBalances(balances);
     } catch (error) {
-      console.error('Erro ao carregar saldos de contas:', error);
+      console.error('Error loading account balances:', error);
     }
   };
 
