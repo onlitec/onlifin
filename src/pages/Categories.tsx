@@ -156,33 +156,41 @@ export default function Categories() {
   const systemCategories = categories.filter(c => c.user_id === null);
 
   const CategoryCard = ({ category }: { category: Category }) => (
-    <Card>
-      <CardContent className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
+    <Card className="shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="flex items-center justify-between p-5">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+            className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0"
             style={{ backgroundColor: `${category.color}20` }}
           >
             {category.icon}
           </div>
-          <div>
-            <p className="font-medium">{category.name}</p>
-            <p className="text-sm text-muted-foreground">
-              {category.user_id === null ? 'Sistema' : 'Personalizada'}
-            </p>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-base truncate">{category.name}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-muted-foreground">
+                {category.user_id === null ? 'Sistema' : 'Personalizada'}
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{ 
+                backgroundColor: `${category.color}15`,
+                color: category.color
+              }}>
+                {category.type === 'income' ? 'Receita' : 'Despesa'}
+              </span>
+            </div>
           </div>
         </div>
         {category.user_id !== null && (
           <div className="flex gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => openEditDialog(category)}
             >
               <Pencil className="h-4 w-4" />
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => handleDelete(category)}
             >
@@ -195,16 +203,20 @@ export default function Categories() {
   );
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Categorias</h1>
+    <div className="container mx-auto p-4 xl:p-8 space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
+        <div>
+          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Categorias</h1>
+          <p className="text-muted-foreground mt-1">Organize suas transações com categorias personalizadas</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button size="lg" className="w-full xl:w-auto">
+              <Plus className="mr-2 h-5 w-5" />
               Nova Categoria
             </Button>
           </DialogTrigger>
@@ -294,25 +306,25 @@ export default function Categories() {
           <TabsTrigger value="custom">Personalizadas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-2 mt-4">
+        <TabsContent value="all" className="space-y-3 mt-6">
           {categories.map(category => (
             <CategoryCard key={category.id} category={category} />
           ))}
         </TabsContent>
 
-        <TabsContent value="income" className="space-y-2 mt-4">
+        <TabsContent value="income" className="space-y-3 mt-6">
           {incomeCategories.map(category => (
             <CategoryCard key={category.id} category={category} />
           ))}
         </TabsContent>
 
-        <TabsContent value="expense" className="space-y-2 mt-4">
+        <TabsContent value="expense" className="space-y-3 mt-6">
           {expenseCategories.map(category => (
             <CategoryCard key={category.id} category={category} />
           ))}
         </TabsContent>
 
-        <TabsContent value="custom" className="space-y-2 mt-4">
+        <TabsContent value="custom" className="space-y-3 mt-6">
           {userCategories.length > 0 ? (
             userCategories.map(category => (
               <CategoryCard key={category.id} category={category} />

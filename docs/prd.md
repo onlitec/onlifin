@@ -13,6 +13,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 ### 2.1 Gestão de Contas e Cartões
 - Cadastro de contas bancárias (nome, banco, agência, conta, moeda)
 - Cadastro de cartões de crédito (limite, data de fechamento, data de vencimento)
+- **Notificação toast ao cadastrar conta bancária:**
+  - Exibição de notificação toast no canto superior direito da tela
+  - Mensagem:'Conta bancária cadastrada com sucesso!'
+  - Ícone de check verde\n  - Duração: 3 segundos
+  - Animação suave de entrada e saída
 - **Visualização de saldo atual da conta com cálculo automático:**
   - Saldo inicial da conta
   - Saldo atualizado em tempo real considerando:\n    - Despesas pagas: diminuem o saldo da conta
@@ -53,7 +58,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Assistente valida saldo suficiente antes de criar transferência
   - Assistente fornece feedback claro sobre transferências realizadas
   - Assistente pode consultar histórico de transferências entre contas específicas
-\n### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
+
+### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
   - **Suporte completo ao formato OFX (Open Financial Exchange):**
     - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)
     - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
@@ -77,7 +83,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Modelo de IA analisa o arquivo já salvo na plataforma
   - **Passo 3: Exibição de resultados em popup**
     - Após análise, sistema exibe janela popup com resultados\n    - **Estrutura do popup:**
-      - Título:'Resultado da Análise do Extrato'
+      - Título: 'Resultado da Análise do Extrato'
       - Lista de transações ordenadas por data (da mais antiga para a mais recente)
       - Cada transação exibida com:
         - Data da transação
@@ -93,7 +99,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
 - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
 - Classificação automática de transações
-\n### 2.4 Análise e Categorização Automática de Transações com IA
+
+### 2.4 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
   - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
@@ -105,8 +112,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Quando o modelo identificar padrões ou estabelecimentos que não se encaixam nas categorias existentes, ele sugere a criação de uma nova categoria
   - As categorias sugeridas são incluídas no dropdown de seleção de categorias no popup
 - **Cadastro de transações via popup:**
-  - Popup exibe lista ordenada de transações por data
-  - Cada transação possui dropdown de categoria com sugestãodo modelo de IA pré-selecionada
+  - Popup exibe lista ordenada de transações por data\n  - Cada transação possui dropdown de categoria com sugestãodo modelo de IA pré-selecionada
   - Usuário pode alterar categoria manualmente antesdo cadastro
   - Ao clicar em 'Cadastrar Transações', sistema:\n    - Cria automaticamente as categorias novas selecionadas pelo usuário (se houver)
     - Registra as transações nas categorias correspondentes (existentes ou recém-criadas)
@@ -114,8 +120,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Aprendizado contínuo:**
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
-\n### 2.5 Movimentações Financeiras
-- Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
+\n### 2.5 Movimentações Financeiras\n- Cadastro de receitas e despesas (valor, data, categoria, conta, tag, nota)
+- **Notificação toast ao cadastrar transação:**
+  - Exibição de notificação toast no canto superior direito da tela
+  - Mensagem: 'Transação cadastrada com sucesso!' (para receitas ou despesas)
+  - Ícone de check verde
+  - Duração: 3 segundos
+  - Animação suave de entrada e saída
 - **Cadastro de transferências entre contas cadastradas (valor, data, conta origem, conta destino, descrição)**
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
 - **Edição de transferências existentes: permite alterar valor, data e descrição, com atualização automática das movimentações vinculadas**\n- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
@@ -125,7 +136,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Sistema de alertas para vencimentos\n- **Cadastro de transações e transferências pelo modelo de IA: o assistente de IA pode criar, editar e excluir transações e transferências na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes, parcelamentos e transferências entre contas**
 - **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas de filtragem, busca e ordenação:**
   - **Campo de busca de transações:**
-    - Campo de texto para busca por descrição, título ou estabelecimento\n    - Busca em tempo real com atualização automática da lista
+    - Campo de texto para busca por descrição, título ou estabelecimento
+    - Busca em tempo real com atualização automática da lista
     - Destaque visual dos termos encontrados nos resultados
     - Posicionamento proeminente no topo da página
   - **Filtros de transações:**
@@ -135,6 +147,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Filtro por data:** seletor de intervalo de datas (data inicial e data final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)\n    - Botão 'Limpar Filtros' para resetar todos os filtros aplicados
     - Indicador visual de filtros ativos (badge com número de filtros aplicados)
 - Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
+    - **Notificação toast fixa ao aplicar filtro:**
+      - Exibição de notificação toast fixa no topo da página de transações
+      - Mensagem: 'Filtro aplicado: [descrição dos filtros ativos]' (ex: 'Filtro aplicado: Conta Corrente, Categoria Alimentação, Últimos 30 dias')
+      - Ícone de filtro azul
+      - Toast permanece visível enquanto filtros estiverem ativos
+      - Botão 'X' no toast para fechar a notificação (filtros permanecem ativos)
+      - Botão 'Limpar Filtros' dentrodo toast para remover todos os filtros\n      - Cor de fundo azul claro (#E3F2FD) para diferenciação\n      - Posicionamento fixo no topo da lista de transações
   - **Opções de ordenação:**
     - **Ordenar por data:** crescente (mais antiga primeiro) ou decrescente (mais recente primeiro)
     - **Ordenar por categoria:** ordem alfabética crescente ou decrescente
@@ -155,7 +174,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos:**
     - Dropdown ou calendário para seleção de mês específico
-    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
+    - Opções de navegação: mês anterior, próximo mês, mês atual
+    - Exibição clarado mês selecionado no topo do dashboard
     - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
     - Possibilidade de comparar dados de diferentes meses lado a lado
   - **Indicadores principais (ajustados conforme mês selecionado):**\n    - Saldo total consolidado de todas as contas no final do mês selecionado
@@ -166,9 +186,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Variação percentual em relação ao mês anterior ao selecionado
     - Limite total disponível em cartões de crédito no mês selecionado
     - Valor total de contas a pagar no mês selecionado
-    - Valor total de contas a receber no mês selecionado
-  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
-    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partir do mês selecionado
+    - Valor total de contas a receber no mês selecionado\n  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
+    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partirdo mês selecionado
     - Gráfico de pizza: distribuição de despesas por categoria no mês selecionado
     - Gráfico de barras: comparação de receitas vs despesas nos últimos 6 meses a partir do mês selecionado
     - Gráfico de área: projeção de fluxo de caixa para os próximos 3 meses a partir do mês selecionado
@@ -317,6 +336,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de credenciais e autenticação de plugins
   - Criptografia de dados sensíveis transmitidos a plugins
   - Isolamento de execução para prevenir interferências entre plugins
+\n### 2.10 Gestão de Categorias
+- Cadastro de categorias personalizadas para classificação de transações
+- **Notificação toast ao cadastrar categoria:**
+  - Exibição de notificação toast no canto superior direito da tela
+  - Mensagem:'Categoria cadastrada com sucesso!'
+  - Ícone de check verde
+  - Duração: 3 segundos\n  - Animação suave de entrada e saída
+- Edição e exclusão de categorias existentes
+- Organização hierárquica de categorias (categorias e subcategorias)
+- Atribuição de cores e ícones personalizados para cada categoria
 \n##3. Segurança e Privacidade\n
 ### 3.1 Proteção de Dados
 - TLS/HTTPS em todas as comunicações
@@ -347,7 +376,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Opção de limpar histórico de memória do modelo de IA**\n\n### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
 - Auditoria de ações de usuários humanos\n- Log de todas as consultas do modelo de IA aos dados da plataforma
 - **Log detalhado de todas as operações de escrita realizadas pelo modelo de IA:**
-  - **Transações criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da transação, ação executada)**\n  - **Transferências criadas, editadas ou excluídas (timestamp, usuário solicitante, conta origem, conta destino, valor, ação executada)**
+  - **Transações criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da transação, ação executada)**
+  - **Transferências criadas, editadas ou excluídas (timestamp, usuário solicitante, conta origem, conta destino, valor, ação executada)**
   - **Categorias criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da categoria, ação executada)**
 - **Log de análises e categorizações automáticas realizadas pelo modelo de IA**
 - **Log completo de todas as ações executadas por plugins (acessos, modificações, chamadas de API)**
@@ -361,16 +391,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Middleware de validação e registro para comunicação com plugins**
 - **Middleware de validação e registro para acesso ao sistema de memória**
 - Relatório de auditoria acessível ao usuário para transparência
-\n## 4. Extensibilidade\n
+
+## 4. Extensibilidade\n
 ### 4.1 API\n- API REST/GraphQL bemdocumentada\n- Suporte para integrações (apps móveis, plugins, serviços de contabilidade)
 - **Endpoints específicos para integração de plugins externos**
 - **Endpoints específicos para operações de escrita do modelo de IA (com autenticação e autorização rigorosas)**
-- **Endpoints para consulta e gestão de histórico de memória do modelo de IA**
-- **Endpoints para criação, edição e exclusão de transferências entre contas**
+- **Endpoints para consulta e gestão de histórico de memória do modelo de IA**\n- **Endpoints para criação, edição e exclusão de transferências entre contas**
 \n### 4.2 Webhooks
 - Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo\n  - Sugestão gerada pelo assistente\n  - **Transação criada, editada ou excluída pelo modelo de IA**
   - **Transferência criada, editada ou excluída pelo modelo de IA**
-  - **Categoria criada, editada ou excluída pelo modelo de IA**\n  - **Categorização automática concluída**
+  - **Categoria criada, editada ou excluída pelo modelo de IA**
+  - **Categorização automática concluída**
   - **Ação executada por plugin**
   - **Nova conversa armazenada no histórico de memória**
 \n## 5. Observabilidade e Confiabilidade
@@ -382,8 +413,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de operações de escrita realizadas pelo modelo de IA**\n- **Monitoramento de transações e categorias criadas, editadas ou excluídas pelo modelo de IA**
 - **Monitoramento de transferências criadas, editadas ou excluídas pelo modelo de IA**\n- **Monitoramento de análises e categorizações automáticas**
 - **Monitoramento de performance e erros de plugins**
-- **Alertas para falhas de comunicação com plugins**
-- **Alertas para operações de escrita não autorizadas ou suspeitas**
+- **Alertas para falhas de comunicação com plugins**\n- **Alertas para operações de escrita não autorizadas ou suspeitas**
 - **Monitoramento de usodo sistema de memória:**
   - **Volume de conversas armazenadas**
   - **Tamanho de armazenamento utilizado**
@@ -411,7 +441,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Índices otimizados para busca rápida por data, palavra-chave e usuário
     - Compressão de dados para otimizar armazenamento
   - **Módulo de armazenamento de solicitações:**
-    - Tabela de solicitações com campos: id, conversa_id, timestamp, tipo_solicitacao, parametros, acao_executada, resultado, status\n    - Relacionamento com tabela de conversas\n  - **Módulo de recuperação de contexto:**
+    - Tabela de solicitações com campos: id, conversa_id, timestamp, tipo_solicitacao, parametros, acao_executada, resultado, status
+    - Relacionamento com tabela de conversas\n  - **Módulo de recuperação de contexto:**
     - Algoritmo de busca semântica para recuperar conversas relevantes
     - Cache de contexto frequentemente acessado
     - Limite configurável de conversas recuperadas por consulta
@@ -483,8 +514,25 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Exportação de resultados filtrados em CSV e Excel**
   - **Índices de banco de dados otimizados para busca e filtragem rápida**
   - **Validação de parâmetros de filtro e ordenação**
+- **Módulo de notificações toast:**
+  - **Sistema de exibição de notificações toast no canto superior direito da tela**
+  - **Notificações temporárias (3 segundos) para ações de cadastro:**
+    - Cadastro de transação
+    - Cadastro de conta bancária
+    - Cadastro de categoria
+  - **Notificação toast fixa para filtros aplicados:**
+    - Exibição no topo da página de transações
+    - Permanece visível enquanto filtros estiverem ativos
+    - Descrição dos filtros ativos na mensagem
+    - Botão 'X' para fechar notificação
+    - Botão 'Limpar Filtros' dentrodo toast
+  - **Componente reutilizável de toast com:**
+    - Animação suave de entrada e saída
+    - Ícones personalizados (check verde, filtro azul)\n    - Cores de fundo diferenciadas (verde claro para sucesso, azul claro para filtros)
+    - Posicionamento fixo e responsivo
+    - Fila de notificações para múltiplas mensagens simultâneas
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
-- Design modular: módulo de importação, processamento, API, UI, conectorIA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**, **gerenciador de transferências**
+- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**, **gerenciador de transferências**, **sistema de notificações toast**
 - **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
   - **Validação de permissões antes de cada operação**
   - **Validação de dados antes de escrita no banco**
@@ -511,8 +559,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de saldo suficiente antes de criar transferências**
   - **Validação de criação de categorias**
   - **Validação de edição de categorias**
-  - **Validação de exclusão de categorias**
-  - **Validação de permissões de escrita**
+  - **Validação de exclusão de categorias**\n  - **Validação de permissões de escrita**
   - **Validação de auditoria de operações de escrita**
   - **Validação de rollback em caso de erro**
 - **Testes do sistema de transferências:**
@@ -527,7 +574,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de exibição de transferências na lista de transações**
   - **Validação de filtro específico para transferências**
   - **Validação de identificação visual de transferências**
-- **Testes de análise e categorização automática:**\n  - Validação de trigger manual após upload e salvamento\n  - Validação de sugestões de categorias existentes\n  - Validação de sugestões de novas categorias
+- **Testes de análise e categorização automática:**
+  - Validação de trigger manual após upload e salvamento\n  - Validação de sugestões de categorias existentes
+  - Validação de sugestões de novas categorias
   - Validação de exibição de popup com lista ordenada de transações\n  - Validação de dropdown de categorias com pré-seleção
   - Validação de cadastro em lote de transações
   - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
@@ -541,7 +590,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de cálculo correto ao adicionar transferências enviadas (diminuição de saldo da origem)**
   - **Validação de cálculo correto ao adicionar transferências recebidas (aumento de saldo do destino)**
   - Validação de atualização de saldo ao editar ou excluir transações
-  - **Validação de atualização de saldo ao editar ou excluir transferências**\n  - **Validação de cálculo de saldo histórico para meses anteriores**
+  - **Validação de atualização de saldo ao editar ou excluir transferências**
+  - **Validação de cálculo de saldo histórico para meses anteriores**
 - **Testes de upload e salvamento de extrato no chatbot:**
   - Validação de upload de arquivo via chatbot\n  - Validação de salvamento seguro na plataforma
   - Validação de feedback visual de progresso
@@ -559,8 +609,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de responsividade de gráficos
   - **Validação de seletor de mês e navegação entre meses**
   - **Validação de atualização de indicadores ao selecionar novo mês**
-  - **Validação de atualização de gráficos ao selecionar novo mês**
-  - **Validação de cálculo correto de dados históricos**
+  - **Validação de atualização de gráficos ao selecionar novo mês**\n  - **Validação de cálculo correto de dados históricos**
   - **Validação de comparação entre meses diferentes**
 - **Testes de filtragem e busca de transações:**
   - **Validação de busca em tempo real por descrição, título e estabelecimento**
@@ -584,6 +633,21 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de performance com múltiplos filtros aplicados**
   - **Validação de atualização em tempo real da lista ao aplicar filtros**
   - **Validação de persistência de filtros ao navegar entre páginas**
+- **Testes de notificações toast:**
+  - **Validação de exibição de toast ao cadastrar transação**
+  - **Validação de exibição de toast ao cadastrar conta bancária**
+  - **Validação de exibição de toast ao cadastrar categoria**
+  - **Validação de duração de3 segundos para toasts temporários**
+  - **Validação de animação suave de entrada e saída**
+  - **Validação de exibição de toast fixo ao aplicar filtros**
+  - **Validação de permanência do toast fixo enquanto filtros estiverem ativos**
+  - **Validação de descrição correta dos filtros ativos no toast**
+  - **Validação de botão 'X' para fechar toast fixo**
+  - **Validação de botão 'Limpar Filtros' dentro do toast**
+  - **Validação de remoção do toast fixo ao limpar todos os filtros**
+  - **Validação de posicionamento correto dos toasts (canto superior direito para temporários, topo da página para fixos)**
+  - **Validação de cores eícones corretos para cada tipo de toast**
+  - **Validação de fila de notificações para múltiplas mensagens simultâneas**
 - **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
 - **Testes do sistema de memória do modelo de IA:**
   - **Validação de armazenamento correto de conversas**
@@ -600,7 +664,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 ### 7.1 Funcionalidades Iniciais
 - Autenticação com MFA
-- Cadastro de contas e cartões
+- Cadastro de contas e cartões\n- **Notificações toast ao cadastrar conta bancária**
 - **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas, despesas pagas, transferências enviadas e transferências recebidas**
 - **Sistema completo de transferências entre contas cadastradas:**
   - Interface de cadastro de transferências
@@ -623,13 +687,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Trigger manual via botão 'Analisar Extrato' no chatbot
   - Sugestão de categorias existentes
   - Sugestão de novas categorias incluídas no dropdown
-  - Interface de revisão em popup antes do cadastro
+  - Interface de revisão em popup antesdo cadastro
   - Cadastro em lote de transações categorizadas
   - Aprendizado contínuo baseado em confirmações do usuário
 - CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
+- **Notificações toast ao cadastrar transação**
 - **CRUD de transferências (incluindo edição de valor, data e descrição)**
 - **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
-- Conciliação manual\n- **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas:**
+- Conciliação manual\n- **Gestão de categorias com CRUD completo**
+- **Notificações toast ao cadastrar categoria**
+- **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas:**
   - **Campo de busca em tempo real:**
     - Busca por descrição, título ou estabelecimento
     - Atualização automática da lista conforme digitação
@@ -643,7 +710,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Botão 'Limpar Filtros' para resetar todos os filtros
     - Badge visual indicando número de filtros ativos
     - Seção de filtros organizada em linha horizontal ou painel lateral retrátil
-  - **Ordenação flexível:**
+    - **Notificação toast fixa ao aplicar filtros:**
+      - Exibição no topo da página de transações
+      - Mensagem com descrição dos filtros ativos
+      - Permanece visível enquanto filtros estiverem ativos
+      - Botão 'X' para fechar notificação
+      - Botão 'Limpar Filtros' dentro do toast
+      - Cor de fundo azul claro (#E3F2FD)\n  - **Ordenação flexível:**
     - **Ordenar por data:** crescente (mais antiga primeiro) ou decrescente (mais recente primeiro)
     - **Ordenar por categoria:** ordem alfabética crescente ou decrescente
     - **Ordenar por valor:** crescente (menor para maior) ou decrescente (maior para menor)
@@ -657,7 +730,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Exibição clara de cada transação com data, descrição, categoria, valor e conta
     - **Identificação visual de transferências comícone específico e exibição de conta origem/destino**
 - **Dashboard expandido com indicadores financeiros e gráficos:**
-  - **Seletor de mês para visualização de dados históricos**\n  - **Navegação entre meses anteriores e futuros**
+  - **Seletor de mês para visualização de dados históricos**
+  - **Navegação entre meses anteriores e futuros**
   - **Botão 'Voltar ao Mês Atual'**
   - Saldo total consolidado (ajustado para o mês selecionado)
   - Receitas e despesas totais do mês (ajustado para o mês selecionado)
@@ -680,8 +754,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Histórico completo de conversas e solicitações anteriores**
   - **Acesso de escrita (write_full):**
     - **Permissão para criar, editar e excluir transações mediante solicitação do usuário**
-    - **Permissão para criar, editar e excluir transferências mediante solicitação do usuário**
-    - **Validação de saldo suficiente antes de criar transferências**
+    - **Permissão para criar, editar e excluir transferências mediante solicitação do usuário**\n    - **Validação de saldo suficiente antes de criar transferências**
     - **Permissão para criar, editar e excluir categorias mediante solicitação do usuário**
     - **Permissão para análise e categorização automática de extratos com cadastro direto**
     - **Interpretação de gráficos e indicadores do dashboard**
@@ -710,11 +783,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Logs deações executadas por plugins**
   - **Visualização de histórico de memória do modelo de IA**
   - **Estatísticas de uso de memória**
-  - **Opção de limpar histórico de memória**
-  - **Opção de exportar histórico de memória**
+  - **Opção de limpar histórico de memória**\n  - **Opção de exportar histórico de memória**
 - Relatório de auditoria de acessos e operações de escrita
-\n### 7.2 Versões Futuras (1.1/1.2)
-- Conciliação automática por Machine Learning
+- **Sistema completo de notificações toast:**
+  - **Notificações temporárias para cadastros (transação, conta, categoria)**
+  - **Notificação fixa para filtros aplicados na página de transações**
+\n### 7.2 Versões Futuras (1.1/1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
 - Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
 - **Marketplace de plugins com plugins pré-aprovados**
@@ -730,6 +804,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Sugestões proativas baseadas em padrões de uso
   - Resumos automáticos de conversas longas
   - Compartilhamento seletivo de histórico entre usuários
+- **Notificações toast avançadas:**
+  - Notificações para alertas de vencimentos
+  - Notificações para gastos acima da média
+  - Notificações para limite de cartão próximo ao máximo
+  - Notificações personalizadas baseadas em preferências do usuário
 \n## 8. Estilo de Design
 
 ### 8.1 Paleta de Cores
@@ -737,109 +816,163 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Cores de apoio: cinza claro (#ECF0F1) para fundos e branco (#FFFFFF) para cards
 - **Cores para gráficos: paleta harmoniosa com azul (#3498DB), verde (#27AE60), laranja (#E67E22), roxo (#9B59B6) e vermelho (#E74C3C)**
 - **Cor específica para transferências: azul claro (#5DADE2) para diferenciação visual**
-
-### 8.2 Layout\n- Layout em cards para organização modular de informações financeiras
+- **Cores para notificações toast:**
+  - Verde claro (#C8E6C9) para toasts de sucesso (cadastros)\n  - Azul claro (#E3F2FD) para toasts informativos (filtros aplicados)
+  - Ícone de check verde (#4CAF50) para sucesso\n  - Ícone de filtro azul (#2196F3) para filtros\n\n### 8.2 Layout\n- Layout em cards para organização modular de informações financeiras
 - Sidebar fixa com navegação principal
+- **Layout responsivo e adaptável para diferentes tamanhos de tela**
+- **Espaçamento consistente entre elementos (16px para espaçamento padrão, 24px para seções)**
 - **Dashboard com grid responsivo para visualização de métricas e gráficos:**
   - **Seletor de mês no topo do dashboard com navegação intuitiva**
-  - Seção superior com indicadores principais em cards destacados
-  - Seção intermediária com gráficos principais em grid 2x2
-  - Seção inferior com gráficos secundários e alertas
-- **Popup centralizado para exibição de resultados de análise de extrato**
-- **Interface de histórico de conversas com layout de timeline**
+  - Seção superior com indicadores principais em cards destacados (grid 3colunas em desktop, 1 coluna em mobile)
+  - Seção intermediária com gráficos principais em grid 2x2 (responsivo para1 coluna em mobile)
+  - Seção inferior com gráficos secundários e alertas (grid flexível)
+- **Popup centralizado para exibição de resultados de análise de extrato:**
+  - Largura máxima de 800px\n  - Altura máxima de 80% da viewport
+  - Scroll interno para lista de transações
+  - Botão de fechar no canto superior direito
+- **Interface de histórico de conversas com layout de timeline:**
+  - Mensagens do usuário alinhadas à direita
+  - Respostas da IA alinhadas à esquerda
+  - Timestamp visível para cada mensagem
 - **Página de transações com layout limpo e funcional:**
   - **Barra de busca proeminente no topo comícone de lupa e placeholder claro**
-  - **Seção de filtros organizada em linha horizontal ou painel lateral retrátil:**
+  - **Seção de filtros organizada em linha horizontal (desktop) ou painel retrátil (mobile):**
     - Dropdowns de filtro comícones representativos (conta, categoria, tipo, data)
     - Chips ou tags visuais para filtros ativos com opção de remoção individual (ícone X)
-    - Badge com número de filtros ativos
+    - Badge com número de filtros ativos posicionado próximo aos filtros
     - Botão 'Limpar Filtros' em destaque quando filtros estiverem aplicados
+  - **Toast fixo de filtros aplicados:**
+    - Posicionamento fixo no topo da lista de transações
+    - Largura completa da área de conteúdo
+    - Padding de 12px vertical e 16px horizontal
+    - Mensagem clara com descrição dos filtros ativos
+    - Botão 'X' no canto direito para fechar\n    - Botão 'Limpar Filtros' alinhado à esquerda da mensagem
   - **Seletor de ordenação visível e acessível no topo da lista:**
     - Dropdown ou botões para selecionar critério de ordenação
     -Ícone de setas indicando direção (crescente/decrescente)
   - **Lista de transações com espaçamento adequado:**
-    - Cards ou linhas de tabela para cada transação
+    - Cards ou linhas de tabela para cada transação (altura mínima de 60px)
     - Exibição clara de data, descrição, categoria, valor e conta
     - **Identificação visual de transferências com ícone de setas bidirecionais e exibição de conta origem/destino**
-    - Destaque visual para termos de busca encontrados
+    - Destaque visual para termos de busca encontrados (fundo amarelo claro)
+    - Hover effect para melhor interatividade
   - **Contador de resultados com formatação clara:**
-    - Exibição de 'Exibindo X de Y transações' no topo ou rodapé da lista
-  - **Paginação na parte inferior para navegação entre páginas**
-  - **Botões de exportação (CSV e Excel) visíveis e acessíveis**
+    - Exibição de 'Exibindo X de Y transações' no topo da lista
+    - Fonte em tamanho 14px, cor cinza escuro (#616161)
+  - **Paginação na parte inferior para navegação entre páginas:**
+    - Botões de navegação (anterior, próximo, primeira, última)\n    - Indicador de página atual\n    - Seletor de itens por página (25, 50, 100)\n  - **Botões de exportação (CSV e Excel) visíveis e acessíveis:**
+    - Posicionados próximos ao contador de resultados
+    - Ícones de download com tooltip explicativo
 - **Interface de cadastro de transferências:**
-  - Modal ou página dedicada com campos claros\n  - Dropdowns para seleção de conta origem e destino
-  - Campo de valor com validação\n  - Campo de data com seletor de calendário
-  - Campo de descrição opcional
-  - Exibição de saldo disponível na conta origem
-  - Mensagem de erro clara em caso de saldo insuficiente
+  - Modal ou página dedicada com campos claros
+  - Dropdowns para seleção de conta origem e destino (largura completa)
+  - Campo de valor com validação e formatação de moeda
+  - Campo de data com seletor de calendário
+  - Campo de descrição opcional (textarea com altura mínima de 80px)
+  - Exibição de saldo disponível na conta origem em destaque
+  - Mensagem de erro clara em caso de saldo insuficiente (cor vermelha,ícone de alerta)
+- **Notificações toast:**
+  - **Toasts temporários (cadastros):**
+    - Posicionamento fixo no canto superior direito
+    - Largura de 320px
+    - Padding de 16px
+    - Sombra suave para destaque
+    - Animação de slide-in da direita ao aparecer
+    - Animação de fade-out ao desaparecer
+  - **Toast fixo (filtros):**
+    - Posicionamento fixo no topo da lista de transações
+    - Largura completa da área de conteúdo
+    - Padding de 12px vertical e 16px horizontal
+    - Sem animação de saída (permanece até ser fechado ou filtros removidos)
 \n### 8.3 Elementos Visuais
-- Ícones minimalistas para categorias e ações
+- Ícones minimalistas para categorias e ações (biblioteca Material Icons ou Font Awesome)
 - **Gráficos limpos e legíveis:**
-  - Linhas suaves para gráficos de evolução
-  - Cores distintas para gráficos de pizza
-  - Barras com espaçamento adequado
-  - **Gráfico de fluxo com setas indicando direção das transferências**
-  - Tooltips informativos ao passar o mouse
-  - Legendas claras e posicionadas estrategicamente
-- Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito
-- **Botão de upload de arquivo no chatbot (ícone de clipe ou upload)**
-- **Botão 'Analisar Extrato' no chatbot após upload (ícone de lupa ou análise)**
+  - Linhas suaves para gráficos de evolução (espessura de 2px)
+  - Cores distintas para gráficos de pizza (paleta harmoniosa)
+  - Barras com espaçamento adequado (20% de gap entre barras)
+  - **Gráfico de fluxo com setas indicando direção das transferências (espessura proporcional ao valor)**
+  - Tooltips informativos ao passar o mouse (fundo branco, sombra suave, padding de 8px)
+  - Legendas claras e posicionadas estrategicamente (abaixo ou ao lado do gráfico)
+  - Grid de fundo sutil para facilitar leitura de valores
+- Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito (60px x 60px, sombra elevada)\n- **Botão de upload de arquivo no chatbot (ícone de clipe ou upload, tamanho 24px)**
+- **Botão 'Analisar Extrato' no chatbot após upload (ícone de lupa ou análise, cor azul, tamanho 24px)**
 - **Popup de resultados com:**
-  - Lista ordenada de transações por data\n  - Dropdown de categoria ao lado de cada transação
-  - Categoria sugerida pré-selecionada no dropdown
-  - Botão 'Cadastrar Transações' em destaque na parte inferior
+  - Lista ordenada de transações por data (cada item com altura mínima de 60px)\n  - Dropdown de categoria ao lado de cada transação (largura de 200px)
+  - Categoria sugerida pré-selecionada no dropdown (cor de fundo verde claro para destaque)
+  - Botão 'Cadastrar Transações' em destaque na parte inferior (cor verde, largura completa, altura de 48px)
 - Bordas suaves com raio de 8px para cards, botões e popup
-- Sombras sutis para criar hierarquia visual
-- Badge de status com ícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração
-- Indicador visual de acesso de leitura ativo (ícone de olho verde) quando o modelo de IA tiver permissão completa de leitura
-- **Indicador visual de acesso de escrita ativo (ícone de lápis verde) quando o modelo de IA tiver permissão completa de escrita**
-- **Indicador visual de permissão de cadastro ativa (ícone de check verde) quando o modelo de IA tiver permissão para criar transações**
-- **Indicador visual de permissão de análise ativa (ícone de lupa verde) quando o modelo de IA tiver permissão para analisar e categorizar extratos**
-- **Badge de status para plugins (ícone de check verde paraativo, ícone cinza para inativo)**
-- **Ícone de engrenagem para acesso às configurações de plugins**
-- **Exibição destacada do saldo atual da conta na página de contas com formatação clara (valor em negrito, cor verde para saldo positivo, cor vermelha para saldo negativo)**
-- **Cards de indicadores comícones representativos e valores em destaque**
-- **Animações suaves de transição ao carregar gráficos**
+- Sombras sutis para criar hierarquia visual (elevação de 2dp para cards,4dp para botões, 8dp para popup)
+- Badge de status com ícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração (tamanho 16px)
+- Indicador visual de acesso de leitura ativo (ícone de olho verde, tamanho 20px) quando o modelo de IA tiver permissão completa de leitura
+- **Indicador visual de acesso de escrita ativo (ícone de lápis verde, tamanho 20px) quando o modelo de IA tiver permissão completa de escrita**
+- **Indicador visual de permissão de cadastro ativa (ícone de check verde, tamanho 20px) quando o modelo de IA tiver permissão para criar transações**
+- **Indicador visual de permissão de análise ativa (ícone de lupa verde, tamanho 20px) quando o modelo de IA tiver permissão para analisar e categorizar extratos**
+- **Badge de status para plugins (ícone de check verde paraativo, ícone cinza para inativo, tamanho 16px)**
+- **Ícone de engrenagem para acesso às configurações de plugins (tamanho 24px)**
+- **Exibição destacada do saldo atual da conta na página de contas com formatação clara:**
+  - Valor em negrito, tamanho de fonte 24px
+  - Cor verde (#4CAF50) para saldo positivo
+  - Cor vermelha (#F44336) para saldo negativo
+  - Prefixo 'R$' para indicar moeda
+- **Cards de indicadores comícones representativos e valores em destaque:**
+  - Ícone no canto superior esquerdo (tamanho 32px)
+  - Valor principal em tamanho de fonte 28px, negrito
+  - Rótulo em tamanho de fonte 14px, cor cinza\n  - Variação percentual em tamanho de fonte 12px, cor verde (positivo) ou vermelha (negativo)\n- **Animações suaves de transição ao carregar gráficos (duração de 300ms, easing ease-in-out)**
 - **Seletor de mês com dropdown ou calendário estilizado:**
-  - Botões de navegação (setas para mês anterior e próximo)
-  - Exibição clara do mês e ano selecionado
-  - Botão 'Voltar ao Mês Atual' em destaque
-  - Indicador visual do mês atual
-- **Indicador visual de memória ativa (ícone de cérebro ou banco de dados verde) quando sistema de memória estiver habilitado**
-- **Badge com número de conversas armazenadas no histórico**
-- **Ícone de histórico para acesso rápido às conversas anteriores**
-- **Ícone específico para transferências: setas bidirecionais em azul claro (#5DADE2)**
-- **Tag visual 'Transferência' em cards de transações que são transferências**
+  - Botões de navegação (setas para mês anterior e próximo, tamanho 32px)
+  - Exibição clara do mês e ano selecionado (fonte18px, negrito)
+  - Botão 'Voltar ao Mês Atual' em destaque (cor azul, tamanho 14px)
+  - Indicador visual do mês atual (borda azul ao redor da data)
+- **Indicador visual de memória ativa (ícone de cérebro ou banco de dados verde, tamanho 20px) quando sistema de memória estiver habilitado**
+- **Badge com número de conversas armazenadas no histórico (fundo azul, texto branco, tamanho 12px)**
+- **Ícone de histórico para acesso rápido às conversas anteriores (tamanho 24px)**
+- **Ícone específico para transferências: setas bidirecionais em azul claro (#5DADE2, tamanho 20px)**
+- **Tag visual 'Transferência' em cards de transações que são transferências (fundo azul claro, texto azul escuro, padding4px 8px, border-radius 4px)**
 - **Elementos de filtragem e busca na página de transações:**
-  - **Campo de busca com ícone de lupa e placeholder claro ('Buscar por descrição, título ou estabelecimento')**
-  - **Dropdowns de filtro com ícones representativos:**
-    - Ícone de banco para filtro de conta bancária
-    - Ícone de tag para filtro de categoria
-    - Ícone de seta para cima/baixo para filtro de tipo (receita/despesa/transferência)
-    - Ícone de calendário para filtro de data
-- **Chips ou tags visuais para filtros ativos:**\n    - Exibição de cada filtro aplicado como chip colorido
-    - Ícone X em cada chip para remoção individual
-    - Cor de destaque para diferenciar de outros elementos
-  - **Badge com número de filtros ativos:**
-    - Círculo ou retângulo com número de filtros aplicados
-    - Posicionado próximo ao botão de filtros ou no topo da lista
+  - **Campo de busca com ícone de lupa e placeholder claro:**
+    - Ícone de lupa no lado esquerdo (tamanho 20px, cor cinza)
+    - Placeholder:'Buscar por descrição, título ou estabelecimento' (cor cinza claro)
+    - Borda sutil (1px, cor cinza claro)
+    - Foco com borda azul (2px)\n  - **Dropdowns de filtro com ícones representativos:**
+    -Ícone de banco para filtro de conta bancária (tamanho 20px)\n    - Ícone de tag para filtro de categoria (tamanho 20px)
+    - Ícone de seta para cima/baixo para filtro de tipo (tamanho 20px)
+    - Ícone de calendário para filtro de data (tamanho 20px)
+    - Cada dropdown com largura mínima de 180px
+  - **Chips ou tags visuais para filtros ativos:**
+    - Exibição de cada filtro aplicado como chip colorido (fundo azul claro, texto azul escuro)\n    - Ícone X em cada chip para remoção individual (tamanho 16px, cor azul escuro)
+    - Padding de 6px 12px
+    - Border-radius de 16px
+    - Margem de 4px entre chips\n  - **Badge com número de filtros ativos:**
+    - Círculo com número de filtros aplicados (fundo azul, texto branco)\n    - Tamanho de20px x 20px
+    - Posicionado no canto superior direito do ícone de filtros
   - **Botão 'Limpar Filtros' em destaque:**
     - Visível apenas quando há filtros aplicados
-    - Cor de destaque (ex: vermelho ou laranja) para chamar atenção
-    - Ícone de X ou borracha para indicar ação de limpeza
+    - Cor de destaque (vermelho #F44336 ou laranja #FF9800)
+    - Ícone de X ou borracha para indicar ação de limpeza (tamanho 20px)\n    - Padding de 8px 16px
+    - Border-radius de 4px
   - **Seletor de ordenação com indicador visual:**
     - Dropdown ou botões para selecionar critério (data, categoria, valor)
-    - Seta para cima (crescente) ou para baixo (decrescente) ao lado do critério selecionado
-    - Cor de destaque para indicar ordenação ativa
+    - Seta para cima (crescente) ou para baixo (decrescente) ao lado do critério selecionado (tamanho 16px)
+    - Cor de destaque (azul) para indicar ordenação ativa
   - **Contador de resultados com formatação clara:**
-    - Texto em destaque:'Exibindo 25 de 150 transações'
-    - Posicionado no topo ou rodapé da lista
-    - Atualização em tempo real conforme filtros aplicados
+    - Texto em destaque: 'Exibindo 25 de 150 transações'
+    - Fonte em tamanho 14px, cor cinza escuro (#616161)
+    - Posicionado no topo da lista com margem de 16px
   - **Botões de exportação (CSV e Excel):**
-    - Ícones de download ou arquivo
+    - Ícones de download ou arquivo (tamanho 20px)
     - Posicionados próximos ao contador de resultados
-    - Tooltip explicativo ao passar o mouse
-\n## 9. Referências de Interface
+    - Tooltip explicativo ao passar o mouse ('Exportar como CSV', 'Exportar como Excel')
+    - Cor azul para indicar ação disponível\n- **Notificações toast:**
+  - **Toasts temporários (cadastros):**
+    - Fundo verde claro (#C8E6C9)\n    - Ícone de check verde (#4CAF50, tamanho 24px) no lado esquerdo
+    - Texto em cor verde escuro (#2E7D32, tamanho 14px)\n    - Sombra suave (elevação de 4dp)\n    - Border-radius de 4px
+  - **Toast fixo (filtros):**
+    - Fundo azul claro (#E3F2FD)\n    - Ícone de filtro azul (#2196F3, tamanho 20px) no lado esquerdo\n    - Texto em cor azul escuro (#1565C0, tamanho 14px)
+    - Botão 'X' no canto direito (tamanho 20px, cor azul escuro)
+    - Botão 'Limpar Filtros' com fundo azul (#2196F3), texto branco, padding 6px 12px, border-radius 4px
+    - Sem sombra (integrado ao layout)
+\n##9. Referências de Interface
 
 ### 9.1 Imagens de Referência
 - Exemplo de mensagem de erro de importação OFX: {2C7B1F61-7FE3-4148-B737-A544FBDEEF2D}.png

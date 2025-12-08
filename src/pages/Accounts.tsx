@@ -163,14 +163,19 @@ export default function Accounts() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Contas Bancárias</h1>
-        <div className="flex gap-2">
+    <div className="container mx-auto p-4 xl:p-8 space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
+        <div>
+          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Contas Bancárias</h1>
+          <p className="text-muted-foreground mt-1">Gerencie suas contas e acompanhe seus saldos</p>
+        </div>
+        <div className="flex gap-2 w-full xl:w-auto">
           <Button
             variant="outline"
             onClick={handleRecalculateBalances}
             disabled={isRecalculating}
+            className="flex-1 xl:flex-none"
           >
             {isRecalculating ? (
               <>
@@ -189,8 +194,8 @@ export default function Accounts() {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
+              <Button size="lg" className="flex-1 xl:flex-none">
+                <Plus className="mr-2 h-5 w-5" />
                 Nova Conta
               </Button>
             </DialogTrigger>
@@ -280,27 +285,30 @@ export default function Accounts() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {accounts.map((account) => (
-          <Card key={account.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium">{account.name}</CardTitle>
-              <Building2 className="h-5 w-5 text-muted-foreground" />
+          <Card key={account.id} className="shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-lg font-semibold">{account.name}</CardTitle>
+              <div className={`p-2 rounded-full ${account.balance >= 0 ? 'bg-income/10' : 'bg-expense/10'}`}>
+                <Building2 className={`h-5 w-5 ${account.balance >= 0 ? 'text-income' : 'text-expense'}`} />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {account.bank && (
-                  <p className="text-sm text-muted-foreground">{account.bank}</p>
+                  <p className="text-sm text-muted-foreground font-medium">{account.bank}</p>
                 )}
                 {account.agency && account.account_number && (
                   <p className="text-sm text-muted-foreground">
                     Ag: {account.agency} / Conta: {account.account_number}
                   </p>
                 )}
-                <div className="flex items-center gap-2">
-                  <div>
+                <div className="flex items-center gap-2 pt-2">
+                  <div className="flex-1">
                     <p className="text-xs text-muted-foreground mb-1">Saldo Atual</p>
-                    <p className={`text-2xl font-bold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`text-2xl font-bold flex items-center gap-1 ${account.balance >= 0 ? 'text-income' : 'text-expense'}`}>
+                      {account.balance >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
                       {formatCurrency(account.balance)}
                     </p>
                   </div>
@@ -319,20 +327,24 @@ export default function Accounts() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-3 border-t">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => openEditDialog(account)}
+                    className="flex-1"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(account.id)}
+                    className="flex-1"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
                   </Button>
                 </div>
               </div>

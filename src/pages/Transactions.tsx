@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
+import { ActiveFiltersBar } from '@/components/common/FilterBadge';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
 
 export default function Transactions() {
@@ -354,6 +355,95 @@ export default function Transactions() {
   const hasActiveFilters = searchTerm || filterAccount !== 'all' || filterCategory !== 'all' || 
     filterType !== 'all' || filterDateFrom || filterDateTo || sortBy !== 'date-desc';
 
+  // Construir lista de filtros ativos para exibição
+  const activeFilters = useMemo(() => {
+    const filters: Array<{
+      key: string;
+      label: string;
+      value: string;
+      onRemove: () => void;
+    }> = [];
+
+    if (searchTerm) {
+      filters.push({
+        key: 'search',
+        label: 'Busca',
+        value: searchTerm,
+        onRemove: () => setSearchTerm('')
+      });
+    }
+
+    if (filterAccount !== 'all') {
+      const account = accounts.find(a => a.id === filterAccount);
+      filters.push({
+        key: 'account',
+        label: 'Conta',
+        value: account?.name || 'Desconhecida',
+        onRemove: () => setFilterAccount('all')
+      });
+    }
+
+    if (filterCategory !== 'all') {
+      const category = categories.find(c => c.id === filterCategory);
+      filters.push({
+        key: 'category',
+        label: 'Categoria',
+        value: category?.name || 'Desconhecida',
+        onRemove: () => setFilterCategory('all')
+      });
+    }
+
+    if (filterType !== 'all') {
+      const typeLabels = {
+        income: 'Receitas',
+        expense: 'Despesas',
+        transfer: 'Transferências'
+      };
+      filters.push({
+        key: 'type',
+        label: 'Tipo',
+        value: typeLabels[filterType as keyof typeof typeLabels] || filterType,
+        onRemove: () => setFilterType('all')
+      });
+    }
+
+    if (filterDateFrom) {
+      filters.push({
+        key: 'dateFrom',
+        label: 'Data inicial',
+        value: formatDate(filterDateFrom),
+        onRemove: () => setFilterDateFrom('')
+      });
+    }
+
+    if (filterDateTo) {
+      filters.push({
+        key: 'dateTo',
+        label: 'Data final',
+        value: formatDate(filterDateTo),
+        onRemove: () => setFilterDateTo('')
+      });
+    }
+
+    if (sortBy !== 'date-desc') {
+      const sortLabels = {
+        'date-asc': 'Data (crescente)',
+        'date-desc': 'Data (decrescente)',
+        'category': 'Categoria',
+        'amount-desc': 'Valor (maior)',
+        'amount-asc': 'Valor (menor)'
+      };
+      filters.push({
+        key: 'sort',
+        label: 'Ordenação',
+        value: sortLabels[sortBy as keyof typeof sortLabels] || sortBy,
+        onRemove: () => setSortBy('date-desc')
+      });
+    }
+
+    return filters;
+  }, [searchTerm, filterAccount, filterCategory, filterType, filterDateFrom, filterDateTo, sortBy, accounts, categories]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -366,13 +456,17 @@ export default function Transactions() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Transações</h1>
+    <div className="container mx-auto p-4 xl:p-8 space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
+        <div>
+          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
+          <p className="text-muted-foreground mt-1">Gerencie suas receitas, despesas e transferências</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button size="lg" className="w-full xl:w-auto">
+              <Plus className="mr-2 h-5 w-5" />
               Nova Transação
             </Button>
           </DialogTrigger>
@@ -579,36 +673,40 @@ export default function Transactions() {
       </div>
 
       {/* Barra de Busca e Filtros */}
-      <Card>
-        <CardContent className="p-4 space-y-4">
+      <Card className="shadow-sm">
+        <CardContent className="p-6 space-y-4">
           {/* Busca e botões de ação */}
-          <div className="flex gap-2">
+          <div className="flex flex-col xl:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar transações por descrição..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11"
               />
             </div>
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="mr-2 h-4 w-4" />
-              Filtros
-            </Button>
-            {hasActiveFilters && (
+            <div className="flex gap-2">
               <Button
-                variant="ghost"
-                onClick={clearFilters}
-                title="Limpar filtros"
+                variant={showFilters ? "default" : "outline"}
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex-1 xl:flex-none"
               >
-                <X className="mr-2 h-4 w-4" />
-                Limpar
+                <Filter className="mr-2 h-4 w-4" />
+                Filtros
               </Button>
-            )}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  onClick={clearFilters}
+                  title="Limpar filtros"
+                  className="flex-1 xl:flex-none"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Limpar
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Painel de Filtros */}
@@ -705,6 +803,16 @@ export default function Transactions() {
             </div>
           )}
 
+          {/* Barra de Filtros Ativos */}
+          {activeFilters.length > 0 && (
+            <div className="pt-4">
+              <ActiveFiltersBar 
+                filters={activeFilters}
+                onClearAll={clearFilters}
+              />
+            </div>
+          )}
+
           {/* Contador de resultados */}
           <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
             <span>
@@ -720,56 +828,70 @@ export default function Transactions() {
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
-        {filteredAndSortedTransactions.map((tx) => {
-          const category = categories.find(c => c.id === tx.category_id);
-          const account = accounts.find(a => a.id === tx.account_id);
-          const destinationAccount = tx.is_transfer && tx.transfer_destination_account_id 
-            ? accounts.find(a => a.id === tx.transfer_destination_account_id)
-            : null;
-          
-          return (
-            <Card key={tx.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-full ${
-                    tx.is_transfer 
-                      ? 'bg-primary/10' 
-                      : tx.type === 'income' 
-                        ? 'bg-income/10' 
-                        : 'bg-expense/10'
-                  }`}>
-                    {tx.is_transfer ? (
-                      <ArrowRightLeft className="h-5 w-5 text-primary" />
-                    ) : tx.type === 'income' ? (
-                      <TrendingUp className="h-5 w-5 text-income" />
-                    ) : (
-                      <TrendingDown className="h-5 w-5 text-expense" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{tx.description || 'Sem descrição'}</p>
-                    <p className="text-sm text-muted-foreground">
+      {/* Lista de Transações */}
+      <div className="space-y-3">
+        {filteredAndSortedTransactions.length === 0 ? (
+          <Card className="shadow-sm">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <Search className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-lg font-medium text-muted-foreground">Nenhuma transação encontrada</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {hasActiveFilters ? 'Tente ajustar os filtros' : 'Comece criando uma nova transação'}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredAndSortedTransactions.map((tx) => {
+            const category = categories.find(c => c.id === tx.category_id);
+            const account = accounts.find(a => a.id === tx.account_id);
+            const destinationAccount = tx.is_transfer && tx.transfer_destination_account_id 
+              ? accounts.find(a => a.id === tx.transfer_destination_account_id)
+              : null;
+            
+            return (
+              <Card key={tx.id} className="shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="flex flex-col xl:flex-row items-start xl:items-center justify-between p-5 gap-4">
+                  <div className="flex items-start xl:items-center gap-4 flex-1 min-w-0">
+                    <div className={`p-3 rounded-full shrink-0 ${
+                      tx.is_transfer 
+                        ? 'bg-primary/10' 
+                        : tx.type === 'income' 
+                          ? 'bg-income/10' 
+                          : 'bg-expense/10'
+                    }`}>
                       {tx.is_transfer ? (
-                        <>
-                          Transferência: {account?.name || 'Conta origem'} → {destinationAccount?.name || 'Conta destino'} • {formatDate(tx.date)}
-                        </>
+                        <ArrowRightLeft className="h-5 w-5 text-primary" />
+                      ) : tx.type === 'income' ? (
+                        <TrendingUp className="h-5 w-5 text-income" />
                       ) : (
-                        <>
-                          {category?.icon} {category?.name || 'Sem categoria'} • {account?.name || 'Sem conta'} • {formatDate(tx.date)}
-                        </>
+                        <TrendingDown className="h-5 w-5 text-expense" />
                       )}
-                    </p>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-base truncate">{tx.description || 'Sem descrição'}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {tx.is_transfer ? (
+                          <>
+                            Transferência: {account?.name || 'Conta origem'} → {destinationAccount?.name || 'Conta destino'} • {formatDate(tx.date)}
+                          </>
+                        ) : (
+                          <>
+                            {category?.icon} {category?.name || 'Sem categoria'} • {account?.name || 'Sem conta'} • {formatDate(tx.date)}
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className={`text-lg font-bold ${
-                    tx.is_transfer 
-                      ? 'text-primary' 
-                      : tx.type === 'income' 
-                        ? 'text-income' 
-                        : 'text-expense'
-                  }`}>
+                  <div className="flex items-center gap-3 xl:gap-4 w-full xl:w-auto justify-between xl:justify-end">
+                    <div className={`text-xl font-bold ${
+                      tx.is_transfer 
+                        ? 'text-primary' 
+                        : tx.type === 'income' 
+                          ? 'text-income' 
+                          : 'text-expense'
+                    }`}>
                     {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
                   </div>
                   <div className="flex gap-2">
@@ -796,33 +918,9 @@ export default function Transactions() {
               </CardContent>
             </Card>
           );
-        })}
+        })
+        )}
       </div>
-
-      {filteredAndSortedTransactions.length === 0 && transactions.length > 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-lg font-medium mb-2">Nenhuma transação encontrada</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Tente ajustar os filtros ou buscar por outros termos
-            </p>
-            <Button variant="outline" onClick={clearFilters}>
-              Limpar Filtros
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {transactions.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-lg font-medium mb-2">Nenhuma transação registrada</p>
-            <p className="text-sm text-muted-foreground">
-              Comece adicionando suas receitas e despesas
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
