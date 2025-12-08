@@ -51,6 +51,18 @@ const routes: RouteConfig[] = [
     visible: true,
     children: [
       {
+        name: 'Contas a Pagar',
+        path: '/bills-to-pay',
+        element: <BillsToPay />,
+        visible: true
+      },
+      {
+        name: 'Contas a Receber',
+        path: '/bills-to-receive',
+        element: <BillsToReceive />,
+        visible: true
+      },
+      {
         name: 'Importar Extrato',
         path: '/import-statements',
         element: <ImportStatements />,
@@ -86,18 +98,6 @@ const routes: RouteConfig[] = [
     name: 'Previsão Financeira',
     path: '/forecast',
     element: <ForecastDashboard />,
-    visible: true
-  },
-  {
-    name: 'Contas a Pagar',
-    path: '/bills-to-pay',
-    element: <BillsToPay />,
-    visible: true
-  },
-  {
-    name: 'Contas a Receber',
-    path: '/bills-to-receive',
-    element: <BillsToReceive />,
     visible: true
   },
   {
