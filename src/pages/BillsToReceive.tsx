@@ -51,7 +51,7 @@ export default function BillsToReceive() {
   useEffect(() => {
     const initUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (userId) {
+      if (user) {
         setUserId(user.id);
       }
     };
