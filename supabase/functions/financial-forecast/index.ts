@@ -28,6 +28,21 @@ interface ForecastResult {
 }
 
 Deno.serve(async (req: Request) => {
+  // CORS headers
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+
+  // Handle CORS preflight request
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
+
   try {
     // Parse request body
     const { user_id } = await req.json();
@@ -35,7 +50,13 @@ Deno.serve(async (req: Request) => {
     if (!user_id) {
       return new Response(
         JSON.stringify({ error: "user_id é obrigatório" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
       );
     }
 
@@ -138,13 +159,25 @@ Deno.serve(async (req: Request) => {
         forecast_id: savedForecast.id,
         message: "Previsão financeira gerada com sucesso",
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { 
+        status: 200, 
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        } 
+      }
     );
   } catch (error) {
     console.error("Erro ao gerar previsão:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Erro interno do servidor" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { 
+        status: 500, 
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        } 
+      }
     );
   }
 });
