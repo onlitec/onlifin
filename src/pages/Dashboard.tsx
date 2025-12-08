@@ -205,21 +205,17 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full">
-        {/* Sidebar Skeleton */}
-        <div className="w-64 border-r p-4 space-y-4">
-          <Skeleton className="h-8 w-full bg-muted" />
-          <Skeleton className="h-10 w-full bg-muted" />
-          <Skeleton className="h-10 w-full bg-muted" />
+      <div className="p-6 space-y-6">
+        <Skeleton className="h-12 w-64 bg-muted" />
+        <div className="flex gap-3">
+          <Skeleton className="h-10 w-40 bg-muted" />
+          <Skeleton className="h-10 w-32 bg-muted" />
+          <Skeleton className="h-10 w-32 bg-muted" />
         </div>
-        {/* Main Content Skeleton */}
-        <div className="flex-1 p-6 space-y-6">
-          <Skeleton className="h-12 w-64 bg-muted" />
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32 bg-muted" />
-            ))}
-          </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 bg-muted" />
+          ))}
         </div>
       </div>
     );
@@ -231,103 +227,61 @@ export default function Dashboard() {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   return (
-    <div className="flex h-full">
-      {/* Sidebar com Filtro de Data */}
-      <div className="w-64 border-r bg-card p-4 space-y-6">
-        <div>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Período
-          </h2>
-          
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Mês</label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map(month => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Ano</label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map(year => (
-                    <SelectItem key={year.value} value={year.value}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {
-                const now = new Date();
-                setSelectedMonth(now.getMonth().toString());
-                setSelectedYear(now.getFullYear().toString());
-              }}
-            >
-              Mês Atual
-            </Button>
-          </div>
-        </div>
-
-        {/* Status Geral */}
-        <div className="pt-4 border-t">
-          <Badge 
-            variant={isPositiveBalance ? "default" : "destructive"} 
-            className="w-full justify-center py-2"
-          >
-            {isPositiveBalance ? '✓ Saldo Positivo' : '⚠ Saldo Negativo'}
-          </Badge>
-        </div>
-
-        {/* Alertas Rápidos */}
-        {forecast && forecast.alerts && forecast.alerts.length > 0 && (
-          <div className="pt-4 border-t">
-            <h3 className="text-sm font-semibold mb-2 flex items-center gap-1">
-              <AlertTriangle className="h-4 w-4 text-yellow-500" />
-              Alertas
-            </h3>
-            <div className="space-y-2">
-              {forecast.alerts.slice(0, 3).map((alert, idx) => (
-                <div 
-                  key={idx}
-                  className="text-xs p-2 rounded bg-yellow-500/10 border border-yellow-500/20"
-                >
-                  {alert.descricao}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
+        <p className="text-muted-foreground mt-1">
+          {months.find(m => m.value === selectedMonth)?.label} de {selectedYear}
+        </p>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-6 space-y-6">
-          {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
-            <p className="text-muted-foreground mt-1">
-              {months.find(m => m.value === selectedMonth)?.label} de {selectedYear}
-            </p>
-          </div>
+      {/* Filtros de Data - Horizontal */}
+      <div className="flex items-end gap-3">
+        <div className="flex-1 max-w-[200px]">
+          <label className="text-sm font-medium mb-1.5 block">Mês</label>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map(month => (
+                <SelectItem key={month.value} value={month.value}>
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex-1 max-w-[150px]">
+          <label className="text-sm font-medium mb-1.5 block">Ano</label>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map(year => (
+                <SelectItem key={year.value} value={year.value}>
+                  {year.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button 
+          variant="default"
+          className="h-10"
+          onClick={() => {
+            const now = new Date();
+            setSelectedMonth(now.getMonth().toString());
+            setSelectedYear(now.getFullYear().toString());
+          }}
+        >
+          Mês Atual
+        </Button>
+      </div>
 
           {/* Cards de Estatísticas Principais */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -591,8 +545,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           )}
-        </div>
-      </div>
     </div>
   );
 }
