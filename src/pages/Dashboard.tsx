@@ -228,59 +228,61 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
-        <p className="text-muted-foreground mt-1">
-          {months.find(m => m.value === selectedMonth)?.label} de {selectedYear}
-        </p>
-      </div>
-
-      {/* Filtros de Data - Horizontal */}
-      <div className="flex items-end gap-3">
-        <div className="flex-1 max-w-[200px]">
-          <label className="text-sm font-medium mb-1.5 block">Mês</label>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map(month => (
-                <SelectItem key={month.value} value={month.value}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Header e Filtros */}
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
+          <p className="text-muted-foreground mt-1">
+            {months.find(m => m.value === selectedMonth)?.label} de {selectedYear}
+          </p>
         </div>
 
-        <div className="flex-1 max-w-[150px]">
-          <label className="text-sm font-medium mb-1.5 block">Ano</label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map(year => (
-                <SelectItem key={year.value} value={year.value}>
-                  {year.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Filtros de Data - Horizontal */}
+        <div className="flex items-end gap-3">
+          <div className="w-[180px]">
+            <label className="text-sm font-medium mb-1.5 block">Mês</label>
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map(month => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Button 
-          variant="default"
-          className="h-10"
-          onClick={() => {
-            const now = new Date();
-            setSelectedMonth(now.getMonth().toString());
-            setSelectedYear(now.getFullYear().toString());
-          }}
-        >
-          Mês Atual
-        </Button>
+          <div className="w-[140px]">
+            <label className="text-sm font-medium mb-1.5 block">Ano</label>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map(year => (
+                  <SelectItem key={year.value} value={year.value}>
+                    {year.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button 
+            variant="default"
+            className="h-10 px-6"
+            onClick={() => {
+              const now = new Date();
+              setSelectedMonth(now.getMonth().toString());
+              setSelectedYear(now.getFullYear().toString());
+            }}
+          >
+            Mês Atual
+          </Button>
+        </div>
       </div>
 
           {/* Cards de Estatísticas Principais */}
