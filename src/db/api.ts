@@ -11,7 +11,11 @@ import type {
   TransactionWithDetails,
   DashboardStats,
   CategoryExpense,
-  MonthlyData
+  MonthlyData,
+  BillToPay,
+  BillToReceive,
+  FinancialForecast,
+  Notification
 } from '@/types/types';
 
 export const profilesApi = {
@@ -652,5 +656,314 @@ export const importHistoryApi = {
     
     if (error) throw error;
     return data;
+  }
+};
+
+// Bills To Pay API
+export const billsToPayApi = {
+  async getAll(userId: string): Promise<BillToPay[]> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .select('*')
+      .eq('user_id', userId)
+      .order('due_date', { ascending: true });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getById(id: string): Promise<BillToPay | null> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async getPending(userId: string): Promise<BillToPay[]> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .order('due_date', { ascending: true });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getOverdue(userId: string): Promise<BillToPay[]> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'overdue')
+      .order('due_date', { ascending: true });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async create(bill: Omit<BillToPay, 'id' | 'created_at' | 'updated_at'>): Promise<BillToPay | null> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .insert(bill)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: Partial<BillToPay>): Promise<BillToPay | null> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async markAsPaid(id: string, paidDate: string): Promise<BillToPay | null> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .update({ 
+        status: 'paid', 
+        paid_date: paidDate,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('bills_to_pay')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  }
+};
+
+// Bills To Receive API
+export const billsToReceiveApi = {
+  async getAll(userId: string): Promise<BillToReceive[]> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .select('*')
+      .eq('user_id', userId)
+      .order('due_date', { ascending: true });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getById(id: string): Promise<BillToReceive | null> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async getPending(userId: string): Promise<BillToReceive[]> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .order('due_date', { ascending: true });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getOverdue(userId: string): Promise<BillToReceive[]> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'overdue')
+      .order('due_date', { ascending: true });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async create(bill: Omit<BillToReceive, 'id' | 'created_at' | 'updated_at'>): Promise<BillToReceive | null> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .insert(bill)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: Partial<BillToReceive>): Promise<BillToReceive | null> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async markAsReceived(id: string, receivedDate: string): Promise<BillToReceive | null> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .update({ 
+        status: 'received', 
+        received_date: receivedDate,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('bills_to_receive')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  }
+};
+
+// Financial Forecasts API
+export const forecastsApi = {
+  async getLatest(userId: string): Promise<FinancialForecast | null> {
+    const { data, error } = await supabase
+      .from('financial_forecasts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('calculation_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async getAll(userId: string): Promise<FinancialForecast[]> {
+    const { data, error } = await supabase
+      .from('financial_forecasts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('calculation_date', { ascending: false });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getById(id: string): Promise<FinancialForecast | null> {
+    const { data, error } = await supabase
+      .from('financial_forecasts')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async triggerGeneration(userId: string): Promise<void> {
+    // Chama a Edge Function para gerar previsão
+    const { error } = await supabase.functions.invoke('financial-forecast', {
+      body: { user_id: userId }
+    });
+    
+    if (error) throw error;
+  }
+};
+
+// Notifications API
+export const notificationsApi = {
+  async getAll(userId: string): Promise<Notification[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getUnread(userId: string): Promise<Notification[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_read', false)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getUnreadCount(userId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+    
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async markAsRead(id: string): Promise<Notification | null> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async markAllAsRead(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+    
+    if (error) throw error;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   }
 };

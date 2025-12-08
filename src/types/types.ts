@@ -129,3 +129,78 @@ export interface MonthlyData {
   income: number;
   expenses: number;
 }
+
+// Bills and Forecasts Types
+export type BillStatus = 'pending' | 'paid' | 'overdue' | 'received';
+export type NotificationType = 'alert' | 'info' | 'warning' | 'success';
+export type NotificationSeverity = 'low' | 'medium' | 'high';
+
+export interface BillToPay {
+  id: string;
+  user_id: string;
+  description: string;
+  amount: number;
+  due_date: string;
+  category_id: string | null;
+  status: BillStatus;
+  is_recurring: boolean;
+  recurrence_pattern: string | null;
+  account_id: string | null;
+  paid_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillToReceive {
+  id: string;
+  user_id: string;
+  description: string;
+  amount: number;
+  due_date: string;
+  category_id: string | null;
+  status: BillStatus;
+  is_recurring: boolean;
+  recurrence_pattern: string | null;
+  account_id: string | null;
+  received_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ForecastAlert {
+  tipo: string;
+  descricao: string;
+  gravidade: 'baixa' | 'media' | 'alta';
+}
+
+export interface FinancialForecast {
+  id: string;
+  user_id: string;
+  calculation_date: string;
+  initial_balance: number;
+  forecast_daily: Record<string, number>;
+  forecast_weekly: Record<string, number>;
+  forecast_monthly: Record<string, number>;
+  insights: string[];
+  alerts: ForecastAlert[];
+  risk_negative: boolean;
+  risk_date: string | null;
+  spending_patterns: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  severity: NotificationSeverity | null;
+  is_read: boolean;
+  related_forecast_id: string | null;
+  related_bill_id: string | null;
+  action_url: string | null;
+  created_at: string;
+}

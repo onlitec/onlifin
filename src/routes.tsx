@@ -8,6 +8,9 @@ import Import from './pages/Import';
 import ImportStatements from './pages/ImportStatements';
 import Reconciliation from './pages/Reconciliation';
 import Chat from './pages/Chat';
+import ForecastDashboard from './pages/ForecastDashboard';
+import BillsToPay from './pages/BillsToPay';
+import BillsToReceive from './pages/BillsToReceive';
 import Admin from './pages/Admin';
 import AIAdmin from './pages/AIAdmin';
 import UserManagement from './pages/UserManagement';
@@ -77,6 +80,24 @@ const routes: RouteConfig[] = [
     name: 'Relatórios',
     path: '/reports',
     element: <Reports />,
+    visible: true
+  },
+  {
+    name: 'Previsão Financeira',
+    path: '/forecast',
+    element: <ForecastDashboard />,
+    visible: true
+  },
+  {
+    name: 'Contas a Pagar',
+    path: '/bills-to-pay',
+    element: <BillsToPay />,
+    visible: true
+  },
+  {
+    name: 'Contas a Receber',
+    path: '/bills-to-receive',
+    element: <BillsToReceive />,
     visible: true
   },
   {
