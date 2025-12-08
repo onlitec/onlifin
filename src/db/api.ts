@@ -304,7 +304,7 @@ export const transactionsApi = {
       .select(`
         *,
         category:categories(*),
-        account:accounts(*),
+        account:accounts!account_id(*),
         card:cards(*)
       `)
       .eq('user_id', userId);
@@ -334,7 +334,7 @@ export const transactionsApi = {
       .select(`
         *,
         category:categories(*),
-        account:accounts(*),
+        account:accounts!account_id(*),
         card:cards(*)
       `)
       .eq('id', id)
