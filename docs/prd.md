@@ -6,7 +6,7 @@
 Plataforma de Gestão Financeira Pessoal com Assistente de IA e Análise Preditiva Automática
 
 ### 1.2 Descrição
-Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, realizar transferências entre contas cadastradas, e oferece um assistente de IA contextual com memória persistente acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações. **Agora com módulo completo de Análise Financeira Automática baseada em IA, que gera previsões de saldo futuro, análises inteligentes de gastos, alertas de risco, dashboards interativos, insights automáticos e notificações proativas ao usuário.**
+Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, realizar transferências entre contas cadastradas, e oferece um assistente de IA contextual com memória persistente acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações. **Agora com módulo completo de Análise Financeira Automática baseada em IA, que gera previsões de saldo futuro, análises inteligentes de gastos, alertas de risco, dashboards interativos, insights automáticos e notificações proativas ao usuário. Inclui também funcionalidade de registro de compras via leitura de QR Code de cupom fiscal utilizando OCR.**
 
 ## 2. Funcionalidades Principais
 
@@ -15,8 +15,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Cadastro de cartões de crédito (limite, data de fechamento, data de vencimento)\n- **Notificação toast ao cadastrar conta bancária:**
   - Exibição de notificação toast no canto superior direito da tela
   - Mensagem:'Conta bancária cadastrada com sucesso!'
-  - Ícone de check verde\n  - Duração: 3 segundos
-  - Animação suave de entrada e saída
+  - Ícone de check verde
+  - Duração: 3 segundos\n  - Animação suave de entrada e saída
 - **Visualização de saldo atual da conta com cálculo automático:**
   - Saldo inicial da conta
   - Saldo atualizado em tempo real considerando:\n    - Despesas pagas: diminuem o saldo da conta
@@ -58,7 +58,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Assistente valida saldo suficiente antes de criar transferência
   - Assistente fornece feedback claro sobre transferências realizadas
   - Assistente pode consultar histórico de transferências entre contas específicas
-\n### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
+
+### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
   - **Suporte completo ao formato OFX (Open Financial Exchange):**
     - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)
     - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
@@ -81,7 +82,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Modelo de IA analisa o arquivo já salvo na plataforma
   - **Passo 3: Exibição de resultados em popup**
     - Após análise, sistema exibe janela popup com resultados\n    - **Estrutura do popup:**
-      - Título: 'Resultado da Análise do Extrato'
+      - Título:'Resultado da Análise do Extrato'
       - Lista de transações ordenadas por data (da mais antiga para a mais recente)
       - Cada transação exibida com:
         - Data da transação
@@ -102,7 +103,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Classificação automática de transações\n
 ### 2.4 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
-  - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
+  - **Trigger: acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
     - Descrição da transação
     - Título ou nome do estabelecimento
@@ -133,12 +134,42 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Animação suave de entrada e saída
 - **Cadastro de transferências entre contas cadastradas (valor, data, conta origem, conta destino, descrição)**
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
-- **Edição de transferências existentes: permite alterar valor, data e descrição, com atualização automática das movimentações vinculadas**
-- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
+- **Edição de transferências existentes: permite alterar valor, data e descrição, com atualização automática das movimentações vinculadas**\n- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
 - Suporte a pagamentos recorrentes\n- Suporte a receitas recorrentes
 - Controle de parcelamentos com acompanhamento de parcelas
 - Agendamento de compromissos e pagamentos
 - Sistema de alertas para vencimentos\n- **Cadastro de transações e transferências pelo modelo de IA: o assistente de IA pode criar, editar e excluir transações e transferências na plataforma mediante solicitação do usuário, incluindo receitas, despesas, pagamentos recorrentes, parcelamentos e transferências entre contas**
+- **Registro de Compras via Leitura de QR Code de Cupom Fiscal com OCR:**
+  - **Funcionalidade de captura de QR Code:**
+    - Botão dedicado na interface de cadastro de transações para'Escanear Cupom Fiscal'
+    - Acesso à câmera do dispositivo (desktop ou mobile) para leitura de QR Code
+    - Feedback visual durante o processo de escaneamento (moldura de captura, indicador de foco)\n    - Suporte a upload de imagem de QR Code caso câmera não esteja disponível\n  - **Processamento OCR do QR Code:**
+    - Extração automática de dados do cupom fiscal através de OCR:\n      - Data da compra
+      - Estabelecimento/loja
+      - Valor total da compra
+      - Itens individuais (descrição e valor) quando disponível
+      - Número do cupom fiscal
+    - Validação de integridade dos dados extraídos
+    - Tratamento de erros para QR Codes ilegíveis ou corrompidos
+  - **Pré-preenchimento automático de transação:**
+    - Após leitura bem-sucedida, sistema pré-preenche formulário de cadastro de transação com:
+      - Data da compra
+      - Descrição (nome do estabelecimento)
+      - Valor total\n      - Categoria sugerida pelo modelo de IA baseada no tipo de estabelecimento
+    - Usuário pode revisar e editar informações antes de confirmar cadastro
+    - Opção de cadastrar itens individuais como transações separadas (se disponível no cupom)
+  - **Armazenamento de comprovante:**
+    - Imagem do QR Code é armazenada e vinculada à transação cadastrada
+    - Possibilidade de visualizar comprovante posteriormente na lista de transações
+    - Opção de anexar imagem completa do cupom fiscal (opcional)
+  - **Integração com assistente de IA:**
+    - Assistente pode sugerir categorização mais precisa baseada em histórico de compras similares
+    - Assistente pode identificar padrões de gastos em estabelecimentos específicos
+    - Assistente pode alertar sobre gastos duplicados (mesmo cupom escaneado duas vezes)
+  - **Validação e segurança:**
+    - Verificação de autenticidade do QR Code quando possível (integração com sistemas fiscais)
+    - Detecção de cupons já cadastrados para evitar duplicação
+    - Criptografia de dados sensíveis do cupom fiscal
 - **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas de filtragem, busca e ordenação:**
   - **Campo de busca de transações:**
     - Campo de texto para busca por descrição, título ou estabelecimento
@@ -149,16 +180,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Filtro por conta bancária:** dropdown com lista de todas as contas cadastradas, permitindo selecionar uma ou múltiplas contas
     - **Filtro por categoria:** dropdown com lista de todas as categorias cadastradas, permitindo selecionar uma ou múltiplas categorias
     - **Filtro por tipo de transação:** opções para filtrar por receita, despesa, transferência ou combinações (checkboxes ou botões de seleção)
-    - **Filtro por data:** seletor de intervalo de datas (data inicial e data final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)\n    - Botão 'Limpar Filtros' para resetar todos os filtros aplicados
+    - **Filtro por data:** seletor de intervalo de datas (data inicial e data final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)\n    - **Filtro por origem:** opções para filtrar por transações manuais, importadas ou registradas via OCR de cupom fiscal
+    - Botão 'Limpar Filtros' para resetar todos os filtros aplicados
     - Indicador visual de filtros ativos (badge com número de filtros aplicados)
-- Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
+    - Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
     - **Notificação toast fixa ao aplicar filtro:**
       - Exibição de notificação toast fixa no topo da página de transações
       - Mensagem: 'Filtro aplicado: [descrição dos filtros ativos]' (ex: 'Filtro aplicado: Conta Corrente, Categoria Alimentação, Últimos 30 dias')
-      - Ícone de filtro azul
-      - Toast permanece visível enquanto filtros estiverem ativos
+      - Ícone de filtro azul\n      - Toast permanece visível enquanto filtros estiverem ativos
       - Botão 'X' no toast para fechar a notificação (filtros permanecem ativos)
-      - Botão 'Limpar Filtros' dentro do toast para remover todos os filtros\n      - Cor de fundo azul claro (#E3F2FD) para diferenciação\n      - Posicionamento fixo no topo da lista de transações
+      - Botão 'Limpar Filtros' dentrodo toast para remover todos os filtros\n      - Cor de fundo azul claro (#E3F2FD) para diferenciação\n      - Posicionamento fixo no topo da lista de transações
   - **Opções de ordenação:**
     - **Ordenar por data:** crescente (mais antiga primeiro) ou decrescente (mais recente primeiro)
     - **Ordenar por categoria:** ordem alfabética crescente ou decrescente
@@ -171,7 +202,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Paginação para grandes volumes de dados
     - Opção de exportar resultados filtrados em CSV ou Excel
     - Exibição clara de cada transação com data, descrição, categoria, valor e conta associada
-    - **Identificação visual de transferências com ícone específico e exibição de conta origem/destino**
+    - **Identificação visual de transferências comícone específico e exibição de conta origem/destino**
+    - **Identificação visual de transações registradas via OCR com ícone de cupom fiscal e possibilidade de visualizar comprovante**
 \n### 2.6 Gestão de Contas a Pagar e Receber
 - **Cadastro de contas a pagar:**
   - Campos: id, descrição, valor, vencimento, categoria, status (pendente/paga/atrasada), recorrência (sim/não, período)
@@ -201,7 +233,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos:**
     - Dropdown ou calendário para seleção de mês específico
-    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
+    - Opções de navegação: mês anterior, próximo mês, mês atual
+    - Exibição clarado mês selecionado no topo do dashboard
     - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
     - Possibilidade de comparar dados de diferentes meses lado a lado
   - **Indicadores principais (ajustados conforme mês selecionado):**\n    - Saldo total consolidado de todas as contas no final do mês selecionado
@@ -212,24 +245,21 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Variação percentual em relação ao mês anterior ao selecionado
     - Limite total disponível em cartões de crédito no mês selecionado
 - Valor total de contas a pagar no mês selecionado
-    - Valor total de contas a receber no mês selecionado
-  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
-    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partir do mês selecionado
+    - Valor total de contas a receber no mês selecionado\n  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
+    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partirdo mês selecionado
     - Gráfico de pizza: distribuição de despesas por categoria no mês selecionado
     - Gráfico de barras: comparação de receitas vs despesas nos últimos 6 meses a partir do mês selecionado
     - Gráfico de área: projeção de fluxo de caixa para os próximos 3 meses a partir do mês selecionado
     - Gráfico de barras horizontais: top 5 categorias com maiores gastos no mês selecionado
     - Gráfico de linha: tendência de gastos por categoria ao longo do tempo (6 meses a partir do mês selecionado)
     - Heatmap: padrão de gastos por dia da semana e hora do dia no mês selecionado
-    - **Gráfico de fluxo: visualização de transferências entre contas no mês selecionado**
-  - **Indicadores de performance (ajustados conforme mês selecionado):**
+    - **Gráfico de fluxo: visualização de transferências entre contas no mês selecionado**\n  - **Indicadores de performance (ajustados conforme mês selecionado):**
     - Taxa de economia mensal (percentual de receitas não gastas) no mês selecionado\n    - Média de gastos diários no mês selecionado
     - Comparação de gastos: mês selecionado vs média dos últimos 3 meses anteriores
     - Indicador de saúde financeira (score baseado em saldo,dívidas e economia) no mês selecionado\n  - **Alertas visuais (ajustados conforme mês selecionado):**
     - Indicador de contas próximas ao vencimento no mês selecionado
     - Alerta de gastos acima da média em categorias específicas no mês selecionado
-    - Indicador de limite de cartão de crédito próximo ao máximo (>80%) no mês selecionado
-  - **Filtros e personalização:**
+    - Indicador de limite de cartão de crédito próximo ao máximo (>80%) no mês selecionado\n  - **Filtros e personalização:**
     - Seleção de mês específico (navegação por meses anteriores e futuros)
     - Filtro por conta específica\n    - Filtro por categoria\n    - Opção de ocultar/exibir gráficos específicos
     - Botão de'Voltar ao Mês Atual' para retornar rapidamente aos dados do mês corrente
@@ -239,7 +269,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 **Módulo completo de análise preditiva que processa automaticamente todos os dados financeiros da plataforma (contas, saldos, transações, contas a pagar, contas a receber) e gera previsões inteligentes, alertas de risco, insights automáticos e dashboards interativos.**
 
 #### 2.8.2 Agente de Previsão Financeira (IA)
-- **Nomedo Agente:** Agente de Previsão Financeira
+- **Nome do Agente:** Agente de Previsão Financeira
 - **Funções principais:**
   1. **Análise de histórico:**
      - Leitura de todas as transações dos últimos 6 meses\n     - Leitura de contas a pagar e receber futuras
@@ -494,7 +524,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     10. Usuário clica em 'Cadastrar Transações' no popup
     11. **Sistema cadastra apenas as transações que possuem categoria selecionada**
     12. Popup é fechado e chatbot exibe mensagem de confirmação com número de transações cadastradas
-- Funcionalidadesdo assistente:\n  - Categorização automática de transações
+- Funcionalidadesdo assistente:
+  - Categorização automática de transações
   - Recomendações de economia\n  - Previsão de fluxo de caixa
   - Alertas de vencimentos
   - Simulações de parcelamento
@@ -512,6 +543,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Consulta de previsões financeiras geradas automaticamente**
   - **Explicação de alertas e insights da análise preditiva**
   - **Solicitação de atualização manual de previsão financeira**
+  - **Auxílio no registro de compras via OCR de cupom fiscal**
 - Análise completa de contas cadastradas\n- Consulta detalhada de extratos de transações
 - Análise de pagamentos e recebimentos
 - **Análise de transferências entre contas**
@@ -563,6 +595,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Registro de análises e categorizações automáticas realizadas pelo modelo de IA**
   - **Registro de acesso ao histórico de memória pelo modelo de IA**
   - **Registro de execuções do Agente de Previsão Financeira (timestamp, status, alertas gerados)**
+  - **Registro de uso da funcionalidade OCR para leitura de cupons fiscais**
 - Opções de apagar ou exportar histórico conforme políticas de retenção
 \n### 2.11 Gestão de Plugins
 - **Cadastro e configuração de plugins na plataforma**
@@ -606,6 +639,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Criptografia de histórico de conversas armazenado no banco de dados**
 - **Proteção de dados de memória do modelo de IA com controles de acesso rigorosos**
 - **Criptografia de dados de previsões financeiras armazenados**
+- **Criptografia de imagens de cupons fiscais e dados extraídos via OCR**
 \n### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
 - RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário\n- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
@@ -623,8 +657,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Permissão para análise e categorização automática de extratos com cadastro direto**
 - **Consentimento explícito para cada plugin com detalhamento de dados acessados**
 - **Consentimento explícito para armazenamento e uso de histórico de conversas**
-- Termo de consentimento detalhado explicando o escopo do acesso total (leitura e escrita) e das permissões de cadastro
-- Opção de revogar acesso total e permissões de escrita a qualquer momento
+- **Consentimento explícito para uso de câmera e processamento OCR de cupons fiscais**
+- Termo de consentimento detalhado explicando o escopo do acesso total (leitura e escrita) e das permissões de cadastro\n- Opção de revogar acesso total e permissões de escrita a qualquer momento
 - **Opção de revogar permissões de plugins individualmente**
 - **Opção de limpar histórico de memória do modelo de IA**\n\n### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
 - Auditoria de ações de usuários humanos\n- Log de todas as consultas do modelo de IA aos dados da plataforma
@@ -644,23 +678,34 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Status de sucesso ou erro**
   - **Número de alertas gerados**
   - **Riscos detectados**
+- **Log de uso da funcionalidade OCR:**
+  - **Timestamp de cada leitura de QR Code**
+  - **Dados extraídos do cupom fiscal**
+  - **Transações criadas a partir do OCR**
+  - **Erros de leitura ou processamento**
 - Middleware de validação e registro antes de enviar dados ao conector de IA
 - **Middleware de validação e registro para operações de escrita do modelo de IA**
 - **Middleware de validação e registro para comunicação com plugins**
 - **Middleware de validação e registro para acesso ao sistema de memória**
+- **Middleware de validação e registro para processamento OCR**
 - Relatório de auditoria acessível ao usuário para transparência
 
 ## 4. Extensibilidade\n
 ### 4.1 API\n- API REST/GraphQL bemdocumentada\n- Suporte para integrações (apps móveis, plugins, serviços de contabilidade)
 - **Endpoints específicos para integração de plugins externos**
 - **Endpoints específicos para operações de escrita do modelo de IA (com autenticação e autorização rigorosas)**
-- **Endpoints para consulta e gestão de histórico de memória do modelo de IA**\n- **Endpoints para criação, edição e exclusão de transferências entre contas**
+- **Endpoints para consulta e gestão de histórico de memória do modelo de IA**
+- **Endpoints para criação, edição e exclusão de transferências entre contas**
 - **Endpoints para consulta de previsões financeiras:**
   - GET /api/forecast/daily (previsão diária)
   - GET /api/forecast/weekly (previsão semanal)
   - GET /api/forecast/monthly (previsão mensal)\n  - GET /api/forecast/alerts (alertas ativos)
   - GET /api/forecast/insights (insights gerados)
   - POST /api/forecast/update (forçar atualização de previsão)
+- **Endpoints para funcionalidade OCR:**
+  - POST /api/ocr/scan (processar imagem de QR Code)
+  - GET /api/ocr/history (histórico de leituras OCR)
+  - GET /api/ocr/receipt/:id (visualizar comprovante específico)
 \n### 4.2 Webhooks
 - Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo\n  - Sugestão gerada pelo assistente\n  - **Transação criada, editada ou excluída pelo modelo de IA**
   - **Transferência criada, editada ou excluída pelo modelo de IA**
@@ -671,6 +716,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Previsão financeira atualizada**
   - **Alerta de risco gerado**
   - **Saldo negativo previsto**
+  - **Cupom fiscal processado via OCR**
 \n## 5. Observabilidade e Confiabilidade
 
 ### 5.1 Monitoramento
@@ -682,7 +728,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Monitoramento de performance e erros de plugins**
 - **Alertas para falhas de comunicação com plugins**
 - **Alertas para operações de escrita não autorizadas ou suspeitas**
-- **Monitoramento de usodo sistema de memória:**
+- **Monitoramento de uso do sistema de memória:**
   - **Volume de conversas armazenadas**
   - **Tamanho de armazenamento utilizado**
   - **Frequência de acesso ao histórico**
@@ -695,15 +741,22 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Performance de geração de previsões**
 - **Alertas para falhas na rotina automática de análise**
 - **Alertas para riscos críticos detectados (saldo negativo iminente)**
-
-### 5.2 Backup e Recuperação
+- **Monitoramento de uso da funcionalidade OCR:**
+  - **Taxa de sucesso/erro de leituras de QR Code**
+  - **Tempo médio de processamento OCR**
+  - **Volume de cupons fiscais processados**
+  - **Erros de extração de dados**
+- **Alertas para falhas recorrentes no processamento OCR**
+\n### 5.2 Backup e Recuperação
 - Backup automático do banco de dados
 - Procedimentos documentados de recuperação de desastres
 - **Backup de logs de auditoria de operações de escrita do modelo de IA**
 - **Backup de histórico de conversas e memória do modelo de IA**\n- **Procedimentos de recuperação de histórico de memória em caso de falha**
 - **Backup de previsões financeiras geradas**
 - **Procedimentos de recuperação de dados de análise preditiva**
-\n## 6. Arquitetura Técnica
+- **Backup de imagens de cupons fiscais e dados extraídos via OCR**
+
+## 6. Arquitetura Técnica
 
 ### 6.1 Stack Tecnológica
 - Backend: Flask ou FastAPI
@@ -711,6 +764,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - CI/CD: GitHub Actions
 - **Agendador de tarefas: Celery ou APScheduler (para rotina automática de análise)**
 - **Broker de mensagens: Redis ou RabbitMQ (para processamento assíncrono)**
+- **Biblioteca OCR: Tesseract OCR ou Google Cloud Vision API (para processamento de QR Codes e cupons fiscais)**
 \n### 6.2 Componentes\n- Serviço de IA como componente externo configurável
 - Conector que chama endpoints de modelos (OpenAI/compatíveis, instâncias privadas)
 - **Sistema de gerenciamento de plugins com arquitetura modular**
@@ -807,21 +861,20 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Notificação toast fixa para filtros aplicados:**
     - Exibição no topo da página de transações
     - Permanece visível enquanto filtros estiverem ativos
-    - Descrição dos filtros ativos na mensagem\n    - Botão 'X' para fechar notificação\n    - Botão 'Limpar Filtros' dentrodo toast\n  - **Componente reutilizável de toast com:**
+    - Descrição dos filtros ativos na mensagem
+    - Botão 'X' para fechar notificação\n    - Botão 'Limpar Filtros' dentrodo toast\n  - **Componente reutilizável de toast com:**
     - Animação suave de entrada e saída
     - Ícones personalizados (check verde, filtro azul)\n    - Cores de fundo diferenciadas (verde claro para sucesso, azul claro para filtros)
     - Posicionamento fixo e responsivo
     - Fila de notificações para múltiplas mensagens simultâneas
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
-- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**, **gerenciador de transferências**, **sistema de notificações toast**, **Agente de Previsão Financeira**, **módulo de análise preditiva**
-- **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
+- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**, **gerenciador de transferências**, **sistema de notificações toast**, **Agente de Previsão Financeira**, **módulo de análise preditiva**, **módulo OCR**\n- **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
   - **Validação de permissões antes de cada operação**
   - **Validação de dados antes de escrita no banco**
   - **Validação de saldo suficiente antes de criar transferências**
   - **Registro de auditoria de todas as operações**
   - **Rollback automático em caso de erro**
-- **Módulo de validação e sandbox para execução segura de plugins**
-- **Módulo de navegação temporal:**
+- **Módulo de validação e sandbox para execução segura de plugins**\n- **Módulo de navegação temporal:**
   - Gerenciamento de seleção de mês no dashboard
   - Cálculo de dados históricos para mês selecionado
   - Cache de dados históricos para performance
@@ -877,7 +930,33 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Componente de atualização manual:**
     - Botão 'Atualizar Previsão Agora'\n    - Feedback visual de processamento
     - Atualização automática de todos os componentes
-\n### 6.3 Testes\n- Cobertura de testes unitários e de integração
+- **Módulo OCR para Leitura de Cupons Fiscais:**
+  - **Componente de captura de imagem:**
+    - Interface de acesso à câmera do dispositivo
+    - Suporte a upload de imagem de QR Code
+    - Feedback visual durante captura (moldura de foco, indicador de qualidade)
+    - Pré-processamento de imagem para melhorar qualidade de leitura
+  - **Componente de processamento OCR:**
+    - Integração com biblioteca OCR (Tesseract ou Google Cloud Vision API)
+    - Extração de dados estruturados do QR Code:\n      - Data da compra
+      - Estabelecimento/loja
+      - Valor total
+      - Itens individuais (quando disponível)
+      - Númerodo cupom fiscal
+    - Validação de integridade dos dados extraídos
+    - Tratamento de erros para QR Codes ilegíveis
+  - **Componente de pré-preenchimento de transação:**
+    - Mapeamento de dados extraídos para campos de transação\n    - Sugestão automática de categoria baseada em tipo de estabelecimento
+    - Interface de revisão e edição antes do cadastro
+    - Opção de cadastrar itens individuais como transações separadas
+  - **Componente de armazenamento de comprovante:**
+    - Salvamento de imagem do QR Code vinculada à transação
+    - Armazenamento seguro com criptografia\n    - Interface de visualização de comprovante\n    - Opção de anexar imagem completa do cupom fiscal
+  - **Componente de validação e segurança:**
+    - Verificação de autenticidade do QR Code (quando possível)
+    - Detecção de cupons duplicados
+    - Criptografia de dados sensíveis\n    - Registro de auditoria de todas as leituras OCR
+\n###6.3 Testes\n- Cobertura de testes unitários e de integração
 - Testes de segurança (SAST/DAST)
 - Testes de acessodo modelo de IA aos dados
 - **Testes de operações de escrita do modelo de IA:**
@@ -925,12 +1004,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de cálculo correto ao adicionar transferências enviadas (diminuição de saldo da origem)**
   - **Validação de cálculo correto ao adicionar transferências recebidas (aumento de saldo do destino)**
   - Validação de atualização de saldo ao editar ou excluir transações
-  - **Validação de atualização de saldo ao editar ou excluir transferências**
-  - **Validação de cálculo de saldo histórico para meses anteriores**
+  - **Validação de atualização de saldo ao editar ou excluir transferências**\n  - **Validação de cálculo de saldo histórico para meses anteriores**
 - **Testes de upload e salvamento de extrato no chatbot:**
   - Validação de upload de arquivo via chatbot\n  - Validação de salvamento seguro na plataforma
   - Validação de feedback visual de progresso
-  - Validação de geração de botão 'Analisar Extrato'\n- **Testes de popup de resultados:**
+  - Validação de geração de botão 'Analisar Extrato'
+- **Testes de popup de resultados:**
   - Validação de exibição de popup após análise\n  - Validação de ordenação de transações por data
   - Validação de dropdown de categorias\n  - Validação de pré-seleção de categoria sugerida
   - **Validação de possibilidade de deixar dropdown sem seleção**
@@ -945,7 +1024,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de responsividade de gráficos
   - **Validação de seletor de mês e navegação entre meses**
   - **Validação de atualização de indicadores ao selecionar novo mês**
-  - **Validação de atualização de gráficos ao selecionar novo mês**\n  - **Validação de cálculo correto de dados históricos**
+  - **Validação de atualização de gráficos ao selecionar novo mês**
+  - **Validação de cálculo correto de dados históricos**
   - **Validação de comparação entre meses diferentes**
 - **Testes de filtragem e busca de transações:**
   - **Validação de busca em tempo real por descrição, título e estabelecimento**
@@ -973,7 +1053,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de exibição de toast ao cadastrar transação**
   - **Validação de exibição de toast ao cadastrar conta bancária**
   - **Validação de exibição de toast ao cadastrar categoria**
-  - **Validação de duração de3 segundos para toasts temporários**
+  - **Validação de duração de 3 segundos para toasts temporários**
   - **Validação de animação suave de entrada e saída**
   - **Validação de exibição de toast fixo ao aplicar filtros**
   - **Validação de permanência do toast fixo enquanto filtros estiverem ativos**
@@ -985,7 +1065,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de cores eícones corretos para cada tipo de toast**
   - **Validação de fila de notificações para múltiplas mensagens simultâneas**
 - **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
-- **Testes do sistema de memória do modelo de IA:**
+- **Testesdo sistema de memória do modelo de IA:**
   - **Validação de armazenamento correto de conversas**
   - **Validação de armazenamento correto de solicitações**
   - **Validação de recuperação de contexto relevante**
@@ -995,9 +1075,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de exportação de histórico**
   - **Validação de performance com grande volume de conversas**
   - **Validação de criptografia de dados de memória**
-  - **Validação de controles de acesso ao histórico**
-- **Testes do Agente de Previsão Financeira:**
-  - **Validação de coleta correta de dados (transações, contas a pagar/receber, saldos)**\n  - **Validação de identificação de padrões de gastos**
+  - **Validação de controles de acesso ao histórico**\n- **Testes do Agente de Previsão Financeira:**
+  - **Validação de coleta correta de dados (transações, contas a pagar/receber, saldos)**
+  - **Validação de identificação de padrões de gastos**
   - **Validação de cálculo de médias de entradas e saídas**
   - **Validação de detecção de sazonalidade**
   - **Validação de geração de previsão diária (30 dias)**
@@ -1020,8 +1100,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de exibição de cartão de status de risco (vermelho/amarelo/verde)**
   - **Validação de exibição de indicadores principais (saldo atual, previsto 7 dias, previsto 30 dias)**
   - **Validação de gráfico de previsão de saldo diário**
-  - **Validação de gráfico de distribuição de gastos por categoria**
-  - **Validação de lista de alertas ordenados por gravidade**
+  - **Validação de gráfico de distribuição de gastos por categoria**\n  - **Validação de lista de alertas ordenados por gravidade**
   - **Validação de exibição de insights gerados pela IA**
   - **Validação de tabelas de previsão semanal e mensal**
   - **Validação de botão 'Atualizar Previsão Agora'**
@@ -1038,6 +1117,28 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de análise de alertas via chatbot**
   - **Validação de solicitação de insights via chatbot**
   - **Validação de atualização manual via chatbot**
+- **Testes do módulo OCR:**
+  - **Validação de captura de imagem via câmera**
+  - **Validação de upload de imagem de QR Code**
+  - **Validação de processamento OCR com QR Codes legíveis**
+  - **Validação de tratamento de erros para QR Codes ilegíveis ou corrompidos**
+  - **Validação de extração correta de dados do cupom fiscal:**
+    - Data da compra
+    - Estabelecimento/loja
+    - Valor total
+    - Itens individuais (quando disponível)
+    - Númerodo cupom fiscal
+  - **Validação de pré-preenchimento automático de transação com dados extraídos**
+  - **Validação de sugestão de categoria baseada em tipo de estabelecimento**
+  - **Validação de interface de revisão e edição antesdo cadastro**
+  - **Validação de cadastro de transação a partir de dados OCR**
+  - **Validação de armazenamento de imagem do QR Code vinculada à transação**
+  - **Validação de visualização de comprovante na lista de transações**
+  - **Validação de detecção de cupons duplicados**
+  - **Validação de criptografia de dados sensíveis do cupom fiscal**
+  - **Validação de registro de auditoria de leituras OCR**
+  - **Validação de performancedo processamento OCR**
+  - **Validação de integração com assistente de IA para sugestões de categorização**
 \n## 7. Escopo do MVP
 
 ### 7.1 Funcionalidades Iniciais
@@ -1059,14 +1160,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Análise do arquivo salvo pelo modelo de IA
   - Exibição de popup com lista ordenada de transações por data
   - Dropdown de categoria para cada transação com sugestão pré-selecionada
-- **Possibilidade de deixar dropdown sem seleção**
+  - **Possibilidade de deixar dropdown sem seleção**
   - Botão 'Cadastrar Transações' no popup para cadastro em lote
   - **Cadastro apenas de transações com categoria selecionada**
 - **Análise e categorização automática de transações comIA:**
   - Trigger manual via botão 'Analisar Extrato' no chatbot
   - Sugestão de categorias existentes
   - Sugestão de novas categorias incluídas no dropdown
-  - Interface de revisão em popup antesdo cadastro
+  - Interface de revisão em popup antes do cadastro
   - **Cadastro em lote apenas de transações com categoria selecionada**
   - Aprendizado contínuo baseado em confirmações do usuário
 - CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
@@ -1080,14 +1181,24 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Cadastro de contas a receber (descrição, valor, vencimento, categoria, status, recorrente)
   - Atualização automática de status
   - Visualização consolidada\n  - Integração com previsão financeira
+- **Registro de Compras via Leitura de QR Code de Cupom Fiscal com OCR:**
+  - Botão 'Escanear Cupom Fiscal' na interface de cadastro de transações
+  - Acesso à câmera do dispositivo para leitura de QR Code
+  - Suporte a upload de imagem de QR Code\n  - Processamento OCR para extração de dados do cupom fiscal\n  - Pré-preenchimento automático de transação com dados extraídos
+  - Sugestão de categoria baseada em tipo de estabelecimento\n  - Interface de revisão e edição antes do cadastro
+  - Armazenamento de imagem do QR Code vinculada à transação
+  - Visualização de comprovante na lista de transações
+  - Detecção de cupons duplicados
+  - Integração com assistente de IA para sugestões de categorização
 - **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas:**
   - **Campo de busca em tempo real**
-  - **Filtros completos (conta, categoria, tipo, data)**
+  - **Filtros completos (conta, categoria, tipo, data, origem)**
   - **Ordenação flexível (data, categoria, valor)**
   - **Notificação toast fixa ao aplicar filtros**
   - **Exibição de resultados com contador e paginação**
   - **Exportação em CSV e Excel**
   - **Identificação visual de transferências**
+  - **Identificação visual de transações registradas via OCR com possibilidade de visualizar comprovante**
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos**
   - **Indicadores principais ajustados conforme mês selecionado**
@@ -1115,18 +1226,18 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Seção de insights gerados pela IA
     - Tabelas de previsão semanal e mensal
     - Botão 'Atualizar Previsão Agora'
-  - **Sistema de notificações automáticas:**
+- **Sistema de notificações automáticas:**
     - Notificações in-app para alertas críticos\n    - Email para alertas críticos (opcional)
     - Badge com número de alertas não lidos
   - **Integração com assistente de IA:**
     - Consulta de previsões via chatbot
-    - Análise de alertas via chatbot
-    - Solicitação de insights via chatbot
+    - Análise de alertas via chatbot\n    - Solicitação de insights via chatbot
     - Atualização manual via chatbot
 - Assistente de IA com acesso total configurável e memória persistente:\n  - **Acesso de leitura (read_full)**
   - **Acesso de escrita (write_full)**
   - **Sistema de memória persistente**
   - **Funcionalidade de upload de extrato via chatbot**
+  - **Auxílio no registro de compras via OCR de cupom fiscal**
 - Botão de chat comIA nas telas principais
 - Painel de administração com:
   - Indicador visual de status de configuração
@@ -1139,6 +1250,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Logs de operações de escrita**
   - **Logs de análises e categorizações**
   - **Logs de execuções do Agente de Previsão Financeira**
+  - **Logs de uso da funcionalidade OCR**
   - **Visualização de histórico de memória**
 - Relatório de auditoria de acessos e operações
 - **Sistema completo de notificações toast**
@@ -1159,6 +1271,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Integração com plataformas de investimentos
   - Integração com sistemas de contabilidade
   - Integração com ERPs empresariais
+- **Funcionalidades avançadas de OCR:**
+  - Reconhecimento de cupons fiscais completos (não apenas QR Code)
+  - Extração de dados de notas fiscais eletrônicas (NF-e)
+  - Integração com sistemas fiscais para validação automática
+  - Análise de padrões de compra baseada em histórico de cupons
 \n## 8. Estilo de Design
 
 ### 8.1 Paleta de Cores
@@ -1172,6 +1289,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Vermelho (#F44336) para risco alto
   - Amarelo (#FFC107) para risco moderado
   - Verde (#4CAF50) para situação saudável
+- **Cor para ícone de cupom fiscal: laranja (#FF9800) para identificação visual de transações registradas via OCR**
 \n### 8.2 Layout\n- Layout em cards para organização modular de informações financeiras
 - Sidebar fixa com navegação principal
 - **Layout responsivo e adaptável para diferentes tamanhos de tela**
@@ -1194,11 +1312,18 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Dashboard de Previsão Financeira Inteligente:**
   - **Layout em seções verticais:**
     - Seção 1: Cartão de status de risco (largura completa, altura de 120px)
-    - Seção 2: Indicadores principais (grid 4 colunas em desktop, 2 colunas em tablet, 1 coluna em mobile)\n    - Seção 3: Gráfico de previsão de saldo diário (largura completa, altura de 400px)
-    - Seção 4: Grid 2 colunas (desktop) ou 1 coluna (mobile):\n      - Coluna esquerda: Gráfico de distribuição de gastos por categoria\n      - Coluna direita: Lista de alertas\n    - Seção 5: Seção de insights (cards em grid flexível)
+    - Seção 2: Indicadores principais (grid 4colunas em desktop, 2 colunas em tablet, 1 coluna em mobile)\n    - Seção 3: Gráfico de previsão de saldo diário (largura completa, altura de 400px)
+    - Seção 4: Grid 2 colunas (desktop) ou 1 coluna (mobile):\n      - Coluna esquerda: Gráfico de distribuição de gastos por categoria
+      - Coluna direita: Lista de alertas\n    - Seção 5: Seção de insights (cards em grid flexível)
     - Seção 6: Tabelas de previsão semanal e mensal (tabs ou accordion)
   - **Botão 'Atualizar Previsão Agora' fixo no topo da página (canto superior direito)**
   - **Filtros e opções em barra horizontal abaixo do título da página**
+- **Interface de captura de QR Code:**
+  - Modal centralizado com visualização da câmera
+  - Moldura de foco para posicionamento do QR Code
+  - Indicador de qualidade de captura
+  - Botões de ação (capturar, cancelar, upload de imagem)
+  - Feedback visual durante processamento OCR
 \n### 8.3 Elementos Visuais
 - Ícones minimalistas para categorias e ações (biblioteca Material Icons ou Font Awesome)
 - **Gráficos limpos e legíveis:**
@@ -1209,17 +1334,19 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Tooltips informativos ao passar o mouse (fundo branco, sombra suave, padding de 8px)
   - Legendas claras e posicionadas estrategicamente (abaixo ou ao lado do gráfico)
   - Grid de fundo sutil para facilitar leitura de valores
-- Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito (60px x 60px, sombra elevada)\n- **Botão de upload de arquivo no chatbot (ícone de clipe ou upload, tamanho 24px)**
+- Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito (60px x 60px, sombra elevada)
+- **Botão de upload de arquivo no chatbot (ícone de clipe ou upload, tamanho 24px)**
 - **Botão 'Analisar Extrato' no chatbot após upload (ícone de lupa ou análise, cor azul, tamanho 24px)**\n- **Popup de resultados (conforme especificado anteriormente)**\n- Bordas suaves com raio de 8px para cards, botões e popup
 - Sombras sutis para criar hierarquia visual (elevação de 2dp para cards,4dp para botões, 8dp para popup)
-- Badge de status com ícone de check verde para modelo configurado ouícone de alerta laranja para ausência de configuração (tamanho 16px)
+- Badge de status com ícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração (tamanho 16px)
 - Indicador visual de acesso de leitura ativo (ícone de olho verde, tamanho 20px) quando o modelo de IA tiver permissão completa de leitura
 - **Indicador visual de acesso de escrita ativo (ícone de lápis verde, tamanho 20px) quando o modelo de IA tiver permissão completa de escrita**
 - **Indicador visual de permissão de cadastro ativa (ícone de check verde, tamanho 20px) quando o modelo de IA tiver permissão para criar transações**
 - **Indicador visual de permissão de análise ativa (ícone de lupa verde, tamanho 20px) quando o modelo de IA tiver permissão para analisar e categorizar extratos**
 - **Badge de status para plugins (ícone de check verde paraativo, ícone cinza para inativo, tamanho 16px)**
 - **Ícone de engrenagem para acesso às configurações de plugins (tamanho 24px)**
-- **Exibição destacada do saldo atual da conta (conforme especificado anteriormente)**\n- **Cards de indicadores (conforme especificado anteriormente)**\n- **Animações suaves de transição ao carregar gráficos (duração de 300ms, easing ease-in-out)**
+- **Exibição destacada do saldo atual da conta (conforme especificado anteriormente)**\n- **Cards de indicadores (conforme especificado anteriormente)**
+- **Animações suaves de transição ao carregar gráficos (duração de 300ms, easing ease-in-out)**
 - **Seletor de mês (conforme especificado anteriormente)**
 - **Indicador visual de memória ativa (ícone de cérebro ou banco de dados verde, tamanho 20px) quando sistema de memória estiver habilitado**
 - **Badge com número de conversas armazenadas no histórico (fundo azul, texto branco, tamanho 12px)**
@@ -1247,8 +1374,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Botões de ação (marcar como lido, descartar) no canto direito
   - **Cards de insights:**
     - Ícone de lâmpada ou cérebro (32px) no canto superior esquerdo
-    - Fundo branco com borda azul claro (1px)
-    - Texto em fonte 14px\n    - Data de geração em fonte 12px, cor cinza
+    - Fundo branco com borda azul claro (1px)\n    - Texto em fonte 14px\n    - Data de geração em fonte 12px, cor cinza
   - **Tabelas de previsão:**
     - Cabeçalho com fundo azul claro (#E3F2FD)
     - Linhas alternadas (zebra striping) para melhor leitura
@@ -1260,7 +1386,27 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Border-radius de 4px
     - Sombra elevada (4dp)
     - Spinner ou barra de progresso durante processamento
-\n## 9. Referências de Interface
+- **Elementos visuais da funcionalidade OCR:**
+  - **Botão 'Escanear Cupom Fiscal':**
+    - Cor laranja (#FF9800)
+    - Ícone de QR Code (24px) ao lado do texto
+    - Padding de 12px 24px
+    - Border-radius de 4px
+    - Sombra elevada (4dp)
+  - **Ícone de cupom fiscal na lista de transações:**
+    - Ícone laranja (#FF9800) de cupom ou recibo (20px)
+    - Posicionado ao lado da descrição da transação
+    - Tooltip ao passar o mouse:'Registrado via cupom fiscal'
+    - Clicável para visualizar comprovante
+  - **Modal de visualização de comprovante:**
+    - Imagem do QR Code centralizada
+    - Dados extraídos exibidos abaixo da imagem
+    - Botão de fechar no canto superior direito
+    - Opção de download da imagem
+  - **Feedback visual durante processamento OCR:**
+    - Spinner ou barra de progresso
+    - Mensagem 'Processando cupom fiscal...'
+    - Animação suave\n\n## 9. Referências de Interface
 
 ### 9.1 Imagens de Referência
 - Exemplo de mensagem de erro de importação OFX: {2C7B1F61-7FE3-4148-B737-A544FBDEEF2D}.png

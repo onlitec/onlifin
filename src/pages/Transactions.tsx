@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft, CheckCircle2, Save } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft, CheckCircle2, Save, Camera } from 'lucide-react';
 import { ActiveFiltersBar } from '@/components/common/FilterBadge';
+import ReceiptScanner from '@/components/transactions/ReceiptScanner';
+import type { ReceiptData } from '@/services/ocrService';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
 
 export default function Transactions() {
@@ -20,6 +22,7 @@ export default function Transactions() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   
   // Filtros e busca
   const [searchTerm, setSearchTerm] = useState('');
@@ -262,6 +265,60 @@ export default function Transactions() {
         variant: 'destructive'
       });
     }
+  };
+
+  const handleReceiptData = (receiptData: ReceiptData) => {
+    // Preencher formulário com dados do cupom
+    const newFormData: any = {
+      type: 'expense',
+      amount: receiptData.totalAmount?.toString() || '',
+      date: receiptData.date || new Date().toISOString().split('T')[0],
+      description: receiptData.storeName || 'Compra via cupom fiscal',
+      category_id: '',
+      account_id: accounts.length > 0 ? accounts[0].id : '',
+      card_id: '',
+      destination_account_id: '',
+      is_recurring: false,
+      recurrence_pattern: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
+      is_installment: false,
+      total_installments: '1'
+    };
+
+    // Tentar encontrar categoria apropriada
+    if (receiptData.storeName) {
+      const storeName = receiptData.storeName.toLowerCase();
+      let matchedCategory = null;
+
+      // Supermercados
+      if (storeName.includes('mercado') || storeName.includes('supermercado') || storeName.includes('atacado')) {
+        matchedCategory = categories.find(c => c.name.toLowerCase().includes('alimentação') || c.name.toLowerCase().includes('mercado'));
+      }
+      // Farmácias
+      else if (storeName.includes('farmácia') || storeName.includes('drogaria')) {
+        matchedCategory = categories.find(c => c.name.toLowerCase().includes('saúde') || c.name.toLowerCase().includes('farmácia'));
+      }
+      // Restaurantes
+      else if (storeName.includes('restaurante') || storeName.includes('lanchonete') || storeName.includes('pizzaria')) {
+        matchedCategory = categories.find(c => c.name.toLowerCase().includes('alimentação') || c.name.toLowerCase().includes('restaurante'));
+      }
+      // Postos de combustível
+      else if (storeName.includes('posto') || storeName.includes('combustível') || storeName.includes('gasolina')) {
+        matchedCategory = categories.find(c => c.name.toLowerCase().includes('transporte') || c.name.toLowerCase().includes('combustível'));
+      }
+
+      if (matchedCategory) {
+        newFormData.category_id = matchedCategory.id;
+      }
+    }
+
+    setFormData(newFormData);
+    setShowReceiptScanner(false);
+    setIsDialogOpen(true);
+
+    toast({
+      title: 'Cupom processado!',
+      description: 'Dados extraídos com sucesso. Revise e confirme a transação.',
+    });
   };
 
   const handleSaveCategories = async () => {
@@ -533,6 +590,15 @@ export default function Transactions() {
           >
             <Save className="mr-2 h-5 w-5" />
             Salvar Categorias
+          </Button>
+          <Button
+            onClick={() => setShowReceiptScanner(true)}
+            variant="outline"
+            size="lg"
+            className="flex-1 xl:flex-initial"
+          >
+            <Camera className="mr-2 h-5 w-5" />
+            Escanear Cupom
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
@@ -1018,6 +1084,18 @@ export default function Transactions() {
         })
         )}
       </div>
+
+      {/* Receipt Scanner Dialog */}
+      {showReceiptScanner && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="max-w-2xl w-full">
+            <ReceiptScanner
+              onDataExtracted={handleReceiptData}
+              onClose={() => setShowReceiptScanner(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
