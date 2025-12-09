@@ -84,12 +84,6 @@ const routes: RouteConfig[] = [
     ]
   },
   {
-    name: 'Categorias',
-    path: '/categories',
-    element: <Categories />,
-    visible: true
-  },
-  {
     name: 'Relatórios',
     path: '/reports',
     element: <Reports />,
@@ -102,12 +96,6 @@ const routes: RouteConfig[] = [
     visible: true
   },
   {
-    name: 'Assistente IA',
-    path: '/chat',
-    element: <Chat />,
-    visible: true
-  },
-  {
     name: 'PWA',
     path: '/pwa-info',
     element: <PWAInfo />,
@@ -117,19 +105,31 @@ const routes: RouteConfig[] = [
     name: 'Admin',
     path: '/admin',
     element: <Admin />,
-    visible: false,
+    visible: true,
     children: [
+      {
+        name: 'Categorias',
+        path: '/categories',
+        element: <Categories />,
+        visible: true
+      },
+      {
+        name: 'Assistente IA',
+        path: '/chat',
+        element: <Chat />,
+        visible: true
+      },
       {
         name: 'Gestão de Usuários',
         path: '/user-management',
         element: <UserManagement />,
-        visible: false
+        visible: true
       },
       {
         name: 'IA Admin',
         path: '/ai-admin',
         element: <AIAdmin />,
-        visible: false
+        visible: true
       }
     ]
   },
