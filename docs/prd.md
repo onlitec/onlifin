@@ -22,7 +22,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Saldo atualizado em tempo real considerando:\n    - Despesas pagas: diminuem o saldo da conta
     - Receitas recebidas: aumentam o saldo da conta
     - Transferências enviadas: diminuem o saldo da conta de origem
-    - Transferências recebidas: aumentam o saldo da conta de destino\n  - Fórmula: Saldo Atual = Saldo Inicial + Receitas Recebidas - Despesas Pagas - Transferências Enviadas + Transferências Recebidas\n  - Exibição clara do saldo atual na página de contas (https://onlifin.onlitec.com.br/accounts)
+    - Transferências recebidas: aumentam o saldo da conta de destino\n  - Fórmula: Saldo Atual = Saldo Inicial + Receitas Recebidas - Despesas Pagas - Transferências Enviadas + Transferências Recebidas\n  - Exibição clarado saldo atual na página de contas (https://onlifin.onlitec.com.br/accounts)
   - Atualização automática do saldo sempre que uma transação for registrada, editada ou excluída
   - **Campo atualizado_em para registrar timestamp da última atualização de saldo**
 - Visualização de limites disponíveis de cartões de crédito
@@ -60,7 +60,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Assistente pode consultar histórico de transferências entre contas específicas
 \n### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
   - **Suporte completo ao formato OFX (Open Financial Exchange):**
-    - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)\n    - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
+    - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)
+    - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
     - Identificação automática de conta bancária associada através de informações do arquivo OFX
     - Validação de integridade do arquivo OFX antesdo processamento
     - Tratamento de erros e feedback claro em caso de arquivo corrompido ou formato inválido
@@ -73,15 +74,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Importação de extratos via chatbot flutuante com novo fluxo:**
   - **Passo 1: Upload do extrato**
     - Botão de upload de arquivo visível no chatbot flutuante (ícone de clipe ou upload)
-    - Suporte aos formatos CSV, OFX e QIF
-    - Após seleção do arquivo, sistema salva o extrato na plataforma
+    - Suporte aos formatos CSV, OFX e QIF\n    - Após seleção do arquivo, sistema salva o extrato na plataforma
     - Feedback visual de upload concluído (barra de progresso e mensagem de confirmação)
   - **Passo 2: Comando de análise**
     - Após salvamento do extrato, surge botão 'Analisar Extrato' no chatbot\n    - Usuário clica no botão para acionar análise do modelo de IA
     - Modelo de IA analisa o arquivo já salvo na plataforma
   - **Passo 3: Exibição de resultados em popup**
     - Após análise, sistema exibe janela popup com resultados\n    - **Estrutura do popup:**
-      - Título:'Resultado da Análise do Extrato'
+      - Título: 'Resultado da Análise do Extrato'
       - Lista de transações ordenadas por data (da mais antiga para a mais recente)
       - Cada transação exibida com:
         - Data da transação
@@ -90,13 +90,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
         - Dropdown de seleção de categoria ao lado de cada transação
         - Categoria sugerida pelo modelo de IA pré-selecionada no dropdown
         - Possibilidade de alterar categoria manualmente via dropdown
+        - **Possibilidade de deixar dropdown sem seleção (categoria vazia)**
       - Botão 'Cadastrar Transações' na parte inferior do popup
     - **Ação do botão 'Cadastrar Transações':**
-      - Cadastra todas as transações listadas no popup
-      - Cada transação é registrada na categoria selecionada no dropdown correspondente
+      - **Cadastra apenas as transações que possuem uma categoria selecionada no dropdown correspondente**
+      - **Transações sem categoria selecionada (dropdown vazio) não são cadastradas**
+      - Cada transação cadastrada é registrada na categoria selecionada no dropdown
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
+      - **Mensagem de confirmação indica o número de transações cadastradas (ex: '15 transações cadastradas com sucesso')**
 - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações\n\n### 2.4 Análise e Categorização Automática de Transações com IA
+- Classificação automática de transações\n
+### 2.4 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
   - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
@@ -108,12 +112,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Quando o modelo identificar padrões ou estabelecimentos que não se encaixam nas categorias existentes, ele sugere a criação de uma nova categoria
   - As categorias sugeridas são incluídas no dropdown de seleção de categorias no popup
 - **Cadastro de transações via popup:**
-  - Popup exibe lista ordenada de transações por data
-  - Cada transação possui dropdown de categoria com sugestãodo modelo de IA pré-selecionada
+  - Popup exibe lista ordenada de transações por data\n  - Cada transação possui dropdown de categoria com sugestãodo modelo de IA pré-selecionada
   - Usuário pode alterar categoria manualmente antesdo cadastro
-  - Ao clicar em 'Cadastrar Transações', sistema:\n    - Cria automaticamente as categorias novas selecionadas pelo usuário (se houver)
+  - **Usuário pode deixar dropdown sem seleção (categoria vazia) para transações que não deseja cadastrar**
+  - Ao clicar em 'Cadastrar Transações', sistema:\n    - **Cadastra apenas as transações que possuem uma categoria selecionada**
+    - **Ignora transações sem categoria selecionada**
+    - Cria automaticamente as categorias novas selecionadas pelo usuário (se houver)
     - Registra as transações nas categorias correspondentes (existentes ou recém-criadas)
-    - Fecha o popup e exibe mensagem de confirmação no chatbot
+    - Fecha o popup e exibe mensagem de confirmação no chatbot com número de transações cadastradas
 - **Aprendizado contínuo:**
   - Histórico de aprendizado do modelo: quanto mais o usuário confirmar ou corrigir categorias, mais preciso o modelo se torna
   - Sugestão de categoria automática baseada em padrões frequentes do usuário
@@ -145,7 +151,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Filtro por tipo de transação:** opções para filtrar por receita, despesa, transferência ou combinações (checkboxes ou botões de seleção)
     - **Filtro por data:** seletor de intervalo de datas (data inicial e data final) ou opções predefinidas (hoje, esta semana, este mês, últimos 30 dias, últimos 90 dias, este ano)\n    - Botão 'Limpar Filtros' para resetar todos os filtros aplicados
     - Indicador visual de filtros ativos (badge com número de filtros aplicados)
-    - Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
+- Seção de filtros organizada em linha horizontal ou painel lateral retrátil para melhor usabilidade
     - **Notificação toast fixa ao aplicar filtro:**
       - Exibição de notificação toast fixa no topo da página de transações
       - Mensagem: 'Filtro aplicado: [descrição dos filtros ativos]' (ex: 'Filtro aplicado: Conta Corrente, Categoria Alimentação, Últimos 30 dias')
@@ -189,13 +195,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Integração com previsão financeira:**
   - Contas a pagar e receber são consideradas no cálculo de previsão de saldo futuro
   - Alertas automáticos quando contas a pagar podem causar saldo negativo
-\n### 2.7 Controle Financeiro\n- Gestão de contas a pagar e receber\n- Visualização de fluxo de caixa
+\n### 2.7 Controle Financeiro
+- Gestão de contas a pagar e receber\n- Visualização de fluxo de caixa
 - Previsões financeiras simples
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos:**
     - Dropdown ou calendário para seleção de mês específico
-    - Opções de navegação: mês anterior, próximo mês, mês atual
-    - Exibição clarado mês selecionado no topo do dashboard
+    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
     - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
     - Possibilidade de comparar dados de diferentes meses lado a lado
   - **Indicadores principais (ajustados conforme mês selecionado):**\n    - Saldo total consolidado de todas as contas no final do mês selecionado
@@ -206,8 +212,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Variação percentual em relação ao mês anterior ao selecionado
     - Limite total disponível em cartões de crédito no mês selecionado
 - Valor total de contas a pagar no mês selecionado
-    - Valor total de contas a receber no mês selecionado\n  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
-    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partirdo mês selecionado
+    - Valor total de contas a receber no mês selecionado
+  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
+    - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partir do mês selecionado
     - Gráfico de pizza: distribuição de despesas por categoria no mês selecionado
     - Gráfico de barras: comparação de receitas vs despesas nos últimos 6 meses a partir do mês selecionado
     - Gráfico de área: projeção de fluxo de caixa para os próximos 3 meses a partir do mês selecionado
@@ -483,13 +490,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     6. Sistema exibe popup com lista de transações ordenadas por data
     7. Cada transação possui dropdown de categoria com sugestão pré-selecionada
     8. Usuário revisa e ajusta categorias conforme necessário
-    9. Usuário clica em 'Cadastrar Transações' no popup
-    10. Sistema cadastra todas as transações nas categorias selecionadas
-    11. Popup é fechado e chatbot exibe mensagem de confirmação
-- Funcionalidadesdo assistente:
-  - Categorização automática de transações
-  - Recomendações de economia
-  - Previsão de fluxo de caixa
+    9. **Usuário pode deixar dropdown sem seleção para transações que não deseja cadastrar**
+    10. Usuário clica em 'Cadastrar Transações' no popup
+    11. **Sistema cadastra apenas as transações que possuem categoria selecionada**
+    12. Popup é fechado e chatbot exibe mensagem de confirmação com número de transações cadastradas
+- Funcionalidadesdo assistente:\n  - Categorização automática de transações
+  - Recomendações de economia\n  - Previsão de fluxo de caixa
   - Alertas de vencimentos
   - Simulações de parcelamento
   - Sugestões de orçamento
@@ -585,13 +591,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Cadastro de categorias personalizadas para classificação de transações
 - **Notificação toast ao cadastrar categoria:**
   - Exibição de notificação toast no canto superior direito da tela
-  - Mensagem: 'Categoria cadastrada com sucesso!'
+  - Mensagem:'Categoria cadastrada com sucesso!'
   - Ícone de check verde\n  - Duração: 3 segundos\n  - Animação suave de entrada e saída
 - Edição e exclusão de categorias existentes
 - Organização hierárquica de categorias (categorias e subcategorias)
 - Atribuição de cores e ícones personalizados para cada categoria
 \n## 3. Segurança e Privacidade\n
-### 3.1 Proteção de Dados\n- TLS/HTTPS em todas as comunicações
+### 3.1 Proteção de Dados
+- TLS/HTTPS em todas as comunicações
 - Criptografia em repouso para dados sensíveis
 - Mascaramento e criptografia de números de conta e cartão\n- Transmissão segura de dados completos ao modelo de IA quando acesso total estiver ativado
 - **Transmissão segura de comandos de escrita ao modelo de IA quando permissão de escrita estiver ativada**
@@ -756,11 +763,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Processa extratos salvos e identifica padrões\n  - Sugere categorias existentes ou novas categorias
   - Exibe resultados em popup com lista ordenada de transações por data
   - Permite revisão e edição de categorias via dropdown antesdo cadastro
+  - **Permite deixar dropdown sem seleção para transações que não devem ser cadastradas**
+  - **Cadastra apenas transações com categoria selecionada ao clicar em 'Cadastrar Transações'**
   - Aprende com confirmações e correções do usuário
 - **Módulo de importação de arquivos OFX:**
-  - Parser OFX para versões1.x (SGML) e 2.x (XML)
-  - Extração de dados de transações: data, descrição, valor, tipo, saldo
-  - Validação de integridade e tratamento de erros
+  - Parser OFX para versões1.x (SGML) e 2.x (XML)\n  - Extração de dados de transações: data, descrição, valor, tipo, saldo\n  - Validação de integridade e tratamento de erros
   - Mapeamento automático de conta bancária\n- **Módulo de upload e salvamento de extratos no chatbot:**
   - Interface de upload de arquivo no chatbot flutuante
   - Salvamento seguro do arquivo na plataforma
@@ -770,12 +777,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Exibição de janela popup após análise do modelo de IA
   - Lista ordenada de transações por data\n  - Dropdown de seleção de categoria para cada transação
   - Categoria sugerida pelo modelo de IA pré-selecionada
-  - Botão 'Cadastrar Transações' na parte inferior\n  - Cadastro em lote de todas as transações nas categorias selecionadas
+  - **Possibilidade de deixar dropdown sem seleção**
+  - Botão 'Cadastrar Transações' na parte inferior\n  - **Cadastro apenas de transações com categoria selecionada**
+  - **Mensagem de confirmação com número de transações cadastradas**
 - **Módulo de geração de gráficos e indicadores:**
   - Cálculo de indicadores financeiros em tempo real
   - Geração de gráficos de linha, pizza, barras e área
   - **Geração de gráfico de fluxo para visualização de transferências entre contas**
-  - Processamento de dados históricos para tendências\n  - Cache de dados agregados para performance
+  - Processamento de dados históricos para tendências
+  - Cache de dados agregados para performance
   - API de dados para visualizações no frontend
   - **Suporte a consulta de dados de meses anteriores**
   - **Recálculo de indicadores e gráficos baseado no mês selecionado**
@@ -797,10 +807,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Notificação toast fixa para filtros aplicados:**
     - Exibição no topo da página de transações
     - Permanece visível enquanto filtros estiverem ativos
-    - Descrição dos filtros ativos na mensagem
-    - Botão 'X' para fechar notificação
-    - Botão 'Limpar Filtros' dentrodo toast
-  - **Componente reutilizável de toast com:**
+    - Descrição dos filtros ativos na mensagem\n    - Botão 'X' para fechar notificação\n    - Botão 'Limpar Filtros' dentrodo toast\n  - **Componente reutilizável de toast com:**
     - Animação suave de entrada e saída
     - Ícones personalizados (check verde, filtro azul)\n    - Cores de fundo diferenciadas (verde claro para sucesso, azul claro para filtros)
     - Posicionamento fixo e responsivo
@@ -857,8 +864,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Módulo de dashboard de previsão:**
   - **Componente de visualização de status:**
     - Cartões de risco (vermelho/amarelo/verde)
-    - Indicadores principais (saldo atual, previsto 7 dias, previsto 30 dias)
-  - **Componente de gráficos:**
+    - Indicadores principais (saldo atual, previsto 7 dias, previsto 30 dias)\n  - **Componente de gráficos:**
     - Gráfico de linha de previsão diária
     - Gráfico de barras de gastos por categoria
     - Tabelas de previsão semanal e mensal
@@ -901,10 +907,13 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de filtro específico para transferências**
   - **Validação de identificação visual de transferências**
 - **Testes de análise e categorização automática:**
-  - Validação de trigger manual após upload e salvamento\n  - Validação de sugestões de categorias existentes\n  - Validação de sugestões de novas categorias
+  - Validação de trigger manual após upload e salvamento\n  - Validação de sugestões de categorias existentes
+  - Validação de sugestões de novas categorias
   - Validação de exibição de popup com lista ordenada de transações
   - Validação de dropdown de categorias com pré-seleção
-  - Validação de cadastro em lote de transações
+  - **Validação de possibilidade de deixar dropdown sem seleção**
+  - **Validação de cadastro apenas de transações com categoria selecionada**
+  - **Validação de mensagem de confirmação com número de transações cadastradas**
   - Validação de aprendizado contínuo do modelo\n- **Testes de importação de arquivos OFX:**
   - Validação de parsing de OFX versões 1.x e 2.x
   - Validação de extração correta de transações
@@ -916,15 +925,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de cálculo correto ao adicionar transferências enviadas (diminuição de saldo da origem)**
   - **Validação de cálculo correto ao adicionar transferências recebidas (aumento de saldo do destino)**
   - Validação de atualização de saldo ao editar ou excluir transações
-  - **Validação de atualização de saldo ao editar ou excluir transferências**\n  - **Validação de cálculo de saldo histórico para meses anteriores**
+  - **Validação de atualização de saldo ao editar ou excluir transferências**
+  - **Validação de cálculo de saldo histórico para meses anteriores**
 - **Testes de upload e salvamento de extrato no chatbot:**
   - Validação de upload de arquivo via chatbot\n  - Validação de salvamento seguro na plataforma
   - Validação de feedback visual de progresso
   - Validação de geração de botão 'Analisar Extrato'\n- **Testes de popup de resultados:**
   - Validação de exibição de popup após análise\n  - Validação de ordenação de transações por data
   - Validação de dropdown de categorias\n  - Validação de pré-seleção de categoria sugerida
-  - Validação de cadastro em lote ao clicar em 'Cadastrar Transações'
-- **Testes de dashboard expandido:**
+  - **Validação de possibilidade de deixar dropdown sem seleção**
+  - **Validação de cadastro apenas de transações com categoria selecionada ao clicar em 'Cadastrar Transações'**
+  - **Validação de mensagem de confirmação com número de transações cadastradas**\n- **Testes de dashboard expandido:**
   - Validação de cálculo de indicadores financeiros
   - **Validação de cálculo de total de transferências realizadas**
   - Validação de geração de gráficos de linha, pizza, barras e área
@@ -934,8 +945,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Validação de responsividade de gráficos
   - **Validação de seletor de mês e navegação entre meses**
   - **Validação de atualização de indicadores ao selecionar novo mês**
-  - **Validação de atualização de gráficos ao selecionar novo mês**
-  - **Validação de cálculo correto de dados históricos**
+  - **Validação de atualização de gráficos ao selecionar novo mês**\n  - **Validação de cálculo correto de dados históricos**
   - **Validação de comparação entre meses diferentes**
 - **Testes de filtragem e busca de transações:**
   - **Validação de busca em tempo real por descrição, título e estabelecimento**
@@ -1049,13 +1059,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Análise do arquivo salvo pelo modelo de IA
   - Exibição de popup com lista ordenada de transações por data
   - Dropdown de categoria para cada transação com sugestão pré-selecionada
+- **Possibilidade de deixar dropdown sem seleção**
   - Botão 'Cadastrar Transações' no popup para cadastro em lote
+  - **Cadastro apenas de transações com categoria selecionada**
 - **Análise e categorização automática de transações comIA:**
   - Trigger manual via botão 'Analisar Extrato' no chatbot
   - Sugestão de categorias existentes
   - Sugestão de novas categorias incluídas no dropdown
   - Interface de revisão em popup antesdo cadastro
-  - Cadastro em lote de transações categorizadas
+  - **Cadastro em lote apenas de transações com categoria selecionada**
   - Aprendizado contínuo baseado em confirmações do usuário
 - CRUD de transações (incluindo edição de valor, data, descrição, título e categoria)
 - **Notificações toast ao cadastrar transação**
@@ -1066,7 +1078,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Gestão de contas a pagar e receber:**
   - Cadastro de contas a pagar (descrição, valor, vencimento, categoria, status, recorrência)
   - Cadastro de contas a receber (descrição, valor, vencimento, categoria, status, recorrente)
-  - Atualização automática de status\n  - Visualização consolidada\n  - Integração com previsão financeira
+  - Atualização automática de status
+  - Visualização consolidada\n  - Integração com previsão financeira
 - **Página de transações (https://onlifin.onlitec.com.br/transactions) com funcionalidades avançadas:**
   - **Campo de busca em tempo real**
   - **Filtros completos (conta, categoria, tipo, data)**
@@ -1206,8 +1219,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Indicador visual de permissão de análise ativa (ícone de lupa verde, tamanho 20px) quando o modelo de IA tiver permissão para analisar e categorizar extratos**
 - **Badge de status para plugins (ícone de check verde paraativo, ícone cinza para inativo, tamanho 16px)**
 - **Ícone de engrenagem para acesso às configurações de plugins (tamanho 24px)**
-- **Exibição destacada do saldo atual da conta (conforme especificado anteriormente)**\n- **Cards de indicadores (conforme especificado anteriormente)**
-- **Animações suaves de transição ao carregar gráficos (duração de 300ms, easing ease-in-out)**
+- **Exibição destacada do saldo atual da conta (conforme especificado anteriormente)**\n- **Cards de indicadores (conforme especificado anteriormente)**\n- **Animações suaves de transição ao carregar gráficos (duração de 300ms, easing ease-in-out)**
 - **Seletor de mês (conforme especificado anteriormente)**
 - **Indicador visual de memória ativa (ícone de cérebro ou banco de dados verde, tamanho 20px) quando sistema de memória estiver habilitado**
 - **Badge com número de conversas armazenadas no histórico (fundo azul, texto branco, tamanho 12px)**
@@ -1235,7 +1247,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Botões de ação (marcar como lido, descartar) no canto direito
   - **Cards de insights:**
     - Ícone de lâmpada ou cérebro (32px) no canto superior esquerdo
-    - Fundo branco com borda azul claro (1px)\n    - Texto em fonte 14px\n    - Data de geração em fonte 12px, cor cinza
+    - Fundo branco com borda azul claro (1px)
+    - Texto em fonte 14px\n    - Data de geração em fonte 12px, cor cinza
   - **Tabelas de previsão:**
     - Cabeçalho com fundo azul claro (#E3F2FD)
     - Linhas alternadas (zebra striping) para melhor leitura
@@ -1251,3 +1264,4 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 
 ### 9.1 Imagens de Referência
 - Exemplo de mensagem de erro de importação OFX: {2C7B1F61-7FE3-4148-B737-A544FBDEEF2D}.png
+- Imagens de referência fornecidas pelo usuário: {50F059AF-0D4A-40FE-B3EE-4BA1DA4340B1}.png, image.png

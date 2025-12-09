@@ -8,21 +8,25 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { accountsApi, transactionsApi } from '@/db/api';
-import { Account, Transaction } from '@/types/types';
+import { CheckCircle, XCircle, AlertCircle, Loader2, Save } from 'lucide-react';
+import { accountsApi, transactionsApi, categoriesApi } from '@/db/api';
+import { Account, Transaction, Category } from '@/types/types';
 
 export default function Reconciliation() {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [bankBalance, setBankBalance] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSavingCategories, setIsSavingCategories] = useState(false);
   const [reconciledIds, setReconciledIds] = useState<Set<string>>(new Set());
+  const [categorySelections, setCategorySelections] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   useEffect(() => {
     loadAccounts();
+    loadCategories();
   }, []);
 
   useEffect(() => {
@@ -47,6 +51,19 @@ export default function Reconciliation() {
     }
   };
 
+  const loadCategories = async () => {
+    try {
+      const data = await categoriesApi.getCategories();
+      setCategories(data);
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao carregar categorias',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const loadTransactions = async () => {
     setIsLoading(true);
     try {
@@ -56,6 +73,15 @@ export default function Reconciliation() {
       const data = await transactionsApi.getTransactions(user.id);
       const filtered = data.filter(t => t.account_id === selectedAccount);
       setTransactions(filtered);
+      
+      // Initialize category selections with existing categories
+      const initialSelections: Record<string, string> = {};
+      filtered.forEach(t => {
+        if (t.category_id) {
+          initialSelections[t.id] = t.category_id;
+        }
+      });
+      setCategorySelections(initialSelections);
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -143,6 +169,58 @@ export default function Reconciliation() {
         description: error.message || 'Erro ao finalizar conciliação',
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleSaveCategories = async () => {
+    setIsSavingCategories(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Filter transactions that have a category selected (excluding 'none')
+      const transactionsToUpdate = Object.entries(categorySelections).filter(
+        ([_, categoryId]) => categoryId && categoryId !== '' && categoryId !== 'none'
+      );
+
+      if (transactionsToUpdate.length === 0) {
+        toast({
+          title: 'Aviso',
+          description: 'Nenhuma categoria selecionada para salvar',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Update each transaction with its selected category
+      const updatePromises = transactionsToUpdate.map(([transactionId, categoryId]) => {
+        const transaction = transactions.find(t => t.id === transactionId);
+        if (transaction) {
+          return transactionsApi.updateTransaction(transactionId, {
+            ...transaction,
+            category_id: categoryId
+          });
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(updatePromises);
+
+      toast({
+        title: 'Sucesso',
+        description: `${transactionsToUpdate.length} transação(ões) atualizada(s) com sucesso`
+      });
+
+      // Reload transactions to reflect changes
+      await loadTransactions();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao salvar categorias',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingCategories(false);
     }
   };
 
@@ -248,13 +326,27 @@ export default function Reconciliation() {
                   {reconciledIds.size} de {transactions.length} transações conciliadas
                 </CardDescription>
               </div>
-              <Button
-                onClick={handleFinishReconciliation}
-                disabled={!bankBalance || !isBalanced}
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Finalizar Conciliação
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveCategories}
+                  disabled={isSavingCategories || Object.keys(categorySelections).length === 0}
+                  variant="outline"
+                >
+                  {isSavingCategories ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Salvar Categorias
+                </Button>
+                <Button
+                  onClick={handleFinishReconciliation}
+                  disabled={!bankBalance || !isBalanced}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Finalizar Conciliação
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -275,6 +367,7 @@ export default function Reconciliation() {
                       <TableHead>Data</TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead>Tipo</TableHead>
+                      <TableHead>Categoria</TableHead>
                       <TableHead className="text-right">Valor</TableHead>
                       <TableHead className="w-32">Ação</TableHead>
                     </TableRow>
@@ -299,6 +392,31 @@ export default function Reconciliation() {
                             <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
                               {transaction.type === 'income' ? 'Receita' : 'Despesa'}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={categorySelections[transaction.id] || 'none'}
+                              onValueChange={(value) => {
+                                setCategorySelections(prev => ({
+                                  ...prev,
+                                  [transaction.id]: value
+                                }));
+                              }}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Selecione..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Sem categoria</SelectItem>
+                                {categories
+                                  .filter(cat => cat.type === transaction.type)
+                                  .map(cat => (
+                                    <SelectItem key={cat.id} value={cat.id}>
+                                      {cat.icon} {cat.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {transaction.type === 'income' ? '+' : '-'} R$ {transaction.amount.toFixed(2)}
