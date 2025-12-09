@@ -194,14 +194,9 @@ export default function Reconciliation() {
 
       // Update each transaction with its selected category
       const updatePromises = transactionsToUpdate.map(([transactionId, categoryId]) => {
-        const transaction = transactions.find(t => t.id === transactionId);
-        if (transaction) {
-          return transactionsApi.updateTransaction(transactionId, {
-            ...transaction,
-            category_id: categoryId
-          });
-        }
-        return Promise.resolve();
+        return transactionsApi.updateTransaction(transactionId, {
+          category_id: categoryId
+        });
       });
 
       await Promise.all(updatePromises);
