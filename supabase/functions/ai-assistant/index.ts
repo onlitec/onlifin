@@ -2,7 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const APP_ID = Deno.env.get('VITE_APP_ID') || 'app-7xkeeoe4bsap';
-const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse`;
+// Usar API não-streaming para respostas mais rápidas no chat
+const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-2.0-flash-exp:generateContent`;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,12 +19,12 @@ async function getUserFinancialData(supabaseClient: any, userId: string, permiss
 
   try {
     if (permissionLevel === 'read_aggregated') {
-      // Apenas dados agregados (totais, somatórios, médias)
+      // Apenas dados agregados (totais, somatórios, médias) - otimizado
       const [accounts, cards, transactions, categories] = await Promise.all([
-        supabaseClient.from('accounts').select('id, name, balance, currency').eq('user_id', userId),
-        supabaseClient.from('cards').select('id, name, card_limit, available_limit').eq('user_id', userId),
-        supabaseClient.from('transactions').select('type, amount, category_id, date').eq('user_id', userId),
-        supabaseClient.from('categories').select('id, name, type').eq('user_id', userId)
+        supabaseClient.from('accounts').select('id, name, balance').eq('user_id', userId).limit(10),
+        supabaseClient.from('cards').select('id, name, available_limit').eq('user_id', userId).limit(5),
+        supabaseClient.from('transactions').select('type, amount, category_id').eq('user_id', userId).limit(100),
+        supabaseClient.from('categories').select('id, name, type').eq('user_id', userId).limit(20)
       ]);
 
       // Calcular estatísticas agregadas
@@ -425,87 +426,44 @@ Deno.serve(async (req: Request) => {
     // Buscar dados financeiros do usuário
     const userData = await getUserFinancialData(supabaseClient, userId, permissionLevel);
 
-    // Criar contexto com os dados do usuário
-    let contextPrompt = `Você é um assistente financeiro inteligente e prestativo. 
-Ajude o usuário com questões relacionadas a finanças pessoais, como:
-- Categorização de transações
-- Dicas de economia
-- Análise de gastos
-- Planejamento financeiro
-- Explicações sobre conceitos financeiros
+    // Criar contexto com os dados do usuário (versão otimizada e concisa)
+    let contextPrompt = `Você é um assistente financeiro. Ajude com: categorização, economia, análise de gastos, planejamento.
 
-Seja conciso, claro e sempre forneça conselhos práticos e responsáveis.
+DADOS (${permissionLevel}):
+${JSON.stringify(userData.financial_summary || {}, null, 2)}
 
-DADOS FINANCEIROS DO USUÁRIO (Nível de acesso: ${permissionLevel}):
-${JSON.stringify(userData, null, 2)}
+Contas: ${JSON.stringify(userData.accounts_list || [])}
+Categorias: ${JSON.stringify(userData.categories_list || [])}
 
-Use esses dados para fornecer respostas personalizadas e relevantes ao contexto financeiro do usuário.
-Sempre que possível, referencie os dados reais do usuário em suas respostas.`;
+Seja conciso e prático.`;
 
     // Adicionar instruções de criação de transações se permitido
     if (canWriteTransactions) {
       contextPrompt += `
 
-PERMISSÃO DE ESCRITA ATIVADA:
-Você tem permissão para criar e modificar transações em nome do usuário.
+PERMISSÃO DE ESCRITA: Você pode criar transações.
 
-## AÇÕES DISPONÍVEIS:
-
-### 1. CRIAR TRANSAÇÃO
-Quando o usuário solicitar o cadastro de uma transação (ex: "registre uma despesa de R$ 150 no supermercado"), 
-responda com um JSON no seguinte formato:
-
+Para criar: responda JSON:
 {
   "action": "create_transaction",
   "transaction_data": {
-    "type": "expense" ou "income",
-    "amount": valor numérico (ex: 150.00),
-    "date": "YYYY-MM-DD" (use a data atual se não especificada),
-    "description": "descrição da transação",
-    "account_id": "id da conta" (use a primeira conta disponível se não especificada),
-    "category_id": "id da categoria" (tente identificar a categoria apropriada)
+    "type": "expense/income",
+    "amount": 150.00,
+    "date": "YYYY-MM-DD",
+    "description": "texto",
+    "account_id": "id",
+    "category_id": "id"
   },
-  "confirmation_message": "Mensagem amigável confirmando o que será registrado"
+  "confirmation_message": "mensagem"
 }
 
-### 2. CATEGORIZAR TRANSAÇÃO
-Quando o usuário pedir para categorizar transações específicas (ex: "categorize a transação X como alimentação"),
-responda com um JSON no seguinte formato:
-
+Para categorizar: responda JSON:
 {
   "action": "update_category",
-  "transaction_id": "id da transação",
-  "category_id": "id da categoria",
-  "confirmation_message": "Mensagem confirmando a categorização"
-}
-
-### 3. CATEGORIZAR EM LOTE
-Quando o usuário pedir para categorizar múltiplas transações (ex: "categorize todas as transações sem categoria"),
-responda com um JSON no seguinte formato:
-
-{
-  "action": "batch_categorize",
-  "updates": [
-    {"id": "transaction_id_1", "category_id": "category_id_1"},
-    {"id": "transaction_id_2", "category_id": "category_id_2"}
-  ],
-  "confirmation_message": "Mensagem explicando as categorizações sugeridas"
-}
-
-IMPORTANTE:
-- Sempre confirme os detalhes antes de criar ou modificar
-- Use as contas e categorias disponíveis nos dados do usuário
-- Se não houver conta ou categoria apropriada, informe o usuário
-- Valide que o valor é positivo
-- Use a data atual se não especificada
-- Para categorização, analise a descrição e merchant da transação
-- Seja inteligente ao sugerir categorias baseado no contexto
-
-Contas disponíveis: ${JSON.stringify(userData.accounts_list || [])}
-Categorias disponíveis: ${JSON.stringify(userData.categories_list || [])}
-
-TRANSAÇÕES DISPONÍVEIS PARA CATEGORIZAÇÃO:
-${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter((t: any) => !t.category_id).slice(0, 20) || [], null, 2) : 'Acesso limitado - solicite permissão read_full para ver transações'}`;
+  "transaction_id": "id",
+  "category_id": "id",
+  "confirmation_message": "mensagem"
+}`;
     }
 
     // Construir histórico de conversa para a API
@@ -520,15 +478,15 @@ ${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter
       {
         role: 'model',
         parts: [
-          { text: 'Entendido. Estou pronto para ajudar com questões financeiras usando os dados fornecidos.' + (canWriteTransactions ? ' Posso também criar transações quando solicitado.' : '') }
+          { text: 'Pronto para ajudar!' + (canWriteTransactions ? ' Posso criar transações.' : '') }
         ]
       }
     ];
 
     // Adicionar histórico de conversa anterior se existir
     if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-      // Limitar histórico aos últimos 10 pares de mensagens (20 mensagens no total)
-      const recentHistory = conversationHistory.slice(-20);
+      // Limitar histórico aos últimos 6 mensagens para respostas mais rápidas
+      const recentHistory = conversationHistory.slice(-6);
       
       for (const msg of recentHistory) {
         conversationContents.push({
@@ -548,6 +506,15 @@ ${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter
       });
     }
 
+    // Configuração otimizada para respostas rápidas
+    const generationConfig = {
+      temperature: 0.7,
+      topK: 20,
+      topP: 0.8,
+      maxOutputTokens: 1024,
+      candidateCount: 1
+    };
+
     const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
       headers: {
@@ -555,7 +522,8 @@ ${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter
         'X-App-Id': APP_ID
       },
       body: JSON.stringify({
-        contents: conversationContents
+        contents: conversationContents,
+        generationConfig: generationConfig
       })
     });
 
@@ -565,33 +533,9 @@ ${permissionLevel === 'read_full' ? JSON.stringify(userData.transactions?.filter
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonData = JSON.parse(line.slice(6));
-              const text = jsonData.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) {
-                fullResponse += text;
-              }
-            } catch (e) {
-              console.error('Error parsing SSE data:', e);
-            }
-          }
-        }
-      }
-    }
+    // Processar resposta não-streaming (mais rápido)
+    const data = await response.json();
+    const fullResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // Verificar se a resposta contém uma solicitação de ação
     let createdTransactionId = null;
