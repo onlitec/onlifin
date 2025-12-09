@@ -4,10 +4,12 @@ import { supabase } from '@/db/supabase';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/common/Header';
 import AIAssistant from '@/components/AIAssistant';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { UpdateNotification } from '@/components/pwa/UpdateNotification';
+import { PWAStatus } from '@/components/pwa/PWAStatus';
 import routes from './routes';
 
 function App() {
-  // Flatten routes to include children
   const flattenRoutes = (routeList: typeof routes) => {
     const flattened: typeof routes = [];
     routeList.forEach(route => {
@@ -27,6 +29,9 @@ function App() {
     <Router>
       <AuthProvider client={supabase}>
         <Toaster />
+        <PWAStatus />
+        <UpdateNotification />
+        <InstallPrompt />
         <RequireAuth whiteList={['/login']}>
           <div className="flex flex-col min-h-screen">
             <Header />

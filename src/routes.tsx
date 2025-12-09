@@ -15,6 +15,7 @@ import Admin from './pages/Admin';
 import AIAdmin from './pages/AIAdmin';
 import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
+import PWAInfo from './pages/PWAInfo';
 import type { ReactNode } from 'react';
 
 interface RouteConfig {
@@ -105,6 +106,12 @@ const routes: RouteConfig[] = [
     path: '/chat',
     element: <Chat />,
     visible: true
+  },
+  {
+    name: 'PWA',
+    path: '/pwa-info',
+    element: <PWAInfo />,
+    visible: false
   },
   {
     name: 'Admin',

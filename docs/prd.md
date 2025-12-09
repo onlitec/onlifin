@@ -6,7 +6,7 @@
 Plataforma de Gestão Financeira Pessoal com Assistente de IA e Análise Preditiva Automática
 
 ### 1.2 Descrição
-Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, realizar transferências entre contas cadastradas, e oferece um assistente de IA contextual com memória persistente acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações. **Agora com módulo completo de Análise Financeira Automática baseada em IA, que gera previsões de saldo futuro, análises inteligentes de gastos, alertas de risco, dashboards interativos, insights automáticos e notificações proativas ao usuário. Inclui também funcionalidade de registro de compras via leitura de QR Code de cupom fiscal utilizando OCR.**
+Plataforma web (MVP) para gestão de finanças pessoais que permite importar extratos bancários, gerenciar contas e cartões, cadastrar receitas e despesas, realizar transferências entre contas cadastradas, e oferece um assistente de IA contextual com memória persistente acessível em toda a interface. Inclui painel de administração para configurar modelos de IA, controlar permissões de acesso aos dados (leitura e escrita), configurar plugins e registrar auditoria de interações. **Agora com módulo completo de Análise Financeira Automática baseada em IA, que gera previsões de saldo futuro, análises inteligentes de gastos, alertas de risco, dashboards interativos, insights automáticos e notificações proativas ao usuário. Inclui também funcionalidade de registro de compras via leitura de QR Code de cupom fiscal utilizando OCR. Implementado como Progressive Web App (PWA) com funcionalidades offline, instalação nativa e sincronização automática.**
 
 ## 2. Funcionalidades Principais
 
@@ -15,8 +15,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Cadastro de cartões de crédito (limite, data de fechamento, data de vencimento)\n- **Notificação toast ao cadastrar conta bancária:**
   - Exibição de notificação toast no canto superior direito da tela
   - Mensagem:'Conta bancária cadastrada com sucesso!'
-  - Ícone de check verde
-  - Duração: 3 segundos\n  - Animação suave de entrada e saída
+  - Ícone de check verde\n  - Duração: 3 segundos
+  - Animação suave de entrada e saída
 - **Visualização de saldo atual da conta com cálculo automático:**
   - Saldo inicial da conta
   - Saldo atualizado em tempo real considerando:\n    - Despesas pagas: diminuem o saldo da conta
@@ -58,8 +58,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Assistente valida saldo suficiente antes de criar transferência
   - Assistente fornece feedback claro sobre transferências realizadas
   - Assistente pode consultar histórico de transferências entre contas específicas
-
-### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
+\n### 2.3 Importação e Conciliação\n- **Importação de extratos bancários nos formatos CSV, OFX e QIF:**
   - **Suporte completo ao formato OFX (Open Financial Exchange):**
     - Parsing de arquivos OFX versões 1.x (SGML) e 2.x (XML)
     - Extração automática de dados de transações: data, descrição, valor, tipo (débito/crédito), saldo
@@ -82,7 +81,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Modelo de IA analisa o arquivo já salvo na plataforma
   - **Passo 3: Exibição de resultados em popup**
     - Após análise, sistema exibe janela popup com resultados\n    - **Estrutura do popup:**
-      - Título:'Resultado da Análise do Extrato'
+      - Título: 'Resultado da Análise do Extrato'
       - Lista de transações ordenadas por data (da mais antiga para a mais recente)
       - Cada transação exibida com:
         - Data da transação
@@ -100,10 +99,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
       - Após cadastro, popup é fechado e chatbot exibe mensagem de confirmação
       - **Mensagem de confirmação indica o número de transações cadastradas (ex: '15 transações cadastradas com sucesso')**
 - Saldo das contas é atualizado automaticamente\n- Mapeamento automático de transações importadas\n- Ferramenta de conciliação manual de lançamentos
-- Classificação automática de transações\n
-### 2.4 Análise e Categorização Automática de Transações com IA
+- Classificação automática de transações\n\n### 2.4 Análise e Categorização Automática de Transações com IA
 - **Análise automática de transações importadas:**
-  - **Trigger: acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
+  - **Trigger:acionado manualmente pelo usuário através do botão 'Analisar Extrato' no chatbot após upload e salvamento do arquivo**
   - O modelo de IA analisa cada transação do extrato salvo utilizando:
     - Descrição da transação
     - Título ou nome do estabelecimento
@@ -134,7 +132,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Animação suave de entrada e saída
 - **Cadastro de transferências entre contas cadastradas (valor, data, conta origem, conta destino, descrição)**
 - **Edição de transações existentes: permite alterar valor, data, descrição, título e categoria de transações já cadastradas**
-- **Edição de transferências existentes: permite alterar valor, data e descrição, com atualização automática das movimentações vinculadas**\n- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
+- **Edição de transferências existentes: permite alterar valor, data e descrição, com atualização automática das movimentações vinculadas**
+- **Atualização automática do saldo da conta ao cadastrar, editar ou excluir transações e transferências**
 - Suporte a pagamentos recorrentes\n- Suporte a receitas recorrentes
 - Controle de parcelamentos com acompanhamento de parcelas
 - Agendamento de compromissos e pagamentos
@@ -233,8 +232,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Dashboard expandido com indicadores financeiros e gráficos:**
   - **Seletor de mês para visualização de dados históricos:**
     - Dropdown ou calendário para seleção de mês específico
-    - Opções de navegação: mês anterior, próximo mês, mês atual
-    - Exibição clarado mês selecionado no topo do dashboard
+    - Opções de navegação: mês anterior, próximo mês, mês atual\n    - Exibição clarado mês selecionado no topo do dashboard
     - Atualização automática de todos os indicadores e gráficos ao selecionar novo mês
     - Possibilidade de comparar dados de diferentes meses lado a lado
   - **Indicadores principais (ajustados conforme mês selecionado):**\n    - Saldo total consolidado de todas as contas no final do mês selecionado
@@ -245,7 +243,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Variação percentual em relação ao mês anterior ao selecionado
     - Limite total disponível em cartões de crédito no mês selecionado
 - Valor total de contas a pagar no mês selecionado
-    - Valor total de contas a receber no mês selecionado\n  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
+    - Valor total de contas a receber no mês selecionado
+  - **Gráficos e visualizações (ajustados conforme mês selecionado):**
     - Gráfico de linha: evolução do saldo ao longo dos últimos 6 meses a partirdo mês selecionado
     - Gráfico de pizza: distribuição de despesas por categoria no mês selecionado
     - Gráfico de barras: comparação de receitas vs despesas nos últimos 6 meses a partir do mês selecionado
@@ -629,20 +628,231 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - Edição e exclusão de categorias existentes
 - Organização hierárquica de categorias (categorias e subcategorias)
 - Atribuição de cores e ícones personalizados para cada categoria
-\n## 3. Segurança e Privacidade\n
+\n### 2.13 Progressive Web App (PWA)
+\n#### 2.13.1 Visão Geral do PWA
+**A plataforma é implementada como um Progressive Web App (PWA), oferecendo experiência nativa em dispositivos móveis e desktop, com funcionalidades offline, instalação no dispositivo, notificações push e sincronização automática em segundo plano.**
+
+#### 2.13.2 Funcionalidades Offline
+- **Cache de dados essenciais:**
+  - Armazenamento local de contas cadastradas
+  - Armazenamento local de transações recentes (últimos 3 meses)
+  - Armazenamento local de categorias
+  - Armazenamento local de saldos atualizados
+  - Armazenamento local de previsões financeiras mais recentes
+  - Cache de assets estáticos (HTML, CSS, JavaScript, imagens,ícones)
+- **Operações offline:**
+  - **Cadastro de transações offline:**
+    - Usuário pode cadastrar receitas e despesas sem conexão
+    - Transações são armazenadas localmente com flag'pendente_sincronizacao'
+    - Saldo local é atualizado imediatamente
+    - Indicador visual de transação pendente de sincronização
+  - **Cadastro de transferências offline:**
+    - Usuário pode cadastrar transferências entre contas sem conexão
+    - Transferências são armazenadas localmente com flag 'pendente_sincronizacao'
+    - Saldos locais das contas envolvidas são atualizados imediatamente
+  - **Edição e exclusão offline:**
+    - Usuário pode editar ou excluir transações e transferências offline
+    - Alterações são armazenadas localmente e sincronizadas posteriormente
+  - **Visualização de dados offline:**
+    - Dashboard com indicadores e gráficos baseados em dados em cache
+    - Lista de transações com dados locais
+    - Página de contas com saldos em cache
+    - Previsões financeiras mais recentes disponíveis offline
+  - **Consulta ao assistente de IA offline (limitada):**
+    - Respostas baseadas em dados em cache
+    - Indicador visual de modo offline
+    - Mensagem informando que algumas funcionalidades requerem conexão
+- **Indicadores de status de conexão:**
+  - Banner no topo da interface indicando modo offline
+  - Ícone de status de conexão no menu de navegação
+  - Mensagem clara quando operações requerem conexão online
+  - Contador de transações pendentes de sincronização
+\n#### 2.13.3 Sincronização em Segundo Plano
+- **Background Sync API:**
+  - Sincronização automática quando conexão é restabelecida
+  - Fila de operações pendentes (transações, transferências, edições, exclusões)
+  - Priorização de sincronização (operações críticas primeiro)
+  - Retry automático em caso de falha de sincronização
+- **Processo de sincronização:**
+  1. **Detecção de conexão:**
+     - Sistema detecta quando conexão é restabelecida
+     - Notificação toast informando início da sincronização
+  2. **Envio de dados pendentes:**
+     - Transações cadastradas offline são enviadas ao servidor
+     - Transferências cadastradas offline são enviadas ao servidor\n     - Edições e exclusões são aplicadas no servidor
+     - Validação de conflitos (ex: saldo insuficiente após sincronização)
+  3. **Atualização de dados locais:**
+     - Dados sincronizados recebem confirmação do servidor
+     - Flag 'pendente_sincronizacao' é removida
+     - Saldos são recalculados com base em dados do servidor
+     - Cache local é atualizado com dados mais recentes
+  4. **Resolução de conflitos:**
+     - Conflitos são identificados (ex: transação duplicada, saldo insuficiente)
+     - Usuário é notificado de conflitos que requerem ação manual
+     - Interface para resolver conflitos (aceitar, rejeitar, editar)
+  5. **Notificação de conclusão:**
+     - Toast informando sucesso da sincronização
+     - Indicador de número de transações sincronizadas
+     - Mensagem de erro clara em caso de falha
+- **Sincronização periódica:**
+  - Periodic Background Sync para atualizar dados em segundo plano
+  - Intervalo configurável (padrão: a cada 12 horas)
+  - Atualização de saldos, previsões e alertas
+  - Sincronização apenas quando dispositivo estiver conectado e com bateria suficiente
+
+#### 2.13.4 Instalação e Experiência Nativa
+- **Instalação no dispositivo:**
+  - Prompt de instalação exibido após2 visitas ou5 minutos de uso
+  - Botão 'Instalar App' visível no menu de navegação
+  - Suporte a instalação em Android, iOS, Windows, macOS e Linux
+  - Ícone personalizado da plataforma na tela inicialdo dispositivo
+- **Manifest.json configurado:**
+  - Nome da aplicação:'OnliFin - Gestão Financeira'
+  - Nome curto: 'OnliFin'
+  - Descrição: 'Plataforma de gestão financeira pessoal comIA'
+  - Ícones em múltiplas resoluções (192x192, 512x512)\n  - Cor de tema: #2C3E50 (azul profissional)
+  - Cor de fundo: #FFFFFF (branco)
+  - Display: standalone (experiência de app nativo)
+  - Orientação: portrait (mobile) e any (desktop)
+- **Splash screen personalizada:**
+  - Logo da plataforma centralizada
+  - Cor de fundo consistente com identidade visual\n  - Animação suave de carregamento
+- **Experiência nativa:**
+  - Barra de endereço oculta quando instalado
+  - Navegação por gestos (swipe) em dispositivos móveis
+  - Suporte a atalhos de teclado em desktop
+  - Integração com sistema operacional (compartilhamento, notificações)
+\n#### 2.13.5 Notificações Push
+- **Push Notifications API:**
+  - Solicitação de permissão para notificações ao instalar o app
+  - Notificações push para alertas críticos:\n    - Saldo negativo previsto nos próximos 7 dias\n    - Contas próximas do vencimento (3 dias ou menos)
+    - Anomalias detectadas no padrão de gastos
+    - Gastos excessivos em categorias específicas
+  - Notificações push para lembretes:
+    - Lembrete de cadastrar transações pendentes
+    - Lembrete de revisar orçamento mensal
+    - Lembrete de sincronizar dados offline
+- **Configuração de notificações:**
+  - Painel de configuração para ativar/desativar notificações push
+  - Seleção de tipos de alertas a receber via push
+  - Configuração de horário preferido para notificações
+  - Opção de silenciar notificações temporariamente
+- **Formato de notificações:**
+  - Título claro e objetivo
+  - Mensagem concisa com informação relevante
+  - Ícone da plataforma
+  - Badge com número de alertas não lidos
+  - Ação rápida (ex: 'Ver Detalhes', 'Cadastrar Transação')
+  - Deep link para página específica ao clicar na notificação
+
+#### 2.13.6 Service Worker
+- **Estratégias de cache:**
+  - **Cache-first para assets estáticos:**
+    - HTML, CSS, JavaScript, imagens, ícones são servidos do cache
+    - Atualização em segundo plano quando nova versão está disponível
+  - **Network-first para dados dinâmicos:**
+    - Transações, saldos, previsões são buscados darede primeiro
+    - Fallback para cache em caso de falha de conexão
+  - **Stale-while-revalidate para dados semi-estáticos:**
+    - Contas, categorias são servidas do cache\n    - Atualização em segundo plano para manter dados frescos
+- **Atualização do Service Worker:**
+  - Detecção automática de nova versão do Service Worker
+  - Notificação ao usuário de atualização disponível
+  - Botão 'Atualizar Agora' para aplicar nova versão
+  - Atualização automática após fechamento do app (se configurado)
+- **Gerenciamento de cache:**
+  - Limpeza automática de cache antigo
+  - Limite de tamanho de cache (padrão: 50MB)
+  - Priorização de dados mais recentes
+  - Opção manual de limpar cache nas configurações
+
+#### 2.13.7 Otimizações de Performance
+- **Lazy loading:**
+  - Carregamento sob demanda de componentes não críticos
+  - Lazy loading de imagens e gráficos
+  - Code splitting para reduzir tamanho inicialdo bundle
+- **Compressão de assets:**
+  - Minificação de HTML, CSS e JavaScript
+  - Compressão Gzip ou Brotli para assets estáticos
+  - Otimização de imagens (WebP, compressão)\n- **Pré-carregamento:**
+  - Preload de recursos críticos (fontes, CSS principal)
+  - Prefetch de páginas frequentemente acessadas
+  - Preconnect para APIs e serviços externos
+- **Renderização otimizada:**
+  - Server-side rendering (SSR) ou Static Site Generation (SSG) para primeira carga
+  - Hydration progressiva para interatividade
+  - Virtual scrolling para listas longas de transações
+\n#### 2.13.8 Segurança no PWA
+- **HTTPS obrigatório:**
+  - PWA requer HTTPS para todas as funcionalidades
+  - Certificado SSL/TLS válido
+  - Redirecionamento automático de HTTP para HTTPS
+- **Content Security Policy (CSP):**\n  - Política de segurança de conteúdo rigorosa
+  - Bloqueio de scripts inline não autorizados
+  - Whitelist de domínios permitidos
+- **Criptografia de dados locais:**
+  - Dados sensíveis armazenados localmente são criptografados
+  - Chave de criptografia derivada de credenciais do usuário
+  - IndexedDB ou LocalStorage com criptografia
+- **Autenticação persistente:**
+  - Token de autenticação armazenado de forma segura
+  - Refresh token para renovação automática\n  - Logout automático após período de inatividade
+\n#### 2.13.9 Compatibilidade e Suporte
+- **Navegadores suportados:**
+  - Chrome/Edge (versão 90+)
+  - Firefox (versão 88+)
+  - Safari (versão 14+)
+  - Opera (versão 76+)
+- **Sistemas operacionais:**
+  - Android 8.0+
+  - iOS 14.0+
+  - Windows 10+
+  - macOS 11.0+
+  - Linux (distribuições modernas)
+- **Fallback para navegadores não suportados:**
+  - Detecção de suporte a PWA
+  - Mensagem informando limitações em navegadores antigos
+  - Experiência web tradicional como fallback
+  - Sugestão de atualização de navegador
+
+#### 2.13.10 Métricas e Monitoramento do PWA
+- **Lighthouse Score:**
+  - Performance: 90+\n  - Accessibility: 95+
+  - Best Practices: 95+
+  - SEO: 90+
+  - PWA: 100\n- **Core Web Vitals:**
+  - Largest Contentful Paint (LCP): < 2.5s
+  - First Input Delay (FID): < 100ms
+  - Cumulative Layout Shift (CLS): < 0.1
+- **Monitoramento de uso:**
+  - Taxa de instalação do PWA
+  - Taxa de retenção de usuários do PWA
+  - Frequência de uso offline
+  - Taxa de sucesso de sincronização
+  - Engajamento com notificações push
+- **Analytics específicas do PWA:**
+  - Tempo médio de usodo app instalado
+  - Páginas mais acessadas no modo offline
+  - Erros de sincronização e conflitos
+  - Performance de carregamento em diferentes dispositivos
+
+##3. Segurança e Privacidade\n
 ### 3.1 Proteção de Dados
 - TLS/HTTPS em todas as comunicações
 - Criptografia em repouso para dados sensíveis
-- Mascaramento e criptografia de números de conta e cartão\n- Transmissão segura de dados completos ao modelo de IA quando acesso total estiver ativado
+- Mascaramento e criptografia de números de conta e cartão\n- Transmissão segura de dados completos ao modelo deIA quando acesso total estiver ativado
 - **Transmissão segura de comandos de escrita ao modelo de IA quando permissão de escrita estiver ativada**
 - **Transmissão segura de dados a plugins conforme permissões configuradas**
 - **Criptografia de histórico de conversas armazenado no banco de dados**
 - **Proteção de dados de memória do modelo de IA com controles de acesso rigorosos**
 - **Criptografia de dados de previsões financeiras armazenados**
 - **Criptografia de imagens de cupons fiscais e dados extraídos via OCR**
-\n### 3.2 Autenticação e Autorização
+- **Criptografia de dados armazenados localmente no PWA (IndexedDB/LocalStorage)**
+
+### 3.2 Autenticação e Autorização
 - Autenticação por email/senha com MFA (autenticação multifator)
-- RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário\n- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
+- RBAC (controle de acesso baseado em papéis): admin, financeiro, usuário
+- Consentimento explícito e informado do usuário para conceder acesso totaldo modelo de IA a todos os dados financeiros:\n  - Contas cadastradas
   - Transações completas (receitas, despesas e transferências)
   - Pagamentos e recebimentos
   - Relatórios financeiros
@@ -658,12 +868,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Consentimento explícito para cada plugin com detalhamento de dados acessados**
 - **Consentimento explícito para armazenamento e uso de histórico de conversas**
 - **Consentimento explícito para uso de câmera e processamento OCR de cupons fiscais**
+- **Consentimento explícito para notificações push no PWA**
 - Termo de consentimento detalhado explicando o escopo do acesso total (leitura e escrita) e das permissões de cadastro\n- Opção de revogar acesso total e permissões de escrita a qualquer momento
 - **Opção de revogar permissões de plugins individualmente**
-- **Opção de limpar histórico de memória do modelo de IA**\n\n### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
+- **Opção de limpar histórico de memória do modelo de IA**\n- **Opção de limpar dados locais do PWA**
+\n### 3.3 Auditoria\n- Registro completo e detalhado de todos os acessos realizados pelo modelo de IA
 - Auditoria de ações de usuários humanos\n- Log de todas as consultas do modelo de IA aos dados da plataforma
 - **Log detalhado de todas as operações de escrita realizadas pelo modelo de IA:**
-  - **Transações criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da transação, ação executada)**
+  - **Transações criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da transação,ação executada)**
   - **Transferências criadas, editadas ou excluídas (timestamp, usuário solicitante, conta origem, conta destino, valor, ação executada)**
   - **Categorias criadas, editadas ou excluídas (timestamp, usuário solicitante, dados da categoria, ação executada)**
 - **Log de análises e categorizações automáticas realizadas pelo modelo de IA**
@@ -683,6 +895,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Dados extraídos do cupom fiscal**
   - **Transações criadas a partir do OCR**
   - **Erros de leitura ou processamento**
+- **Log de operações offline e sincronização:**
+  - **Transações cadastradas offline**
+  - **Sincronizações realizadas**
+  - **Conflitos detectados e resolvidos**
+  - **Falhas de sincronização**
 - Middleware de validação e registro antes de enviar dados ao conector de IA
 - **Middleware de validação e registro para operações de escrita do modelo de IA**
 - **Middleware de validação e registro para comunicação com plugins**
@@ -706,8 +923,14 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - POST /api/ocr/scan (processar imagem de QR Code)
   - GET /api/ocr/history (histórico de leituras OCR)
   - GET /api/ocr/receipt/:id (visualizar comprovante específico)
+- **Endpoints para sincronização do PWA:**
+  - POST /api/sync/transactions (sincronizar transações offline)
+  - POST /api/sync/transfers (sincronizar transferências offline)
+  - GET /api/sync/status (verificar status de sincronização)
+  - POST /api/sync/resolve-conflict (resolver conflito de sincronização)
 \n### 4.2 Webhooks
-- Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo\n  - Sugestão gerada pelo assistente\n  - **Transação criada, editada ou excluída pelo modelo de IA**
+- Eventos disponíveis:\n  - Nova transação\n  - Vencimento próximo\n  - Sugestão gerada pelo assistente
+  - **Transação criada, editada ou excluída pelo modelo de IA**
   - **Transferência criada, editada ou excluída pelo modelo de IA**
   - **Categoria criada, editada ou excluída pelo modelo de IA**
   - **Categorização automática concluída**
@@ -717,14 +940,18 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Alerta de risco gerado**
   - **Saldo negativo previsto**
   - **Cupom fiscal processado via OCR**
+  - **Sincronização offline concluída**
+  - **Conflito de sincronização detectado**
 \n## 5. Observabilidade e Confiabilidade
 
 ### 5.1 Monitoramento
 - Sistema de logs estruturados
 - Métricas de usodo assistente de IA
-- Alertas para erros e falhas de importação\n- Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de operações de escrita realizadas pelo modelo de IA**
+- Alertas para erros e falhas de importação
+- Monitoramento de acessos do modelo de IA aos dados\n- **Monitoramento de operações de escrita realizadas pelo modelo de IA**
 - **Monitoramento de transações e categorias criadas, editadas ou excluídas pelo modelo de IA**
-- **Monitoramento de transferências criadas, editadas ou excluídas pelo modelo de IA**\n- **Monitoramento de análises e categorizações automáticas**
+- **Monitoramento de transferências criadas, editadas ou excluídas pelo modelo de IA**
+- **Monitoramento de análises e categorizações automáticas**
 - **Monitoramento de performance e erros de plugins**
 - **Alertas para falhas de comunicação com plugins**
 - **Alertas para operações de escrita não autorizadas ou suspeitas**
@@ -747,14 +974,23 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Volume de cupons fiscais processados**
   - **Erros de extração de dados**
 - **Alertas para falhas recorrentes no processamento OCR**
-\n### 5.2 Backup e Recuperação
+- **Monitoramento específico do PWA:**
+  - **Taxa de instalação do PWA**
+  - **Taxa de retenção de usuários do PWA**
+  - **Frequência de uso offline**\n  - **Taxa de sucesso de sincronização**
+  - **Engajamento com notificações push**
+  - **Performance de carregamento (Core Web Vitals)**
+  - **Erros de Service Worker**
+  - **Tamanho de cache e uso de armazenamento local**
+
+### 5.2 Backup e Recuperação
 - Backup automático do banco de dados
 - Procedimentos documentados de recuperação de desastres
 - **Backup de logs de auditoria de operações de escrita do modelo de IA**
 - **Backup de histórico de conversas e memória do modelo de IA**\n- **Procedimentos de recuperação de histórico de memória em caso de falha**
 - **Backup de previsões financeiras geradas**
 - **Procedimentos de recuperação de dados de análise preditiva**
-- **Backup de imagens de cupons fiscais e dados extraídos via OCR**
+- **Backup de imagens de cupons fiscais e dados extraídos via OCR**\n- **Backup de dados locais do PWA (opcional, configurável pelo usuário)**
 
 ## 6. Arquitetura Técnica
 
@@ -765,7 +1001,16 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Agendador de tarefas: Celery ou APScheduler (para rotina automática de análise)**
 - **Broker de mensagens: Redis ou RabbitMQ (para processamento assíncrono)**
 - **Biblioteca OCR: Tesseract OCR ou Google Cloud Vision API (para processamento de QR Codes e cupons fiscais)**
-\n### 6.2 Componentes\n- Serviço de IA como componente externo configurável
+- **PWA:**
+  - **Service Worker: Workbox (biblioteca para gerenciamento de Service Worker)**
+  - **Manifest.json: configuração de PWA**
+  - **IndexedDB: armazenamento local de dados estruturados**
+  - **LocalStorage: armazenamento de configurações e preferências**
+  - **Push API: notificações push**
+  - **Background Sync API: sincronização em segundo plano**
+  - **Cache API: gerenciamento de cache de assets e dados**
+
+### 6.2 Componentes\n- Serviço de IA como componente externo configurável
 - Conector que chama endpoints de modelos (OpenAI/compatíveis, instâncias privadas)
 - **Sistema de gerenciamento de plugins com arquitetura modular**
 - **Conector de plugins para comunicação segura com serviços externos**
@@ -775,20 +1020,19 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Índices otimizados para busca rápida por data, palavra-chave e usuário
     - Compressão de dados para otimizar armazenamento
   - **Módulo de armazenamento de solicitações:**
-    - Tabela de solicitações com campos: id, conversa_id, timestamp, tipo_solicitacao, parametros, acao_executada, resultado, status\n    - Relacionamento com tabela de conversas\n  - **Módulo de recuperação de contexto:**
+    - Tabela de solicitações com campos: id, conversa_id, timestamp, tipo_solicitacao, parametros, acao_executada, resultado, status\n    - Relacionamento com tabela de conversas
+- **Módulo de recuperação de contexto:**
     - Algoritmo de busca semântica para recuperar conversas relevantes
     - Cache de contexto frequentemente acessado
     - Limite configurável de conversas recuperadas por consulta
   - **Módulo de gestão de memória:**
     - Interface para configurar período de retenção\n    - Processo automatizado de limpeza de histórico antigo
     - Exportação de histórico em formato JSON ou CSV
-    - Estatísticas de uso de memória
-- Camada de acesso a dados que fornece ao modelo de IA:\n  - **Acesso de leitura (read_full):**
+    - Estatísticas de uso de memória\n- Camada de acesso a dados que fornece ao modelo de IA:\n  - **Acesso de leitura (read_full):**
     - Dados completos de contas cadastradas
     - Histórico completo de transações (receitas, despesas e transferências)
     - Registros de pagamentos e recebimentos
-    - Relatórios financeiros gerados
-    - Saldos atualizados das contas
+    - Relatórios financeiros gerados\n    - Saldos atualizados das contas
     - Extratos detalhados de transações
     - Dados históricos de meses anteriores para consulta e análise
     - **Histórico completo de conversas e solicitações anteriores**
@@ -800,7 +1044,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - **Interface de escrita para criar, editar e excluir categorias**\n    - **Interface de escrita para cadastro direto de transações analisadas e categorizadas**
     - **Validação de permissões antes de cada operação de escrita**
     - **Registro de auditoria de todas as operações de escrita**
-- **Camada de acesso controlado para plugins conforme permissões configuradas**\n- **Módulo de cálculo de saldo em tempo real:**
+- **Camada de acesso controlado para plugins conforme permissões configuradas**
+- **Módulo de cálculo de saldo em tempo real:**
   - Calcula saldo atual baseado em saldo inicial, receitas recebidas, despesas pagas, transferências enviadas e transferências recebidas
   - Atualiza saldo automaticamente ao registrar, editar ou excluir transações e transferências
   - Fornece saldo atualizado para exibição na interface e para consultas do assistente de IA
@@ -821,7 +1066,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Cadastra apenas transações com categoria selecionada ao clicar em 'Cadastrar Transações'**
   - Aprende com confirmações e correções do usuário
 - **Módulo de importação de arquivos OFX:**
-  - Parser OFX para versões1.x (SGML) e 2.x (XML)\n  - Extração de dados de transações: data, descrição, valor, tipo, saldo\n  - Validação de integridade e tratamento de erros
+  - Parser OFX para versões1.x (SGML) e 2.x (XML)
+  - Extração de dados de transações: data, descrição, valor, tipo, saldo\n  - Validação de integridade e tratamento de erros
   - Mapeamento automático de conta bancária\n- **Módulo de upload e salvamento de extratos no chatbot:**
   - Interface de upload de arquivo no chatbot flutuante
   - Salvamento seguro do arquivo na plataforma
@@ -862,19 +1108,22 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Exibição no topo da página de transações
     - Permanece visível enquanto filtros estiverem ativos
     - Descrição dos filtros ativos na mensagem
-    - Botão 'X' para fechar notificação\n    - Botão 'Limpar Filtros' dentrodo toast\n  - **Componente reutilizável de toast com:**
+    - Botão 'X' para fechar notificação\n    - Botão 'Limpar Filtros' dentrodo toast
+  - **Componente reutilizável de toast com:**
     - Animação suave de entrada e saída
     - Ícones personalizados (check verde, filtro azul)\n    - Cores de fundo diferenciadas (verde claro para sucesso, azul claro para filtros)
     - Posicionamento fixo e responsivo
     - Fila de notificações para múltiplas mensagens simultâneas
 - Credenciais gerenciadas via vault/segredos (nunca na UI)
-- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**, **gerenciador de transferências**, **sistema de notificações toast**, **Agente de Previsão Financeira**, **módulo de análise preditiva**, **módulo OCR**\n- **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
+- Design modular: módulo de importação, processamento, API, UI, conector IA, **gerenciador de plugins**, **gerador de gráficos**, **sistema de memória**, **sistema de filtragem e busca**, **gerenciador de transferências**, **sistema de notificações toast**, **Agente de Previsão Financeira**, **módulo de análise preditiva**, **módulo OCR**, **módulo PWA**
+- **Módulo de validação e confirmação para operações de escrita do modelo de IA:**
   - **Validação de permissões antes de cada operação**
   - **Validação de dados antes de escrita no banco**
   - **Validação de saldo suficiente antes de criar transferências**
   - **Registro de auditoria de todas as operações**
   - **Rollback automático em caso de erro**
-- **Módulo de validação e sandbox para execução segura de plugins**\n- **Módulo de navegação temporal:**
+- **Módulo de validação e sandbox para execução segura de plugins**
+- **Módulo de navegação temporal:**
   - Gerenciamento de seleção de mês no dashboard
   - Cálculo de dados históricos para mês selecionado
   - Cache de dados históricos para performance
@@ -956,7 +1205,35 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Verificação de autenticidade do QR Code (quando possível)
     - Detecção de cupons duplicados
     - Criptografia de dados sensíveis\n    - Registro de auditoria de todas as leituras OCR
-\n###6.3 Testes\n- Cobertura de testes unitários e de integração
+- **Módulo PWA:**
+  - **Service Worker:**
+    - Gerenciamento de cache de assets estáticos (HTML, CSS, JavaScript, imagens)
+    - Estratégias de cache (cache-first, network-first, stale-while-revalidate)\n    - Interceptação de requisições de rede\n    - Atualização automática de Service Worker\n    - Limpeza de cache antigo
+  - **Armazenamento local:**
+    - IndexedDB para dados estruturados (transações, contas, categorias, saldos)
+    - LocalStorage para configurações e preferências
+    - Criptografia de dados sensíveis armazenados localmente
+    - Gerenciamento de quota de armazenamento
+  - **Sincronização em segundo plano:**
+    - Background Sync API para sincronizar dados offline
+    - Fila de operações pendentes (transações, transferências, edições, exclusões)
+    - Retry automático em caso de falha\n    - Resolução de conflitos\n  - **Notificações push:**
+    - Push API para enviar notificações ao dispositivo
+    - Registro de subscription de notificações
+    - Gerenciamento de permissões de notificações
+    - Deep linking para páginas específicas
+  - **Manifest.json:**
+    - Configuração de nome,ícones, cores e displaydo PWA
+    - Definição de orientação e escopo do app
+    - Configuração de splash screen
+  - **Detecção de instalação:**
+    - Evento beforeinstallprompt para exibir prompt de instalação
+    - Botão 'Instalar App' na interface\n    - Tracking de instalações
+  - **Modo offline:**
+    - Detecção de status de conexão
+    - Indicadores visuais de modo offline
+    - Funcionalidades limitadas offline
+    - Mensagens informativas sobre limitações\n\n###6.3 Testes\n- Cobertura de testes unitários e de integração
 - Testes de segurança (SAST/DAST)
 - Testes de acessodo modelo de IA aos dados
 - **Testes de operações de escrita do modelo de IA:**
@@ -986,7 +1263,8 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de filtro específico para transferências**
   - **Validação de identificação visual de transferências**
 - **Testes de análise e categorização automática:**
-  - Validação de trigger manual após upload e salvamento\n  - Validação de sugestões de categorias existentes
+  - Validação de trigger manual após upload e salvamento
+  - Validação de sugestões de categorias existentes
   - Validação de sugestões de novas categorias
   - Validação de exibição de popup com lista ordenada de transações
   - Validação de dropdown de categorias com pré-seleção
@@ -1004,17 +1282,21 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de cálculo correto ao adicionar transferências enviadas (diminuição de saldo da origem)**
   - **Validação de cálculo correto ao adicionar transferências recebidas (aumento de saldo do destino)**
   - Validação de atualização de saldo ao editar ou excluir transações
-  - **Validação de atualização de saldo ao editar ou excluir transferências**\n  - **Validação de cálculo de saldo histórico para meses anteriores**
+  - **Validação de atualização de saldo ao editar ou excluir transferências**
+  - **Validação de cálculo de saldo histórico para meses anteriores**
 - **Testes de upload e salvamento de extrato no chatbot:**
-  - Validação de upload de arquivo via chatbot\n  - Validação de salvamento seguro na plataforma
+  - Validação de upload de arquivo via chatbot
+  - Validação de salvamento seguro na plataforma
   - Validação de feedback visual de progresso
   - Validação de geração de botão 'Analisar Extrato'
 - **Testes de popup de resultados:**
   - Validação de exibição de popup após análise\n  - Validação de ordenação de transações por data
-  - Validação de dropdown de categorias\n  - Validação de pré-seleção de categoria sugerida
+  - Validação de dropdown de categorias
+  - Validação de pré-seleção de categoria sugerida
   - **Validação de possibilidade de deixar dropdown sem seleção**
   - **Validação de cadastro apenas de transações com categoria selecionada ao clicar em 'Cadastrar Transações'**
-  - **Validação de mensagem de confirmação com número de transações cadastradas**\n- **Testes de dashboard expandido:**
+  - **Validação de mensagem de confirmação com número de transações cadastradas**
+- **Testes de dashboard expandido:**
   - Validação de cálculo de indicadores financeiros
   - **Validação de cálculo de total de transferências realizadas**
   - Validação de geração de gráficos de linha, pizza, barras e área
@@ -1062,7 +1344,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de botão 'Limpar Filtros' dentro do toast**
   - **Validação de remoção do toast fixo ao limpar todos os filtros**
   - **Validação de posicionamento correto dos toasts (canto superior direito para temporários, topo da página para fixos)**
-  - **Validação de cores eícones corretos para cada tipo de toast**
+  - **Validação de cores e ícones corretos para cada tipo de toast**
   - **Validação de fila de notificações para múltiplas mensagens simultâneas**
 - **Testes de integração com plugins**\n- **Testes de segurança e isolamento de plugins**
 - **Testesdo sistema de memória do modelo de IA:**
@@ -1080,7 +1362,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de identificação de padrões de gastos**
   - **Validação de cálculo de médias de entradas e saídas**
   - **Validação de detecção de sazonalidade**
-  - **Validação de geração de previsão diária (30 dias)**
+  - **Validação de geração de previsão diária (30dias)**
   - **Validação de geração de previsão semanal (12 semanas)**
   - **Validação de geração de previsão mensal (6 meses)**
   - **Validação de detecção de risco de saldo negativo**
@@ -1100,8 +1382,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de exibição de cartão de status de risco (vermelho/amarelo/verde)**
   - **Validação de exibição de indicadores principais (saldo atual, previsto 7 dias, previsto 30 dias)**
   - **Validação de gráfico de previsão de saldo diário**
-  - **Validação de gráfico de distribuição de gastos por categoria**\n  - **Validação de lista de alertas ordenados por gravidade**
-  - **Validação de exibição de insights gerados pela IA**
+  - **Validação de gráfico de distribuição de gastos por categoria**
+  - **Validação de lista de alertas ordenados por gravidade**
+  - **Validação de exibição de insights gerados pelaIA**
   - **Validação de tabelas de previsão semanal e mensal**
   - **Validação de botão 'Atualizar Previsão Agora'**
   - **Validação de atualização automática de todos os componentes após atualização manual**
@@ -1132,13 +1415,64 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Validação de sugestão de categoria baseada em tipo de estabelecimento**
   - **Validação de interface de revisão e edição antesdo cadastro**
   - **Validação de cadastro de transação a partir de dados OCR**
-  - **Validação de armazenamento de imagem do QR Code vinculada à transação**
+  - **Validação de armazenamento de imagemdo QR Code vinculada à transação**
   - **Validação de visualização de comprovante na lista de transações**
   - **Validação de detecção de cupons duplicados**
   - **Validação de criptografia de dados sensíveis do cupom fiscal**
   - **Validação de registro de auditoria de leituras OCR**
   - **Validação de performancedo processamento OCR**
   - **Validação de integração com assistente de IA para sugestões de categorização**
+- **Testes do PWA:**
+  - **Testes de instalação:**
+    - **Validação de prompt de instalação após2 visitas ou 5 minutos de uso**
+    - **Validação de botão 'Instalar App' no menu de navegação**
+    - **Validação de instalação em diferentes navegadores e sistemas operacionais**
+    - **Validação de ícone personalizado na tela inicialdo dispositivo**
+    - **Validação de splash screen ao abrir o app instalado**
+  - **Testes de funcionalidades offline:**
+    - **Validação de cache de dados essenciais (contas, transações, categorias, saldos)**
+    - **Validação de cadastro de transações offline**
+    - **Validação de cadastro de transferências offline**
+    - **Validação de edição e exclusão offline**
+    - **Validação de visualização de dados offline (dashboard, lista de transações, contas)**
+    - **Validação de indicadores de status de conexão (banner,ícone, mensagens)**
+    - **Validação de contador de transações pendentes de sincronização**
+  - **Testes de sincronização:**
+    - **Validação de sincronização automática quando conexão é restabelecida**
+    - **Validação de envio de transações cadastradas offline**
+    - **Validação de envio de transferências cadastradas offline**
+    - **Validação de envio de edições e exclusões offline**
+    - **Validação de resolução de conflitos (saldo insuficiente, transação duplicada)**
+    - **Validação de notificação de conclusão de sincronização**
+    - **Validação de retry automático em caso de falha**
+    - **Validação de sincronização periódica em segundo plano**
+  - **Testes de notificações push:**
+    - **Validação de solicitação de permissão para notificações**
+    - **Validação de envio de notificações push para alertas críticos**
+    - **Validação de formato de notificações (título, mensagem, ícone, badge)**
+    - **Validação de ação rápida em notificações**
+    - **Validação de deep link ao clicar na notificação**
+    - **Validação de configuração de notificações (ativar/desativar, tipos de alertas)**
+  - **Testes de Service Worker:**
+    - **Validação de estratégias de cache (cache-first, network-first, stale-while-revalidate)**
+    - **Validação de atualização automática de Service Worker**
+    - **Validação de limpeza de cache antigo**
+    - **Validação de gerenciamento de quota de armazenamento**
+  - **Testes de performance:**
+    - **Validação de Lighthouse Score (Performance: 90+, Accessibility: 95+, Best Practices: 95+, SEO: 90+, PWA: 100)**
+    - **Validação de Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1)**
+    - **Validação de lazy loading de componentes e imagens**
+    - **Validação de compressão de assets (minificação, Gzip/Brotli)**
+    - **Validação de pré-carregamento de recursos críticos**
+  - **Testes de segurança:**
+    - **Validação de HTTPS obrigatório**
+    - **Validação de Content Security Policy (CSP)**
+    - **Validação de criptografia de dados locais**
+    - **Validação de autenticação persistente (token, refresh token)**
+  - **Testes de compatibilidade:**
+    - **Validação de suporte em diferentes navegadores (Chrome, Firefox, Safari, Edge, Opera)**
+    - **Validação de suporte em diferentes sistemas operacionais (Android, iOS, Windows, macOS, Linux)**
+    - **Validação de fallback para navegadores não suportados**
 \n## 7. Escopo do MVP
 
 ### 7.1 Funcionalidades Iniciais
@@ -1147,11 +1481,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Exibição de saldo atual da conta com cálculo automático baseado em receitas recebidas, despesas pagas, transferências enviadas e transferências recebidas**
 - **Sistema completo de transferências entre contas cadastradas:**
   - Interface de cadastro de transferências
-  - Validação de saldo suficiente\n  - Criação automática de movimentações vinculadas
-  - Atualização automática de saldos\n  - Edição e exclusão de transferências
-  - Visualização de transferências na lista de transações
-  - Filtro específico para transferências
-- **Importação de extratos CSV, OFX e QIF com suporte completo ao formato OFX (versões 1.x e 2.x)**
+  - Validação de saldo suficiente
+  - Criação automática de movimentações vinculadas
+  - Atualização automática de saldos
+  - Edição e exclusão de transferências\n  - Visualização de transferências na lista de transações
+  - Filtro específico para transferências\n- **Importação de extratos CSV, OFX e QIF com suporte completo ao formato OFX (versões 1.x e 2.x)**
 - **Importação de extratos diretamente na interface**
 - **Upload de extrato bancário via chatbot flutuante (CSV, OFX e QIF) com novo fluxo:**
   - Botão de upload de arquivo no chatbot
@@ -1165,8 +1499,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Cadastro apenas de transações com categoria selecionada**
 - **Análise e categorização automática de transações comIA:**
   - Trigger manual via botão 'Analisar Extrato' no chatbot
-  - Sugestão de categorias existentes
-  - Sugestão de novas categorias incluídas no dropdown
+  - Sugestão de categorias existentes\n  - Sugestão de novas categorias incluídas no dropdown
   - Interface de revisão em popup antes do cadastro
   - **Cadastro em lote apenas de transações com categoria selecionada**
   - Aprendizado contínuo baseado em confirmações do usuário
@@ -1184,7 +1517,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
 - **Registro de Compras via Leitura de QR Code de Cupom Fiscal com OCR:**
   - Botão 'Escanear Cupom Fiscal' na interface de cadastro de transações
   - Acesso à câmera do dispositivo para leitura de QR Code
-  - Suporte a upload de imagem de QR Code\n  - Processamento OCR para extração de dados do cupom fiscal\n  - Pré-preenchimento automático de transação com dados extraídos
+  - Suporte a upload de imagem de QR Code
+  - Processamento OCR para extração de dados do cupom fiscal
+  - Pré-preenchimento automático de transação com dados extraídos
   - Sugestão de categoria baseada em tipo de estabelecimento\n  - Interface de revisão e edição antes do cadastro
   - Armazenamento de imagem do QR Code vinculada à transação
   - Visualização de comprovante na lista de transações
@@ -1222,11 +1557,9 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Cartão de status de risco (vermelho/amarelo/verde)
     - Gráfico de previsão de saldo diário (30 dias)
     - Gráfico de distribuição de gastos por categoria
-    - Lista de alertas ordenados por gravidade
-    - Seção de insights gerados pela IA
+    - Lista de alertas ordenados por gravidade\n    - Seção de insights gerados pela IA
     - Tabelas de previsão semanal e mensal
-    - Botão 'Atualizar Previsão Agora'
-- **Sistema de notificações automáticas:**
+    - Botão 'Atualizar Previsão Agora'\n  - **Sistema de notificações automáticas:**
     - Notificações in-app para alertas críticos\n    - Email para alertas críticos (opcional)
     - Badge com número de alertas não lidos
   - **Integração com assistente de IA:**
@@ -1239,8 +1572,7 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Funcionalidade de upload de extrato via chatbot**
   - **Auxílio no registro de compras via OCR de cupom fiscal**
 - Botão de chat comIA nas telas principais
-- Painel de administração com:
-  - Indicador visual de status de configuração
+- Painel de administração com:\n  - Indicador visual de status de configuração
   - Configuração de modelo de IA
   - **Configuração de sistema de memória**
   - Toggle de acesso de leitura e escrita
@@ -1254,12 +1586,29 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - **Visualização de histórico de memória**
 - Relatório de auditoria de acessos e operações
 - **Sistema completo de notificações toast**
+- **Progressive Web App (PWA) completo:**
+  - **Instalação no dispositivo (Android, iOS, Windows, macOS, Linux)**
+  - **Funcionalidades offline:**
+    - Cache de dados essenciais (contas, transações, categorias, saldos, previsões)
+    - Cadastro de transações e transferências offline
+    - Edição e exclusão offline
+    - Visualização de dados offline (dashboard, lista de transações, contas)
+    - Indicadores de status de conexão\n  - **Sincronização em segundo plano:**
+    - Background Sync API para sincronizar dados offline
+    - Fila de operações pendentes\n    - Resolução de conflitos\n    - Sincronização periódica\n  - **Notificações push:**
+    - Push Notifications API para alertas críticos
+    - Configuração de notificações\n    - Deep linking\n  - **Service Worker:**
+    - Estratégias de cache (cache-first, network-first, stale-while-revalidate)
+    - Atualização automática\n    - Gerenciamento de cache\n  - **Otimizações de performance:**
+    - Lazy loading\n    - Compressão de assets
+    - Pré-carregamento\n    - Lighthouse Score: 90+ em todas as métricas
 \n### 7.2 Versões Futuras (1.1/1.2)\n- Conciliação automática por Machine Learning
 - Integração com APIs bancárias (Open Banking)
 - Importação automatizada OFX\n- Permissões granulares avançadas para modelos de IA com níveis intermediários de acesso
 - **Marketplace de plugins com plugins pré-aprovados**
 - **SDK para desenvolvimento de plugins personalizados**
-- Aplicativo móvel\n- **Gráficos avançados adicionais**
+- Aplicativo móvel nativo (iOS e Android)
+- **Gráficos avançados adicionais**
 - **Funcionalidades avançadas de memória**
 - **Notificações toast avançadas**
 - **Análise preditiva avançada:**
@@ -1276,12 +1625,17 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Extração de dados de notas fiscais eletrônicas (NF-e)
   - Integração com sistemas fiscais para validação automática
   - Análise de padrões de compra baseada em histórico de cupons
-\n## 8. Estilo de Design
+- **Funcionalidades avançadas do PWA:**
+  - Suporte a Web Share API para compartilhamento nativo
+  - Integração com File System Access API para importação/exportação de arquivos
+  - Suporte a Web Bluetooth API para integração com dispositivos IoT
+  - Suporte a Geolocation API para análise de gastos por localização
+  - Modo escuro automático baseado em preferências do sistema
+  - Widgets para tela inicial (Android)\n\n## 8. Estilo de Design
 
 ### 8.1 Paleta de Cores
 - Cores principais: azul profissional (#2C3E50) e verde financeiro (#27AE60) para transmitir confiança e estabilidade
-- Cores de apoio: cinza claro (#ECF0F1) para fundos e branco (#FFFFFF) para cards
-- **Cores para gráficos: paleta harmoniosa com azul (#3498DB), verde (#27AE60), laranja (#E67E22), roxo (#9B59B6) e vermelho (#E74C3C)**
+- Cores de apoio: cinza claro (#ECF0F1) para fundos e branco (#FFFFFF) para cards\n- **Cores para gráficos: paleta harmoniosa com azul (#3498DB), verde (#27AE60), laranja (#E67E22), roxo (#9B59B6) e vermelho (#E74C3C)**
 - **Cor específica para transferências: azul claro (#5DADE2) para diferenciação visual**
 - **Cores para notificações toast:**
   - Verde claro (#C8E6C9) para toasts de sucesso (cadastros)\n  - Azul claro (#E3F2FD) para toasts informativos (filtros aplicados)
@@ -1308,11 +1662,12 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Respostas da IA alinhadas à esquerda
   - Timestamp visível para cada mensagem
 - **Página de transações com layout limpo e funcional (conforme especificado anteriormente)**
-- **Interface de cadastro de transferências (conforme especificado anteriormente)**\n- **Notificações toast (conforme especificado anteriormente)**
+- **Interface de cadastro de transferências (conforme especificado anteriormente)**
+- **Notificações toast (conforme especificado anteriormente)**
 - **Dashboard de Previsão Financeira Inteligente:**
   - **Layout em seções verticais:**
     - Seção 1: Cartão de status de risco (largura completa, altura de 120px)
-    - Seção 2: Indicadores principais (grid 4colunas em desktop, 2 colunas em tablet, 1 coluna em mobile)\n    - Seção 3: Gráfico de previsão de saldo diário (largura completa, altura de 400px)
+    - Seção 2: Indicadores principais (grid 4 colunas em desktop, 2 colunas em tablet, 1 coluna em mobile)\n    - Seção 3: Gráfico de previsão de saldo diário (largura completa, altura de 400px)
     - Seção 4: Grid 2 colunas (desktop) ou 1 coluna (mobile):\n      - Coluna esquerda: Gráfico de distribuição de gastos por categoria
       - Coluna direita: Lista de alertas\n    - Seção 5: Seção de insights (cards em grid flexível)
     - Seção 6: Tabelas de previsão semanal e mensal (tabs ou accordion)
@@ -1324,6 +1679,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Indicador de qualidade de captura
   - Botões de ação (capturar, cancelar, upload de imagem)
   - Feedback visual durante processamento OCR
+- **Layout otimizado para PWA:**
+  - **Experiência standalone (sem barra de endereço)**
+  - **Navegação por gestos em dispositivos móveis**
+  - **Suporte a atalhos de teclado em desktop**
+  - **Splash screen personalizada ao abrir o app instalado**
 \n### 8.3 Elementos Visuais
 - Ícones minimalistas para categorias e ações (biblioteca Material Icons ou Font Awesome)
 - **Gráficos limpos e legíveis:**
@@ -1334,11 +1694,11 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
   - Tooltips informativos ao passar o mouse (fundo branco, sombra suave, padding de 8px)
   - Legendas claras e posicionadas estrategicamente (abaixo ou ao lado do gráfico)
   - Grid de fundo sutil para facilitar leitura de valores
-- Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito (60px x 60px, sombra elevada)
-- **Botão de upload de arquivo no chatbot (ícone de clipe ou upload, tamanho 24px)**
-- **Botão 'Analisar Extrato' no chatbot após upload (ícone de lupa ou análise, cor azul, tamanho 24px)**\n- **Popup de resultados (conforme especificado anteriormente)**\n- Bordas suaves com raio de 8px para cards, botões e popup
+- Botão flutuante do assistente de IA com ícone de chat, posicionado no canto inferior direito (60px x 60px, sombra elevada)\n- **Botão de upload de arquivo no chatbot (ícone de clipe ou upload, tamanho 24px)**
+- **Botão 'Analisar Extrato' no chatbot após upload (ícone de lupa ou análise, cor azul, tamanho 24px)**
+- **Popup de resultados (conforme especificado anteriormente)**\n- Bordas suaves com raio de 8px para cards, botões e popup
 - Sombras sutis para criar hierarquia visual (elevação de 2dp para cards,4dp para botões, 8dp para popup)
-- Badge de status com ícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração (tamanho 16px)
+- Badge de status comícone de check verde para modelo configurado ou ícone de alerta laranja para ausência de configuração (tamanho 16px)
 - Indicador visual de acesso de leitura ativo (ícone de olho verde, tamanho 20px) quando o modelo de IA tiver permissão completa de leitura
 - **Indicador visual de acesso de escrita ativo (ícone de lápis verde, tamanho 20px) quando o modelo de IA tiver permissão completa de escrita**
 - **Indicador visual de permissão de cadastro ativa (ícone de check verde, tamanho 20px) quando o modelo de IA tiver permissão para criar transações**
@@ -1367,14 +1727,15 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Marcadores circulares (8px) para dias com contas a pagar/receber
     - Tooltips com valores exatos e data
   - **Lista de alertas:**
-    -Ícone de alerta vermelho (24px) para alta gravidade
+    - Ícone de alerta vermelho (24px) para alta gravidade
     - Ícone de atenção amarelo (24px) para média gravidade
     - Ícone de informação azul (24px) para baixa gravidade
     - Cards de alerta com padding de 12px
     - Botões de ação (marcar como lido, descartar) no canto direito
   - **Cards de insights:**
     - Ícone de lâmpada ou cérebro (32px) no canto superior esquerdo
-    - Fundo branco com borda azul claro (1px)\n    - Texto em fonte 14px\n    - Data de geração em fonte 12px, cor cinza
+    - Fundo branco com borda azul claro (1px)
+    - Texto em fonte 14px\n    - Data de geração em fonte 12px, cor cinza
   - **Tabelas de previsão:**
     - Cabeçalho com fundo azul claro (#E3F2FD)
     - Linhas alternadas (zebra striping) para melhor leitura
@@ -1403,11 +1764,27 @@ Plataforma web (MVP) para gestão de finanças pessoais que permite importar ext
     - Dados extraídos exibidos abaixo da imagem
     - Botão de fechar no canto superior direito
     - Opção de download da imagem
-  - **Feedback visual durante processamento OCR:**
-    - Spinner ou barra de progresso
+  - **Feedback visual durante processamento OCR:**\n    - Spinner ou barra de progresso
     - Mensagem 'Processando cupom fiscal...'
-    - Animação suave\n\n## 9. Referências de Interface
+    - Animação suave\n- **Elementos visuaisdo PWA:**
+  - **Ícone de instalação:**
+    - Ícone de download ou adicionar (24px)
+    - Cor azul (#2196F3)\n    - Posicionado no menu de navegação
+  - **Banner de modo offline:**
+    - Fundo amarelo claro (#FFF9C4)
+    - Ícone de aviso (20px)\n    - Mensagem: 'Você está offline. Algumas funcionalidades podem estar limitadas.'
+    - Posicionado no topo da interface
+  - **Indicador de sincronização:**
+    - Ícone de sincronização animado (20px)
+    - Cor azul (#2196F3)
+    - Mensagem: 'Sincronizando dados...'
+    - Toast no canto superior direito
+  - **Badge de transações pendentes:**
+    - Fundo vermelho (#F44336)\n    - Texto branco
+    - Número de transações pendentes
+    - Posicionado no ícone de sincronização
+\n## 9. Referências de Interface
 
 ### 9.1 Imagens de Referência
 - Exemplo de mensagem de erro de importação OFX: {2C7B1F61-7FE3-4148-B737-A544FBDEEF2D}.png
-- Imagens de referência fornecidas pelo usuário: {50F059AF-0D4A-40FE-B3EE-4BA1DA4340B1}.png, image.png
+- Imagens de referência fornecidas pelo usuário: {50F059AF-0D4A-40FE-B3EE-4BA1DA4340B1}.png, image.png\n- **Imagens de referência do PWA fornecidas pelo usuário: {2258253C-DF2B-47FC-80A4-4FA53F6DA783}.png, {6E8FF150-44D6-414D-8463-39E6BB6A1EA1}.png, {E763E6DE-2AA3-47EB-AB20-538A6F5FCAF3}.png**
