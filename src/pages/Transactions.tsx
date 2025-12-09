@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft, CheckCircle2, Save } from 'lucide-react';
 import { ActiveFiltersBar } from '@/components/common/FilterBadge';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
 
@@ -30,6 +30,10 @@ export default function Transactions() {
   const [filterDateTo, setFilterDateTo] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('date-desc'); // date-desc, date-asc, category, amount-desc, amount-asc
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Category selection state
+  const [categorySelections, setCategorySelections] = useState<Record<string, string>>({});
+  const [isSavingCategories, setIsSavingCategories] = useState(false);
   
   const [formData, setFormData] = useState({
     type: 'expense' as 'income' | 'expense' | 'transfer',
@@ -67,6 +71,15 @@ export default function Transactions() {
       setAccounts(accs);
       setCards(crds);
       setCategories(cats);
+      
+      // Initialize category selections with existing categories
+      const initialSelections: Record<string, string> = {};
+      txs.forEach(t => {
+        if (t.category_id) {
+          initialSelections[t.id] = t.category_id;
+        }
+      });
+      setCategorySelections(initialSelections);
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -248,6 +261,58 @@ export default function Transactions() {
         description: error.message || 'Erro ao excluir transação',
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleSaveCategories = async () => {
+    setIsSavingCategories(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Filter transactions that have a category selected (excluding 'none')
+      const transactionsToUpdate = Object.entries(categorySelections).filter(
+        ([_, categoryId]) => categoryId && categoryId !== '' && categoryId !== 'none'
+      );
+
+      if (transactionsToUpdate.length === 0) {
+        toast({
+          title: 'Aviso',
+          description: 'Nenhuma categoria selecionada para salvar',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Update each transaction with its selected category
+      const updatePromises = transactionsToUpdate.map(([transactionId, categoryId]) => {
+        const transaction = transactions.find(t => t.id === transactionId);
+        if (transaction) {
+          return transactionsApi.updateTransaction(transactionId, {
+            ...transaction,
+            category_id: categoryId
+          });
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(updatePromises);
+
+      toast({
+        title: 'Sucesso',
+        description: `${transactionsToUpdate.length} transação(ões) atualizada(s) com sucesso`
+      });
+
+      // Reload transactions to reflect changes
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao salvar categorias',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingCategories(false);
     }
   };
 
@@ -463,13 +528,24 @@ export default function Transactions() {
           <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
           <p className="text-muted-foreground mt-1">Gerencie suas receitas, despesas e transferências</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button size="lg" className="w-full xl:w-auto">
-              <Plus className="mr-2 h-5 w-5" />
-              Nova Transação
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2 w-full xl:w-auto">
+          <Button 
+            onClick={handleSaveCategories}
+            disabled={isSavingCategories || Object.keys(categorySelections).length === 0}
+            variant="outline"
+            size="lg"
+            className="flex-1 xl:flex-initial"
+          >
+            <Save className="mr-2 h-5 w-5" />
+            Salvar Categorias
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button size="lg" className="flex-1 xl:flex-initial">
+                <Plus className="mr-2 h-5 w-5" />
+                Nova Transação
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingTransaction ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
@@ -670,6 +746,7 @@ export default function Transactions() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Barra de Busca e Filtros */}
@@ -884,7 +961,7 @@ export default function Transactions() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 xl:gap-4 w-full xl:w-auto justify-between xl:justify-end">
+                  <div className="flex items-center gap-3 xl:gap-4 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
                     <div className={`text-xl font-bold ${
                       tx.is_transfer 
                         ? 'text-primary' 
@@ -894,7 +971,32 @@ export default function Transactions() {
                     }`}>
                     {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    {!tx.is_transfer && (
+                      <Select
+                        value={categorySelections[tx.id] || 'none'}
+                        onValueChange={(value) => {
+                          setCategorySelections(prev => ({
+                            ...prev,
+                            [tx.id]: value
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Categoria..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem categoria</SelectItem>
+                          {categories
+                            .filter(cat => cat.type === tx.type)
+                            .map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.icon} {cat.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     {!tx.is_transfer && (
                       <Button
                         variant="ghost"
