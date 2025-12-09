@@ -55,6 +55,53 @@ async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promis
   throw lastError || new Error('Falha após múltiplas tentativas');
 }
 
+// Função de fallback para modo degradado (quando IA está indisponível)
+function getDegradedResponse(message: string, userData: any): string {
+  const lowerMessage = message.toLowerCase();
+  
+  // Perguntas sobre saldo
+  if (lowerMessage.includes('saldo')) {
+    const summary = userData.financial_summary;
+    if (summary) {
+      return `💰 **Resumo Financeiro**\n\n` +
+             `Saldo total: R$ ${summary.total_balance?.toFixed(2) || '0.00'}\n` +
+             `Receitas: R$ ${summary.total_income?.toFixed(2) || '0.00'}\n` +
+             `Despesas: R$ ${summary.total_expense?.toFixed(2) || '0.00'}\n` +
+             `Saldo líquido: R$ ${summary.net_balance?.toFixed(2) || '0.00'}\n\n` +
+             `_Resposta automática - Assistente de IA temporariamente indisponível_`;
+    }
+  }
+  
+  // Perguntas sobre despesas/gastos
+  if (lowerMessage.includes('despesa') || lowerMessage.includes('gasto') || lowerMessage.includes('gastei')) {
+    const summary = userData.financial_summary;
+    if (summary) {
+      return `📊 **Suas Despesas**\n\n` +
+             `Total de despesas: R$ ${summary.total_expense?.toFixed(2) || '0.00'}\n` +
+             `Número de transações: ${summary.transaction_count || 0}\n\n` +
+             `_Resposta automática - Assistente de IA temporariamente indisponível_`;
+    }
+  }
+  
+  // Perguntas sobre receitas
+  if (lowerMessage.includes('receita') || lowerMessage.includes('ganho') || lowerMessage.includes('renda')) {
+    const summary = userData.financial_summary;
+    if (summary) {
+      return `💵 **Suas Receitas**\n\n` +
+             `Total de receitas: R$ ${summary.total_income?.toFixed(2) || '0.00'}\n\n` +
+             `_Resposta automática - Assistente de IA temporariamente indisponível_`;
+    }
+  }
+  
+  // Resposta padrão
+  return `🤖 Desculpe, estou temporariamente indisponível devido a problemas técnicos.\n\n` +
+         `Por favor, tente novamente em alguns instantes ou use as funcionalidades manuais da plataforma:\n\n` +
+         `• **Transações**: Visualize e gerencie suas transações\n` +
+         `• **Contas**: Veja seus saldos e contas\n` +
+         `• **Relatórios**: Acesse relatórios financeiros\n\n` +
+         `_O assistente de IA voltará em breve!_`;
+}
+
 // Função para buscar dados do usuário baseado no nível de permissão
 async function getUserFinancialData(supabaseClient: any, userId: string, permissionLevel: string) {
   const data: any = {
@@ -560,45 +607,46 @@ Para categorizar: responda JSON:
       candidateCount: 1
     };
 
-    const response = await fetchWithRetry(GEMINI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-App-Id': APP_ID
-      },
-      body: JSON.stringify({
-        contents: conversationContents,
-        generationConfig: generationConfig
-      })
-    });
+    let fullResponse = '';
+    let usedDegradedMode = false;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
-      
-      // Mensagens de erro mais amigáveis em português
-      let userMessage = 'Desculpe, estou temporariamente indisponível.';
-      if (response.status === 503) {
-        userMessage = 'O serviço está temporariamente indisponível. Por favor, tente novamente em alguns instantes.';
-      } else if (response.status === 429) {
-        userMessage = 'Muitas requisições. Por favor, aguarde um momento antes de tentar novamente.';
-      } else if (response.status === 500) {
-        userMessage = 'Erro interno do servidor. Por favor, tente novamente.';
+    try {
+      // Tentar usar a API Gemini
+      const response = await fetchWithRetry(GEMINI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-App-Id': APP_ID
+        },
+        body: JSON.stringify({
+          contents: conversationContents,
+          generationConfig: generationConfig
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Gemini API error:', errorText);
+        throw new Error(`API returned status ${response.status}`);
       }
-      
-      throw new Error(userMessage);
-    }
 
-    // Processar resposta não-streaming (mais rápido)
-    const data = await response.json();
-    const fullResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      // Processar resposta não-streaming (mais rápido)
+      const data = await response.json();
+      fullResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (apiError: any) {
+      // Se a API falhar, usar modo degradado
+      console.log('API indisponível, usando modo degradado:', apiError.message);
+      fullResponse = getDegradedResponse(message, userData);
+      usedDegradedMode = true;
+    }
 
     // Verificar se a resposta contém uma solicitação de ação
     let createdTransactionId = null;
     let actionType = 'read';
     let finalResponse = fullResponse || 'Desculpe, não consegui gerar uma resposta.';
 
-    if (canWriteTransactions && fullResponse.includes('"action":')) {
+    // Apenas processar ações se não estiver em modo degradado
+    if (!usedDegradedMode && canWriteTransactions && fullResponse.includes('"action":')) {
       try {
         // Tentar extrair o JSON da resposta
         const jsonMatch = fullResponse.match(/\{[\s\S]*"action":\s*"[^"]*"[\s\S]*\}/);
