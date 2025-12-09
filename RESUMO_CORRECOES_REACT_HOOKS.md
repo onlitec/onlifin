@@ -12,12 +12,13 @@
 
 ## 📊 Arquivos Corrigidos
 
-### Total: 4 arquivos modificados
+### Total: 5 arquivos modificados
 
 1. ✅ `src/hooks/use-toast.tsx`
 2. ✅ `src/components/pwa/PWAStatus.tsx`
 3. ✅ `src/components/pwa/InstallPrompt.tsx`
 4. ✅ `src/components/pwa/UpdateNotification.tsx`
+5. ✅ `vite.config.ts` (Configuração de deduplicação)
 
 ---
 
@@ -49,12 +50,14 @@ function Component() {
 
 | Métrica | Valor |
 |---------|-------|
-| Arquivos corrigidos | 4 |
+| Arquivos corrigidos | 5 |
+| Componentes atualizados | 4 |
+| Configurações adicionadas | 1 |
 | Hooks atualizados | 9 |
 | `useState` corrigidos | 7 |
 | `useEffect` corrigidos | 4 |
 | Erros resolvidos | 3 |
-| Tempo de correção | ~5 minutos |
+| Tempo de correção | ~10 minutos |
 
 ---
 
@@ -104,6 +107,16 @@ React.useEffect()
 import { useState, useEffect } from 'react';
 useState()
 useEffect()
+```
+
+✅ **Configure o Vite:**
+```typescript
+// vite.config.ts
+export default defineConfig({
+  resolve: {
+    dedupe: ['react', 'react-dom'], // Garante instância única
+  },
+});
 ```
 
 ---

@@ -31,10 +31,11 @@ O erro ocorreu porque o React não estava sendo importado corretamente em vário
 1. **Hot Module Replacement (HMR)** do Vite
 2. **Múltiplas instâncias do React** sendo carregadas
 3. **Perda de contexto** durante o bundling
+4. **Bibliotecas de terceiros** (como Radix UI) recebendo instâncias diferentes do React
 
 ## ✅ Solução Aplicada
 
-### Arquivos Modificados (4 arquivos)
+### Parte 1: Correção de Imports (4 arquivos)
 
 #### 1. `src/hooks/use-toast.tsx`
 
@@ -131,9 +132,40 @@ export function UpdateNotification() {
 }
 ```
 
+### Parte 2: Configuração do Vite (1 arquivo)
+
+#### 5. `vite.config.ts` - Deduplicação do React
+
+**Antes:**
+```typescript
+export default defineConfig({
+  plugins: [react(), svgr({ /* ... */ }), miaodaDevPlugin()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+});
+```
+
+**Depois:**
+```typescript
+export default defineConfig({
+  plugins: [react(), svgr({ /* ... */ }), miaodaDevPlugin()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+    dedupe: ['react', 'react-dom'], // ← ADICIONADO
+  },
+});
+```
+
+**Explicação:** A opção `dedupe` garante que apenas uma instância do React e React DOM seja usada em toda a aplicação, evitando conflitos entre diferentes versões ou instâncias carregadas por bibliotecas de terceiros.
+
 ## 🎯 Mudanças Específicas
 
-### Para Todos os Arquivos:
+### Para Arquivos de Componentes (4 arquivos):
 
 1. **Import do React**
    - ❌ Antes: `import { useState, useEffect } from "react"`
@@ -143,14 +175,22 @@ export function UpdateNotification() {
    - ❌ Antes: `useState`, `useEffect`
    - ✅ Depois: `React.useState`, `React.useEffect`
 
+### Para Configuração do Vite (1 arquivo):
+
+3. **Deduplicação do React**
+   - ✅ Adicionado: `dedupe: ['react', 'react-dom']`
+   - Garante instância única do React para toda a aplicação
+
 ## ✅ Validação
 
 - ✅ Lint passou sem erros (101 arquivos verificados)
 - ✅ Todos os imports corrigidos
 - ✅ Todos os hooks usando namespace React
+- ✅ Vite configurado para deduplicate React
 - ✅ Compatibilidade com Vite garantida
 - ✅ PWA components funcionando corretamente
 - ✅ Toast system funcionando corretamente
+- ✅ Radix UI ToastProvider funcionando corretamente
 
 ## 📝 Explicação Técnica
 
@@ -160,12 +200,19 @@ O problema ocorreu porque:
 
 2. **Vite Bundling**: O Vite pode criar múltiplas instâncias do React durante o processo de bundling, causando conflitos quando hooks são importados diretamente
 
-3. **Namespace Import**: Importar via namespace (`import * as React`) garante que:
+3. **Bibliotecas de Terceiros**: Bibliotecas como Radix UI podem receber uma instância diferente do React se não houver deduplicação configurada
+
+4. **Namespace Import**: Importar via namespace (`import * as React`) garante que:
    - Sempre usamos a mesma instância do React
    - O contexto é preservado durante HMR
    - Não há conflitos entre diferentes versões/instâncias
 
-4. **Best Practice**: Esta é a forma recomendada pela documentação do React para ambientes de build modernos
+5. **Deduplicação no Vite**: A configuração `dedupe: ['react', 'react-dom']` força o Vite a:
+   - Usar apenas uma instância do React em toda a aplicação
+   - Compartilhar essa instância com todas as bibliotecas de terceiros
+   - Evitar conflitos de versão e contexto
+
+6. **Best Practice**: Esta é a forma recomendada pela documentação do React para ambientes de build modernos
 
 ## 🎉 Resultado
 
@@ -175,23 +222,25 @@ Todos os erros foram completamente resolvidos:
 - ✅ PWAStatus funcionando
 - ✅ InstallPrompt funcionando
 - ✅ UpdateNotification funcionando
+- ✅ Radix UI ToastProvider funcionando
 - ✅ Sem erros de "Cannot read properties of null"
 - ✅ Aplicação totalmente funcional
 
 ## 📊 Resumo das Correções
 
-| Arquivo | Hooks Corrigidos | Status |
-|---------|------------------|--------|
-| `src/hooks/use-toast.tsx` | useState, useEffect | ✅ |
-| `src/components/pwa/PWAStatus.tsx` | useState, useEffect | ✅ |
-| `src/components/pwa/InstallPrompt.tsx` | useState (3x), useEffect | ✅ |
-| `src/components/pwa/UpdateNotification.tsx` | useState (2x), useEffect | ✅ |
+| Arquivo | Tipo | Mudanças | Status |
+|---------|------|----------|--------|
+| `src/hooks/use-toast.tsx` | Componente | useState, useEffect → React.* | ✅ |
+| `src/components/pwa/PWAStatus.tsx` | Componente | useState, useEffect → React.* | ✅ |
+| `src/components/pwa/InstallPrompt.tsx` | Componente | useState (3x), useEffect → React.* | ✅ |
+| `src/components/pwa/UpdateNotification.tsx` | Componente | useState (2x), useEffect → React.* | ✅ |
+| `vite.config.ts` | Configuração | Adicionado dedupe | ✅ |
 
-**Total:** 4 arquivos corrigidos, 9 hooks atualizados
+**Total:** 5 arquivos modificados, 9 hooks atualizados, 1 configuração adicionada
 
 ---
 
 **Data:** 09/12/2025  
-**Arquivos Modificados:** 4 arquivos  
+**Arquivos Modificados:** 5 arquivos (4 componentes + 1 config)  
 **Status:** ✅ Totalmente Resolvido  
-**Impacto:** Aplicação funcionando sem erros
+**Impacto:** Aplicação funcionando sem erros + Radix UI compatível
