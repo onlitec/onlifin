@@ -13,16 +13,21 @@ const corsHeaders = {
 // Função auxiliar para retry com backoff exponencial
 async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promise<Response> {
   let lastError: Error | null = null;
+  let lastStatus: number | null = null;
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
+      console.log(`Tentativa ${attempt + 1} de ${maxRetries}`);
       const response = await fetch(url, options);
+      
+      lastStatus = response.status;
+      console.log(`Status da resposta: ${response.status}`);
       
       // Se for 503 (Service Unavailable) ou 429 (Rate Limit), tentar novamente
       if (response.status === 503 || response.status === 429) {
         if (attempt < maxRetries - 1) {
           const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // Max 5 segundos
-          console.log(`Tentativa ${attempt + 1} falhou com status ${response.status}. Aguardando ${delay}ms...`);
+          console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
@@ -31,12 +36,20 @@ async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promis
       return response;
     } catch (error: any) {
       lastError = error;
+      console.error(`Erro na tentativa ${attempt + 1}:`, error.message);
       if (attempt < maxRetries - 1) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
-        console.log(`Tentativa ${attempt + 1} falhou com erro: ${error.message}. Aguardando ${delay}ms...`);
+        console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
+  }
+  
+  // Se chegou aqui, todas as tentativas falharam
+  if (lastStatus === 503) {
+    throw new Error('O serviço está temporariamente indisponível. Por favor, tente novamente em alguns instantes.');
+  } else if (lastStatus === 429) {
+    throw new Error('Muitas requisições. Por favor, aguarde um momento antes de tentar novamente.');
   }
   
   throw lastError || new Error('Falha após múltiplas tentativas');
