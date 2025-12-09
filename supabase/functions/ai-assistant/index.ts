@@ -2,13 +2,45 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const APP_ID = Deno.env.get('VITE_APP_ID') || 'app-7xkeeoe4bsap';
-// Usar API não-streaming para respostas mais rápidas no chat
-const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-2.0-flash-exp:generateContent`;
+// Usar modelo estável e rápido
+const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-1.5-flash:generateContent`;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Função auxiliar para retry com backoff exponencial
+async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // Se for 503 (Service Unavailable) ou 429 (Rate Limit), tentar novamente
+      if (response.status === 503 || response.status === 429) {
+        if (attempt < maxRetries - 1) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // Max 5 segundos
+          console.log(`Tentativa ${attempt + 1} falhou com status ${response.status}. Aguardando ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+      }
+      
+      return response;
+    } catch (error: any) {
+      lastError = error;
+      if (attempt < maxRetries - 1) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+        console.log(`Tentativa ${attempt + 1} falhou com erro: ${error.message}. Aguardando ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Falha após múltiplas tentativas');
+}
 
 // Função para buscar dados do usuário baseado no nível de permissão
 async function getUserFinancialData(supabaseClient: any, userId: string, permissionLevel: string) {
@@ -297,7 +329,7 @@ Responda APENAS com o JSON, sem texto adicional.`;
 
     console.log('Enviando requisição para Gemini API...');
 
-    const response = await fetch(GEMINI_API_URL, {
+    const response = await fetchWithRetry(GEMINI_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -515,7 +547,7 @@ Para categorizar: responda JSON:
       candidateCount: 1
     };
 
-    const response = await fetch(GEMINI_API_URL, {
+    const response = await fetchWithRetry(GEMINI_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -530,7 +562,18 @@ Para categorizar: responda JSON:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      
+      // Mensagens de erro mais amigáveis em português
+      let userMessage = 'Desculpe, estou temporariamente indisponível.';
+      if (response.status === 503) {
+        userMessage = 'O serviço está temporariamente indisponível. Por favor, tente novamente em alguns instantes.';
+      } else if (response.status === 429) {
+        userMessage = 'Muitas requisições. Por favor, aguarde um momento antes de tentar novamente.';
+      } else if (response.status === 500) {
+        userMessage = 'Erro interno do servidor. Por favor, tente novamente.';
+      }
+      
+      throw new Error(userMessage);
     }
 
     // Processar resposta não-streaming (mais rápido)
