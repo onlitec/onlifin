@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw, X } from 'lucide-react';
 import { skipWaiting } from '@/utils/registerSW';
 
 export function UpdateNotification() {
-  const [showUpdate, setShowUpdate] = useState(false);
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [showUpdate, setShowUpdate] = React.useState(false);
+  const [registration, setRegistration] = React.useState<ServiceWorkerRegistration | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((reg) => {
         reg.addEventListener('updatefound', () => {

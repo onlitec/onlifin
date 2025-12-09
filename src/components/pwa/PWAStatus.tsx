@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function PWAStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       toast.success('Conexão restaurada', {
