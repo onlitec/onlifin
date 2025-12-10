@@ -27,10 +27,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 }) => {
   const [selectedOptions, setSelectedOptions] =
     useState<string[]>(defaultSelected);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
@@ -50,13 +50,13 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     if (!disabled) setIsOpen((prev) => !prev);
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (selectedOptions.length && value && !value?.length) {
       onChange?.(defaultSelected);
     }
   }, [defaultSelected]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (
       value?.length &&
       (value.length !== selectedOptions.length ||

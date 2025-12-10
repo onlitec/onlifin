@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,22 +16,22 @@ interface Message {
 }
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = React.useState<Message[]>([
     {
       role: 'assistant',
       content: 'Olá! Sou seu assistente financeiro. Como posso ajudar você hoje?\n\nVocê pode:\n• Fazer perguntas sobre suas finanças\n• Pedir análises de gastos\n• Solicitar dicas de economia\n• Enviar um extrato bancário para categorização automática',
       timestamp: new Date()
     }
   ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileContent, setFileContent] = useState('');
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [input, setInput] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [fileContent, setFileContent] = React.useState('');
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }

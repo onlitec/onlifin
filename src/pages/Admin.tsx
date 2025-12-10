@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { profilesApi } from '@/db/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,10 +7,10 @@ import { Users } from 'lucide-react';
 import type { Profile } from '@/types/types';
 
 export default function Admin() {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = React.useState<Profile[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadProfiles();
   }, []);
 

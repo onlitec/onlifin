@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { transactionsApi, forecastsApi } from '@/db/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -70,22 +70,22 @@ interface AccountBalance {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [enhancedStats, setEnhancedStats] = useState<EnhancedStats | null>(null);
-  const [categoryExpenses, setCategoryExpenses] = useState<CategoryExpense[]>([]);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [dailyBalance, setDailyBalance] = useState<DailyBalance[]>([]);
-  const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<TransactionWithDetails[]>([]);
-  const [forecast, setForecast] = useState<FinancialForecast | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = React.useState<DashboardStats | null>(null);
+  const [enhancedStats, setEnhancedStats] = React.useState<EnhancedStats | null>(null);
+  const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
+  const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
+  const [dailyBalance, setDailyBalance] = React.useState<DailyBalance[]>([]);
+  const [accountBalances, setAccountBalances] = React.useState<AccountBalance[]>([]);
+  const [recentTransactions, setRecentTransactions] = React.useState<TransactionWithDetails[]>([]);
+  const [forecast, setForecast] = React.useState<FinancialForecast | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   
   // Estado para mês/ano selecionado
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth().toString());
+  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadDashboardData();
   }, [selectedDate]); // Recarregar quando o mês mudar
 

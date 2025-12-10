@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
@@ -14,14 +15,14 @@ import { useToast } from '@/hooks/use-toast';
 import type { Profile } from '@/types/types';
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const navigation = routes.filter((route) => route.visible !== false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadProfile();
     
     // Escutar mudanças no estado de autenticação

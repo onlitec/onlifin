@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { accountsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -18,12 +18,12 @@ import { Plus, Pencil, Trash2, Building2, RefreshCw, Info, TrendingUp, TrendingD
 import type { Account } from '@/types/types';
 
 export default function Accounts() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRecalculating, setIsRecalculating] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [formData, setFormData] = useState({
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isRecalculating, setIsRecalculating] = React.useState(false);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [editingAccount, setEditingAccount] = React.useState<Account | null>(null);
+  const [formData, setFormData] = React.useState({
     name: '',
     bank: '',
     agency: '',
@@ -33,7 +33,7 @@ export default function Accounts() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadAccounts();
   }, []);
 

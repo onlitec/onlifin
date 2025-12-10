@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { cardsApi, accountsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,12 @@ import { Plus, Pencil, Trash2, CreditCard } from 'lucide-react';
 import type { Card as CardType, Account } from '@/types/types';
 
 export default function Cards() {
-  const [cards, setCards] = useState<CardType[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<CardType | null>(null);
-  const [formData, setFormData] = useState({
+  const [cards, setCards] = React.useState<CardType[]>([]);
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [editingCard, setEditingCard] = React.useState<CardType | null>(null);
+  const [formData, setFormData] = React.useState({
     name: '',
     card_limit: '',
     closing_day: '',
@@ -26,7 +26,7 @@ export default function Cards() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadData();
   }, []);
 

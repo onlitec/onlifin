@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -20,16 +20,16 @@ interface ParsedTransaction {
 }
 
 export default function Import() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<string>('');
-  const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<ParsedTransaction[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [selectedAccount, setSelectedAccount] = React.useState<string>('');
+  const [file, setFile] = React.useState<File | null>(null);
+  const [parsedData, setParsedData] = React.useState<ParsedTransaction[]>([]);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [isImporting, setIsImporting] = React.useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadData();
   }, []);
 

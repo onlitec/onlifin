@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/db/supabase';
 import { aiChatLogsApi } from '@/db/api';
@@ -13,15 +14,15 @@ interface Message {
 }
 
 export default function AIAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [input, setInput] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Carregar histórico do localStorage ao montar o componente
-  useEffect(() => {
+  React.useEffect(() => {
     const savedHistory = localStorage.getItem('ai_conversation_history');
     if (savedHistory) {
       try {
@@ -36,13 +37,13 @@ export default function AIAssistant() {
   }, []);
 
   // Salvar histórico no localStorage sempre que mudar
-  useEffect(() => {
+  React.useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem('ai_conversation_history', JSON.stringify(messages));
     }
   }, [messages]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }

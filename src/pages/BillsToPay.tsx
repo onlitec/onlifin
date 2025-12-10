@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { billsToPayApi, accountsApi, categoriesApi } from '@/db/api';
 import type { BillToPay, Account, Category } from '@/types/types';
@@ -28,15 +28,15 @@ import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2 } 
 
 export default function BillsToPay() {
   const { toast } = useToast();
-  const [userId, setUserId] = useState<string | null>(null);
-  const [bills, setBills] = useState<BillToPay[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingBill, setEditingBill] = useState<BillToPay | null>(null);
+  const [userId, setUserId] = React.useState<string | null>(null);
+  const [bills, setBills] = React.useState<BillToPay[]>([]);
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [editingBill, setEditingBill] = React.useState<BillToPay | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = React.useState({
     description: '',
     amount: '',
     due_date: '',
@@ -47,7 +47,7 @@ export default function BillsToPay() {
     notes: ''
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     const initUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -57,7 +57,7 @@ export default function BillsToPay() {
     initUser();
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (userId) {
       loadData();
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { categoriesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -31,10 +31,10 @@ const COLOR_OPTIONS = [
 ];
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState({
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [editingCategory, setEditingCategory] = React.useState<Category | null>(null);
+  const [formData, setFormData] = React.useState({
     name: '',
     type: 'expense' as 'income' | 'expense',
     icon: '💰',
@@ -42,7 +42,7 @@ export default function Categories() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadCategories();
   }, []);
 

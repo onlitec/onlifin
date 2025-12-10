@@ -2,14 +2,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Smartphone, Wifi, Download, RefreshCw, Bell, Zap, Shield, HardDrive } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 
 export default function PWAInfo() {
-  const [isPWA, setIsPWA] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [isPWA, setIsPWA] = React.useState(false);
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+  const [swRegistration, setSwRegistration] = React.useState<ServiceWorkerRegistration | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isIOSStandalone = (window.navigator as any).standalone === true;
     setIsPWA(isStandalone || isIOSStandalone);

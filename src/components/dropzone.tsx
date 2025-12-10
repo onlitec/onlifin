@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { cn } from '@/lib/utils'
 import { type UseSupabaseUploadReturn } from '@/hooks/use-supabase-upload'
 import { Button } from '@/components/ui/button'
@@ -74,7 +75,7 @@ const DropzoneContent = ({ className }: { className?: string }) => {
 
   const exceedMaxFiles = files.length > maxFiles
 
-  const handleRemoveFile = useCallback(
+  const handleRemoveFile = React.useCallback(
     (fileName: string) => {
       setFiles(files.filter((file) => file.name !== fileName))
     },

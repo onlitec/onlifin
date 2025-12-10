@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { transactionsApi, accountsApi, cardsApi, categoriesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -16,29 +16,29 @@ import type { ReceiptData } from '@/services/ocrService';
 import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [cards, setCards] = useState<CardType[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [cards, setCards] = React.useState<CardType[]>([]);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
+  const [showReceiptScanner, setShowReceiptScanner] = React.useState(false);
   
   // Filtros e busca
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterAccount, setFilterAccount] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all'); // all, income, expense
-  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
-  const [filterDateTo, setFilterDateTo] = useState<string>('');
-  const [sortBy, setSortBy] = useState<string>('date-desc'); // date-desc, date-asc, category, amount-desc, amount-asc
-  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [filterAccount, setFilterAccount] = React.useState<string>('all');
+  const [filterCategory, setFilterCategory] = React.useState<string>('all');
+  const [filterType, setFilterType] = React.useState<string>('all'); // all, income, expense
+  const [filterDateFrom, setFilterDateFrom] = React.useState<string>('');
+  const [filterDateTo, setFilterDateTo] = React.useState<string>('');
+  const [sortBy, setSortBy] = React.useState<string>('date-desc'); // date-desc, date-asc, category, amount-desc, amount-asc
+  const [showFilters, setShowFilters] = React.useState(false);
   
   // Category selection state
-  const [categorySelections, setCategorySelections] = useState<Record<string, string>>({});
-  const [isSavingCategories, setIsSavingCategories] = useState(false);
+  const [categorySelections, setCategorySelections] = React.useState<Record<string, string>>({});
+  const [isSavingCategories, setIsSavingCategories] = React.useState(false);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = React.useState({
     type: 'expense' as 'income' | 'expense' | 'transfer',
     amount: '',
     date: new Date().toISOString().split('T')[0],
@@ -54,7 +54,7 @@ export default function Transactions() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadData();
   }, []);
 
@@ -394,7 +394,7 @@ export default function Transactions() {
   };
 
   // Filtrar e ordenar transações
-  const filteredAndSortedTransactions = useMemo(() => {
+  const filteredAndSortedTransactions = React.useMemo(() => {
     let filtered = [...transactions];
 
     // Filtro de busca (descrição)
@@ -473,7 +473,7 @@ export default function Transactions() {
     filterType !== 'all' || filterDateFrom || filterDateTo || sortBy !== 'date-desc';
 
   // Construir lista de filtros ativos para exibição
-  const activeFilters = useMemo(() => {
+  const activeFilters = React.useMemo(() => {
     const filters: Array<{
       key: string;
       label: string;

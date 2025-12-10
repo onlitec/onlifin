@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { forecastsApi } from '@/db/api';
 import type { FinancialForecast } from '@/types/types';
@@ -32,12 +32,12 @@ import {
 
 export default function ForecastDashboard() {
   const { toast } = useToast();
-  const [userId, setUserId] = useState<string | null>(null);
-  const [forecast, setForecast] = useState<FinancialForecast | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const [userId, setUserId] = React.useState<string | null>(null);
+  const [forecast, setForecast] = React.useState<FinancialForecast | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [generating, setGenerating] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const initUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -47,7 +47,7 @@ export default function ForecastDashboard() {
     initUser();
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (userId) {
       loadForecast();
     }

@@ -59,7 +59,7 @@ const QRCodeDataUrl: React.FC<QRCodeDataUrlProps> = ({
 }) => {
   const [dataUrl, setDataUrl] = useState<string>('');
 
-  useEffect(() => {
+  React.useEffect(() => {
     const generateQR = async () => {
       try {
         const url = await QRCode.toDataURL(text, {

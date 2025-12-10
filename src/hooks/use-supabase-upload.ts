@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import * as React from 'react';
 import { type FileError, type FileRejection, useDropzone } from 'react-dropzone'
 import {type SupabaseClient} from '@supabase/supabase-js'
 
@@ -67,12 +67,12 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     supabase
   } = options
 
-  const [files, setFiles] = useState<FileWithPreview[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
-  const [errors, setErrors] = useState<{ name: string; message: string }[]>([])
-  const [successes, setSuccesses] = useState<string[]>([])
+  const [files, setFiles] = React.useState<FileWithPreview[]>([])
+  const [loading, setLoading] = React.useState<boolean>(false)
+  const [errors, setErrors] = React.useState<{ name: string; message: string }[]>([])
+  const [successes, setSuccesses] = React.useState<string[]>([])
 
-  const isSuccess = useMemo(() => {
+  const isSuccess = React.useMemo(() => {
     if (errors.length === 0 && successes.length === 0) {
       return false
     }
@@ -82,7 +82,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     return false
   }, [errors.length, successes.length, files.length])
 
-  const onDrop = useCallback(
+  const onDrop = React.useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       const validFiles = acceptedFiles
         .filter((file) => !files.find((x) => x.name === file.name))
@@ -114,7 +114,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     multiple: maxFiles !== 1,
   })
 
-  const onUpload = useCallback(async () => {
+  const onUpload = React.useCallback(async () => {
     setLoading(true)
 
     // [Joshen] This is to support handling partial successes
@@ -157,7 +157,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     setLoading(false)
   }, [files, path, bucketName, errors, successes])
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (files.length === 0) {
       setErrors([])
     }

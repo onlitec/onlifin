@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { transactionsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -12,19 +12,19 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import type { CategoryExpense, MonthlyData } from '@/types/types';
 
 export default function Reports() {
-  const [startDate, setStartDate] = useState(() => {
+  const [startDate, setStartDate] = React.useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() - 6);
     return date.toISOString().split('T')[0];
   });
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-  const [reportType, setReportType] = useState<'category' | 'monthly' | 'cashflow'>('category');
-  const [categoryExpenses, setCategoryExpenses] = useState<CategoryExpense[]>([]);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [endDate, setEndDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [reportType, setReportType] = React.useState<'category' | 'monthly' | 'cashflow'>('category');
+  const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
+  const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadReportData();
   }, [startDate, endDate, reportType]);
 

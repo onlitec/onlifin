@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,16 +51,16 @@ interface NewCategorySuggestion {
 }
 
 export default function ImportStatements() {
-  const [fileContent, setFileContent] = useState('');
-  const [textContent, setTextContent] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [parsedTransactions, setParsedTransactions] = useState<ParsedTransaction[]>([]);
-  const [categorizedTransactions, setCategorizedTransactions] = useState<CategorizedTransaction[]>([]);
-  const [newCategorySuggestions, setNewCategorySuggestions] = useState<NewCategorySuggestion[]>([]);
-  const [existingCategories, setExistingCategories] = useState<Category[]>([]);
-  const [step, setStep] = useState<'upload' | 'review' | 'complete'>('upload');
-  const [ofxError, setOfxError] = useState<string>('');
+  const [fileContent, setFileContent] = React.useState('');
+  const [textContent, setTextContent] = React.useState('');
+  const [isAnalyzing, setIsAnalyzing] = React.useState(false);
+  const [isImporting, setIsImporting] = React.useState(false);
+  const [parsedTransactions, setParsedTransactions] = React.useState<ParsedTransaction[]>([]);
+  const [categorizedTransactions, setCategorizedTransactions] = React.useState<CategorizedTransaction[]>([]);
+  const [newCategorySuggestions, setNewCategorySuggestions] = React.useState<NewCategorySuggestion[]>([]);
+  const [existingCategories, setExistingCategories] = React.useState<Category[]>([]);
+  const [step, setStep] = React.useState<'upload' | 'review' | 'complete'>('upload');
+  const [ofxError, setOfxError] = React.useState<string>('');
   const { toast } = useToast();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

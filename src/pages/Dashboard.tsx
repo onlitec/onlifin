@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { transactionsApi, forecastsApi } from '@/db/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -44,18 +44,18 @@ interface EnhancedStats extends DashboardStats {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [enhancedStats, setEnhancedStats] = useState<EnhancedStats | null>(null);
-  const [categoryExpenses, setCategoryExpenses] = useState<CategoryExpense[]>([]);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [forecast, setForecast] = useState<FinancialForecast | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = React.useState<DashboardStats | null>(null);
+  const [enhancedStats, setEnhancedStats] = React.useState<EnhancedStats | null>(null);
+  const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
+  const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
+  const [forecast, setForecast] = React.useState<FinancialForecast | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   
   // Estado para mês/ano selecionado
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth().toString());
+  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadDashboardData();
   }, [selectedMonth, selectedYear]);
 

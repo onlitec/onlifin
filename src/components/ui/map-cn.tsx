@@ -114,9 +114,9 @@ option?: {
 };
 }) => {
 const mapRef = useRef<HTMLDivElement>(null);
-const currentRef = useRef(null);
+const currentRef = React.useRef(null);
 
-const _options = useMemo(() => {
+const _options = React.useMemo(() => {
     return { ...defaultOption, ...option };
 }, [option]);
 
@@ -127,7 +127,7 @@ const contextValue = useMemo<MapContextProps>(
     [option?.address]
 );
 
-const initMap = useCallback(() => {
+const initMap = React.useCallback(() => {
     if (!mapRef.current) return;
 
     let map = currentRef.current;
@@ -154,7 +154,7 @@ const initMap = useCallback(() => {
     map.addOverlay(marker);
 }, [_options]);
 
-useEffect(() => {
+React.useEffect(() => {
     // Check if Baidu Map API is loaded
     if ((window as any).BMapGL) {
     initMap();
@@ -173,7 +173,7 @@ useEffect(() => {
     }
 }, [ak, initMap]);
 
-useEffect(() => {
+React.useEffect(() => {
     return () => {
     if (currentRef.current) {
         currentRef.current = null;

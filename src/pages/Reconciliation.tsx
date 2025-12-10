@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { supabase } from '@/db/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -13,23 +13,23 @@ import { accountsApi, transactionsApi, categoriesApi } from '@/db/api';
 import { Account, Transaction, Category } from '@/types/types';
 
 export default function Reconciliation() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<string>('');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [bankBalance, setBankBalance] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSavingCategories, setIsSavingCategories] = useState(false);
-  const [reconciledIds, setReconciledIds] = useState<Set<string>>(new Set());
-  const [categorySelections, setCategorySelections] = useState<Record<string, string>>({});
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [selectedAccount, setSelectedAccount] = React.useState<string>('');
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [bankBalance, setBankBalance] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isSavingCategories, setIsSavingCategories] = React.useState(false);
+  const [reconciledIds, setReconciledIds] = React.useState<Set<string>>(new Set());
+  const [categorySelections, setCategorySelections] = React.useState<Record<string, string>>({});
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadAccounts();
     loadCategories();
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (selectedAccount) {
       loadTransactions();
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { profilesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,12 +31,12 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [users, setUsers] = React.useState<Profile[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [deleteUserId, setDeleteUserId] = React.useState<string | null>(null);
+  const [formData, setFormData] = React.useState({
     username: '',
     password: '',
     full_name: '',
@@ -44,7 +44,7 @@ export default function UserManagement() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadUsers();
   }, []);
 

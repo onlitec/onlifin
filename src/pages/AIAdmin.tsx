@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 import { aiChatLogsApi, aiConfigApi } from '@/db/api';
 import { supabase } from '@/db/supabase';
 import { Button } from '@/components/ui/button';
@@ -16,19 +16,19 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function AIAdmin() {
-  const [chatLogs, setChatLogs] = useState<AIChatLog[]>([]);
-  const [config, setConfig] = useState<AIConfiguration | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [chatLogs, setChatLogs] = React.useState<AIChatLog[]>([]);
+  const [config, setConfig] = React.useState<AIConfiguration | null>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [formData, setFormData] = React.useState({
     model_name: 'gemini-2.5-flash',
     endpoint: '',
     permission_level: 'read_aggregated' as 'read_aggregated' | 'read_transactional' | 'read_full',
     can_write_transactions: false
   });
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = React.useState('');
   const { toast } = useToast();
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadData();
   }, []);
 
