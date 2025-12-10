@@ -108,12 +108,6 @@ const routes: RouteConfig[] = [
     visible: true,
     children: [
       {
-        name: 'Painel Admin',
-        path: '/admin',
-        element: <Admin />,
-        visible: true
-      },
-      {
         name: 'Categorias',
         path: '/categories',
         element: <Categories />,
