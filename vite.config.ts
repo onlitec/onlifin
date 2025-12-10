@@ -19,5 +19,17 @@ export default defineConfig({
   optimizeDeps: {
     force: true, // Force re-optimization of dependencies
     include: ['react', 'react-dom'], // Explicitly include React
+    esbuildOptions: {
+      // Force esbuild to rebuild
+      logLevel: 'info',
+    },
   },
+  server: {
+    // Force full reload on any change
+    hmr: {
+      overlay: true,
+    },
+  },
+  // Add cache directory configuration
+  cacheDir: 'node_modules/.vite-new',
 });
