@@ -149,3 +149,35 @@ After the initial fix, a second error appeared: `Cannot read properties of null 
 ### Commits:
 - **90c0f13**: Fixed main.tsx and multi-select.tsx
 - **4c69985**: Fixed 7 additional files with missing React imports
+- **18fb9d3**: Fixed mixed React imports in use-toast.tsx
+
+## Critical Discovery: Mixed Imports
+
+The most insidious issue was found in `use-toast.tsx`, which had BOTH:
+```typescript
+import * as React from "react";
+import type { ReactNode } from "react";
+```
+
+**This mixing of namespace and destructured imports causes React to be null**, even when using `React.useState` correctly in the code.
+
+### The Rule
+
+⚠️ **NEVER MIX REACT IMPORTS IN THE SAME FILE** ⚠️
+
+❌ **WRONG:**
+```typescript
+import * as React from "react";
+import { useState, useEffect } from "react";
+// or
+import * as React from "react";
+import type { ReactNode } from "react";
+```
+
+✅ **CORRECT:**
+```typescript
+import * as React from "react";
+// Use React.useState, React.useEffect, React.ReactNode, etc.
+```
+
+This is the most important lesson from this debugging session.
