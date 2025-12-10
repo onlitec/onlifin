@@ -100,6 +100,52 @@ To prevent this error in the future:
 3. Clear Vite cache when encountering module resolution issues
 4. Ensure dependencies are installed before running the application
 
+## Additional Fixes (Second Pass)
+
+After the initial fix, a second error appeared: `Cannot read properties of null (reading 'useRef')`. This revealed that more files were missing React imports.
+
+### Additional Files Fixed (7 files):
+
+1. **src/App.tsx**
+   - Issue: BrowserRouter uses React.useRef internally
+   - Fix: Added `import * as React from 'react'`
+
+2. **src/types/index.ts**
+   - Issue: Uses `React.ComponentType`
+   - Fix: Added `import * as React from "react"`
+
+3. **src/components/ui/collapsible.tsx**
+   - Issue: Uses `React.ComponentProps`
+   - Fix: Added `import * as React from "react"`
+
+4. **src/components/ui/aspect-ratio.tsx**
+   - Issue: Uses `React.ComponentProps`
+   - Fix: Added `import * as React from "react"`
+
+5. **src/components/ui/skeleton.tsx**
+   - Issue: Uses `React.ComponentProps`
+   - Fix: Added `import * as React from "react"`
+
+6. **src/components/ui/sonner.tsx**
+   - Issue: Uses `React.CSSProperties`
+   - Fix: Added `import * as React from "react"`
+
+7. **src/components/common/PageMeta.tsx**
+   - Issue: Uses `React.ReactNode`
+   - Fix: Added `import * as React from "react"`
+
+### Key Insight
+
+**ANY file that uses React types MUST import React**, even if it doesn't directly use hooks. This is because:
+
+1. React types require React to be in scope
+2. Third-party components (like BrowserRouter) may use React hooks internally
+3. JSX transformation requires React to be available in the module scope
+
 ## Status
 
-🟢 **RESOLVED** - Application ready to run without React hooks errors
+🟢 **FULLY RESOLVED** - All React hooks errors fixed, application ready to run
+
+### Commits:
+- **90c0f13**: Fixed main.tsx and multi-select.tsx
+- **4c69985**: Fixed 7 additional files with missing React imports
