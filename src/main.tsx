@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import * as React from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
@@ -8,27 +8,27 @@ import { toast } from "sonner";
 
 registerServiceWorker({
   onSuccess: () => {
-    console.log('[PWA] Aplicação pronta para funcionar offline');
+    console.log('[PWA] Application ready to work offline');
   },
   onUpdate: () => {
-    console.log('[PWA] Nova versão disponível');
+    console.log('[PWA] New version available');
   },
   onOffline: () => {
-    toast.warning('Modo Offline', {
-      description: 'Você está sem conexão. Algumas funcionalidades podem estar limitadas.'
+    toast.warning('Offline Mode', {
+      description: 'You are offline. Some features may be limited.'
     });
   },
   onOnline: () => {
-    toast.success('Conexão Restaurada', {
-      description: 'Você está online novamente.'
+    toast.success('Connection Restored', {
+      description: 'You are online again.'
     });
   }
 });
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  <React.StrictMode>
     <AppWrapper>
       <App />
     </AppWrapper>
-  </StrictMode>
+  </React.StrictMode>
 );

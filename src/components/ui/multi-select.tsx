@@ -2,8 +2,7 @@
  * @file Custom multi-select dropdown component
  */
 
-import type React from "react";
-import { useEffect, useState, useRef } from "react";
+import * as React from "react";
 
 interface Option {
   value: string;
@@ -26,9 +25,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   disabled = false,
 }) => {
   const [selectedOptions, setSelectedOptions] =
-    useState<string[]>(defaultSelected);
+    React.useState<string[]>(defaultSelected);
   const [isOpen, setIsOpen] = React.useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
