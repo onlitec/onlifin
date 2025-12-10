@@ -10,6 +10,7 @@ The error you're seeing is from **cached compiled modules** in the Vite dev serv
 ✅ **Lint Check**: 0 errors across 101 files  
 ✅ **Import Pattern**: 100% consistent (0 mixed imports remaining)  
 ✅ **Cache Cleared**: All Vite caches removed from disk  
+✅ **Vite Config**: Updated to force dependency re-optimization  
 
 ❌ **Dev Server**: Still running with OLD cached dependencies in memory
 
@@ -71,7 +72,8 @@ After the dev server restarts:
 1. **All source code is fixed** - Verified with 0 lint errors
 2. **No mixed imports remain** - Verified with grep search (0 results)
 3. **Caches are cleared** - Verified that `node_modules/.vite` doesn't exist
-4. **Vite will rebuild** - When restarted, Vite will create new dependency bundles from the fixed source code
+4. **Vite config updated** - `optimizeDeps.force: true` will force rebuild
+5. **Vite will rebuild** - When restarted, Vite will create new dependency bundles from the fixed source code
 
 ## 📝 What Was Fixed
 
