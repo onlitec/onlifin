@@ -104,7 +104,7 @@ const routes: RouteConfig[] = [
   {
     name: 'Admin',
     path: '/admin',
-    element: <Admin />,
+    element: <UserManagement />,
     visible: true,
     children: [
       {
