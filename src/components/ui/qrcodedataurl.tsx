@@ -11,7 +11,7 @@
  * }
  */
 
-import React, { useEffect, useState } from 'react';
+import * as React from 'react';
 import QRCode from 'qrcode';
 
 interface QRCodeDataUrlProps {
@@ -57,7 +57,7 @@ const QRCodeDataUrl: React.FC<QRCodeDataUrlProps> = ({
   backgroundColor = '#ffffff',
   className = '',
 }) => {
-  const [dataUrl, setDataUrl] = useState<string>('');
+  const [dataUrl, setDataUrl] = React.useState<string>('');
 
   React.useEffect(() => {
     const generateQR = async () => {

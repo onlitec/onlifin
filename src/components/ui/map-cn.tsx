@@ -18,14 +18,7 @@
  * </Map>
  */
 
-import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useRef,
-} from "react";
+import * as React from 'react';
 
 /** Map context properties */
 type MapContextProps = {
@@ -33,7 +26,7 @@ type MapContextProps = {
 address?: string; /** Map marker address */
 };
 
-const MapContext = createContext<MapContextProps | null>(null);
+const MapContext = React.createContext<MapContextProps | null>(null);
 
 /** Default map configuration */
 const defaultOption = {
@@ -65,7 +58,7 @@ return new Promise<void>((ok, fail) => {
 };
 
 const useMap = () => {
-const context = useContext(MapContext);
+const context = React.useContext(MapContext);
 
 if (!context) {
     return {};

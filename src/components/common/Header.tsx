@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
 import { profilesApi } from '@/db/api';
@@ -16,7 +15,7 @@ import type { Profile } from '@/types/types';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = React.useState<Profile | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();

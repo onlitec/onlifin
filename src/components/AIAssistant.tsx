@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/db/supabase';
 import { aiChatLogsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -15,10 +14,10 @@ interface Message {
 
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Carregar histórico do localStorage ao montar o componente
