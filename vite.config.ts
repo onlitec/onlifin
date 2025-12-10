@@ -16,4 +16,8 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
+  optimizeDeps: {
+    force: true, // Force re-optimization of dependencies
+    include: ['react', 'react-dom'], // Explicitly include React
+  },
 });
