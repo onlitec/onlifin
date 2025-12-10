@@ -126,7 +126,7 @@ const routes: RouteConfig[] = [
         visible: true
       },
       {
-        name: 'IA Admin',
+        name: 'Configuração IA',
         path: '/ai-admin',
         element: <AIAdmin />,
         visible: true
