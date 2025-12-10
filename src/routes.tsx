@@ -1,3 +1,4 @@
+import * as React from 'react';
 import Dashboard from './pages/Dashboard';
 import Accounts from './pages/Accounts';
 import Cards from './pages/Cards';
@@ -16,12 +17,11 @@ import AIAdmin from './pages/AIAdmin';
 import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 import PWAInfo from './pages/PWAInfo';
-import type { ReactNode } from 'react';
 
 interface RouteConfig {
   name: string;
   path: string;
-  element: ReactNode;
+  element: React.ReactNode;
   visible?: boolean;
   children?: RouteConfig[];
 }

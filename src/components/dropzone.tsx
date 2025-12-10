@@ -1,5 +1,4 @@
 import * as React from 'react';
-import type { PropsWithChildren } from 'react';
 import { cn } from '@/lib/utils'
 import { type UseSupabaseUploadReturn } from '@/hooks/use-supabase-upload'
 import { Button } from '@/components/ui/button'
@@ -33,7 +32,7 @@ const Dropzone = ({
   getRootProps,
   getInputProps,
   ...restProps
-}: PropsWithChildren<DropzoneProps>) => {
+}: React.PropsWithChildren<DropzoneProps>) => {
   const isSuccess = restProps.isSuccess
   const isActive = restProps.isDragActive
   const isInvalid =
