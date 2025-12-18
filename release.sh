@@ -182,6 +182,27 @@ echo -e "${GREEN}✓ Tag v$VERSION criada${NC}"
 echo ""
 
 # ===========================================
+# 5. Trigger Webhook do Coolify (opcional)
+# ===========================================
+COOLIFY_WEBHOOK="${COOLIFY_WEBHOOK:-}"
+
+if [ -n "$COOLIFY_WEBHOOK" ]; then
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}🔄 5/5 - Trigger Auto-Deploy no Coolify${NC}"
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    curl -s -X GET "$COOLIFY_WEBHOOK" > /dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Webhook disparado - Deploy automático iniciado!${NC}"
+    else
+        echo -e "${YELLOW}⚠ Webhook falhou - Faça o redeploy manualmente no Coolify${NC}"
+    fi
+    echo ""
+fi
+
+# ===========================================
 # Resumo Final
 # ===========================================
 echo ""
@@ -190,19 +211,19 @@ echo -e "${GREEN}✅ Release $VERSION concluída!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo "📦 Imagens publicadas:"
-echo "   • $DOCKER_ORG/onlifin:$VERSION"
-echo "   • $DOCKER_ORG/onlifin-db:$VERSION"
+echo "   • $DOCKER_ORG/onlifin:$VERSION (latest)"
+echo "   • $DOCKER_ORG/onlifin-db:$VERSION (latest)"
 echo ""
 echo "🔗 Links:"
 echo "   • GitHub: https://github.com/onlitec/onlifin/releases/tag/v$VERSION"
 echo "   • DockerHub: https://hub.docker.com/r/$DOCKER_ORG/onlifin"
 echo ""
-echo "🚀 Próximo passo - Atualizar produção:"
-echo "   1. Acesse o Coolify"
-echo "   2. Atualize a tag das imagens para $VERSION"
-echo "   3. Clique em 'Redeploy'"
-echo ""
-echo "   Ou execute no servidor:"
-echo "   docker pull $DOCKER_ORG/onlifin:$VERSION"
-echo "   docker pull $DOCKER_ORG/onlifin-db:$VERSION"
+
+if [ -n "$COOLIFY_WEBHOOK" ]; then
+    echo -e "${GREEN}🚀 Deploy automático iniciado no Coolify!${NC}"
+else
+    echo "🚀 Para atualizar produção:"
+    echo "   • Acesse o Coolify e clique em 'Redeploy'"
+    echo "   • Ou configure o webhook: export COOLIFY_WEBHOOK='url-do-webhook'"
+fi
 echo ""

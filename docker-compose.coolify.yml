@@ -3,8 +3,8 @@ version: '3.8'
 # ===========================================
 # Onlifin - Docker Compose para Coolify
 # ===========================================
-# Plataforma completa com PostgreSQL nativo
-# O Coolify gerencia o proxy reverso (porta 80/443)
+# Usa tag 'latest' para auto-deploy
+# Basta fazer 'Redeploy' no Coolify após push
 # ===========================================
 
 services:
@@ -12,15 +12,12 @@ services:
   # Frontend - Aplicação React/Nginx
   # ===========================================
   app:
-    image: onlitec/onlifin:${APP_VERSION:-4.0.0.0}
-    # NÃO expor porta 80 - Coolify gerencia via proxy
+    image: onlitec/onlifin:latest
     expose:
       - "80"
     depends_on:
-      api:
-        condition: service_started
-      ollama:
-        condition: service_started
+      - api
+      - ollama
     environment:
       - API_URL=http://api:3000
       - OLLAMA_URL=http://ollama:11434
@@ -38,19 +35,18 @@ services:
   # Banco de Dados PostgreSQL
   # ===========================================
   db:
-    image: onlitec/onlifin-db:${APP_VERSION:-4.0.0.0}
+    image: onlitec/onlifin-db:latest
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-onlifin}
-      POSTGRES_USER: ${POSTGRES_USER:-onlifin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-production}
+      POSTGRES_DB: onlifin
+      POSTGRES_USER: onlifin
+      POSTGRES_PASSWORD: OnlifinDB2024Secure
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Não expor porta do banco externamente por segurança
     expose:
       - "5432"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-onlifin} -d ${POSTGRES_DB:-onlifin}" ]
+      test: [ "CMD-SHELL", "pg_isready -U onlifin -d onlifin" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -67,10 +63,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://${POSTGRES_USER:-onlifin}:${POSTGRES_PASSWORD:-change-me-in-production}@db:5432/${POSTGRES_DB:-onlifin}
-      PGRST_DB_SCHEMA: public
-      PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-minimum-32-characters-change-me}
+      PGRST_DB_URI: "postgres://onlifin:OnlifinDB2024Secure@db:5432/onlifin"
+      PGRST_DB_SCHEMA: "public"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: "A2U0nSRYTH1bdKB9rZpEHogZfd5OeGZX5kYp6sEIxU"
     expose:
       - "3000"
     restart: unless-stopped
@@ -89,19 +85,11 @@ services:
     restart: unless-stopped
     networks:
       - onlifin-network
-    deploy:
-      resources:
-        limits:
-          memory: ${OLLAMA_MEMORY_LIMIT:-4G}
-        reservations:
-          memory: 1G
 
 networks:
   onlifin-network:
-    driver: bridge
+
 
 volumes:
   postgres_data:
-    driver: local
   ollama_data:
-    driver: local
