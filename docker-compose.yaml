@@ -1,0 +1,95 @@
+version: '3.8'
+
+# ===========================================
+# Onlifin - Docker Compose para Coolify
+# ===========================================
+# Usa tag 'latest' para auto-deploy
+# Basta fazer 'Redeploy' no Coolify após push
+# ===========================================
+
+services:
+  # ===========================================
+  # Frontend - Aplicação React/Nginx
+  # ===========================================
+  app:
+    image: onlitec/onlifin:latest
+    expose:
+      - "80"
+    depends_on:
+      - api
+      - ollama
+    environment:
+      - API_URL=http://api:3000
+      - OLLAMA_URL=http://ollama:11434
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - onlifin-network
+
+  # ===========================================
+  # Banco de Dados PostgreSQL
+  # ===========================================
+  db:
+    image: onlitec/onlifin-db:latest
+    environment:
+      POSTGRES_DB: onlifin
+      POSTGRES_USER: onlifin
+      POSTGRES_PASSWORD: OnlifinDB2024Secure
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U onlifin -d onlifin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - onlifin-network
+
+  # ===========================================
+  # API REST - PostgREST
+  # ===========================================
+  api:
+    image: postgrest/postgrest:v12.0.2
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: "postgres://onlifin:OnlifinDB2024Secure@db:5432/onlifin"
+      PGRST_DB_SCHEMA: "public"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: "A2U0nSRYTH1bdKB9rZpEHogZfd5OeGZX5kYp6sEIxU"
+    expose:
+      - "3000"
+    restart: unless-stopped
+    networks:
+      - onlifin-network
+
+  # ===========================================
+  # Ollama - IA Local
+  # ===========================================
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    expose:
+      - "11434"
+    restart: unless-stopped
+    networks:
+      - onlifin-network
+
+networks:
+  onlifin-network:
+
+
+volumes:
+  postgres_data:
+  ollama_data:
