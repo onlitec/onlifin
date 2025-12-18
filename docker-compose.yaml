@@ -28,6 +28,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    labels:
+      - "traefik.http.services.app-onlifin.loadbalancer.server.port=80"
     networks:
       - onlifin-network
 
