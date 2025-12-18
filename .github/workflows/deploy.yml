@@ -101,27 +101,27 @@ jobs:
             # Configurações
             COOLIFY_SERVICE_ID="${{ secrets.COOLIFY_SERVICE_ID }}"
             
-            # Atualizar imagens
+            # Atualizar imagens (usando sudo para Docker)
             echo "📥 Baixando novas imagens..."
-            docker pull onlitec/onlifin:latest
-            docker pull onlitec/onlifin-db:latest
+            sudo docker pull onlitec/onlifin:latest
+            sudo docker pull onlitec/onlifin-db:latest
             
             # Encontrar e reiniciar containers
             echo "🔄 Reiniciando containers..."
             
             # Encontrar container do app pelo nome parcial
-            APP_CONTAINER=$(docker ps -q --filter "name=app-" --filter "name=$COOLIFY_SERVICE_ID" | head -1)
+            APP_CONTAINER=$(sudo docker ps -q --filter "name=app-" --filter "name=$COOLIFY_SERVICE_ID" | head -1)
             if [ -n "$APP_CONTAINER" ]; then
               echo "  Reiniciando app container: $APP_CONTAINER"
-              docker stop $APP_CONTAINER 2>/dev/null || true
-              docker rm $APP_CONTAINER 2>/dev/null || true
+              sudo docker stop $APP_CONTAINER 2>/dev/null || true
+              sudo docker rm $APP_CONTAINER 2>/dev/null || true
             fi
             
             # Reiniciar via docker-compose se existir
             if [ -f "/data/coolify/services/$COOLIFY_SERVICE_ID/docker-compose.yml" ]; then
               cd "/data/coolify/services/$COOLIFY_SERVICE_ID"
-              docker compose pull
-              docker compose up -d
+              sudo docker compose pull
+              sudo docker compose up -d
               echo "✅ Deploy concluído via docker-compose!"
             else
               echo "⚠️ Arquivo docker-compose não encontrado"
