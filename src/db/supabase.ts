@@ -65,8 +65,8 @@ function generateToken(userId: string, email: string): string {
     return `${header}.${payload}.${signature}`;
 }
 
-// Criar cliente Supabase base
-const supabaseBase = createClient(supabaseUrl, supabaseAnonKey, {
+// Criar cliente Supabase base para operações de banco
+const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         persistSession: false,
         autoRefreshToken: false,
@@ -210,10 +210,11 @@ const customAuth = {
     }
 };
 
-// Cliente híbrido
-export const supabase = {
-    ...supabaseBase,
-    auth: customAuth,
-} as unknown as SupabaseClient;
+// Criar objeto supabase com auth customizado mas mantendo métodos do cliente
+export const supabase = Object.assign(
+    Object.create(Object.getPrototypeOf(supabaseClient)),
+    supabaseClient,
+    { auth: customAuth }
+) as SupabaseClient;
 
 export default supabase;
