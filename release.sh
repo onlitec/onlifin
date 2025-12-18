@@ -184,20 +184,32 @@ echo ""
 # ===========================================
 # 5. Trigger Webhook do Coolify (opcional)
 # ===========================================
-COOLIFY_WEBHOOK="${COOLIFY_WEBHOOK:-}"
+# Configure as variáveis:
+# COOLIFY_URL - URL do seu Coolify (ex: https://coolify.exemplo.com)
+# COOLIFY_UUID - UUID do serviço (encontre no Coolify)
+# COOLIFY_TOKEN - API Token (crie em Settings > API Tokens)
+# ===========================================
 
-if [ -n "$COOLIFY_WEBHOOK" ]; then
+COOLIFY_URL="${COOLIFY_URL:-}"
+COOLIFY_UUID="${COOLIFY_UUID:-}"
+COOLIFY_TOKEN="${COOLIFY_TOKEN:-}"
+
+if [ -n "$COOLIFY_URL" ] && [ -n "$COOLIFY_UUID" ] && [ -n "$COOLIFY_TOKEN" ]; then
     echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${YELLOW}🔄 5/5 - Trigger Auto-Deploy no Coolify${NC}"
     echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     
-    curl -s -X GET "$COOLIFY_WEBHOOK" > /dev/null 2>&1
+    WEBHOOK_URL="$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_UUID&force=true"
     
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Webhook disparado - Deploy automático iniciado!${NC}"
+    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+        --request GET "$WEBHOOK_URL" \
+        --header "Authorization: Bearer $COOLIFY_TOKEN")
+    
+    if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "202" ]; then
+        echo -e "${GREEN}✓ Webhook disparado (HTTP $RESPONSE) - Deploy automático iniciado!${NC}"
     else
-        echo -e "${YELLOW}⚠ Webhook falhou - Faça o redeploy manualmente no Coolify${NC}"
+        echo -e "${YELLOW}⚠ Webhook retornou HTTP $RESPONSE - Verifique o Coolify${NC}"
     fi
     echo ""
 fi
@@ -219,11 +231,15 @@ echo "   • GitHub: https://github.com/onlitec/onlifin/releases/tag/v$VERSION"
 echo "   • DockerHub: https://hub.docker.com/r/$DOCKER_ORG/onlifin"
 echo ""
 
-if [ -n "$COOLIFY_WEBHOOK" ]; then
+if [ -n "$COOLIFY_URL" ] && [ -n "$COOLIFY_UUID" ] && [ -n "$COOLIFY_TOKEN" ]; then
     echo -e "${GREEN}🚀 Deploy automático iniciado no Coolify!${NC}"
 else
     echo "🚀 Para atualizar produção:"
     echo "   • Acesse o Coolify e clique em 'Redeploy'"
-    echo "   • Ou configure o webhook: export COOLIFY_WEBHOOK='url-do-webhook'"
+    echo ""
+    echo "   Para auto-deploy, configure as variáveis:"
+    echo "   export COOLIFY_URL='https://seu-coolify.com'"
+    echo "   export COOLIFY_UUID='uuid-do-servico'"
+    echo "   export COOLIFY_TOKEN='seu-api-token'"
 fi
 echo ""
