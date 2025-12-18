@@ -1,36 +1,33 @@
 version: '3.8'
 
+# ===========================================
+# Onlifin - Docker Compose para Coolify
+# ===========================================
+# Usa tag 'latest' para auto-deploy
+# Basta fazer 'Redeploy' no Coolify após push
+# ===========================================
+
 services:
   # ===========================================
   # Frontend - Aplicação React/Nginx
   # ===========================================
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VITE_SUPABASE_URL: http://localhost:3000
-        VITE_SUPABASE_ANON_KEY: ${JWT_SECRET:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.ZopqoUt20nEV9cklpv9e3yw3PVyZLmKs5qLD6nGL1SI}
-        VITE_APP_ID: ${VITE_APP_ID:-app-7xkeeoe4bsap}
-    image: onlifin/app:latest
-    container_name: onlifin-app
-    ports:
-      - "80:80"
+    image: onlitec/onlifin:latest
+    expose:
+      - "80"
     depends_on:
-      api:
-        condition: service_started
-      ollama:
-        condition: service_started
+      - api
+      - ollama
     environment:
       - API_URL=http://api:3000
       - OLLAMA_URL=http://ollama:11434
     restart: unless-stopped
-    security_opt:
-      - apparmor:unconfined
     healthcheck:
-      disable: true
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - onlifin-network
 
@@ -38,26 +35,22 @@ services:
   # Banco de Dados PostgreSQL
   # ===========================================
   db:
-    image: postgres:16-alpine
-    container_name: onlifin-db
+    image: onlitec/onlifin-db:latest
     environment:
       POSTGRES_DB: onlifin
       POSTGRES_USER: onlifin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-onlifin123}
+      POSTGRES_PASSWORD: OnlifinDB2024Secure
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
-    ports:
-      - "5433:5432"
+    expose:
+      - "5432"
     restart: unless-stopped
-    security_opt:
-      - apparmor:unconfined
-    # healthcheck temporarily disabled for LXC compatibility
-    # healthcheck:
-    #   test: [ "CMD-SHELL", "pg_isready -U onlifin -d onlifin" ]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U onlifin -d onlifin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - onlifin-network
 
@@ -65,22 +58,18 @@ services:
   # API REST - PostgREST
   # ===========================================
   api:
-    image: postgrest/postgrest
-    container_name: onlifin-api
+    image: postgrest/postgrest:v12.0.2
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://onlifin:${DB_PASSWORD:-onlifin123}@db:5432/onlifin
-      PGRST_DB_SCHEMA: public
-      PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-minimum-32-characters}
-      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3000
-    ports:
-      - "3000:3000"
+      PGRST_DB_URI: "postgres://onlifin:OnlifinDB2024Secure@db:5432/onlifin"
+      PGRST_DB_SCHEMA: "public"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: "A2U0nSRYTH1bdKB9rZpEHogZfd5OeGZX5kYp6sEIxU"
+    expose:
+      - "3000"
     restart: unless-stopped
-    security_opt:
-      - apparmor:unconfined
     networks:
       - onlifin-network
 
@@ -88,28 +77,19 @@ services:
   # Ollama - IA Local
   # ===========================================
   ollama:
-    image: ollama/ollama
-    container_name: onlifin-ollama
+    image: ollama/ollama:latest
     volumes:
       - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
+    expose:
+      - "11434"
     restart: unless-stopped
-    security_opt:
-      - apparmor:unconfined
     networks:
       - onlifin-network
-    deploy:
-      resources:
-        limits:
-          memory: 8G
 
 networks:
   onlifin-network:
-    driver: bridge
+
 
 volumes:
   postgres_data:
-    driver: local
   ollama_data:
-    driver: local
