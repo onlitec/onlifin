@@ -1,0 +1,30 @@
+# ===========================================
+# Onlifin PostgreSQL - Dockerfile
+# ===========================================
+# Imagem PostgreSQL customizada com schemas
+# de autenticação e dados iniciais
+# ===========================================
+
+FROM postgres:16-alpine
+
+# Metadados
+LABEL maintainer="onlitec"
+LABEL description="Onlifin PostgreSQL Database with auth and main schemas"
+LABEL version="4.0.0.0"
+
+# Copiar scripts de inicialização
+COPY docker/init-db/01-auth-schema.sql /docker-entrypoint-initdb.d/
+COPY docker/init-db/02-main-schema.sql /docker-entrypoint-initdb.d/
+COPY docker/init-db/03-seed-data.sql /docker-entrypoint-initdb.d/
+
+# Configurações padrão
+ENV POSTGRES_DB=onlifin
+ENV POSTGRES_USER=onlifin
+ENV POSTGRES_PASSWORD=onlifin123
+
+# Porta padrão
+EXPOSE 5432
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+    CMD pg_isready -U $POSTGRES_USER -d $POSTGRES_DB || exit 1

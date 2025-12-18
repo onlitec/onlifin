@@ -2,13 +2,30 @@
 
 Este guia explica como fazer o deploy da plataforma Onlifin em um VPS usando o Coolify.
 
+## 📦 Arquitetura
+
+A plataforma Onlifin usa uma arquitetura de containers Docker:
+
+| Imagem | Descrição | DockerHub |
+|--------|-----------|-----------|
+| `onlitec/onlifin` | Frontend React + Nginx | [Link](https://hub.docker.com/r/onlitec/onlifin) |
+| `onlitec/onlifin-db` | PostgreSQL com schemas | [Link](https://hub.docker.com/r/onlitec/onlifin-db) |
+| `postgrest/postgrest` | API REST automática | Imagem oficial |
+| `ollama/ollama` | IA Local | Imagem oficial |
+
+**Nota:** Esta plataforma usa PostgreSQL nativo, não Supabase.
+
+---
+
 ## 📋 Pré-requisitos
 
-- VPS com mínimo 4GB RAM (recomendado 8GB para IA)
+- VPS com mínimo **4GB RAM** (recomendado 8GB para IA)
 - Coolify instalado e configurado
 - Domínio configurado (opcional, mas recomendado)
 
-## 🔧 Opção 1: Deploy via Docker Compose (Recomendado)
+---
+
+## 🔧 Deploy via Docker Compose
 
 ### Passo 1: Criar novo projeto no Coolify
 
@@ -24,19 +41,21 @@ Este guia explica como fazer o deploy da plataforma Onlifin em um VPS usando o C
 
 ### Passo 3: Configurar Docker Compose
 
-Cole o conteúdo do arquivo `docker-compose.coolify.yml`:
+Cole o seguinte conteúdo:
 
 ```yaml
 version: '3.8'
 
 services:
   app:
-    image: onlitec/onlifin:latest
+    image: onlitec/onlifin:4.0.0.0
     ports:
       - "80:80"
     depends_on:
-      - api
-      - ollama
+      api:
+        condition: service_started
+      ollama:
+        condition: service_started
     environment:
       - API_URL=http://api:3000
       - OLLAMA_URL=http://ollama:11434
@@ -45,23 +64,30 @@ services:
       - onlifin-network
 
   db:
-    image: postgres:16-alpine
+    image: onlitec/onlifin-db:4.0.0.0
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-onlifin}
-      POSTGRES_USER: ${POSTGRES_USER:-onlifin}
+      POSTGRES_DB: onlifin
+      POSTGRES_USER: onlifin
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onlifin -d onlifin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - onlifin-network
 
   api:
-    image: postgrest/postgrest
+    image: postgrest/postgrest:v12.0.2
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://${POSTGRES_USER:-onlifin}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-onlifin}
+      PGRST_DB_URI: postgres://onlifin:${POSTGRES_PASSWORD}@db:5432/onlifin
       PGRST_DB_SCHEMA: public
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
@@ -70,16 +96,16 @@ services:
       - onlifin-network
 
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
-    networks:
-      - onlifin-network
     deploy:
       resources:
         limits:
           memory: 4G
+    networks:
+      - onlifin-network
 
 networks:
   onlifin-network:
@@ -96,10 +122,17 @@ No Coolify, vá em **Environment Variables** e adicione:
 
 | Variável | Valor | Descrição |
 |----------|-------|-----------|
-| `POSTGRES_DB` | `onlifin` | Nome do banco de dados |
-| `POSTGRES_USER` | `onlifin` | Usuário do banco |
-| `POSTGRES_PASSWORD` | `SuaSenhaSegura123!` | **⚠️ ALTERE PARA UMA SENHA FORTE** |
-| `JWT_SECRET` | `seu-jwt-secret-minimo-32-caracteres` | **⚠️ ALTERE PARA UMA CHAVE SEGURA** |
+| `POSTGRES_PASSWORD` | `SuaSenhaSegura123!` | **⚠️ ALTERE!** Senha do banco |
+| `JWT_SECRET` | `seu-jwt-secret-32-chars-min` | **⚠️ ALTERE!** Chave JWT |
+
+**Gerar senhas seguras:**
+```bash
+# JWT Secret (32+ caracteres)
+openssl rand -base64 32
+
+# Senha do banco
+openssl rand -base64 24
+```
 
 ### Passo 5: Configurar Domínio (Opcional)
 
@@ -113,60 +146,9 @@ Clique em **"Deploy"** e aguarde a inicialização dos containers.
 
 ---
 
-## 🔧 Opção 2: Deploy via Imagem Docker Simples
-
-Se você quer apenas o frontend (sem banco de dados local):
-
-### Passo 1: Adicionar serviço Docker
-
-1. No Coolify, clique em **"+ New"**
-2. Selecione **"Docker Image"**
-3. Use a imagem: `onlitec/onlifin:latest`
-
-### Passo 2: Configurar porta
-
-- **Porta exposta:** `80`
-- **Porta pública:** `80` ou `443` (com HTTPS)
-
-### Passo 3: Variáveis de Ambiente
-
-Configure as variáveis para apontar para seu Supabase externo:
-
-| Variável | Valor |
-|----------|-------|
-| `VITE_SUPABASE_URL` | `https://seu-projeto.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | `sua-anon-key` |
-
----
-
-## 🗄️ Inicialização do Banco de Dados
-
-Após o primeiro deploy, você precisa inicializar o banco de dados:
-
-### Via Coolify Terminal
-
-1. Acesse o container `db` pelo terminal do Coolify
-2. Execute:
-
-```bash
-psql -U onlifin -d onlifin -f /docker-entrypoint-initdb.d/01-auth-schema.sql
-psql -U onlifin -d onlifin -f /docker-entrypoint-initdb.d/02-main-schema.sql
-```
-
-### Via Script Remoto
-
-```bash
-# Conectar ao banco via psql
-docker exec -it onlifin-db psql -U onlifin -d onlifin
-
-# Dentro do psql, execute os scripts de criação
-```
-
----
-
 ## 🤖 Configuração do Ollama (IA)
 
-Após o deploy, você precisa baixar o modelo de IA:
+**IMPORTANTE:** Após o primeiro deploy, você DEVE baixar o modelo de IA:
 
 ### Via Coolify Terminal
 
@@ -185,12 +167,22 @@ docker exec -it onlifin-ollama ollama pull qwen2.5:0.5b
 
 ### Modelos Recomendados
 
-| Modelo | RAM Mínima | Uso |
-|--------|------------|-----|
-| `qwen2.5:0.5b` | 2GB | Leve, respostas rápidas |
-| `qwen2.5:1.5b` | 4GB | Balanceado |
-| `llama3.2:3b` | 6GB | Mais inteligente |
-| `llama3.2:7b` | 12GB | Melhor qualidade |
+| Modelo | RAM Mínima | Qualidade |
+|--------|------------|-----------|
+| `qwen2.5:0.5b` | 2GB | ⭐⭐ Básico |
+| `qwen2.5:1.5b` | 4GB | ⭐⭐⭐ Bom |
+| `llama3.2:3b` | 6GB | ⭐⭐⭐⭐ Muito bom |
+| `llama3.2:7b` | 12GB | ⭐⭐⭐⭐⭐ Excelente |
+
+---
+
+## 📊 Requisitos do VPS
+
+| Recurso | Mínimo | Recomendado |
+|---------|--------|-------------|
+| **RAM** | 4GB | 8GB+ |
+| **CPU** | 2 cores | 4 cores |
+| **Disco** | 20GB | 50GB |
 
 ---
 
@@ -198,56 +190,49 @@ docker exec -it onlifin-ollama ollama pull qwen2.5:0.5b
 
 ### Senhas e Secrets
 
-⚠️ **IMPORTANTE**: Altere todas as senhas padrão!
-
-Gere senhas seguras:
-```bash
-# JWT Secret (32+ caracteres)
-openssl rand -base64 32
-
-# Senha do banco
-openssl rand -base64 24
-```
+⚠️ **IMPORTANTE**: Altere todas as senhas padrão antes do deploy!
 
 ### Firewall
 
 Configure seu firewall para expor apenas:
-- Porta 80/443 (HTTP/HTTPS) - Frontend
-- Porta 3000 (opcional) - API REST
+- ✅ Porta 80/443 (HTTP/HTTPS) - Frontend
 
-**NÃO exponha:**
-- Porta 5432 - PostgreSQL
-- Porta 11434 - Ollama
+**NÃO exponha publicamente:**
+- ❌ Porta 5432 - PostgreSQL
+- ❌ Porta 3000 - API REST
+- ❌ Porta 11434 - Ollama
 
 ---
 
-## 📊 Monitoramento
+## 📋 Verificação do Deploy
 
-### Health Checks
-
-Os containers têm health checks configurados. Verifique no Coolify:
-
-- 🟢 **Healthy** - Container funcionando
-- 🟡 **Starting** - Iniciando
-- 🔴 **Unhealthy** - Problema detectado
-
-### Logs
-
-Acesse os logs pelo painel do Coolify ou via SSH:
+### Verificar containers
 
 ```bash
-# Logs do frontend
-docker logs onlifin-app
-
-# Logs do banco
-docker logs onlifin-db
-
-# Logs da API
-docker logs onlifin-api
-
-# Logs do Ollama
-docker logs onlifin-ollama
+docker ps | grep onlifin
 ```
+
+Você deve ver 4 containers:
+- `onlifin-app` 
+- `onlifin-db`
+- `onlifin-api`
+- `onlifin-ollama`
+
+### Verificar banco de dados
+
+```bash
+docker exec -it onlifin-db psql -U onlifin -d onlifin -c "\dt"
+```
+
+Deve listar as tabelas: `users`, `accounts`, `categories`, `transactions`, etc.
+
+### Verificar Ollama
+
+```bash
+docker exec -it onlifin-ollama ollama list
+```
+
+Deve mostrar o modelo baixado.
 
 ---
 
@@ -256,10 +241,30 @@ docker logs onlifin-ollama
 Para atualizar para uma nova versão:
 
 1. No Coolify, vá ao serviço
-2. Altere a tag da imagem (ex: `onlitec/onlifin:4.0.0.0` → `onlitec/onlifin:4.1.0.0`)
+2. Altere a tag das imagens (ex: `4.0.0.0` → `4.1.0.0`)
 3. Clique em **"Redeploy"**
 
 Ou use `latest` para sempre pegar a versão mais recente.
+
+---
+
+## 📝 Logs
+
+Acesse os logs pelo painel do Coolify ou via SSH:
+
+```bash
+# Logs do frontend
+docker logs -f onlifin-app
+
+# Logs do banco
+docker logs -f onlifin-db
+
+# Logs da API
+docker logs -f onlifin-api
+
+# Logs do Ollama
+docker logs -f onlifin-ollama
+```
 
 ---
 
@@ -277,7 +282,7 @@ docker stats
 
 ### Erro de conexão com banco
 
-1. Verifique se o container `db` está rodando
+1. Verifique se `onlifin-db` está saudável: `docker ps`
 2. Confirme as credenciais nas variáveis de ambiente
 3. Teste conexão:
 ```bash
@@ -291,14 +296,23 @@ docker exec -it onlifin-db psql -U onlifin -d onlifin -c "SELECT 1"
 docker exec -it onlifin-ollama ollama list
 ```
 
-2. Baixe o modelo se necessário:
+2. Verifique a memória disponível:
 ```bash
-docker exec -it onlifin-ollama ollama pull qwen2.5:0.5b
+docker stats onlifin-ollama
+```
+
+### API retorna 503
+
+A API depende do banco estar saudável. Verifique:
+```bash
+docker logs onlifin-api
+docker exec -it onlifin-db pg_isready -U onlifin
 ```
 
 ---
 
 ## 📞 Suporte
 
-- **GitHub Issues**: https://github.com/onlitec/onlifin/issues
+- **GitHub**: https://github.com/onlitec/onlifin
+- **Issues**: https://github.com/onlitec/onlifin/issues
 - **DockerHub**: https://hub.docker.com/r/onlitec/onlifin

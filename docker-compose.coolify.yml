@@ -3,8 +3,8 @@ version: '3.8'
 # ===========================================
 # Onlifin - Docker Compose para Coolify
 # ===========================================
-# Este arquivo é otimizado para deploy no Coolify
-# Usa imagens do DockerHub em vez de build local
+# Plataforma completa com PostgreSQL nativo
+# Sem dependência de Supabase
 # ===========================================
 
 services:
@@ -12,13 +12,15 @@ services:
   # Frontend - Aplicação React/Nginx
   # ===========================================
   app:
-    image: onlitec/onlifin:${APP_VERSION:-latest}
+    image: onlitec/onlifin:${APP_VERSION:-4.0.0.0}
     container_name: onlifin-app
     ports:
       - "${APP_PORT:-80}:80"
     depends_on:
-      - api
-      - ollama
+      api:
+        condition: service_started
+      ollama:
+        condition: service_started
     environment:
       - API_URL=http://api:3000
       - OLLAMA_URL=http://ollama:11434
@@ -39,7 +41,7 @@ services:
   # Banco de Dados PostgreSQL
   # ===========================================
   db:
-    image: postgres:16-alpine
+    image: onlitec/onlifin-db:${APP_VERSION:-4.0.0.0}
     container_name: onlifin-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-onlifin}
@@ -55,6 +57,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     networks:
       - onlifin-network
     labels:
@@ -65,7 +68,7 @@ services:
   # API REST - PostgREST
   # ===========================================
   api:
-    image: postgrest/postgrest
+    image: postgrest/postgrest:v12.0.2
     container_name: onlifin-api
     depends_on:
       db:
@@ -79,6 +82,11 @@ services:
     ports:
       - "${API_PORT:-3000}:3000"
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - onlifin-network
     labels:
@@ -89,7 +97,7 @@ services:
   # Ollama - IA Local
   # ===========================================
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
     container_name: onlifin-ollama
     volumes:
       - ollama_data:/root/.ollama
