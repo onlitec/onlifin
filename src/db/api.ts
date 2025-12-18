@@ -25,7 +25,7 @@ export const profilesApi = {
       .select('*')
       .eq('id', userId)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -35,7 +35,7 @@ export const profilesApi = {
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -47,7 +47,7 @@ export const profilesApi = {
       .eq('id', userId)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -59,7 +59,7 @@ export const profilesApi = {
       .eq('id', userId)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -67,16 +67,11 @@ export const profilesApi = {
   async createUser(username: string, password: string, role: string = 'user'): Promise<{ userId: string | null; error: any }> {
     try {
       const email = `${username}@miaoda.com`;
-      
+
       // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          data: {
-            username
-          }
-        }
+        password
       });
 
       if (authError) throw authError;
@@ -102,7 +97,7 @@ export const profilesApi = {
       .from('profiles')
       .delete()
       .eq('id', userId);
-    
+
     if (error) throw error;
   }
 };
@@ -114,7 +109,7 @@ export const accountsApi = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -125,7 +120,7 @@ export const accountsApi = {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -136,7 +131,7 @@ export const accountsApi = {
       .insert(account)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -148,7 +143,7 @@ export const accountsApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -158,7 +153,7 @@ export const accountsApi = {
       .from('accounts')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   },
 
@@ -166,7 +161,7 @@ export const accountsApi = {
     const { data, error } = await supabase.rpc('recalculate_account_balance', {
       account_uuid: accountId
     });
-    
+
     if (error) throw error;
     return data || 0;
   },
@@ -175,7 +170,7 @@ export const accountsApi = {
     const { data, error } = await supabase.rpc('recalculate_all_account_balances', {
       user_uuid: userId
     });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   }
@@ -188,7 +183,7 @@ export const cardsApi = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -199,7 +194,7 @@ export const cardsApi = {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -210,7 +205,7 @@ export const cardsApi = {
       .insert(card)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -222,7 +217,7 @@ export const cardsApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -232,7 +227,7 @@ export const cardsApi = {
       .from('cards')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   }
 };
@@ -243,7 +238,7 @@ export const categoriesApi = {
       .from('categories')
       .select('*')
       .order('name', { ascending: true });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -254,7 +249,7 @@ export const categoriesApi = {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -265,7 +260,7 @@ export const categoriesApi = {
       .insert(category)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -277,7 +272,7 @@ export const categoriesApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -287,7 +282,7 @@ export const categoriesApi = {
       .from('categories')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   }
 };
@@ -323,7 +318,7 @@ export const transactionsApi = {
     }
 
     const { data, error } = await query.order('date', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -339,7 +334,7 @@ export const transactionsApi = {
       `)
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -350,7 +345,7 @@ export const transactionsApi = {
       .insert(transaction)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -362,7 +357,7 @@ export const transactionsApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -372,7 +367,7 @@ export const transactionsApi = {
       .from('transactions')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   },
 
@@ -423,7 +418,7 @@ export const transactionsApi = {
     if (error) throw error;
 
     const categoryMap = new Map<string, { amount: number; color: string }>();
-    
+
     (data || []).forEach((item: any) => {
       const categoryName = item.category?.name || 'Sem Categoria';
       const categoryColor = item.category?.color || '#999999';
@@ -460,7 +455,7 @@ export const transactionsApi = {
       const income = (data || [])
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + Number(t.amount), 0);
-      
+
       const expenses = (data || [])
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -493,7 +488,7 @@ export const transactionsApi = {
     });
 
     if (error) throw error;
-    
+
     return {
       success: data.success,
       sourceTransactionId: data.source_transaction_id,
@@ -528,7 +523,7 @@ export const aiConfigApi = {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -538,7 +533,7 @@ export const aiConfigApi = {
       .from('ai_configurations')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -549,7 +544,7 @@ export const aiConfigApi = {
       .insert(config)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -561,7 +556,7 @@ export const aiConfigApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -571,7 +566,7 @@ export const aiConfigApi = {
       .from('ai_configurations')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   }
 };
@@ -583,13 +578,13 @@ export const aiChatLogsApi = {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
-    
+
     if (userId) {
       query = query.eq('user_id', userId);
     }
-    
+
     const { data, error } = await query;
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -600,7 +595,7 @@ export const aiChatLogsApi = {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -611,7 +606,7 @@ export const aiChatLogsApi = {
       .insert(log)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -621,7 +616,7 @@ export const aiChatLogsApi = {
       .from('ai_chat_logs')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   },
 
@@ -630,7 +625,7 @@ export const aiChatLogsApi = {
       .from('ai_chat_logs')
       .delete()
       .eq('user_id', userId);
-    
+
     if (error) throw error;
   }
 };
@@ -642,7 +637,7 @@ export const importHistoryApi = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -653,7 +648,7 @@ export const importHistoryApi = {
       .insert(history)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   }
@@ -667,7 +662,7 @@ export const billsToPayApi = {
       .select('*')
       .eq('user_id', userId)
       .order('due_date', { ascending: true });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -678,7 +673,7 @@ export const billsToPayApi = {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -690,7 +685,7 @@ export const billsToPayApi = {
       .eq('user_id', userId)
       .eq('status', 'pending')
       .order('due_date', { ascending: true });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -702,7 +697,7 @@ export const billsToPayApi = {
       .eq('user_id', userId)
       .eq('status', 'overdue')
       .order('due_date', { ascending: true });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -713,7 +708,7 @@ export const billsToPayApi = {
       .insert(bill)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -725,7 +720,7 @@ export const billsToPayApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -733,15 +728,15 @@ export const billsToPayApi = {
   async markAsPaid(id: string, paidDate: string): Promise<BillToPay | null> {
     const { data, error } = await supabase
       .from('bills_to_pay')
-      .update({ 
-        status: 'paid', 
+      .update({
+        status: 'paid',
         paid_date: paidDate,
-        updated_at: new Date().toISOString() 
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -751,7 +746,7 @@ export const billsToPayApi = {
       .from('bills_to_pay')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   }
 };
@@ -764,7 +759,7 @@ export const billsToReceiveApi = {
       .select('*')
       .eq('user_id', userId)
       .order('due_date', { ascending: true });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -775,7 +770,7 @@ export const billsToReceiveApi = {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -787,7 +782,7 @@ export const billsToReceiveApi = {
       .eq('user_id', userId)
       .eq('status', 'pending')
       .order('due_date', { ascending: true });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -799,7 +794,7 @@ export const billsToReceiveApi = {
       .eq('user_id', userId)
       .eq('status', 'overdue')
       .order('due_date', { ascending: true });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -810,7 +805,7 @@ export const billsToReceiveApi = {
       .insert(bill)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -822,7 +817,7 @@ export const billsToReceiveApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -830,15 +825,15 @@ export const billsToReceiveApi = {
   async markAsReceived(id: string, receivedDate: string): Promise<BillToReceive | null> {
     const { data, error } = await supabase
       .from('bills_to_receive')
-      .update({ 
-        status: 'received', 
+      .update({
+        status: 'received',
         received_date: receivedDate,
-        updated_at: new Date().toISOString() 
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -848,7 +843,7 @@ export const billsToReceiveApi = {
       .from('bills_to_receive')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   }
 };
@@ -863,7 +858,7 @@ export const forecastsApi = {
       .order('calculation_date', { ascending: false })
       .limit(1)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -874,7 +869,7 @@ export const forecastsApi = {
       .select('*')
       .eq('user_id', userId)
       .order('calculation_date', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -885,7 +880,7 @@ export const forecastsApi = {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -895,7 +890,7 @@ export const forecastsApi = {
     const { error } = await supabase.functions.invoke('financial-forecast', {
       body: { user_id: userId }
     });
-    
+
     if (error) throw error;
   }
 };
@@ -908,7 +903,7 @@ export const notificationsApi = {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -920,7 +915,7 @@ export const notificationsApi = {
       .eq('user_id', userId)
       .eq('is_read', false)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
@@ -931,7 +926,7 @@ export const notificationsApi = {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('is_read', false);
-    
+
     if (error) throw error;
     return count || 0;
   },
@@ -943,7 +938,7 @@ export const notificationsApi = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -954,7 +949,7 @@ export const notificationsApi = {
       .update({ is_read: true })
       .eq('user_id', userId)
       .eq('is_read', false);
-    
+
     if (error) throw error;
   },
 
@@ -963,7 +958,7 @@ export const notificationsApi = {
       .from('notifications')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   }
 };
