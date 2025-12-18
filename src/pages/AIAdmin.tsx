@@ -19,18 +19,41 @@ export default function AIAdmin() {
   const [chatLogs, setChatLogs] = React.useState<AIChatLog[]>([]);
   const [config, setConfig] = React.useState<AIConfiguration | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [localModels, setLocalModels] = React.useState<string[]>([]);
+  const [ollamaStatus, setOllamaStatus] = React.useState<'checking' | 'online' | 'offline'>('checking');
   const [formData, setFormData] = React.useState({
     model_name: 'gemini-2.5-flash',
     endpoint: '',
     permission_level: 'read_aggregated' as 'read_aggregated' | 'read_transactional' | 'read_full',
-    can_write_transactions: false
+    can_write_transactions: false,
+    provider: 'cloud' as 'cloud' | 'local' // New field
   });
   const [apiKey, setApiKey] = React.useState('');
   const { toast } = useToast();
 
   React.useEffect(() => {
     loadData();
+    loadLocalModels();
   }, []);
+
+  // Verificar modelos locais do Ollama
+  const loadLocalModels = async () => {
+    try {
+      setOllamaStatus('checking');
+      const response = await fetch('/ollama/api/tags');
+      if (response.ok) {
+        const data = await response.json();
+        const models = data.models?.map((m: any) => m.name) || [];
+        setLocalModels(models);
+        setOllamaStatus('online');
+      } else {
+        setOllamaStatus('offline');
+      }
+    } catch (error) {
+      console.error('Ollama não disponível:', error);
+      setOllamaStatus('offline');
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -41,15 +64,18 @@ export default function AIAdmin() {
       ]);
 
       setChatLogs(Array.isArray(logs) ? logs : []);
-      
+
       if (Array.isArray(configurations) && configurations.length > 0) {
         const activeConfig = configurations[0];
         setConfig(activeConfig);
+        // Detectar se é modelo local (Ollama) ou cloud
+        const isLocalModel = activeConfig.model_name?.includes(':') || activeConfig.endpoint?.includes('ollama');
         setFormData({
           model_name: activeConfig.model_name || 'gemini-2.5-flash',
           endpoint: activeConfig.endpoint || '',
           permission_level: activeConfig.permission_level || 'read_aggregated',
-          can_write_transactions: activeConfig.can_write_transactions || false
+          can_write_transactions: activeConfig.can_write_transactions || false,
+          provider: isLocalModel ? 'local' : 'cloud'
         });
       } else {
         // Initialize with default values if no config exists
@@ -58,7 +84,8 @@ export default function AIAdmin() {
           model_name: 'gemini-2.5-flash',
           endpoint: '',
           permission_level: 'read_aggregated',
-          can_write_transactions: false
+          can_write_transactions: false,
+          provider: 'cloud'
         });
       }
     } catch (error: any) {
@@ -78,27 +105,30 @@ export default function AIAdmin() {
 
   const handleSaveConfig = async () => {
     try {
+      // Excluir 'provider' pois não existe no schema do banco
+      const { provider, ...dataToSave } = formData;
+
       if (config) {
-        await aiConfigApi.updateConfig(config.id, formData);
+        await aiConfigApi.updateConfig(config.id, dataToSave);
         toast({ title: 'Sucesso', description: 'Configuração atualizada com sucesso' });
       } else {
         await aiConfigApi.createConfig({
-          ...formData,
+          ...dataToSave,
           is_active: true
         });
         toast({ title: 'Sucesso', description: 'Configuração criada com sucesso' });
       }
-      
+
       // Clear API key field after saving
       if (apiKey) {
-        toast({ 
-          title: 'Informação', 
+        toast({
+          title: 'Informação',
           description: 'A chave da API deve ser configurada nas variáveis de ambiente do Supabase',
           variant: 'default'
         });
         setApiKey('');
       }
-      
+
       loadData();
     } catch (error: any) {
       toast({
@@ -253,28 +283,106 @@ export default function AIAdmin() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Provider Selection */}
               <div className="space-y-2">
-                <Label htmlFor="model_name">Nome do Modelo</Label>
-                <Input
-                  id="model_name"
-                  value={formData.model_name}
-                  onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
-                  placeholder="gemini-2.5-flash"
-                />
+                <Label>Provedor de IA</Label>
+                <Select
+                  value={formData.provider}
+                  onValueChange={(value: 'cloud' | 'local') => {
+                    setFormData({
+                      ...formData,
+                      provider: value,
+                      model_name: value === 'local' ? (localModels[0] || 'qwen2.5:0.5b') : 'gemini-2.5-flash',
+                      endpoint: value === 'local' ? '/ollama/api' : ''
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o provedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cloud">☁️ Cloud (Gemini/API Externa)</SelectItem>
+                    <SelectItem value="local">🖥️ Local (Ollama)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              {/* Ollama Status */}
+              {formData.provider === 'local' && (
+                <div className={`p-3 rounded-lg ${ollamaStatus === 'online' ? 'bg-green-500/10 border border-green-500/30' :
+                  ollamaStatus === 'offline' ? 'bg-red-500/10 border border-red-500/30' :
+                    'bg-yellow-500/10 border border-yellow-500/30'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${ollamaStatus === 'online' ? 'bg-green-500' :
+                      ollamaStatus === 'offline' ? 'bg-red-500' :
+                        'bg-yellow-500 animate-pulse'
+                      }`} />
+                    <span className="text-sm font-medium">
+                      Ollama: {ollamaStatus === 'online' ? 'Conectado' : ollamaStatus === 'offline' ? 'Desconectado' : 'Verificando...'}
+                    </span>
+                    {ollamaStatus === 'online' && localModels.length > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ({localModels.length} modelo{localModels.length > 1 ? 's' : ''} disponível)
+                      </span>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={loadLocalModels} className="ml-auto">
+                      Atualizar
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Model Selection */}
               <div className="space-y-2">
-                <Label htmlFor="api_key">Chave da API (Referência)</Label>
-                <Input
-                  id="api_key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Insira a chave da API do modelo de IA"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Para segurança, configure a chave nas variáveis de ambiente do Supabase (GEMINI_API_KEY)
-                </p>
+                <Label htmlFor="model_name">Modelo de IA</Label>
+                {formData.provider === 'local' && localModels.length > 0 ? (
+                  <Select
+                    value={formData.model_name}
+                    onValueChange={(value) => setFormData({ ...formData, model_name: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {localModels.map((model) => (
+                        <SelectItem key={model} value={model}>
+                          🤖 {model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="model_name"
+                    value={formData.model_name}
+                    onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
+                    placeholder={formData.provider === 'local' ? 'llama3.2:3b' : 'gemini-2.5-flash'}
+                  />
+                )}
+                {formData.provider === 'local' && localModels.length === 0 && ollamaStatus === 'online' && (
+                  <p className="text-xs text-yellow-600">
+                    Nenhum modelo instalado. Use: docker exec onlifin-ollama ollama pull qwen2.5:0.5b
+                  </p>
+                )}
               </div>
+
+              {/* API Key - only for cloud */}
+              {formData.provider === 'cloud' && (
+                <div className="space-y-2">
+                  <Label htmlFor="api_key">Chave da API (Referência)</Label>
+                  <Input
+                    id="api_key"
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Insira a chave da API do modelo de IA"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Para segurança, configure a chave nas variáveis de ambiente do Supabase (GEMINI_API_KEY)
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="endpoint">Endpoint da API (Opcional)</Label>
                 <Input

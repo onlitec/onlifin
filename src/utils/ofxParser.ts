@@ -14,14 +14,14 @@ interface OFXTransaction {
 function parseOFXDate(dateStr: string): string {
   // Remove timezone e hora se existir
   const cleanDate = dateStr.replace(/\[.*\]/, '').substring(0, 8);
-  
+
   if (cleanDate.length === 8) {
     const year = cleanDate.substring(0, 4);
     const month = cleanDate.substring(4, 6);
     const day = cleanDate.substring(6, 8);
     return `${day}/${month}/${year}`;
   }
-  
+
   return dateStr;
 }
 
@@ -36,135 +36,160 @@ function parseOFXAmount(amountStr: string): number {
  * Converte OFX SGML para XML
  * OFX pode vir em formato SGML (sem tags de fechamento)
  * 
- * Nova abordagem: processa o conteúdo inteiro, não linha por linha
+ * Abordagem robusta: processa linha por linha
  */
 function sgmlToXml(sgml: string): string {
   try {
     console.log('=== INÍCIO DA CONVERSÃO SGML -> XML ===');
-    
+
     // Se já é XML válido, retorna como está
     if (sgml.includes('<?xml')) {
       console.log('Arquivo já é XML válido, retornando sem conversão');
       return sgml;
     }
 
-    // Remove headers OFX - procura por linhas de header e remove até encontrar <OFX>
-    // Headers típicos: OFXHEADER:, DATA:, VERSION:, etc.
-    let content = sgml;
-    
-    // Remove todas as linhas de header (que não começam com <)
+    // Normaliza quebras de linha
+    let content = sgml.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Remove headers OFX (linhas que não começam com <)
     const lines = content.split('\n');
     let startIndex = -1;
-    
+
     console.log(`Total de linhas no arquivo: ${lines.length}`);
     console.log('Procurando pela tag <OFX>...');
-    
+
+    // Procura pela tag <OFX> de forma case-insensitive
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      
+
       // Debug: mostra as primeiras 20 linhas
       if (i < 20) {
-        console.log(`Linha ${i}: "${line.substring(0, 50)}${line.length > 50 ? '...' : ''}"`);
+        console.log(`Linha ${i}: "${line.substring(0, 60)}${line.length > 60 ? '...' : ''}"`);
       }
-      
+
       // Encontrou a tag <OFX>, começa daqui
-      if (line.toUpperCase().startsWith('<OFX>')) {
+      if (line.toUpperCase().includes('<OFX>') || line.toUpperCase() === '<OFX>') {
         startIndex = i;
         console.log(`✅ Tag <OFX> encontrada na linha ${i}`);
         break;
       }
     }
-    
+
     if (startIndex === -1) {
       console.error('❌ Tag <OFX> não encontrada no arquivo!');
+      console.error('Tentando encontrar qualquer tag de início...');
+
+      // Tenta encontrar qualquer tag que pareça início de OFX
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('<') && !line.startsWith('</')) {
+          startIndex = i;
+          console.log(`⚠️ Usando linha ${i} como início: "${line.substring(0, 50)}"`);
+          break;
+        }
+      }
+    }
+
+    if (startIndex === -1) {
+      console.error('❌ Nenhuma tag encontrada!');
       console.error('Primeiras 10 linhas do arquivo:');
       lines.slice(0, 10).forEach((line, i) => {
         console.error(`  ${i}: "${line}"`);
       });
       throw new Error('Arquivo OFX inválido: tag <OFX> não encontrada');
     }
-    
-    // Reconstrói o conteúdo a partir da tag <OFX>
-    content = lines.slice(startIndex).join('\n');
-    
-    console.log('Conteúdo após remover headers (primeiros 300 chars):', content.substring(0, 300));
-    
-    // Remove quebras de linha para processar como stream contínuo
-    // Mas mantém espaços para preservar estrutura
-    content = content.replace(/\r\n/g, '\n');
-    
-    // Estratégia: processar tag por tag
-    // Regex para encontrar todas as tags: <TAG> ou </TAG> ou <TAG>valor
-    const tagPattern = /<\/?([A-Z0-9_.]+)>([^<]*)/gi;
-    const result: string[] = [];
-    const stack: string[] = [];
-    let lastIndex = 0;
-    let match;
-    let matchCount = 0;
-    
-    // Reset regex
-    tagPattern.lastIndex = 0;
-    
-    console.log('Iniciando processamento de tags...');
-    
-    while ((match = tagPattern.exec(content)) !== null) {
-      const fullMatch = match[0];
-      const tagName = match[1];
-      const afterTag = match[2];
-      const isClosing = fullMatch.startsWith('</');
-      
-      matchCount++;
-      
-      // Log das primeiras 10 tags para debug
-      if (matchCount <= 10) {
-        console.log(`Tag ${matchCount}: ${isClosing ? 'CLOSE' : 'OPEN'} <${tagName}>, afterTag: "${afterTag.substring(0, 30)}${afterTag.length > 30 ? '...' : ''}"`);
-      }
-      
-      if (isClosing) {
-        // Tag de fechamento - apenas adiciona
-        result.push(`</${tagName}>`);
-        // Remove do stack se estiver lá
-        const stackIndex = stack.lastIndexOf(tagName);
-        if (stackIndex !== -1) {
-          stack.splice(stackIndex, 1);
+
+    // Processa linha por linha a partir do startIndex
+    const resultLines: string[] = [];
+    const openTags: string[] = [];
+
+    // Tags que são "containers" (não têm valor direto)
+    const containerTags = new Set([
+      'OFX', 'SIGNONMSGSRSV1', 'SONRS', 'STATUS', 'BANKMSGSRSV1',
+      'STMTTRNRS', 'STMTRS', 'BANKACCTFROM', 'BANKTRANLIST', 'STMTTRN',
+      'LEDGERBAL', 'AVAILBAL', 'CCMSGSRSV1', 'CCSTMTTRNRS', 'CCSTMTRS',
+      'CCACCTFROM', 'CCSTMTTRN', 'INVSTMTMSGSRSV1', 'INVSTMTTRNRS', 'INVSTMTRS'
+    ]);
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      // Processa múltiplas tags na mesma linha
+      let remaining = line;
+
+      while (remaining.length > 0) {
+        // Verifica se é uma tag de fechamento
+        const closeMatch = remaining.match(/^<\/([A-Z0-9_.]+)>/i);
+        if (closeMatch) {
+          const tagName = closeMatch[1].toUpperCase();
+          resultLines.push(`</${tagName}>`);
+
+          // Remove do stack
+          const idx = openTags.lastIndexOf(tagName);
+          if (idx !== -1) {
+            openTags.splice(idx, 1);
+          }
+
+          remaining = remaining.substring(closeMatch[0].length).trim();
+          continue;
         }
-      } else {
-        // Tag de abertura
-        const value = afterTag.trim();
-        
-        if (value && !value.startsWith('<')) {
-          // Tem valor inline - é uma tag leaf
-          // Adiciona com fechamento
-          result.push(`<${tagName}>${value}</${tagName}>`);
-        } else {
-          // Sem valor ou próximo caractere é <
-          // É uma tag container
-          result.push(`<${tagName}>`);
-          stack.push(tagName);
+
+        // Verifica se é uma tag de abertura
+        const openMatch = remaining.match(/^<([A-Z0-9_.]+)>(.*)$/i);
+        if (openMatch) {
+          const tagName = openMatch[1].toUpperCase();
+          const afterTag = openMatch[2].trim();
+
+          // Verifica se tem valor e não é uma tag container
+          if (afterTag && !afterTag.startsWith('<') && !containerTags.has(tagName)) {
+            // Tag com valor inline - adiciona com fechamento
+            // Remove caracteres problemáticos do valor
+            const cleanValue = afterTag.replace(/[<>&]/g, (c) => {
+              if (c === '<') return '&lt;';
+              if (c === '>') return '&gt;';
+              if (c === '&') return '&amp;';
+              return c;
+            });
+            resultLines.push(`<${tagName}>${cleanValue}</${tagName}>`);
+          } else {
+            // Tag container ou sem valor
+            resultLines.push(`<${tagName}>`);
+            openTags.push(tagName);
+          }
+
+          // Se afterTag começa com <, continua processando
+          if (afterTag.startsWith('<')) {
+            remaining = afterTag;
+          } else {
+            remaining = '';
+          }
+          continue;
         }
+
+        // Não é uma tag, pode ser valor solto (não deveria acontecer)
+        // Pula este conteúdo
+        break;
       }
-      
-      lastIndex = tagPattern.lastIndex;
     }
-    
-    console.log(`Total de tags processadas: ${matchCount}`);
-    console.log(`Tags ainda abertas no stack: ${stack.length > 0 ? stack.join(', ') : 'nenhuma'}`);
-    
-    // Fecha tags que ficaram abertas (não deveria acontecer em OFX válido)
-    while (stack.length > 0) {
-      const tag = stack.pop();
+
+    // Fecha tags que ficaram abertas
+    console.log(`Tags ainda abertas no stack: ${openTags.length > 0 ? openTags.join(', ') : 'nenhuma'}`);
+    while (openTags.length > 0) {
+      const tag = openTags.pop();
       console.log(`Fechando tag que ficou aberta: ${tag}`);
-      result.push(`</${tag}>`);
+      resultLines.push(`</${tag}>`);
     }
-    
-    const xmlResult = result.join('\n');
+
+    const xmlResult = resultLines.join('\n');
     console.log('XML gerado (primeiros 500 chars):', xmlResult.substring(0, 500));
+    console.log(`Total de linhas no XML: ${resultLines.length}`);
     console.log('=== FIM DA CONVERSÃO ===');
-    
+
     return xmlResult;
   } catch (error) {
     console.error('Erro na conversão SGML para XML:', error);
-    return sgml;
+    throw error; // Re-throw para tratamento adequado
   }
 }
 
@@ -175,10 +200,10 @@ function parseXML(xml: string): Document | null {
   try {
     console.log('=== INÍCIO DO PARSE XML ===');
     console.log('Tamanho do XML:', xml.length, 'caracteres');
-    
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'text/xml');
-    
+
     // Verifica se houve erro no parsing
     const parserError = doc.querySelector('parsererror');
     if (parserError) {
@@ -188,11 +213,11 @@ function parseXML(xml: string): Document | null {
       console.error(xml.substring(0, 1000));
       return null;
     }
-    
+
     console.log('✅ Parse XML bem-sucedido');
     console.log('Root element:', doc.documentElement?.tagName);
     console.log('=== FIM DO PARSE XML ===');
-    
+
     return doc;
   } catch (error) {
     console.error('❌ Exceção ao fazer parse do XML:', error);
@@ -205,30 +230,30 @@ function parseXML(xml: string): Document | null {
  */
 function extractTransactions(doc: Document): OFXTransaction[] {
   const transactions: OFXTransaction[] = [];
-  
+
   // Busca por transações bancárias (STMTTRN)
   const stmtTrns = doc.querySelectorAll('STMTTRN');
-  
+
   stmtTrns.forEach((trn) => {
     try {
       // Tipo de transação
       const trnTypeEl = trn.querySelector('TRNTYPE');
       const trnType = trnTypeEl?.textContent?.trim().toUpperCase() || '';
-      
+
       // Data
       const dtPostedEl = trn.querySelector('DTPOSTED');
       const dtPosted = dtPostedEl?.textContent?.trim() || '';
-      
+
       // Valor
       const trnAmtEl = trn.querySelector('TRNAMT');
       const trnAmt = trnAmtEl?.textContent?.trim() || '0';
-      
+
       // Nome/Descrição
       const nameEl = trn.querySelector('NAME');
       const memoEl = trn.querySelector('MEMO');
       const name = nameEl?.textContent?.trim() || '';
       const memo = memoEl?.textContent?.trim() || '';
-      
+
       // Monta descrição
       let description = name;
       if (memo && memo !== name) {
@@ -237,14 +262,14 @@ function extractTransactions(doc: Document): OFXTransaction[] {
       if (!description) {
         description = 'Transação sem descrição';
       }
-      
+
       // Parse valores
       const amount = Math.abs(parseOFXAmount(trnAmt));
       const date = parseOFXDate(dtPosted);
-      
+
       // Determina tipo (receita ou despesa)
       let type: 'income' | 'expense' = 'expense';
-      
+
       // Verifica pelo tipo da transação
       if (trnType === 'CREDIT' || trnType === 'DEP' || trnType === 'DEPOSIT') {
         type = 'income';
@@ -257,10 +282,10 @@ function extractTransactions(doc: Document): OFXTransaction[] {
       } else if (parseFloat(trnAmt) < 0) {
         type = 'expense';
       }
-      
+
       // Extrai merchant (primeira palavra da descrição)
       const merchant = description.split(/[\s-]/)[0];
-      
+
       transactions.push({
         date,
         description,
@@ -272,26 +297,26 @@ function extractTransactions(doc: Document): OFXTransaction[] {
       console.error('Erro ao processar transação OFX:', error);
     }
   });
-  
+
   // Busca por transações de cartão de crédito (CCSTMTTRN)
   const ccStmtTrns = doc.querySelectorAll('CCSTMTTRN');
-  
+
   ccStmtTrns.forEach((trn) => {
     try {
       const trnTypeEl = trn.querySelector('TRNTYPE');
       const trnType = trnTypeEl?.textContent?.trim().toUpperCase() || '';
-      
+
       const dtPostedEl = trn.querySelector('DTPOSTED');
       const dtPosted = dtPostedEl?.textContent?.trim() || '';
-      
+
       const trnAmtEl = trn.querySelector('TRNAMT');
       const trnAmt = trnAmtEl?.textContent?.trim() || '0';
-      
+
       const nameEl = trn.querySelector('NAME');
       const memoEl = trn.querySelector('MEMO');
       const name = nameEl?.textContent?.trim() || '';
       const memo = memoEl?.textContent?.trim() || '';
-      
+
       let description = name;
       if (memo && memo !== name) {
         description = description ? `${description} - ${memo}` : memo;
@@ -299,20 +324,20 @@ function extractTransactions(doc: Document): OFXTransaction[] {
       if (!description) {
         description = 'Transação sem descrição';
       }
-      
+
       const amount = Math.abs(parseOFXAmount(trnAmt));
       const date = parseOFXDate(dtPosted);
-      
+
       let type: 'income' | 'expense' = 'expense';
-      
+
       if (trnType === 'CREDIT') {
         type = 'income';
       } else if (parseFloat(trnAmt) > 0) {
         type = 'income';
       }
-      
+
       const merchant = description.split(/[\s-]/)[0];
-      
+
       transactions.push({
         date,
         description,
@@ -324,7 +349,7 @@ function extractTransactions(doc: Document): OFXTransaction[] {
       console.error('Erro ao processar transação de cartão OFX:', error);
     }
   });
-  
+
   return transactions;
 }
 
@@ -335,21 +360,21 @@ export function parseOFX(content: string): OFXTransaction[] {
   try {
     console.log('Iniciando parse de arquivo OFX...');
     console.log('Tamanho do arquivo:', content.length, 'bytes');
-    
+
     // Remove BOM se existir
     content = content.replace(/^\uFEFF/, '');
-    
+
     // Log das primeiras linhas para debug
     const firstLines = content.substring(0, 500);
     console.log('Primeiras linhas do arquivo:', firstLines);
-    
+
     // Converte SGML para XML se necessário
     const xml = sgmlToXml(content);
-    
+
     // Log do XML convertido (primeiras linhas)
     const xmlPreview = xml.substring(0, 500);
     console.log('XML após conversão:', xmlPreview);
-    
+
     // Parse XML
     const doc = parseXML(xml);
     if (!doc) {
@@ -361,12 +386,12 @@ export function parseOFX(content: string): OFXTransaction[] {
         'Consulte o guia SOLUCAO_PROBLEMAS_OFX.md para mais ajuda.'
       );
     }
-    
+
     // Extrai transações
     const transactions = extractTransactions(doc);
-    
+
     console.log(`${transactions.length} transações extraídas do arquivo OFX`);
-    
+
     if (transactions.length === 0) {
       console.warn('Nenhuma transação encontrada. Estrutura do documento:', doc.documentElement?.tagName);
       throw new Error(
@@ -374,17 +399,17 @@ export function parseOFX(content: string): OFXTransaction[] {
         'Verifique se o arquivo contém transações ou tente um período diferente.'
       );
     }
-    
+
     return transactions;
   } catch (error: any) {
     console.error('Erro ao fazer parse do OFX:', error);
     console.error('Erro completo:', error);
-    
+
     // Se já é uma mensagem de erro nossa, repassa
     if (error.message && error.message.includes('Não foi possível processar')) {
       throw error;
     }
-    
+
     // Caso contrário, cria mensagem mais amigável
     throw new Error(
       'Erro ao processar arquivo OFX: ' + (error.message || 'Formato inválido') + '. ' +

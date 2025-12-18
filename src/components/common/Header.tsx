@@ -23,7 +23,7 @@ export default function Header() {
 
   React.useEffect(() => {
     loadProfile();
-    
+
     // Escutar mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('🔄 Auth state changed:', _event, 'Session:', session);
@@ -99,11 +99,10 @@ export default function Header() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                          isActiveRoute(item.path, item.children)
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-foreground hover:bg-muted'
-                        }`}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActiveRoute(item.path, item.children)
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground hover:bg-muted'
+                          }`}
                       >
                         {item.name}
                         <ChevronDown className="ml-1 h-4 w-4" />
@@ -136,11 +135,10 @@ export default function Header() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    location.pathname === item.path
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${location.pathname === item.path
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-muted'
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -155,11 +153,14 @@ export default function Header() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      location.pathname === '/admin' || location.pathname === '/ai-admin' || location.pathname === '/user-management'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-foreground hover:bg-muted'
-                    }`}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${location.pathname === '/admin' ||
+                      location.pathname === '/ai-admin' ||
+                      location.pathname === '/user-management' ||
+                      location.pathname === '/categories' ||
+                      location.pathname === '/chat'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                      }`}
                   >
                     Admin
                     <ChevronDown className="ml-1 h-4 w-4" />
@@ -168,10 +169,22 @@ export default function Header() {
                 <PopoverContent align="start" className="w-48 p-2">
                   <div className="space-y-1">
                     <Link
-                      to="/admin"
+                      to="/admin-general"
                       className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                     >
-                      Admin
+                      Geral
+                    </Link>
+                    <Link
+                      to="/categories"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      Categorias
+                    </Link>
+                    <Link
+                      to="/chat"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      Assistente IA
                     </Link>
                     <div className="border-t border-border my-1" />
                     <Link
@@ -184,7 +197,7 @@ export default function Header() {
                       to="/ai-admin"
                       className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                     >
-                      IA Admin
+                      Configuração IA
                     </Link>
                   </div>
                 </PopoverContent>
@@ -249,11 +262,10 @@ export default function Header() {
                 <Link
                   to={item.path}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2 text-base font-medium rounded-md ${
-                    location.pathname === item.path
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`}
+                  className={`block px-3 py-2 text-base font-medium rounded-md ${location.pathname === item.path
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-muted'
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -264,11 +276,10 @@ export default function Header() {
                         key={child.path}
                         to={child.path}
                         onClick={() => setIsMenuOpen(false)}
-                        className={`block px-3 py-2 text-sm font-medium rounded-md ${
-                          location.pathname === child.path
-                            ? 'bg-primary/80 text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-muted'
-                        }`}
+                        className={`block px-3 py-2 text-sm font-medium rounded-md ${location.pathname === child.path
+                          ? 'bg-primary/80 text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-muted'
+                          }`}
                       >
                         {child.name}
                       </Link>
@@ -279,39 +290,68 @@ export default function Header() {
             ))}
             {profile?.role === 'admin' && (
               <div>
-                <Link
-                  to="/admin"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block px-3 py-2 text-base font-medium rounded-md ${
-                    location.pathname === '/admin'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`}
+                <div
+                  className={`block px-3 py-2 text-base font-medium rounded-md ${location.pathname === '/admin' ||
+                    location.pathname === '/categories' ||
+                    location.pathname === '/chat' ||
+                    location.pathname === '/user-management' ||
+                    location.pathname === '/ai-admin'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-muted'
+                    }`}
                 >
                   Admin
-                </Link>
+                </div>
                 <div className="ml-4 mt-1 space-y-1">
+                  <Link
+                    to="/admin-general"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 text-sm font-medium rounded-md ${location.pathname === '/admin-general'
+                      ? 'bg-primary/80 text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted'
+                      }`}
+                  >
+                    Geral
+                  </Link>
+                  <Link
+                    to="/categories"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 text-sm font-medium rounded-md ${location.pathname === '/categories'
+                      ? 'bg-primary/80 text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted'
+                      }`}
+                  >
+                    Categorias
+                  </Link>
+                  <Link
+                    to="/chat"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-3 py-2 text-sm font-medium rounded-md ${location.pathname === '/chat'
+                      ? 'bg-primary/80 text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted'
+                      }`}
+                  >
+                    Assistente IA
+                  </Link>
                   <Link
                     to="/user-management"
                     onClick={() => setIsMenuOpen(false)}
-                    className={`block px-3 py-2 text-sm font-medium rounded-md ${
-                      location.pathname === '/user-management'
-                        ? 'bg-primary/80 text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
+                    className={`block px-3 py-2 text-sm font-medium rounded-md ${location.pathname === '/user-management'
+                      ? 'bg-primary/80 text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted'
+                      }`}
                   >
                     Gestão de Usuários
                   </Link>
                   <Link
                     to="/ai-admin"
                     onClick={() => setIsMenuOpen(false)}
-                    className={`block px-3 py-2 text-sm font-medium rounded-md ${
-                      location.pathname === '/ai-admin'
-                        ? 'bg-primary/80 text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
+                    className={`block px-3 py-2 text-sm font-medium rounded-md ${location.pathname === '/ai-admin'
+                      ? 'bg-primary/80 text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted'
+                      }`}
                   >
-                    IA Admin
+                    Configuração IA
                   </Link>
                 </div>
               </div>

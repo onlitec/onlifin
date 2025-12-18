@@ -2,8 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const APP_ID = Deno.env.get('VITE_APP_ID') || 'app-7xkeeoe4bsap';
-// Usar modelo estável e rápido
-const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-1.5-flash:generateContent`;
+// Usar Ollama local rodando no container Docker
+// Em produção: http://onlifin-ollama:11434 (rede Docker interna)
+// O endereço é configurável via variável de ambiente
+const OLLAMA_URL = Deno.env.get('OLLAMA_URL') || 'http://host.docker.internal:11434';
+const OLLAMA_MODEL = Deno.env.get('OLLAMA_MODEL') || 'qwen2.5:0.5b';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,15 +17,15 @@ const corsHeaders = {
 async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promise<Response> {
   let lastError: Error | null = null;
   let lastStatus: number | null = null;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       console.log(`Tentativa ${attempt + 1} de ${maxRetries}`);
       const response = await fetch(url, options);
-      
+
       lastStatus = response.status;
       console.log(`Status da resposta: ${response.status}`);
-      
+
       // Se for 503 (Service Unavailable) ou 429 (Rate Limit), tentar novamente
       if (response.status === 503 || response.status === 429) {
         if (attempt < maxRetries - 1) {
@@ -32,7 +35,7 @@ async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promis
           continue;
         }
       }
-      
+
       return response;
     } catch (error: any) {
       lastError = error;
@@ -44,62 +47,100 @@ async function fetchWithRetry(url: string, options: any, maxRetries = 3): Promis
       }
     }
   }
-  
+
   // Se chegou aqui, todas as tentativas falharam
   if (lastStatus === 503) {
     throw new Error('O serviço está temporariamente indisponível. Por favor, tente novamente em alguns instantes.');
   } else if (lastStatus === 429) {
     throw new Error('Muitas requisições. Por favor, aguarde um momento antes de tentar novamente.');
   }
-  
+
   throw lastError || new Error('Falha após múltiplas tentativas');
+}
+
+// Função para chamar Ollama API
+async function callOllama(prompt: string, systemPrompt?: string): Promise<string> {
+  console.log(`Chamando Ollama em ${OLLAMA_URL} com modelo ${OLLAMA_MODEL}`);
+
+  const requestBody = {
+    model: OLLAMA_MODEL,
+    prompt: systemPrompt ? `${systemPrompt}\n\nUsuário: ${prompt}` : prompt,
+    stream: false,
+    options: {
+      temperature: 0.7,
+      num_predict: 2048,
+    }
+  };
+
+  try {
+    const response = await fetchWithRetry(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro Ollama:', errorText);
+      throw new Error(`Ollama error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Resposta Ollama recebida:', data.response?.substring(0, 100) + '...');
+    return data.response || '';
+  } catch (error: any) {
+    console.error('Erro ao chamar Ollama:', error.message);
+    throw error;
+  }
 }
 
 // Função de fallback para modo degradado (quando IA está indisponível)
 function getDegradedResponse(message: string, userData: any): string {
   const lowerMessage = message.toLowerCase();
-  
+
   // Perguntas sobre saldo
   if (lowerMessage.includes('saldo')) {
     const summary = userData.financial_summary;
     if (summary) {
       return `💰 **Resumo Financeiro**\n\n` +
-             `Saldo total: R$ ${summary.total_balance?.toFixed(2) || '0.00'}\n` +
-             `Receitas: R$ ${summary.total_income?.toFixed(2) || '0.00'}\n` +
-             `Despesas: R$ ${summary.total_expense?.toFixed(2) || '0.00'}\n` +
-             `Saldo líquido: R$ ${summary.net_balance?.toFixed(2) || '0.00'}\n\n` +
-             `_Resposta automática - Assistente de IA temporariamente indisponível_`;
+        `Saldo total: R$ ${summary.total_balance?.toFixed(2) || '0.00'}\n` +
+        `Receitas: R$ ${summary.total_income?.toFixed(2) || '0.00'}\n` +
+        `Despesas: R$ ${summary.total_expense?.toFixed(2) || '0.00'}\n` +
+        `Saldo líquido: R$ ${summary.net_balance?.toFixed(2) || '0.00'}\n\n` +
+        `_Resposta automática - Assistente de IA temporariamente indisponível_`;
     }
   }
-  
+
   // Perguntas sobre despesas/gastos
   if (lowerMessage.includes('despesa') || lowerMessage.includes('gasto') || lowerMessage.includes('gastei')) {
     const summary = userData.financial_summary;
     if (summary) {
       return `📊 **Suas Despesas**\n\n` +
-             `Total de despesas: R$ ${summary.total_expense?.toFixed(2) || '0.00'}\n` +
-             `Número de transações: ${summary.transaction_count || 0}\n\n` +
-             `_Resposta automática - Assistente de IA temporariamente indisponível_`;
+        `Total de despesas: R$ ${summary.total_expense?.toFixed(2) || '0.00'}\n` +
+        `Número de transações: ${summary.transaction_count || 0}\n\n` +
+        `_Resposta automática - Assistente de IA temporariamente indisponível_`;
     }
   }
-  
+
   // Perguntas sobre receitas
   if (lowerMessage.includes('receita') || lowerMessage.includes('ganho') || lowerMessage.includes('renda')) {
     const summary = userData.financial_summary;
     if (summary) {
       return `💵 **Suas Receitas**\n\n` +
-             `Total de receitas: R$ ${summary.total_income?.toFixed(2) || '0.00'}\n\n` +
-             `_Resposta automática - Assistente de IA temporariamente indisponível_`;
+        `Total de receitas: R$ ${summary.total_income?.toFixed(2) || '0.00'}\n\n` +
+        `_Resposta automática - Assistente de IA temporariamente indisponível_`;
     }
   }
-  
+
   // Resposta padrão
   return `🤖 Desculpe, estou temporariamente indisponível devido a problemas técnicos.\n\n` +
-         `Por favor, tente novamente em alguns instantes ou use as funcionalidades manuais da plataforma:\n\n` +
-         `• **Transações**: Visualize e gerencie suas transações\n` +
-         `• **Contas**: Veja seus saldos e contas\n` +
-         `• **Relatórios**: Acesse relatórios financeiros\n\n` +
-         `_O assistente de IA voltará em breve!_`;
+    `Por favor, tente novamente em alguns instantes ou use as funcionalidades manuais da plataforma:\n\n` +
+    `• **Transações**: Visualize e gerencie suas transações\n` +
+    `• **Contas**: Veja seus saldos e contas\n` +
+    `• **Relatórios**: Acesse relatórios financeiros\n\n` +
+    `_O assistente de IA voltará em breve!_`;
 }
 
 // Função para buscar dados do usuário baseado no nível de permissão
@@ -123,7 +164,7 @@ async function getUserFinancialData(supabaseClient: any, userId: string, permiss
       const totalBalance = accounts.data?.reduce((sum: number, acc: any) => sum + (acc.balance || 0), 0) || 0;
       const totalIncome = transactions.data?.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
       const totalExpense = transactions.data?.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
-      
+
       // Agrupar despesas por categoria
       const expensesByCategory: any = {};
       transactions.data?.filter((t: any) => t.type === 'expense').forEach((t: any) => {
@@ -237,7 +278,7 @@ async function createTransaction(supabaseClient: any, userId: string, transactio
     // Atualizar saldo da conta se account_id foi fornecido
     if (transaction.account_id) {
       const balanceChange = transaction.type === 'income' ? amount : -amount;
-      
+
       // Buscar saldo atual
       const { data: accountData } = await supabaseClient
         .from('accounts')
@@ -296,10 +337,10 @@ async function updateTransactionCategory(supabaseClient: any, userId: string, tr
 }
 
 // Função para atualizar múltiplas transações (categorização em lote)
-async function batchUpdateTransactions(supabaseClient: any, userId: string, updates: Array<{id: string, category_id: string}>) {
+async function batchUpdateTransactions(supabaseClient: any, userId: string, updates: Array<{ id: string, category_id: string }>) {
   try {
     const results = [];
-    
+
     for (const update of updates) {
       const result = await updateTransactionCategory(supabaseClient, userId, update.id, update.category_id);
       results.push({
@@ -326,16 +367,13 @@ async function batchUpdateTransactions(supabaseClient: any, userId: string, upda
   }
 }
 
-// Função para categorizar transações usando IA
+// Função para categorizar transações usando IA (Ollama)
 async function categorizeTransactions(transactions: any[], existingCategories: any[]) {
   try {
-    console.log('Iniciando categorização:', {
+    console.log('Iniciando categorização com Ollama:', {
       transactionCount: transactions.length,
       categoryCount: existingCategories.length
     });
-
-    const APP_ID = Deno.env.get('VITE_APP_ID') || 'app-7xkeeoe4bsap';
-    const GEMINI_API_URL = `https://api-integrations.appmedo.com/${APP_ID}/api-rLob8RdzAOl9/v1beta/models/gemini-2.5-flash:generateContent`;
 
     const prompt = `Você é um especialista em categorização de transações financeiras.
 
@@ -387,36 +425,11 @@ REGRAS IMPORTANTES:
 
 Responda APENAS com o JSON, sem texto adicional.`;
 
-    console.log('Enviando requisição para Gemini API...');
+    console.log('Enviando requisição para Ollama...');
 
-    const response = await fetchWithRetry(GEMINI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-App-Id': APP_ID
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: prompt }]
-          }
-        ]
-      })
-    });
+    const text = await callOllama(prompt);
+    console.log('Resposta Ollama recebida:', text.substring(0, 200) + '...');
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro da Gemini API:', errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('Resposta da Gemini API recebida');
-    
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    console.log('Texto da resposta:', text.substring(0, 200) + '...');
-    
     // Extrair JSON da resposta
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -458,9 +471,9 @@ Deno.serve(async (req: Request) => {
         console.error('Transactions array inválido');
         return new Response(
           JSON.stringify({ error: 'Transactions array is required' }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
@@ -470,18 +483,18 @@ Deno.serve(async (req: Request) => {
         console.log('Categorização concluída com sucesso');
         return new Response(
           JSON.stringify(result),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       } catch (error: any) {
         console.error('Erro na categorização:', error);
         return new Response(
           JSON.stringify({ error: error.message || 'Erro ao categorizar transações' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
@@ -491,9 +504,9 @@ Deno.serve(async (req: Request) => {
     if (!message || !userId) {
       return new Response(
         JSON.stringify({ error: 'Message and userId are required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -579,7 +592,7 @@ Para categorizar: responda JSON:
     if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
       // Limitar histórico aos últimos 6 mensagens para respostas mais rápidas
       const recentHistory = conversationHistory.slice(-6);
-      
+
       for (const msg of recentHistory) {
         conversationContents.push({
           role: msg.role === 'user' ? 'user' : 'model',
@@ -598,44 +611,33 @@ Para categorizar: responda JSON:
       });
     }
 
-    // Configuração otimizada para respostas rápidas
-    const generationConfig = {
-      temperature: 0.7,
-      topK: 20,
-      topP: 0.8,
-      maxOutputTokens: 1024,
-      candidateCount: 1
-    };
-
     let fullResponse = '';
     let usedDegradedMode = false;
 
     try {
-      // Tentar usar a API Gemini
-      const response = await fetchWithRetry(GEMINI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-App-Id': APP_ID
-        },
-        body: JSON.stringify({
-          contents: conversationContents,
-          generationConfig: generationConfig
-        })
-      });
+      // Tentar usar Ollama local
+      // Construir prompt a partir do histórico de conversa
+      let fullPrompt = contextPrompt + '\n\n';
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API error:', errorText);
-        throw new Error(`API returned status ${response.status}`);
+      for (const content of conversationContents.slice(2)) { // Skip system messages
+        const role = content.role === 'user' ? 'Usuário' : 'Assistente';
+        const text = content.parts[0].text;
+        fullPrompt += `${role}: ${text}\n\n`;
       }
 
-      // Processar resposta não-streaming (mais rápido)
-      const data = await response.json();
-      fullResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      // Adicionar mensagem atual se não estiver no histórico
+      if (!conversationHistory || conversationHistory.length === 0) {
+        fullPrompt += `Usuário: ${message}\n\nAssistente:`;
+      } else {
+        fullPrompt += 'Assistente:';
+      }
+
+      console.log('Chamando Ollama para chat...');
+      fullResponse = await callOllama(fullPrompt);
+      console.log('Resposta do Ollama recebida');
     } catch (apiError: any) {
       // Se a API falhar, usar modo degradado
-      console.log('API indisponível, usando modo degradado:', apiError.message);
+      console.log('Ollama indisponível, usando modo degradado:', apiError.message);
       fullResponse = getDegradedResponse(message, userData);
       usedDegradedMode = true;
     }
@@ -652,15 +654,15 @@ Para categorizar: responda JSON:
         const jsonMatch = fullResponse.match(/\{[\s\S]*"action":\s*"[^"]*"[\s\S]*\}/);
         if (jsonMatch) {
           const actionData = JSON.parse(jsonMatch[0]);
-          
+
           // CRIAR TRANSAÇÃO
           if (actionData.action === 'create_transaction' && actionData.transaction_data) {
             const result = await createTransaction(supabaseClient, userId, actionData.transaction_data);
-            
+
             if (result.success) {
               createdTransactionId = result.transaction.id;
               actionType = 'write';
-              finalResponse = actionData.confirmation_message || 
+              finalResponse = actionData.confirmation_message ||
                 `✅ Transação registrada com sucesso!\n\n` +
                 `Tipo: ${result.transaction.type === 'income' ? 'Receita' : 'Despesa'}\n` +
                 `Valor: R$ ${result.transaction.amount.toFixed(2)}\n` +
@@ -670,28 +672,28 @@ Para categorizar: responda JSON:
               finalResponse = `❌ Erro ao criar transação: ${result.error}\n\nPor favor, verifique os dados e tente novamente.`;
             }
           }
-          
+
           // ATUALIZAR CATEGORIA DE UMA TRANSAÇÃO
           else if (actionData.action === 'update_category' && actionData.transaction_id && actionData.category_id) {
             const result = await updateTransactionCategory(supabaseClient, userId, actionData.transaction_id, actionData.category_id);
-            
+
             if (result.success) {
               actionType = 'write';
-              finalResponse = actionData.confirmation_message || 
+              finalResponse = actionData.confirmation_message ||
                 `✅ Categoria atualizada com sucesso!\n\n` +
                 `A transação foi categorizada.`;
             } else {
               finalResponse = `❌ Erro ao atualizar categoria: ${result.error}`;
             }
           }
-          
+
           // CATEGORIZAR EM LOTE
           else if (actionData.action === 'batch_categorize' && actionData.updates && Array.isArray(actionData.updates)) {
             const result = await batchUpdateTransactions(supabaseClient, userId, actionData.updates);
-            
+
             if (result.success) {
               actionType = 'write';
-              finalResponse = actionData.confirmation_message || 
+              finalResponse = actionData.confirmation_message ||
                 `✅ Categorização em lote concluída!\n\n` +
                 `Total: ${result.summary.total}\n` +
                 `Sucesso: ${result.summary.success}\n` +
@@ -712,7 +714,7 @@ Para categorizar: responda JSON:
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         response: finalResponse,
         permission_level: permissionLevel,
         can_write_transactions: canWriteTransactions,

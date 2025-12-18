@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
-import { Bot, User, Send, Loader2, Paperclip, FileText, X } from 'lucide-react';
+import { chatWithAssistant, categorizeTransactionsWithAI, getDegradedResponse } from '@/services/ollamaService';
+import { Bot, User, Send, Loader2, Paperclip, FileText, X, RotateCcw, XCircle } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -15,14 +17,15 @@ interface Message {
   timestamp: Date;
 }
 
+const initialMessage: Message = {
+  role: 'assistant',
+  content: 'Olá! Sou seu assistente financeiro. Como posso ajudar você hoje?\n\nVocê pode:\n• Fazer perguntas sobre suas finanças\n• Pedir análises de gastos\n• Solicitar dicas de economia\n• Enviar um extrato bancário para categorização automática',
+  timestamp: new Date()
+};
+
 export default function Chat() {
-  const [messages, setMessages] = React.useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Olá! Sou seu assistente financeiro. Como posso ajudar você hoje?\n\nVocê pode:\n• Fazer perguntas sobre suas finanças\n• Pedir análises de gastos\n• Solicitar dicas de economia\n• Enviar um extrato bancário para categorização automática',
-      timestamp: new Date()
-    }
-  ]);
+  const navigate = useNavigate();
+  const [messages, setMessages] = React.useState<Message[]>([initialMessage]);
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
@@ -30,6 +33,26 @@ export default function Chat() {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Reiniciar conversa
+  const handleNewConversation = () => {
+    setMessages([{ ...initialMessage, timestamp: new Date() }]);
+    setInput('');
+    setSelectedFile(null);
+    setFileContent('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast({
+      title: 'Nova conversa',
+      description: 'O histórico foi limpo. Como posso ajudar?',
+    });
+  };
+
+  // Fechar chat
+  const handleCloseChat = () => {
+    navigate('/dashboard');
+  };
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -44,7 +67,7 @@ export default function Chat() {
     // Check file type
     const validTypes = ['.csv', '.txt', '.ofx'];
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    
+
     if (!validTypes.includes(fileExtension)) {
       toast({
         title: 'Arquivo inválido',
@@ -118,7 +141,7 @@ export default function Chat() {
       if (fields.length >= 3) {
         const [dateStr, description, amountStr] = fields;
         const amount = Math.abs(parseFloat(amountStr.replace(/[^\d.,-]/g, '').replace(',', '.')));
-        
+
         if (!isNaN(amount) && amount > 0) {
           const isNegative = amountStr.includes('-');
           const type = isNegative ? 'expense' : 'income';
@@ -140,7 +163,7 @@ export default function Chat() {
   const handleSend = async () => {
     if (!input.trim() && !selectedFile) return;
 
-    const userMessage = selectedFile 
+    const userMessage = selectedFile
       ? `${input || 'Analise este extrato bancário e categorize as transações'}\n\n[Arquivo anexado: ${selectedFile.name}]`
       : input;
 
@@ -162,14 +185,14 @@ export default function Chat() {
       if (selectedFile && fileContent) {
         // Detecta e faz parse baseado no formato
         let parsed;
-        
+
         if (isValidOFX(fileContent)) {
           console.log('Arquivo OFX detectado no chat');
           parsed = parseOFX(fileContent);
         } else {
           parsed = parseCSV(fileContent);
         }
-        
+
         if (parsed.length === 0) {
           throw new Error('Nenhuma transação encontrada no arquivo');
         }
@@ -180,28 +203,30 @@ export default function Chat() {
           .select('*')
           .eq('user_id', user.id);
 
-        // Send to AI for categorization
-        const { data, error } = await supabase.functions.invoke('ai-assistant', {
-          body: {
-            action: 'categorize_transactions',
-            transactions: parsed,
-            existingCategories: categories || [],
-          },
-        });
-
-        if (error) {
-          const errorMsg = await error?.context?.text();
-          throw new Error(errorMsg || 'Erro ao analisar transações');
+        // Send to AI for categorization using Ollama
+        let result;
+        try {
+          result = await categorizeTransactionsWithAI(parsed, categories || []);
+        } catch (aiError: any) {
+          console.error('Erro ao categorizar com IA:', aiError);
+          // Fallback simples se IA falhar
+          result = {
+            categorizedTransactions: parsed.map((t: any) => ({
+              ...t,
+              suggestedCategory: t.type === 'income' ? 'Outros Receitas' : 'Outros',
+              confidence: 0.5
+            })),
+            newCategories: []
+          };
         }
 
-        const result = data;
         const categorized = result.categorizedTransactions || [];
         const newCategories = result.newCategories || [];
 
         // Format response
         let response = `✅ Análise concluída!\n\n`;
         response += `📊 **${parsed.length} transações** encontradas no extrato\n\n`;
-        
+
         if (newCategories.length > 0) {
           response += `💡 **Novas categorias sugeridas:**\n`;
           newCategories.forEach((cat: any) => {
@@ -211,7 +236,7 @@ export default function Chat() {
         }
 
         response += `📋 **Resumo das transações:**\n\n`;
-        
+
         // Group by category
         const byCategory: any = {};
         categorized.forEach((t: any) => {
@@ -239,22 +264,18 @@ export default function Chat() {
         setMessages(prev => [...prev, assistantMessage]);
         removeFile();
       } else {
-        // Regular chat message
-        const { data, error } = await supabase.functions.invoke('ai-assistant', {
-          body: {
-            message: input,
-            userId: user.id,
-          },
-        });
-
-        if (error) {
-          const errorMsg = await error?.context?.text();
-          throw new Error(errorMsg || 'Erro ao enviar mensagem');
+        // Regular chat message using Ollama
+        let responseText: string;
+        try {
+          responseText = await chatWithAssistant(input);
+        } catch (aiError: any) {
+          console.warn('Ollama indisponível, usando modo degradado:', aiError.message);
+          responseText = getDegradedResponse(input);
         }
 
         const assistantMessage: Message = {
           role: 'assistant',
-          content: data.response || 'Desculpe, não consegui processar sua mensagem.',
+          content: responseText || 'Desculpe, não consegui processar sua mensagem.',
           timestamp: new Date()
         };
 
@@ -289,11 +310,31 @@ export default function Chat() {
   return (
     <div className="container mx-auto p-6 h-[calc(100vh-8rem)]">
       <Card className="h-full flex flex-col">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
             Assistente Financeiro IA
           </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNewConversation}
+              disabled={isLoading}
+              title="Nova conversa"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Nova
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCloseChat}
+              title="Fechar chat"
+            >
+              <XCircle className="h-5 w-5" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
           <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
@@ -311,11 +352,10 @@ export default function Chat() {
                     </div>
                   )}
                   <div
-                    className={`max-w-[80%] rounded-lg p-4 ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
+                    className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                      }`}
                   >
                     <p className="whitespace-pre-wrap break-words">{message.content}</p>
                     <p className="text-xs opacity-70 mt-2">

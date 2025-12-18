@@ -87,24 +87,31 @@ export default function ImportStatements() {
     const lines = content.trim().split('\n');
     const transactions: ParsedTransaction[] = [];
 
-    // Skip header if exists
-    const startIndex = lines[0].toLowerCase().includes('data') ? 1 : 0;
+    if (lines.length === 0) {
+      console.log('CSV vazio');
+      return transactions;
+    }
 
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+    // Detecta o separador (vírgula ou ponto-e-vírgula)
+    const firstLine = lines[0];
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const separator = semicolonCount > commaCount ? ';' : ',';
 
-      // Try to parse CSV line (handle quoted fields)
+    console.log(`Separador detectado: "${separator}" (vírgulas: ${commaCount}, ponto-e-vírgula: ${semicolonCount})`);
+
+    // Função para fazer split respeitando aspas
+    const splitCSVLine = (line: string, sep: string): string[] => {
       const fields: string[] = [];
       let currentField = '';
       let inQuotes = false;
 
       for (let j = 0; j < line.length; j++) {
         const char = line[j];
-        
+
         if (char === '"') {
           inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
+        } else if (char === sep && !inQuotes) {
           fields.push(currentField.trim());
           currentField = '';
         } else {
@@ -112,27 +119,111 @@ export default function ImportStatements() {
         }
       }
       fields.push(currentField.trim());
+      return fields;
+    };
 
-      if (fields.length >= 3) {
-        const [dateStr, description, amountStr] = fields;
-        const amount = Math.abs(parseFloat(amountStr.replace(/[^\d.,-]/g, '').replace(',', '.')));
-        
-        if (!isNaN(amount) && amount > 0) {
-          // Determine if it's income or expense based on amount sign or description
-          const isNegative = amountStr.includes('-');
-          const type: 'income' | 'expense' = isNegative ? 'expense' : 'income';
+    // Detecta se tem header
+    const firstFields = splitCSVLine(lines[0], separator);
+    const hasHeader = firstFields.some(f =>
+      f.toLowerCase().includes('data') ||
+      f.toLowerCase().includes('date') ||
+      f.toLowerCase().includes('descri') ||
+      f.toLowerCase().includes('valor') ||
+      f.toLowerCase().includes('amount') ||
+      f.toLowerCase().includes('identifica')
+    );
 
-          transactions.push({
-            date: dateStr,
-            description: description.replace(/^"|"$/g, ''),
-            amount,
-            type,
-            merchant: description.replace(/^"|"$/g, '').split(' ')[0],
-          });
+    const startIndex = hasHeader ? 1 : 0;
+    console.log(`Header detectado: ${hasHeader}, iniciando na linha ${startIndex}`);
+    console.log(`Colunas do header: ${firstFields.join(' | ')}`);
+    console.log(`Total de colunas: ${firstFields.length}`);
+
+    // Tenta identificar índices das colunas
+    let dateIdx = 0;
+    let descIdx = 1;
+    let amountIdx = 2;
+    let typeIdx = -1; // Coluna de tipo (DEBIT/CREDIT)
+
+    if (hasHeader) {
+      for (let i = 0; i < firstFields.length; i++) {
+        const col = firstFields[i].toLowerCase();
+        if (col.includes('data') || col.includes('date')) {
+          dateIdx = i;
+        } else if (col.includes('identifica') || col.includes('descri') || col.includes('histor') || col.includes('memo') || col.includes('nome')) {
+          descIdx = i;
+        } else if (col.includes('valor') || col.includes('amount') || col.includes('quantia') || col === 'value') {
+          amountIdx = i;
+        } else if (col.includes('tipo') || col.includes('type')) {
+          typeIdx = i;
         }
       }
     }
 
+    console.log(`Índices: data=${dateIdx}, descrição=${descIdx}, valor=${amountIdx}, tipo=${typeIdx}`);
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const fields = splitCSVLine(line, separator);
+
+      // Precisa ter pelo menos data, descrição e valor
+      const minFields = Math.max(dateIdx, descIdx, amountIdx) + 1;
+      if (fields.length >= minFields) {
+        const dateStr = fields[dateIdx] || '';
+        const description = (fields[descIdx] || '').replace(/^"|"$/g, '');
+        const amountStr = fields[amountIdx] || '';
+        const typeStr = typeIdx >= 0 ? (fields[typeIdx] || '').toUpperCase() : '';
+
+        // Parse do valor (suporta formato brasileiro: 1.234,56 ou americano: 1,234.56)
+        let amount = 0;
+        let cleanAmount = amountStr.replace(/[^\d.,-]/g, '');
+
+        // Se tem vírgula E ponto, determina qual é separador decimal
+        if (cleanAmount.includes(',') && cleanAmount.includes('.')) {
+          // Se vírgula vem depois do ponto, é formato BR (1.234,56)
+          if (cleanAmount.lastIndexOf(',') > cleanAmount.lastIndexOf('.')) {
+            cleanAmount = cleanAmount.replace(/\./g, '').replace(',', '.');
+          } else {
+            // Formato US (1,234.56)
+            cleanAmount = cleanAmount.replace(/,/g, '');
+          }
+        } else if (cleanAmount.includes(',')) {
+          // Só tem vírgula, assume decimal BR
+          cleanAmount = cleanAmount.replace(',', '.');
+        }
+
+        amount = Math.abs(parseFloat(cleanAmount));
+
+        if (!isNaN(amount) && amount > 0 && description) {
+          // Determina se é receita ou despesa
+          // Prioridade: coluna de tipo > sinal do valor
+          let type: 'income' | 'expense' = 'expense';
+
+          if (typeStr.includes('CREDIT') || typeStr.includes('CRÉDITO') || typeStr.includes('CREDITO')) {
+            type = 'income';
+          } else if (typeStr.includes('DEBIT') || typeStr.includes('DÉBITO') || typeStr.includes('DEBITO')) {
+            type = 'expense';
+          } else {
+            // Fallback: usa sinal do valor
+            const isNegative = amountStr.includes('-') || amountStr.startsWith('(');
+            type = isNegative ? 'expense' : 'income';
+          }
+
+          transactions.push({
+            date: dateStr,
+            description,
+            amount,
+            type,
+            merchant: description.split(/[\s-]/)[0],
+          });
+
+          console.log(`Transação ${transactions.length}: ${dateStr} | ${description.substring(0, 30)} | ${type} | R$ ${amount.toFixed(2)}`);
+        }
+      }
+    }
+
+    console.log(`Total de transações parseadas: ${transactions.length}`);
     return transactions;
   };
 
@@ -145,12 +236,12 @@ export default function ImportStatements() {
       // Try to extract date, description, and amount
       const dateMatch = line.match(/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/);
       const amountMatch = line.match(/R?\$?\s*[\d.,]+/);
-      
+
       if (dateMatch && amountMatch) {
         const date = dateMatch[0];
         const amountStr = amountMatch[0];
         const amount = Math.abs(parseFloat(amountStr.replace(/[^\d.,-]/g, '').replace(',', '.')));
-        
+
         // Extract description (text between date and amount)
         const dateIndex = line.indexOf(dateMatch[0]);
         const amountIndex = line.indexOf(amountMatch[0]);
@@ -191,7 +282,7 @@ export default function ImportStatements() {
       // Detecta e faz parse do conteúdo baseado no formato
       let parsed: ParsedTransaction[] = [];
       const content = fileContent || textContent;
-      
+
       // Verifica se é OFX
       if (isValidOFX(content)) {
         console.log('Arquivo OFX detectado, fazendo parse...');
@@ -209,7 +300,7 @@ export default function ImportStatements() {
         setOfxError(''); // Limpa erro OFX se não for OFX
         parsed = fileContent ? parseCSV(fileContent) : parseTextContent(textContent);
       }
-      
+
       if (parsed.length === 0) {
         toast({
           title: 'Erro',
@@ -262,7 +353,7 @@ export default function ImportStatements() {
       }
 
       const result = data;
-      
+
       if (!result.categorizedTransactions || result.categorizedTransactions.length === 0) {
         throw new Error('IA não retornou transações categorizadas');
       }
@@ -344,7 +435,7 @@ export default function ImportStatements() {
       // Prepare transactions for insert
       const transactionsToInsert = categorizedTransactions.map(t => {
         let categoryId = t.selectedCategoryId || t.suggestedCategoryId;
-        
+
         // If it's a new category, get the created ID
         if (t.isNewCategory && createdCategoryMap.has(t.suggestedCategory)) {
           categoryId = createdCategoryMap.get(t.suggestedCategory);

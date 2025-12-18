@@ -12,8 +12,9 @@ import Chat from './pages/Chat';
 import ForecastDashboard from './pages/ForecastDashboard';
 import BillsToPay from './pages/BillsToPay';
 import BillsToReceive from './pages/BillsToReceive';
-import Admin from './pages/Admin';
+
 import AIAdmin from './pages/AIAdmin';
+import AdminGeneral from './pages/AdminGeneral';
 import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 import PWAInfo from './pages/PWAInfo';
@@ -105,8 +106,14 @@ const routes: RouteConfig[] = [
     name: 'Admin',
     path: '/admin',
     element: <UserManagement />,
-    visible: true,
+    visible: false, // Hidden from navigation - rendered manually in Header for admin users
     children: [
+      {
+        name: 'Geral',
+        path: '/admin-general',
+        element: <AdminGeneral />,
+        visible: true
+      },
       {
         name: 'Categorias',
         path: '/categories',

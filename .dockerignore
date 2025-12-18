@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output (will be regenerated in container)
+dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation (not needed in image)
+*.md
+!README.md
+docs/
+
+# Environment files (sensitive)
+.env
+.env.*
+!.env.example
+
+# Supabase local development
+supabase/.temp
+supabase/.branches
+
+# Development files
+.vite-force-reload
+*.log
+*.tmp
+
+# Test files
+*.test.*
+*.spec.*
+__tests__
+coverage
+
+# Scripts (not needed in production image)
+*.sh
+!docker-build.sh
+!docker-push.sh
+
+# Misc
+.DS_Store
+Thumbs.db
+*.bak

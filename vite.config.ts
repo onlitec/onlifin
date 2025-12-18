@@ -8,8 +8,10 @@ import { miaodaDevPlugin } from "miaoda-sc-plugin";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), svgr({
-      svgrOptions: {
-        icon: true, exportType: 'named', namedExport: 'ReactComponent', }, }), miaodaDevPlugin()],
+    svgrOptions: {
+      icon: true, exportType: 'named', namedExport: 'ReactComponent',
+    },
+  }), miaodaDevPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -25,9 +27,13 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0', // Listen on all network interfaces
+    port: 80, // Default HTTP port for http://192.168.0.70/
+    strictPort: true, // Fail if port 80 is already in use
     // Force full reload on any change
     hmr: {
       overlay: true,
+      host: '192.168.0.70', // HMR host for external access
     },
   },
   // Add cache directory configuration
