@@ -1,19 +1,21 @@
 -- ===========================================
 -- 03 - Dados Iniciais
 -- ===========================================
+-- Usuario admin padrao: onlifinadmin / Onlifin@2025!
 
 -- Criar usuário admin
 DO $$
 DECLARE
     v_admin_id uuid;
 BEGIN
-    -- Registrar usuário admin
-    v_admin_id := auth.register('admin@onlifin.com', '*M3a74g20M');
+    -- Registrar usuário admin (email: onlifinadmin@miaoda.com)
+    v_admin_id := auth.register('onlifinadmin@miaoda.com', 'Onlifin@2025!');
     
     IF v_admin_id IS NOT NULL THEN
         -- Criar perfil admin
         INSERT INTO profiles (id, username, full_name, role)
-        VALUES (v_admin_id, 'admin', 'Administrador', 'admin'::user_role);
+        VALUES (v_admin_id, 'onlifinadmin', 'Administrador Onlifin', 'admin'::user_role)
+        ON CONFLICT (id) DO NOTHING;
         
         -- Categorias de receita
         INSERT INTO categories (user_id, name, type, icon, color) VALUES
@@ -45,11 +47,14 @@ BEGIN
         
         -- Configuração IA para Ollama
         INSERT INTO ai_configurations (model_name, endpoint, permission_level, can_write_transactions, is_active)
-        VALUES ('llama3.2:3b', 'http://ollama:11434', 'read_aggregated', false, true);
+        VALUES ('qwen2.5:0.5b', 'http://onlifin-ollama:11434', 'read_aggregated', false, true)
+        ON CONFLICT DO NOTHING;
         
-        RAISE NOTICE 'Usuário admin criado com sucesso!';
+        RAISE NOTICE '✅ Usuário admin criado com sucesso!';
+        RAISE NOTICE '   Usuario: onlifinadmin';
+        RAISE NOTICE '   Senha: Onlifin@2025!';
     ELSE
-        RAISE NOTICE 'Falha ao criar usuário admin ou já existe.';
+        RAISE NOTICE '⚠️ Usuário admin já existe ou falha ao criar.';
     END IF;
 END;
 $$;
@@ -71,4 +76,9 @@ INSERT INTO categories (user_id, name, type, icon, color) VALUES
 (NULL, 'Outros Gastos', 'expense', '💸', '#E74C3C')
 ON CONFLICT DO NOTHING;
 
--- Dados iniciais inseridos com sucesso
+-- ===========================================
+-- CREDENCIAIS PADRAO
+-- ===========================================
+-- Usuario: onlifinadmin
+-- Senha: Onlifin@2025!
+-- ===========================================
