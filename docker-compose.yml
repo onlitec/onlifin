@@ -1,10 +1,16 @@
 version: '3.8'
 
 # ===========================================
-# Onlifin - Docker Compose para Coolify
+# Onlifin - Docker Compose Principal
 # ===========================================
-# Usa tag 'latest' para auto-deploy
-# Basta fazer 'Redeploy' no Coolify após push
+# IMPORTANTE: Configure as variáveis de ambiente!
+#
+# Para desenvolvimento: use docker-compose.yaml
+# Para produção: use docker-compose.production.yml
+#
+# Variáveis obrigatórias (configure no ambiente ou .env):
+#   - POSTGRES_PASSWORD
+#   - JWT_SECRET
 # ===========================================
 
 services:
@@ -13,11 +19,13 @@ services:
   # ===========================================
   app:
     image: onlitec/onlifin:latest
-    expose:
-      - "80"
+    ports:
+      - "${APP_PORT:-80}:80"
     depends_on:
-      - api
-      - ollama
+      api:
+        condition: service_started
+      ollama:
+        condition: service_started
     environment:
       - API_URL=http://api:3000
       - OLLAMA_URL=http://ollama:11434
@@ -30,6 +38,11 @@ services:
       start_period: 10s
     networks:
       - onlifin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ===========================================
   # Banco de Dados PostgreSQL
@@ -37,22 +50,27 @@ services:
   db:
     image: onlitec/onlifin-db:latest
     environment:
-      POSTGRES_DB: onlifin
-      POSTGRES_USER: onlifin
-      POSTGRES_PASSWORD: OnlifinDB2024Secure
+      POSTGRES_DB: ${POSTGRES_DB:-onlifin}
+      POSTGRES_USER: ${POSTGRES_USER:-onlifin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no ambiente}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     expose:
       - "5432"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U onlifin -d onlifin" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-onlifin} -d ${POSTGRES_DB:-onlifin}" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
     networks:
       - onlifin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ===========================================
   # API REST - PostgREST
@@ -63,15 +81,27 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: "postgres://onlifin:OnlifinDB2024Secure@db:5432/onlifin"
+      PGRST_DB_URI: "postgres://${POSTGRES_USER:-onlifin}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-onlifin}"
       PGRST_DB_SCHEMA: "public"
       PGRST_DB_ANON_ROLE: "anon"
-      PGRST_JWT_SECRET: "A2U0nSRYTH1bdKB9rZpEHogZfd5OeGZX5kYp6sEIxU"
+      PGRST_JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no ambiente}
+      PGRST_LOG_LEVEL: "warn"
     expose:
       - "3000"
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - onlifin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   # ===========================================
   # Ollama - IA Local
@@ -85,11 +115,28 @@ services:
     restart: unless-stopped
     networks:
       - onlifin-network
+    deploy:
+      resources:
+        limits:
+          memory: ${OLLAMA_MEMORY_LIMIT:-4G}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 0" ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   onlifin-network:
-
+    driver: bridge
 
 volumes:
   postgres_data:
+    driver: local
   ollama_data:
+    driver: local

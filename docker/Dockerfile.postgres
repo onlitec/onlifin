@@ -16,6 +16,7 @@ LABEL version="4.0.0.0"
 COPY docker/init-db/01-auth-schema.sql /docker-entrypoint-initdb.d/
 COPY docker/init-db/02-main-schema.sql /docker-entrypoint-initdb.d/
 COPY docker/init-db/03-seed-data.sql /docker-entrypoint-initdb.d/
+COPY docker/init-db/04-security-improvements.sql /docker-entrypoint-initdb.d/
 
 # Configurações padrão
 ENV POSTGRES_DB=onlifin
