@@ -20,7 +20,8 @@ COPY docker/init-db/03-seed-data.sql /docker-entrypoint-initdb.d/
 # Configurações padrão
 ENV POSTGRES_DB=onlifin
 ENV POSTGRES_USER=onlifin
-ENV POSTGRES_PASSWORD=onlifin123
+# ATENÇÃO: A senha DEVE ser definida via variável de ambiente
+# NÃO inclua POSTGRES_PASSWORD aqui - use no docker-compose ou Portainer
 
 # Porta padrão
 EXPOSE 5432

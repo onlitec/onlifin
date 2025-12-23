@@ -1,0 +1,181 @@
+version: '3.8'
+
+# ===========================================
+# Onlifin - Docker Compose para Produção
+# Compatível com Portainer
+# ===========================================
+# USO:
+# 1. Configure as variáveis de ambiente no Portainer
+# 2. Ou crie um arquivo .env.production com as variáveis
+# ===========================================
+
+services:
+  # ===========================================
+  # Frontend - Aplicação React/Nginx
+  # ===========================================
+  app:
+    image: onlitec/onlifin:latest
+    ports:
+      - "${APP_PORT:-80}:80"
+    depends_on:
+      api:
+        condition: service_started
+      ollama:
+        condition: service_started
+    environment:
+      - API_URL=http://api:3000
+      - OLLAMA_URL=http://ollama:11434
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - onlifin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      # Labels para Traefik (se estiver usando)
+      - "traefik.enable=true"
+      - "traefik.http.routers.onlifin.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.onlifin.tls=${ENABLE_TLS:-false}"
+      - "traefik.http.routers.onlifin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.onlifin.loadbalancer.server.port=80"
+
+  # ===========================================
+  # Banco de Dados PostgreSQL
+  # ===========================================
+  db:
+    image: onlitec/onlifin-db:latest
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onlifin}
+      POSTGRES_USER: ${POSTGRES_USER:-onlifin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD é obrigatório}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-onlifin} -d ${POSTGRES_DB:-onlifin}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - onlifin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================
+  # API REST - PostgREST
+  # ===========================================
+  api:
+    image: postgrest/postgrest:v12.0.2
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: "postgres://${POSTGRES_USER:-onlifin}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-onlifin}"
+      PGRST_DB_SCHEMA: "public"
+      PGRST_DB_ANON_ROLE: "anon"
+      PGRST_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET é obrigatório}
+      PGRST_LOG_LEVEL: "warn"
+    expose:
+      - "3000"
+    restart: unless-stopped
+    networks:
+      - onlifin-network
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ===========================================
+  # Ollama - IA Local
+  # ===========================================
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    expose:
+      - "11434"
+    restart: unless-stopped
+    networks:
+      - onlifin-network
+    deploy:
+      resources:
+        limits:
+          memory: ${OLLAMA_MEMORY_LIMIT:-4G}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 0" ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================
+  # Backup Automático (Opcional)
+  # ===========================================
+  backup:
+    image: postgres:16-alpine
+    profiles:
+      - backup
+    volumes:
+      - ./backups:/backups
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-onlifin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-onlifin}
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: |
+      /bin/sh -c '
+      while true; do
+        echo "[$(date)] Iniciando backup..."
+        PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h db -U $$POSTGRES_USER -d $$POSTGRES_DB > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+        if [ $$? -eq 0 ]; then
+          echo "[$(date)] Backup concluído com sucesso!"
+          # Manter apenas últimos 7 backups
+          ls -t /backups/backup_*.sql | tail -n +8 | xargs -r rm
+        else
+          echo "[$(date)] ERRO: Backup falhou!"
+        fi
+        # Executar a cada 24 horas
+        sleep 86400
+      done
+      '
+    networks:
+      - onlifin-network
+    restart: unless-stopped
+
+networks:
+  onlifin-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  ollama_data:
+    driver: local
