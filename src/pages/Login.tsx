@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/supabase';
+import { supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

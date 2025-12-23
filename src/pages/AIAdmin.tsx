@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { aiChatLogsApi, aiConfigApi } from '@/db/api';
-import { supabase } from '@/db/supabase';
+import { supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

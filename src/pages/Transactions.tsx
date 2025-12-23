@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/supabase';
+import { supabase } from '@/db/client';
 import { transactionsApi, accountsApi, cardsApi, categoriesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

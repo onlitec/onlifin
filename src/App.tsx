@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, RequireAuth } from 'miaoda-auth-react';
-import { supabase } from '@/db/supabase';
+import { supabase } from '@/db/client';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/common/Header';
 import AIAssistant from '@/components/AIAssistant';

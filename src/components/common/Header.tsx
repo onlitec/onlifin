@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/supabase';
+import { supabase } from '@/db/client';
 import { profilesApi } from '@/db/api';
 import routes from '@/routes';
 import { Button } from '@/components/ui/button';
