@@ -42,6 +42,7 @@ services:
       - "8080:80"
     volumes:
       - ./frontend-dist/index.html:/usr/share/nginx/html/index.html:ro
+      - ./frontend-dist/admin-user-patch.js:/usr/share/nginx/html/admin-user-patch.js:ro
       - ./frontend-dist/dashboard-enhancement.js:/usr/share/nginx/html/dashboard-enhancement.js:ro
       - ./frontend-dist/financial-overview.html:/usr/share/nginx/html/financial-overview.html:ro
     networks:
