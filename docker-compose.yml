@@ -1,0 +1,74 @@
+services:
+  database:
+    image: onlitec/onlifin-db:latest
+    container_name: onlifin-database
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=onlifin
+      - POSTGRES_USER=onlifin
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - onlifin-postgres-data:/var/lib/postgresql/data
+    networks:
+      - onlifin-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U onlifin -d onlifin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: postgrest/postgrest:v12.0.2
+    container_name: onlifin-api
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      - PGRST_DB_URI=postgres://onlifin:${POSTGRES_PASSWORD}@database:5432/onlifin
+      - PGRST_DB_SCHEMA=public,auth
+      - PGRST_DB_ANON_ROLE=anon
+      - PGRST_JWT_SECRET=${JWT_SECRET}
+    networks:
+      - onlifin-network
+
+  frontend:
+    image: onlitec/onlifin:latest
+    container_name: onlifin-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend-dist/index.html:/usr/share/nginx/html/index.html:ro
+      - ./frontend-dist/dashboard-enhancement.js:/usr/share/nginx/html/dashboard-enhancement.js:ro
+      - ./frontend-dist/financial-overview.html:/usr/share/nginx/html/financial-overview.html:ro
+    networks:
+      - onlifin-network
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: onlifin-ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - onlifin-ollama-data:/root/.ollama
+    networks:
+      - onlifin-network
+
+networks:
+  onlifin-network:
+    external: true
+
+volumes:
+  onlifin-postgres-data:
+    external: true
+  onlifin-ollama-data:
+    external: true
