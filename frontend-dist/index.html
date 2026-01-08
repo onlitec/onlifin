@@ -107,11 +107,23 @@
     observer.observe({ type: 'resource', buffered: true });
   </script>
   <!-- OnliFin JWT Authentication Patch - Must load first -->
-  <script src="/auth-jwt-patch.js?v=2.2" defer></script>
-  <!-- OnliFin Admin User Creation Patch -->
-  <script src="/admin-user-patch.js?v=2.2" defer></script>
+  <script>
+    // Force Service Worker unregistration to prevent caching obsolete patches
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('🗑️ Legacy Service Worker removed');
+        }
+      });
+    }
+  </script>
+  <!-- OnliFin Authentication System - Fixed v3.0 -->
+  <script src="/auth-jwt-patch.js?v=3.0" defer></script>
+  <!-- OnliFin Admin Tools -->
+  <script src="/admin-user-patch.js?v=3.0" defer></script>
   <!-- OnliFin Dashboard Enhancement -->
-  <script src="/dashboard-enhancement.js?v=2.2" defer></script>
+  <script src="/dashboard-enhancement.js?v=3.0" defer></script>
 </body>
 
 </html>
