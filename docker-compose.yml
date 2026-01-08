@@ -41,14 +41,16 @@ services:
     ports:
       - "8080:80"
     volumes:
+      - ./frontend-dist/nginx-custom.conf:/etc/nginx/conf.d/default.conf:ro
       - ./frontend-dist/index.html:/usr/share/nginx/html/index.html:ro
+      - ./frontend-dist/auth-jwt-patch.js:/usr/share/nginx/html/auth-jwt-patch.js:ro
       - ./frontend-dist/admin-user-patch.js:/usr/share/nginx/html/admin-user-patch.js:ro
       - ./frontend-dist/dashboard-enhancement.js:/usr/share/nginx/html/dashboard-enhancement.js:ro
       - ./frontend-dist/financial-overview.html:/usr/share/nginx/html/financial-overview.html:ro
     networks:
       - onlifin-network
     healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost/" ]
+      test: [ "CMD", "wget", "-q", "--spider", "http://127.0.0.1/" ]
       interval: 30s
       timeout: 10s
       retries: 3
