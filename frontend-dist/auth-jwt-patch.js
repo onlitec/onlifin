@@ -1,42 +1,40 @@
 /**
- * OnliFin JWT Authentication Patch v2.0
+ * OnliFin Authentication System v3.0
  * 
- * Este patch gerencia a autenticação JWT, sessões por inatividade
- * e garante que o usuário consiga deslogar se houver erros.
+ * Este módulo gerencia a autenticação, sessões por inatividade
+ * e garante a integridade dos dados de acesso à API.
  */
 
 (function () {
     'use strict';
 
-    console.log('🔐 OnliFin JWT Auth Patch v2.0 - Carregando...');
+    console.log('🔐 OnliFin Auth System v3.0 - Carregando...');
 
-    // Configurações
-    const TOKEN_KEY = 'onlifin_jwt_token';
-    const USER_DATA_KEY = 'onlifin_user_data';
-    const LAST_ACTIVITY_KEY = 'onlifin_last_activity';
-    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos de inatividade
-    const AUTH_SESSION_KEY = 'onlifin_auth_session'; // Chave usada pelo Supabase Client do app
+    // Configurações Globais
+    const AUTH_TOKEN_KEY = 'onlifin_auth_token';
+    const AUTH_USER_KEY = 'onlifin_user_data';
+    const AUTH_ACTIVITY_KEY = 'onlifin_last_activity';
+    const AUTH_SESSION_ID = 'onlifin_auth_session'; // Chave de compatibilidade interna do App
+    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos
 
-    // Armazenar fetch original
     const originalFetch = window.fetch;
 
     /**
      * Limpa completamente o estado de login
      */
-    function clearAuth() {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_DATA_KEY);
-        localStorage.removeItem(LAST_ACTIVITY_KEY);
-        localStorage.removeItem(AUTH_SESSION_KEY);
-        console.log('🚪 Sessão encerrada e dados limpos.');
+    function clearLogin() {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
+        localStorage.removeItem(AUTH_ACTIVITY_KEY);
+        localStorage.removeItem(AUTH_SESSION_ID);
+        console.log('🚪 Sessão encerrada.');
     }
 
     /**
      * Redireciona para o login
      */
-    function redirectToLogin() {
+    function goToLogin() {
         if (window.location.pathname !== '/login') {
-            console.log('🔄 Redirecionando para login...');
             window.location.href = '/login';
         }
     }
@@ -45,20 +43,20 @@
      * Atualiza o timestamp de última atividade
      */
     function updateActivity() {
-        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+        localStorage.setItem(AUTH_ACTIVITY_KEY, Date.now().toString());
     }
 
     /**
      * Verifica inatividade
      */
     function checkInactivity() {
-        const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+        const lastActivity = localStorage.getItem(AUTH_ACTIVITY_KEY);
         if (lastActivity) {
             const inactiveTime = Date.now() - parseInt(lastActivity);
             if (inactiveTime > SESSION_TIMEOUT) {
                 console.warn('⚠️ Sessão expirada por inatividade.');
-                clearAuth();
-                redirectToLogin();
+                clearLogin();
+                goToLogin();
             }
         }
     }
@@ -77,7 +75,7 @@
     }
 
     /**
-     * Interceptação do Fetch
+     * Interceptação das chamadas de API
      */
     window.fetch = function (url, options = {}) {
         const urlStr = typeof url === 'string' ? url : (url.url || '');
@@ -86,30 +84,30 @@
         if (isApiRequest) {
             updateActivity();
 
-            // Garantir que temos o token
-            let token = localStorage.getItem(TOKEN_KEY);
+            // Obter token atual
+            let token = localStorage.getItem(AUTH_TOKEN_KEY);
 
-            // Se não temos no nosso local, mas tem na sessão do app, tenta migrar
+            // Migração de Fallback
             if (!token) {
-                const appSession = localStorage.getItem(AUTH_SESSION_KEY);
-                if (appSession) {
+                const legacySession = localStorage.getItem(AUTH_SESSION_ID);
+                if (legacySession) {
                     try {
-                        const parsed = JSON.parse(appSession);
+                        const parsed = JSON.parse(legacySession);
                         token = parsed.access_token;
-                        if (token) localStorage.setItem(TOKEN_KEY, token);
+                        if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
                     } catch (e) { }
                 }
             }
 
-            // Injetar Header de Autorização
+            // Injeção de Segurança em Requisições API
             if (token) {
                 const payload = decodeJWT(token);
                 const now = Math.floor(Date.now() / 1000);
 
                 if (payload && payload.exp && payload.exp < now) {
-                    console.warn('⚠️ Token expirado.');
-                    clearAuth();
-                    redirectToLogin();
+                    console.warn('⚠️ Credencial expirada.');
+                    clearLogin();
+                    goToLogin();
                     return Promise.reject(new Error('Sessão expirada'));
                 }
 
@@ -124,33 +122,49 @@
 
         return originalFetch(url, options)
             .then(async response => {
-                // Se houver erro de permissão ou autenticação na API
+                // Erros de autorização forçam logout
                 if (isApiRequest && (response.status === 401 || response.status === 403)) {
-                    console.error(`❌ Erro ${response.status} na API. Deslogando...`);
-                    clearAuth();
-                    redirectToLogin();
+                    console.error('❌ Falha na autorização da API.');
+                    clearLogin();
+                    goToLogin();
                 }
 
-                // Interceptar resposta de login
+                // Interceptar resposta de login para capturar credenciais
                 if (urlStr.includes('/rpc/login')) {
                     const cloned = response.clone();
                     try {
-                        const rawData = await cloned.text();
-                        // O login agora retorna o token limpo entre aspas
-                        const token = rawData.replace(/^"/, "").replace(/"$/, "");
-                        if (token && token.split('.').length === 3) {
-                            localStorage.setItem(TOKEN_KEY, token);
+                        const rawContent = await cloned.text();
+                        const token = rawContent.replace(/^"/, "").replace(/"$/, "");
 
-                            // Sincronizar dados do usuário decodificando o token
+                        if (token && token.split('.').length === 3) {
                             const payload = decodeJWT(token);
                             if (payload) {
-                                localStorage.setItem(USER_DATA_KEY, JSON.stringify({
-                                    user_id: payload.user_id || payload.sub,
-                                    email: payload.email,
-                                    role: payload.app_role || 'user'
-                                }));
+                                localStorage.setItem(AUTH_TOKEN_KEY, token);
+
+                                // Construir sessão compatível com a lógica do App
+                                const sessionData = {
+                                    access_token: token,
+                                    token_type: 'bearer',
+                                    expires_in: 86400,
+                                    refresh_token: token,
+                                    user: {
+                                        id: payload.user_id || payload.sub,
+                                        email: payload.email,
+                                        role: payload.app_role || 'user',
+                                        app_metadata: { provider: 'onlifin', role: payload.app_role || 'user' },
+                                        user_metadata: { full_name: payload.email.split('@')[0] },
+                                        aud: 'authenticated',
+                                        created_at: new Date().toISOString()
+                                    },
+                                    expires_at: payload.exp
+                                };
+
+                                localStorage.setItem(AUTH_SESSION_ID, JSON.stringify(sessionData));
+                                localStorage.setItem(AUTH_USER_KEY, JSON.stringify(sessionData.user));
+
+                                console.log('✅ Credenciais sincronizadas com sucesso');
+                                updateActivity();
                             }
-                            updateActivity();
                         }
                     } catch (e) { }
                 }
@@ -158,76 +172,57 @@
                 return response;
             })
             .catch(error => {
-                console.error('Fetch error:', error);
+                console.error('API Error:', error);
                 throw error;
             });
     };
 
-    // Monitorar eventos do usuário para resetar o timer de inatividade
-    ['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(event => {
-        window.addEventListener(event, updateActivity);
-    });
-
-    // Verificar inatividade a cada minuto
-    setInterval(checkInactivity, 60000);
-
-    // Botão de Logout de Emergência se o app travar
-    window.forceLogout = function () {
-        clearAuth();
-        redirectToLogin();
-    };
-
-    // Verificação inicial
-    updateActivity();
-    checkInactivity();
-
-    // --- Início da correção de UI da tela de Login ---
-    function patchLoginUI() {
+    // UI Patches na Tela de Login
+    function fixLoginUI() {
         if (window.location.pathname !== '/login') return;
 
-        // 1. Alterar Label e Placeholder
         const labels = document.querySelectorAll('label');
         labels.forEach(l => {
-            if (l.textContent.includes('Nome de Usuário')) {
-                l.textContent = 'Email ou Usuário';
-            }
+            if (l.textContent.includes('Nome de Usuário')) l.textContent = 'Email ou Usuário';
         });
 
         const inputs = document.querySelectorAll('input');
         inputs.forEach(i => {
             if (i.placeholder === 'Nome de Usuário' || i.name === 'username') {
                 i.placeholder = 'Digite seu email ou usuário';
-                // Remover atributos de validação nativa se existirem
                 i.removeAttribute('pattern');
                 i.removeAttribute('title');
             }
         });
 
-        // 2. Remover a mensagem de erro de Regex abaixo do campo
-        const smallTexts = document.querySelectorAll('p, span, div');
-        smallTexts.forEach(t => {
-            if (t.textContent.includes('Apenas letras, números e underscore')) {
-                t.style.display = 'none';
-            }
+        const errorMsgs = document.querySelectorAll('p, span, div');
+        errorMsgs.forEach(t => {
+            if (t.textContent.includes('Apenas letras, números e underscore')) t.style.display = 'none';
         });
-        // 3. Interceptar o erro de validação do formulário
+
+        // Interceptar submit
         const forms = document.querySelectorAll('form');
         forms.forEach(f => {
-            if (!f.dataset.patched) {
-                f.addEventListener('submit', function (e) {
-                    // Se o React tentar bloquear o envio por causa do email,
-                    // nós podemos tentar capturar os dados aqui.
-                    console.log('🚀 Tentando enviar formulário com email...');
-                }, true);
-                f.dataset.patched = 'true';
+            if (!f.dataset.onlifinPatched) {
+                f.addEventListener('submit', () => console.log('🚀 Processando acesso...'), true);
+                f.dataset.onlifinPatched = 'true';
             }
         });
     }
 
-    // Executar periodicamente pois o React pode recriar os elementos
-    setInterval(patchLoginUI, 500);
-    // --- Fim da correção de UI ---
+    // Monitorar atividade
+    ['mousedown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, updateActivity));
+    setInterval(checkInactivity, 60000);
+    setInterval(fixLoginUI, 500);
 
-    console.log('✅ OnliFin JWT Auth Patch v2.1 Ativo (Login por Email Habilitado)');
+    // Logout global
+    window.onlifinSignOut = function () {
+        clearLogin();
+        goToLogin();
+    };
 
+    updateActivity();
+    checkInactivity();
+
+    console.log('✅ OnliFin Auth v3.0 Pronto');
 })();

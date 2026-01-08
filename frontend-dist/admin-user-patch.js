@@ -1,236 +1,117 @@
 /**
- * OnliFin Admin User Creation Patch
- * Este script corrige a criação de usuários no painel admin,
- * interceptando a chamada e usando a função RPC admin_create_user
+ * OnliFin Advanced Administrative Management
  * 
- * Versão: 1.1
+ * Este módulo provê ferramentas avançadas para gestão de usuários,
+ * roles e auditoria do sistema OnliFin.
  */
 
 (function () {
     'use strict';
 
-    console.log('[Admin Patch v1.1] Carregando patch de criação de usuários...');
+    console.log('👷 OnliFin Admin Tools v3.0 - Ativo');
 
-    // Função para obter o token JWT do localStorage
+    // --- Core Methods ---
     function getAuthToken() {
         try {
+            const token = localStorage.getItem('onlifin_auth_token');
+            if (token) return token;
+
             const session = localStorage.getItem('onlifin_auth_session');
-            if (session) {
-                const parsed = JSON.parse(session);
-                return parsed.access_token;
-            }
-        } catch (e) {
-            console.error('[Admin Patch] Erro ao obter token:', e);
-        }
-        return null;
+            if (session) return JSON.parse(session).access_token;
+            return null;
+        } catch (e) { return null; }
     }
 
-    // Função para criar usuário via RPC
-    async function createUserViaRPC(username, password, fullName, role) {
+    async function execAdminAction(rpcName, payload = {}) {
         const token = getAuthToken();
-        if (!token) {
-            throw new Error('Não autenticado. Faça login novamente.');
-        }
-
-        const apiUrl = window.location.origin + '/api/rpc/admin_create_user';
-
-        console.log('[Admin Patch] Chamando API:', apiUrl);
-        console.log('[Admin Patch] Dados:', { username, fullName, role });
-
-        const response = await fetch(apiUrl, {
+        const response = await fetch(`${window.location.origin}/api/rpc/${rpcName}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                p_username: username,
-                p_password: password,
-                p_full_name: fullName || username,
-                p_role: role || 'user'
-            })
+            body: JSON.stringify(payload)
         });
-
-        const responseText = await response.text();
-        console.log('[Admin Patch] Response status:', response.status);
-        console.log('[Admin Patch] Response:', responseText);
-
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            // Se não for JSON, pode ser o resultado direto
-            if (response.ok) {
-                result = { success: true, message: 'Usuário criado' };
-            } else {
-                throw new Error(`Erro na API: ${response.status} - ${responseText}`);
-            }
-        }
-
-        if (result && result.success === false) {
-            throw new Error(result.error || 'Erro desconhecido ao criar usuário');
-        }
-
-        return {
-            userId: result.user_id,
-            username: result.username || username,
-            message: result.message || 'Usuário criado com sucesso!'
-        };
+        const result = await response.json();
+        if (result.code || result.error) throw new Error(result.message || result.error || 'Erro operacional');
+        return result;
     }
 
-    // Expor função globalmente
-    window.onlifinAdminCreateUser = createUserViaRPC;
+    // --- Admin Actions ---
 
-    // Interceptar o botão de criar usuário no modal
-    function setupFormInterception() {
-        document.addEventListener('click', async function (e) {
-            const target = e.target;
+    window.onlifinAdmin = {
+        resetUserPassword: async (uid) => {
+            const pwd = prompt('Nova senha (mínimo 6 caracteres):');
+            if (!pwd) return;
+            try {
+                await execAdminAction('admin_reset_password', { p_user_id: uid, p_new_password: pwd });
+                alert('✅ Senha atualizada.');
+            } catch (e) { alert('❌ ' + e.message); }
+        },
+        removeUser: async (uid, email) => {
+            if (!confirm(`⚠️ Confirmar exclusão definitiva do usuário: ${email}?`)) return;
+            try {
+                await execAdminAction('admin_delete_user', { p_user_id: uid });
+                alert('✅ Usuário removido.');
+                window.location.reload();
+            } catch (e) { alert('❌ ' + e.message); }
+        }
+    };
 
-            // Verificar se é o botão de criar usuário
-            const isCreateButton =
-                (target.tagName === 'BUTTON' && target.textContent.includes('Criar Usuário')) ||
-                (target.closest && target.closest('button') && target.closest('button').textContent.includes('Criar Usuário'));
+    // --- UI Logic ---
 
-            if (isCreateButton) {
-                console.log('[Admin Patch] Botão Criar Usuário clicado!');
+    function updateManagementPage() {
+        if (window.location.pathname !== '/user-management') return;
 
-                // Encontrar o formulário/modal
-                const modal = target.closest('[role="dialog"]') || target.closest('.modal') || target.closest('form');
+        // Corrigir formulários de criação
+        const modal = document.querySelector('[role="dialog"]');
+        if (modal) {
+            modal.querySelectorAll('label').forEach(l => {
+                if (l.textContent.includes('Nome de Usuário')) l.textContent = 'Email de Acesso';
+            });
+            modal.querySelectorAll('input').forEach(i => {
+                if (i.placeholder.includes('usuário')) i.placeholder = 'exemplo@onlifin.com';
+            });
+        }
 
-                if (modal) {
-                    e.preventDefault();
-                    e.stopPropagation();
+        // Adicionar ferramenta de gestão rápida se não houver
+        if (!document.getElementById('onlifin-mgmt-panel')) {
+            const qBtn = document.createElement('button');
+            qBtn.id = 'onlifin-mgmt-panel';
+            qBtn.textContent = '⚙️ Administração';
+            qBtn.style.position = 'fixed';
+            qBtn.style.bottom = '20px';
+            qBtn.style.right = '20px';
+            qBtn.style.zIndex = '9999';
+            qBtn.className = 'px-5 py-3 bg-indigo-600 text-white rounded-full shadow-2xl font-bold hover:bg-indigo-700 transition transform hover:scale-105';
 
-                    // Buscar os campos do formulário
-                    const usernameInput = modal.querySelector('input[name="username"], input[name="email"], input[placeholder*="usuário"], input[placeholder*="Email"], input[id*="username"]');
-                    const passwordInput = modal.querySelector('input[type="password"], input[name="password"]');
-                    const fullNameInput = modal.querySelector('input[name="full_name"], input[name="fullName"], input[placeholder*="nome completo"], input[placeholder*="Nome Completo"]');
-                    const roleSelect = modal.querySelector('select[name="role"], select[name="papel"], [data-role-select]');
-
-                    // Tentar campos alternativos
-                    const allInputs = modal.querySelectorAll('input');
-                    let username = usernameInput?.value || allInputs[0]?.value;
-                    let password = passwordInput?.value || Array.from(allInputs).find(i => i.type === 'password')?.value;
-                    let fullName = fullNameInput?.value || Array.from(allInputs).find(i => i.placeholder?.toLowerCase().includes('nome'))?.value;
-                    let role = roleSelect?.value || 'user';
-
-                    console.log('[Admin Patch] Dados do formulário:', { username, fullName, role });
-
-                    if (!username) {
-                        alert('Por favor, preencha o Email ou nome de usuário.');
-                        return false;
-                    }
-
-                    if (username.indexOf('@') === -1) {
-                        console.warn('[Admin Patch] Usando username simples, mas o sistema recomenda email.');
-                    }
-
-                    if (!password || password.length < 6) {
-                        alert('A senha deve ter no mínimo 6 caracteres.');
-                        return false;
-                    }
-
-                    try {
-                        const result = await createUserViaRPC(username, password, fullName, role);
-                        alert(result.message || 'Usuário criado com sucesso!');
-
-                        // Fechar o modal e recarregar
-                        const closeBtn = modal.querySelector('[aria-label="Close"], button[data-dismiss], .close-button');
-                        if (closeBtn) closeBtn.click();
-
-                        // Recarregar após um pequeno delay
-                        setTimeout(() => window.location.reload(), 500);
-                    } catch (error) {
-                        console.error('[Admin Patch] Erro:', error);
-                        alert('Erro ao criar usuário: ' + error.message);
-                    }
-
-                    return false;
-                }
-            }
-        }, true);  // Use capture phase para interceptar antes
-
-        console.log('[Admin Patch] Interceptação de formulário configurada!');
-    }
-
-    // Também monkeypatch o objeto H.auth.signUp se existir
-    function patchSupabaseClient() {
-        if (typeof H !== 'undefined' && H.auth) {
-            console.log('[Admin Patch] Patcheando H.auth.signUp...');
-
-            const originalSignUp = H.auth.signUp;
-
-            H.auth.signUp = async function (params) {
-                console.log('[Admin Patch] H.auth.signUp interceptado!', params);
-
+            qBtn.onclick = async () => {
                 try {
-                    const email = params.email || '';
-                    const password = params.password || '';
+                    const users = await execAdminAction('admin_list_users');
+                    const userList = users.map((u, i) => `${i + 1}. ${u.email} [${u.role}]`).join('\n');
+                    const selection = prompt(`Selecione um usuário para gerenciar:\n\n${userList}\n\nDigite o número correspondente:`);
 
-                    // Extrair username do email
-                    const username = email.split('@')[0];
+                    if (selection && users[selection - 1]) {
+                        const user = users[selection - 1];
+                        const cmd = prompt(`Gerenciar: ${user.email}\n1. Alterar Senha\n2. Promover a ADMIN\n3. Rebaixar para USER\n4. REMOVER USUÁRIO`);
 
-                    const result = await createUserViaRPC(username, password, username, 'user');
-
-                    return {
-                        data: {
-                            user: { id: result.userId, email: email },
-                            session: null
-                        },
-                        error: null
-                    };
-                } catch (error) {
-                    console.error('[Admin Patch] Erro no signUp:', error);
-                    return {
-                        data: { user: null, session: null },
-                        error: error
-                    };
-                }
+                        if (cmd === '1') window.onlifinAdmin.resetUserPassword(user.id);
+                        if (cmd === '2') {
+                            await execAdminAction('admin_update_user', { p_user_id: user.id, p_email: user.email, p_full_name: user.full_name, p_role: 'admin' });
+                            alert('Promovido!');
+                        }
+                        if (cmd === '3') {
+                            await execAdminAction('admin_update_user', { p_user_id: user.id, p_email: user.email, p_full_name: user.full_name, p_role: 'user' });
+                            alert('Rebaixado!');
+                        }
+                        if (cmd === '4') window.onlifinAdmin.removeUser(user.id, user.email);
+                    }
+                } catch (e) { alert(e.message); }
             };
-
-            console.log('[Admin Patch] H.auth.signUp patcheado!');
-        } else {
-            // Tentar novamente após um delay
-            setTimeout(patchSupabaseClient, 500);
+            document.body.appendChild(qBtn);
         }
     }
 
-    // --- Início da correção de UI do Modal de Cadastro ---
-    function patchAdminModalUI() {
-        const modal = document.querySelector('[role="dialog"]') || document.querySelector('.modal');
-        if (!modal) return;
+    setInterval(updateManagementPage, 1000);
 
-        // 1. Procurar labels e placeholders de Username
-        const labels = modal.querySelectorAll('label');
-        labels.forEach(l => {
-            if (l.textContent.includes('Nome de Usuário') || l.textContent.includes('Username')) {
-                l.textContent = 'Email / Login';
-            }
-        });
-
-        const inputs = modal.querySelectorAll('input');
-        inputs.forEach(i => {
-            if (i.placeholder.includes('usuário') || i.placeholder.includes('username') || i.name === 'username') {
-                i.placeholder = 'Ex: cliente@email.com';
-                // Relaxar validações nativas
-                i.removeAttribute('pattern');
-            }
-        });
-
-        // 2. Esconder mensagens de erro de caracteres restritos
-        const smallTexts = modal.querySelectorAll('p, span, div');
-        smallTexts.forEach(t => {
-            if (t.textContent.includes('letras, números e underscore')) {
-                t.style.display = 'none';
-            }
-        });
-    }
-
-    // Executar periodicamente para detectar o modal abrindo
-    setInterval(patchAdminModalUI, 500);
-    // --- Fim da correção de UI ---
-
-    console.log('[Admin Patch v1.1] Patch carregado com sucesso!');
 })();
-
