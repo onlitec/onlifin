@@ -103,7 +103,7 @@
                     e.stopPropagation();
 
                     // Buscar os campos do formulário
-                    const usernameInput = modal.querySelector('input[name="username"], input[placeholder*="usuário"], input[id*="username"]');
+                    const usernameInput = modal.querySelector('input[name="username"], input[name="email"], input[placeholder*="usuário"], input[placeholder*="Email"], input[id*="username"]');
                     const passwordInput = modal.querySelector('input[type="password"], input[name="password"]');
                     const fullNameInput = modal.querySelector('input[name="full_name"], input[name="fullName"], input[placeholder*="nome completo"], input[placeholder*="Nome Completo"]');
                     const roleSelect = modal.querySelector('select[name="role"], select[name="papel"], [data-role-select]');
@@ -118,8 +118,12 @@
                     console.log('[Admin Patch] Dados do formulário:', { username, fullName, role });
 
                     if (!username) {
-                        alert('Por favor, preencha o nome de usuário.');
+                        alert('Por favor, preencha o Email ou nome de usuário.');
                         return false;
+                    }
+
+                    if (username.indexOf('@') === -1) {
+                        console.warn('[Admin Patch] Usando username simples, mas o sistema recomenda email.');
                     }
 
                     if (!password || password.length < 6) {
