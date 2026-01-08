@@ -1427,7 +1427,7 @@ class SettingsController extends Controller
             // Adicionar diretório ao safe.directory globalmente para o usuário do processo
             "$git config --global --add safe.directory " . base_path() . " 2>&1",
             // Atualizar código
-            "$git pull origin main 2>&1",
+            "$git pull origin beta 2>&1",
             "$composer install --no-interaction 2>&1",
             "$php artisan migrate --force 2>&1"
         ];
