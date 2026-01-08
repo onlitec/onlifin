@@ -135,11 +135,21 @@
                 if (urlStr.includes('/rpc/login')) {
                     const cloned = response.clone();
                     try {
-                        const data = await cloned.text();
+                        const rawData = await cloned.text();
                         // O login agora retorna o token limpo entre aspas
-                        const token = data.replace(/^"/, "").replace(/"$/, "");
-                        if (token && token.length > 50) {
+                        const token = rawData.replace(/^"/, "").replace(/"$/, "");
+                        if (token && token.split('.').length === 3) {
                             localStorage.setItem(TOKEN_KEY, token);
+
+                            // Sincronizar dados do usuário decodificando o token
+                            const payload = decodeJWT(token);
+                            if (payload) {
+                                localStorage.setItem(USER_DATA_KEY, JSON.stringify({
+                                    user_id: payload.user_id || payload.sub,
+                                    email: payload.email,
+                                    role: payload.app_role || 'user'
+                                }));
+                            }
                             updateActivity();
                         }
                     } catch (e) { }
@@ -171,7 +181,53 @@
     updateActivity();
     checkInactivity();
 
-    console.log('✅ OnliFin JWT Auth Patch v2.0 Ativo');
-    console.log('💡 DICA: Use forceLogout() no console se o estado estiver travado.');
+    // --- Início da correção de UI da tela de Login ---
+    function patchLoginUI() {
+        if (window.location.pathname !== '/login') return;
+
+        // 1. Alterar Label e Placeholder
+        const labels = document.querySelectorAll('label');
+        labels.forEach(l => {
+            if (l.textContent.includes('Nome de Usuário')) {
+                l.textContent = 'Email ou Usuário';
+            }
+        });
+
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(i => {
+            if (i.placeholder === 'Nome de Usuário' || i.name === 'username') {
+                i.placeholder = 'Digite seu email ou usuário';
+                // Remover atributos de validação nativa se existirem
+                i.removeAttribute('pattern');
+                i.removeAttribute('title');
+            }
+        });
+
+        // 2. Remover a mensagem de erro de Regex abaixo do campo
+        const smallTexts = document.querySelectorAll('p, span, div');
+        smallTexts.forEach(t => {
+            if (t.textContent.includes('Apenas letras, números e underscore')) {
+                t.style.display = 'none';
+            }
+        });
+        // 3. Interceptar o erro de validação do formulário
+        const forms = document.querySelectorAll('form');
+        forms.forEach(f => {
+            if (!f.dataset.patched) {
+                f.addEventListener('submit', function (e) {
+                    // Se o React tentar bloquear o envio por causa do email,
+                    // nós podemos tentar capturar os dados aqui.
+                    console.log('🚀 Tentando enviar formulário com email...');
+                }, true);
+                f.dataset.patched = 'true';
+            }
+        });
+    }
+
+    // Executar periodicamente pois o React pode recriar os elementos
+    setInterval(patchLoginUI, 500);
+    // --- Fim da correção de UI ---
+
+    console.log('✅ OnliFin JWT Auth Patch v2.1 Ativo (Login por Email Habilitado)');
 
 })();

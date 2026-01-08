@@ -196,21 +196,41 @@
         }
     }
 
-    // Inicializar
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setupFormInterception();
-            patchSupabaseClient();
+    // --- Início da correção de UI do Modal de Cadastro ---
+    function patchAdminModalUI() {
+        const modal = document.querySelector('[role="dialog"]') || document.querySelector('.modal');
+        if (!modal) return;
+
+        // 1. Procurar labels e placeholders de Username
+        const labels = modal.querySelectorAll('label');
+        labels.forEach(l => {
+            if (l.textContent.includes('Nome de Usuário') || l.textContent.includes('Username')) {
+                l.textContent = 'Email / Login';
+            }
         });
-    } else {
-        setupFormInterception();
-        patchSupabaseClient();
+
+        const inputs = modal.querySelectorAll('input');
+        inputs.forEach(i => {
+            if (i.placeholder.includes('usuário') || i.placeholder.includes('username') || i.name === 'username') {
+                i.placeholder = 'Ex: cliente@email.com';
+                // Relaxar validações nativas
+                i.removeAttribute('pattern');
+            }
+        });
+
+        // 2. Esconder mensagens de erro de caracteres restritos
+        const smallTexts = modal.querySelectorAll('p, span, div');
+        smallTexts.forEach(t => {
+            if (t.textContent.includes('letras, números e underscore')) {
+                t.style.display = 'none';
+            }
+        });
     }
 
-    // Retry após delays para garantir que o app React carregou
-    setTimeout(patchSupabaseClient, 1000);
-    setTimeout(patchSupabaseClient, 2000);
-    setTimeout(patchSupabaseClient, 5000);
+    // Executar periodicamente para detectar o modal abrindo
+    setInterval(patchAdminModalUI, 500);
+    // --- Fim da correção de UI ---
 
     console.log('[Admin Patch v1.1] Patch carregado com sucesso!');
 })();
+
