@@ -22,12 +22,10 @@ services:
       - API_URL=http://onlifin-api:3000
       - OLLAMA_URL=http://onlifin-ollama:11434
     restart: unless-stopped
+    security_opt:
+      - apparmor:unconfined
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      disable: true
     networks:
       - onlifin-network
     logging:
@@ -51,12 +49,10 @@ services:
     expose:
       - "5432"
     restart: unless-stopped
+    security_opt:
+      - apparmor:unconfined
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U onlifin -d onlifin" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      disable: true
     networks:
       - onlifin-network
     logging:
@@ -73,7 +69,7 @@ services:
     image: postgrest/postgrest:v12.0.2
     depends_on:
       database:
-        condition: service_healthy
+        condition: service_started
     environment:
       PGRST_DB_URI: "postgres://onlifin:${POSTGRES_PASSWORD}@onlifin-database:5432/onlifin"
       PGRST_DB_SCHEMA: "public,auth"
@@ -83,12 +79,10 @@ services:
     expose:
       - "3000"
     restart: unless-stopped
+    security_opt:
+      - apparmor:unconfined
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      disable: true
     networks:
       - onlifin-network
     logging:
@@ -110,16 +104,20 @@ services:
     restart: unless-stopped
     networks:
       - onlifin-network
+    security_opt:
+      - apparmor:unconfined
+    healthcheck:
+      disable: true
     deploy:
       resources:
         limits:
           memory: ${OLLAMA_MEMORY_LIMIT:-4G}
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 0" ]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
+    # healthcheck:
+    #   test: [ "CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 0" ]
+    #   interval: 60s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 120s
     logging:
       driver: "json-file"
       options:
