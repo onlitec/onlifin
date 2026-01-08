@@ -327,22 +327,23 @@ BEGIN
   -- Extract username from email (before @)
   extracted_username := split_part(NEW.email, '@', 1);
   
-  INSERT INTO profiles (id, username, role)
+  -- Buscar email diretamente da tabela auth.users se disponível, senão usar o placeholder
+  INSERT INTO profiles (id, username, email, role)
   VALUES (
     NEW.id,
     extracted_username,
+    NEW.email,
     CASE WHEN user_count = 0 THEN 'admin'::user_role ELSE 'user'::user_role END
   );
   RETURN NEW;
 END;
 $$;
 
--- Create trigger for user confirmation
-DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
-CREATE TRIGGER on_auth_user_confirmed
-  AFTER UPDATE ON auth.users
+-- Create trigger for new user profile creation
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
   FOR EACH ROW
-  WHEN (OLD.confirmed_at IS NULL AND NEW.confirmed_at IS NOT NULL)
   EXECUTE FUNCTION handle_new_user();
 
 -- Insert default system categories

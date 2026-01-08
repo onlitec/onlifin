@@ -11,6 +11,9 @@ services:
   frontend:
     container_name: onlifin-frontend
     image: onlitec/onlifin:latest
+    volumes:
+      - ./dist:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "${APP_PORT:-80}:80"
     depends_on:

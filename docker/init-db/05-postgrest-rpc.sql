@@ -5,18 +5,41 @@
 -- para que o PostgREST possa chamá-las via /rpc/
 
 -- ===========================================
--- Wrapper para login
+-- Wrapper para login (Suporta Username ou Email)
 -- ===========================================
 CREATE OR REPLACE FUNCTION public.login(p_email text, p_password text)
 RETURNS text AS $$
 DECLARE
     v_user_id uuid;
+    v_real_email text;
     v_role text;
     v_jwt_secret text;
     v_result text;
 BEGIN
-    -- Validar usuário
-    v_user_id := auth.login(p_email, p_password);
+    -- 1. Tentar encontrar o email correto
+    -- Primeiro: Verificamos se p_email é um email em auth.users
+    SELECT email INTO v_real_email FROM auth.users WHERE email = p_email;
+    
+    -- Segundo: Se não encontrou, verificamos se p_email está na tabela profiles (como email alternativo)
+    IF v_real_email IS NULL THEN
+        SELECT u.email INTO v_real_email 
+        FROM profiles p
+        JOIN auth.users u ON u.id = p.id
+        WHERE p.email = p_email OR p.username = p_email;
+    END IF;
+    
+    -- Terceiro: Se ainda não encontrou e não tem @, tenta o domínio padrão
+    IF v_real_email IS NULL AND p_email NOT LIKE '%@%' THEN
+        v_real_email := p_email || '@miaoda.com';
+    END IF;
+
+    -- Se não resolveu para nada, v_real_email será o que o usuário digitou (e falhará no auth.login)
+    IF v_real_email IS NULL THEN
+        v_real_email := p_email;
+    END IF;
+
+    -- Validar usuário com o email real resolvido
+    v_user_id := auth.login(v_real_email, p_password);
     
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'Credenciais inválidas';
@@ -35,14 +58,14 @@ BEGIN
     END IF;
     
     -- Gerar JWT
-    -- Payload: role, user_id, exp (24h), email
     v_result := sign(
         json_build_object(
-            'role', 'authenticated', -- PostgREST role
+            'role', 'authenticated',
+            'sub', v_user_id,
             'user_id', v_user_id,
-            'email', p_email,
-            'app_role', v_role,      -- Nossa role de app (admin/user)
-            'exp', extract(epoch from now())::integer + 86400 -- 24h
+            'email', v_real_email,
+            'app_role', v_role,
+            'exp', extract(epoch from now())::integer + 86400
         ),
         v_jwt_secret
     );

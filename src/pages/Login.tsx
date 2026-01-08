@@ -90,13 +90,15 @@ export default function Login() {
     if (!isValidUsername(username)) {
       toast({
         title: 'Erro',
-        description: 'Nome de usuário inválido. Use apenas letras, números e underscore (3-50 caracteres)',
+        description: 'Nome de usuário ou email inválido. Use apenas letras, números, (@), (.) e (-).',
         variant: 'destructive'
       });
       setIsLoading(false);
       return;
     }
 
+    // Se já for um email completo, usa como está. Caso contrário, adiciona o domínio padrão.
+    const email = username.includes('@') ? username : `${username}@miaoda.com`;
     // Validação de senha
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
@@ -109,7 +111,6 @@ export default function Login() {
       return;
     }
 
-    const email = `${username}@miaoda.com`;
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -121,6 +122,19 @@ export default function Login() {
 
       // Reset rate limit em caso de sucesso
       resetRateLimit(LOGIN_RATE_LIMIT_KEY);
+
+      // Verificar se precisa trocar senha
+      const { data: profile } = await supabase.from('profiles').select('force_password_change').eq('id', (await supabase.auth.getUser()).data.user?.id).maybeSingle();
+
+      if (profile?.force_password_change) {
+        toast({
+          title: 'Troca de senha obrigatória',
+          description: 'Por segurança, você deve alterar sua senha agora.',
+          variant: 'default'
+        });
+        navigate('/change-password');
+        return;
+      }
 
       toast({
         title: 'Bem-vindo!',
@@ -199,10 +213,10 @@ export default function Login() {
                 disabled={isLoading || isLocked}
                 required
                 autoComplete="username"
-                maxLength={50}
+                maxLength={100}
               />
               <p className="text-xs text-muted-foreground">
-                Apenas letras, números e underscore (_)
+                Use seu usuário (ex: admin) ou email completo.
               </p>
             </div>
             <div className="space-y-2">

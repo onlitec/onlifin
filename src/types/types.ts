@@ -2,13 +2,29 @@ export type UserRole = 'user' | 'financeiro' | 'admin';
 export type TransactionType = 'income' | 'expense' | 'transfer';
 export type CategoryType = 'income' | 'expense';
 export type AIPermissionLevel = 'read_aggregated' | 'read_transactional' | 'read_full';
+export type UserStatus = 'active' | 'suspended' | 'inactive';
 
 export interface Profile {
   id: string;
   username: string;
   full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  document: string | null; // CPF/CNPJ
+  birth_date: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  avatar_url: string | null;
   role: UserRole;
+  status: UserStatus;
+  force_password_change?: boolean;
+  last_login_at: string | null;
+  admin_notes: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 export interface Account {

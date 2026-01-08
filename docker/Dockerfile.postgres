@@ -20,6 +20,7 @@ COPY docker/init-db/03-seed-data.sql /docker-entrypoint-initdb.d/
 COPY docker/init-db/04-security-improvements.sql /docker-entrypoint-initdb.d/
 COPY docker/init-db/05-postgrest-rpc.sql /docker-entrypoint-initdb.d/
 COPY docker/init-db/06-jwt-generation.sql /docker-entrypoint-initdb.d/
+COPY docker/init-db/07-user-management-enhancements.sql /docker-entrypoint-initdb.d/
 
 # Configurações padrão
 ENV POSTGRES_DB=onlifin

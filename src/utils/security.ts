@@ -61,12 +61,13 @@ export function validatePassword(password: string): { valid: boolean; message: s
 }
 
 /**
- * Valida username (apenas letras, números e underscore)
+ * Valida username ou email (letras, números, underscore, pontos e arroba)
  */
 export function isValidUsername(username: string): boolean {
     if (!username || typeof username !== 'string') return false;
-    if (username.length < 3 || username.length > 50) return false;
-    return /^[a-zA-Z0-9_]+$/.test(username);
+    if (username.length < 3 || username.length > 100) return false;
+    // Permite formato de email ou username comum (letras, números, _, ., @, -)
+    return /^[a-zA-Z0-9._@\-]+$/.test(username);
 }
 
 /**

@@ -87,11 +87,38 @@ function saveSession(session: LocalSession | null) {
 // Decodificar JWT (simples, apenas para ler payload)
 function parseJwt(token: string) {
     try {
-        return JSON.parse(atob(token.split('.')[1]));
+        console.log('🔍 Decodificando token (tamanho):', token?.length);
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            console.error('❌ Token malformado (partes != 3)');
+            return null;
+        }
+        // Remove whitespace/newlines e faz decode
+        const base64 = parts[1].replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload);
     } catch (e) {
+        console.error('❌ Erro crítico ao decodificar JWT:', e);
         return null;
     }
 }
+
+// Função fetch customizada para injetar o token JWT
+const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const session = loadSession();
+    const options = init || {};
+
+    if (session?.access_token) {
+        const headers = new Headers(options.headers);
+        headers.set('Authorization', `Bearer ${session.access_token}`);
+        options.headers = headers;
+    }
+
+    return fetch(input, options);
+};
 
 // Criar cliente base
 // Usamos o cliente do supabase-js pois ele é um excelente cliente PostgREST
@@ -103,11 +130,7 @@ const onlifinClient = createClient(apiUrl, anonKey, {
         detectSessionInUrl: false
     },
     global: {
-        headers: {
-            // Não enviar header Authorization por padrão se não houver token
-            // PostgREST assume role 'web_anon' (ou configurada) se não houver header
-            ...(loadSession()?.access_token ? { 'Authorization': `Bearer ${loadSession()?.access_token}` } : {})
-        }
+        fetch: customFetch
     }
 });
 
@@ -159,10 +182,14 @@ const auth = {
             }
 
             // Ler dados do token
+            console.log('📦 Token bruto recebido:', token.substring(0, 20) + '...');
             const payload = parseJwt(token);
             if (!payload) {
-                return { data: { user: null, session: null }, error: new Error('Token inválido') };
+                console.error('❌ Não foi possível extrair payload do token');
+                return { data: { user: null, session: null }, error: new Error('Token inválido ou corrompido') };
             }
+
+            console.log('👤 Dados do payload:', payload);
 
             const user: LocalUser = {
                 id: payload.user_id,
@@ -226,10 +253,39 @@ const auth = {
         };
     },
 
-    // Stub para manter compatibilidade types
-    async signUp(params: any) {
-        // Implementar via RPC register se necessário
-        return { data: { user: null }, error: new Error('Registro via API não implementado no cliente') };
+    async signUp({ email, password }: { email: string; password: string }) {
+        try {
+            console.log('📝 Tentando registro via RPC:', `${apiUrl}/rpc/register`);
+
+            const response = await fetch(`${apiUrl}/rpc/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ p_email: email, p_password: password })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return { data: { user: null }, error: new Error(errorText || 'Erro ao registrar usuário') };
+            }
+
+            const userId = (await response.text()).replace(/^"/, '').replace(/"$/, '');
+
+            return {
+                data: {
+                    user: {
+                        id: userId,
+                        email: email
+                    }
+                },
+                error: null
+            };
+        } catch (e: any) {
+            console.error('❌ Exceção no registro:', e);
+            return { data: { user: null }, error: e };
+        }
     }
 };
 

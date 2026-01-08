@@ -17,6 +17,7 @@ import AIAdmin from './pages/AIAdmin';
 import AdminGeneral from './pages/AdminGeneral';
 import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
+import ForceChangePassword from './pages/ForceChangePassword';
 import PWAInfo from './pages/PWAInfo';
 
 interface RouteConfig {
@@ -144,6 +145,12 @@ const routes: RouteConfig[] = [
     name: 'Login',
     path: '/login',
     element: <Login />,
+    visible: false
+  },
+  {
+    name: 'Alterar Senha',
+    path: '/change-password',
+    element: <ForceChangePassword />,
     visible: false
   }
 ];

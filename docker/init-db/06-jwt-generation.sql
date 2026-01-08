@@ -8,12 +8,12 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 1. Função para URL Encode (Base64Url)
 CREATE OR REPLACE FUNCTION url_encode(data bytea) RETURNS text LANGUAGE sql AS $$
-    SELECT translate(encode(data, 'base64'), '+/', '-_');
+    SELECT translate(replace(encode(data, 'base64'), E'\n', ''), '+/', '-_');
 $$;
 
 -- 2. Função para codificar URL Base64 sem padding
 CREATE OR REPLACE FUNCTION url_encode_nopad(data bytea) RETURNS text LANGUAGE sql AS $$
-    SELECT rtrim(translate(encode(data, 'base64'), '+/', '-_'), '=');
+    SELECT rtrim(translate(replace(encode(data, 'base64'), E'\n', ''), '+/', '-_'), '=');
 $$;
 
 -- 3. Função para assinar JWT
