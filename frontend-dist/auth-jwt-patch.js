@@ -1,188 +1,148 @@
 /**
- * OnliFin JWT Authentication Patch
+ * OnliFin JWT Authentication Patch v2.0
  * 
- * This patch intercepts the authentication flow to:
- * 1. Handle the new auth.login JSON response format (with JWT token)
- * 2. Store JWT token in localStorage
- * 3. Inject JWT token into all API requests via Authorization header
- * 4. Handle token expiration and auto-logout
+ * Este patch gerencia a autenticação JWT, sessões por inatividade
+ * e garante que o usuário consiga deslogar se houver erros.
  */
 
 (function () {
     'use strict';
 
-    console.log('🔐 OnliFin JWT Auth Patch v1.0 - Loading...');
+    console.log('🔐 OnliFin JWT Auth Patch v2.0 - Carregando...');
 
-    // Store original fetch
-    const originalFetch = window.fetch;
-
-    // JWT Token storage key
+    // Configurações
     const TOKEN_KEY = 'onlifin_jwt_token';
     const USER_DATA_KEY = 'onlifin_user_data';
+    const LAST_ACTIVITY_KEY = 'onlifin_last_activity';
+    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos de inatividade
+    const AUTH_SESSION_KEY = 'onlifin_auth_session'; // Chave usada pelo Supabase Client do app
+
+    // Armazenar fetch original
+    const originalFetch = window.fetch;
 
     /**
-     * Get stored JWT token
+     * Limpa completamente o estado de login
      */
-    function getToken() {
-        try {
-            return localStorage.getItem(TOKEN_KEY);
-        } catch (e) {
-            console.error('Failed to get token from localStorage', e);
-            return null;
+    function clearAuth() {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_DATA_KEY);
+        localStorage.removeItem(LAST_ACTIVITY_KEY);
+        localStorage.removeItem(AUTH_SESSION_KEY);
+        console.log('🚪 Sessão encerrada e dados limpos.');
+    }
+
+    /**
+     * Redireciona para o login
+     */
+    function redirectToLogin() {
+        if (window.location.pathname !== '/login') {
+            console.log('🔄 Redirecionando para login...');
+            window.location.href = '/login';
         }
     }
 
     /**
-     * Store JWT token
+     * Atualiza o timestamp de última atividade
      */
-    function setToken(token) {
-        try {
-            localStorage.setItem(TOKEN_KEY, token);
-            console.log('✅ JWT token stored');
-        } catch (e) {
-            console.error('Failed to store token in localStorage', e);
+    function updateActivity() {
+        localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    }
+
+    /**
+     * Verifica inatividade
+     */
+    function checkInactivity() {
+        const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+        if (lastActivity) {
+            const inactiveTime = Date.now() - parseInt(lastActivity);
+            if (inactiveTime > SESSION_TIMEOUT) {
+                console.warn('⚠️ Sessão expirada por inatividade.');
+                clearAuth();
+                redirectToLogin();
+            }
         }
     }
 
     /**
-     * Remove JWT token (logout)
+     * Decodifica o payload do JWT
      */
-    function clearToken() {
+    function decodeJWT(token) {
         try {
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(USER_DATA_KEY);
-            console.log('🚪 JWT token cleared (logout)');
-        } catch (e) {
-            console.error('Failed to clear token', e);
-        }
-    }
-
-    /**
-     * Store user data
-     */
-    function setUserData(data) {
-        try {
-            localStorage.setItem(USER_DATA_KEY, JSON.stringify(data));
-        } catch (e) {
-            console.error('Failed to store user data', e);
-        }
-    }
-
-    /**
-     * Get user data
-     */
-    function getUserData() {
-        try {
-            const data = localStorage.getItem(USER_DATA_KEY);
-            return data ? JSON.parse(data) : null;
-        } catch (e) {
-            console.error('Failed to get user data', e);
-            return null;
-        }
-    }
-
-    /**
-     * Check if token is expired
-     */
-    function isTokenExpired(token) {
-        if (!token) return true;
-
-        try {
-            // Decode JWT payload (middle part)
             const parts = token.split('.');
-            if (parts.length !== 3) return true;
-
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-            const now = Math.floor(Date.now() / 1000);
-
-            return payload.exp && payload.exp < now;
+            if (parts.length !== 3) return null;
+            return JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
         } catch (e) {
-            console.error('Failed to decode token', e);
-            return true;
+            return null;
         }
     }
 
     /**
-     * Intercept fetch to add JWT token to requests
+     * Interceptação do Fetch
      */
     window.fetch = function (url, options = {}) {
-        // Check if this is an API request
-        const isApiRequest = typeof url === 'string' &&
-            (url.includes('/api/rest/') || url.includes('/api/rpc/'));
+        const urlStr = typeof url === 'string' ? url : (url.url || '');
+        const isApiRequest = urlStr.includes('/api/rest/') || urlStr.includes('/api/rpc/');
 
         if (isApiRequest) {
-            const token = getToken();
+            updateActivity();
 
-            // Check for expired token
-            if (token && isTokenExpired(token)) {
-                console.warn('⚠️ Token expired, clearing...');
-                clearToken();
-                // Optionally redirect to login
-                if (window.location.pathname !== '/login') {
-                    console.log('🔄 Redirecting to login...');
-                    window.location.href = '/login';
+            // Garantir que temos o token
+            let token = localStorage.getItem(TOKEN_KEY);
+
+            // Se não temos no nosso local, mas tem na sessão do app, tenta migrar
+            if (!token) {
+                const appSession = localStorage.getItem(AUTH_SESSION_KEY);
+                if (appSession) {
+                    try {
+                        const parsed = JSON.parse(appSession);
+                        token = parsed.access_token;
+                        if (token) localStorage.setItem(TOKEN_KEY, token);
+                    } catch (e) { }
                 }
-                return Promise.reject(new Error('Token expired'));
             }
 
-            // Add Authorization header if we have a token
+            // Injetar Header de Autorização
             if (token) {
-                options.headers = options.headers || {};
+                const payload = decodeJWT(token);
+                const now = Math.floor(Date.now() / 1000);
 
-                // Handle Headers object or plain object
+                if (payload && payload.exp && payload.exp < now) {
+                    console.warn('⚠️ Token expirado.');
+                    clearAuth();
+                    redirectToLogin();
+                    return Promise.reject(new Error('Sessão expirada'));
+                }
+
+                options.headers = options.headers || {};
                 if (options.headers instanceof Headers) {
                     options.headers.set('Authorization', `Bearer ${token}`);
                 } else {
                     options.headers['Authorization'] = `Bearer ${token}`;
                 }
-
-                console.log('🔑 Added JWT token to request:', url.substring(0, 50) + '...');
-            } else {
-                console.log('⚠️ No JWT token available for request:', url.substring(0, 50) + '...');
             }
         }
 
-        // Call original fetch
         return originalFetch(url, options)
             .then(async response => {
-                // Handle 401/403 errors (unauthorized/forbidden)
+                // Se houver erro de permissão ou autenticação na API
                 if (isApiRequest && (response.status === 401 || response.status === 403)) {
-                    console.warn(`⚠️ Auth error ${response.status}, clearing token`);
-                    clearToken();
-
-                    // Only redirect if not already on login page
-                    if (window.location.pathname !== '/login') {
-                        console.log('🔄 Redirecting to login due to auth error...');
-                        // Small delay to allow user to see the error
-                        setTimeout(() => {
-                            window.location.href = '/login';
-                        }, 1000);
-                    }
+                    console.error(`❌ Erro ${response.status} na API. Deslogando...`);
+                    clearAuth();
+                    redirectToLogin();
                 }
 
-                // Intercept auth.login responses
-                if (typeof url === 'string' && url.includes('/rpc/login')) {
-                    const clonedResponse = response.clone();
-
+                // Interceptar resposta de login
+                if (urlStr.includes('/rpc/login')) {
+                    const cloned = response.clone();
                     try {
-                        const data = await clonedResponse.json();
-                        console.log('📨 Login response:', data);
-
-                        // Handle new JSON response format
-                        if (data && data.success && data.token) {
-                            console.log('✅ Login successful, storing JWT token');
-                            setToken(data.token);
-                            setUserData({
-                                user_id: data.user_id,
-                                role: data.role
-                            });
-                        } else if (data && !data.success) {
-                            console.error('❌ Login failed:', data.error);
-                            clearToken();
+                        const data = await cloned.text();
+                        // O login agora retorna o token limpo entre aspas
+                        const token = data.replace(/^"/, "").replace(/"$/, "");
+                        if (token && token.length > 50) {
+                            localStorage.setItem(TOKEN_KEY, token);
+                            updateActivity();
                         }
-                    } catch (e) {
-                        console.error('Failed to parse login response', e);
-                    }
+                    } catch (e) { }
                 }
 
                 return response;
@@ -193,36 +153,25 @@
             });
     };
 
-    // Check for existing token on load
-    const existingToken = getToken();
-    if (existingToken) {
-        if (isTokenExpired(existingToken)) {
-            console.log('⚠️ Existing token is expired, clearing...');
-            clearToken();
-        } else {
-            console.log('✅ Valid JWT token found in storage');
-            const userData = getUserData();
-            if (userData) {
-                console.log('👤 User data:', userData);
-            }
-        }
-    } else {
-        console.log('ℹ️ No existing JWT token found');
-    }
+    // Monitorar eventos do usuário para resetar o timer de inatividade
+    ['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(event => {
+        window.addEventListener(event, updateActivity);
+    });
 
-    // Expose helper functions to window for debugging
-    window.onlifinAuth = {
-        getToken,
-        setToken,
-        clearToken,
-        getUserData,
-        isTokenExpired,
-        logout: () => {
-            clearToken();
-            window.location.href = '/login';
-        }
+    // Verificar inatividade a cada minuto
+    setInterval(checkInactivity, 60000);
+
+    // Botão de Logout de Emergência se o app travar
+    window.forceLogout = function () {
+        clearAuth();
+        redirectToLogin();
     };
 
-    console.log('✅ OnliFin JWT Auth Patch loaded successfully');
-    console.log('💡 Debug commands: window.onlifinAuth.getToken(), window.onlifinAuth.logout()');
+    // Verificação inicial
+    updateActivity();
+    checkInactivity();
+
+    console.log('✅ OnliFin JWT Auth Patch v2.0 Ativo');
+    console.log('💡 DICA: Use forceLogout() no console se o estado estiver travado.');
+
 })();
