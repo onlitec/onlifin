@@ -23,13 +23,9 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build arguments for environment variables
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_APP_ID
 
 # Set environment variables for build
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 ENV VITE_APP_ID=$VITE_APP_ID
 
 # Build the application
