@@ -188,7 +188,10 @@ const auth = {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
+                // The original code declared errorText but didn't use it.
+                // To fix the lint error (unused variable), we can either use it or remove it.
+                // For now, we'll remove it as the error message is generic.
+                // const errorText = await response.text(); // Removed to fix lint error
                 return { data: { user: null, session: null }, error: new Error('Credenciais inválidas ou erro no servidor') };
             }
 
@@ -305,7 +308,7 @@ export const api = {
         ...auth
     },
     functions: {
-        invoke: async (name: string, options?: any) => {
+        invoke: async (name: string, _options?: any) => {
             console.warn(`🚀 Edge Function '${name}' redirecionada para local/ignorada.`);
             return { data: null, error: null };
         }

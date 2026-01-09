@@ -23,7 +23,7 @@ export default function Transactions() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
   const [showReceiptScanner, setShowReceiptScanner] = React.useState(false);
-  
+
   // Filtros e busca
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterAccount, setFilterAccount] = React.useState<string>('all');
@@ -33,11 +33,11 @@ export default function Transactions() {
   const [filterDateTo, setFilterDateTo] = React.useState<string>('');
   const [sortBy, setSortBy] = React.useState<string>('date-desc'); // date-desc, date-asc, category, amount-desc, amount-asc
   const [showFilters, setShowFilters] = React.useState(false);
-  
+
   // Category selection state
   const [categorySelections, setCategorySelections] = React.useState<Record<string, string>>({});
   const [isSavingCategories, setIsSavingCategories] = React.useState(false);
-  
+
   const [formData, setFormData] = React.useState({
     type: 'expense' as 'income' | 'expense' | 'transfer',
     amount: '',
@@ -46,7 +46,8 @@ export default function Transactions() {
     category_id: '',
     account_id: '',
     card_id: '',
-    destination_account_id: '', // Para transferências
+    destination_account_id: '', // Nome temporário no formulário para facilitar UI
+    transfer_destination_account_id: '', // Nome real para o banco de dados
     is_recurring: false,
     recurrence_pattern: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
     is_installment: false,
@@ -74,7 +75,7 @@ export default function Transactions() {
       setAccounts(accs);
       setCards(crds);
       setCategories(cats);
-      
+
       // Initialize category selections with existing categories
       const initialSelections: Record<string, string> = {};
       txs.forEach(t => {
@@ -108,7 +109,7 @@ export default function Transactions() {
           });
           return;
         }
-        if (!formData.destination_account_id) {
+        if (!formData.transfer_destination_account_id) {
           toast({
             title: 'Erro',
             description: 'Selecione a conta de destino',
@@ -116,7 +117,7 @@ export default function Transactions() {
           });
           return;
         }
-        if (formData.account_id === formData.destination_account_id) {
+        if (formData.account_id === formData.transfer_destination_account_id) {
           toast({
             title: 'Erro',
             description: 'As contas de origem e destino devem ser diferentes',
@@ -136,7 +137,7 @@ export default function Transactions() {
           });
           return;
         }
-        
+
         // Update existing transaction
         await transactionsApi.updateTransaction(editingTransaction.id, {
           type: formData.type,
@@ -156,14 +157,14 @@ export default function Transactions() {
           await transactionsApi.createTransfer({
             userId: user.id,
             sourceAccountId: formData.account_id,
-            destinationAccountId: formData.destination_account_id,
+            destinationAccountId: formData.transfer_destination_account_id,
             amount: Number(formData.amount),
             date: formData.date,
             description: formData.description || 'Transferência entre contas'
           });
-          toast({ 
-            title: 'Sucesso', 
-            description: 'Transferência realizada com sucesso' 
+          toast({
+            title: 'Sucesso',
+            description: 'Transferência realizada com sucesso'
           });
         } else {
           // Create new transaction (income or expense)
@@ -182,15 +183,18 @@ export default function Transactions() {
             tags: null
           };
 
+          // Remover campos temporários que não existem no banco
+          delete (baseTransaction as any).destination_account_id;
+
           if (formData.is_installment && Number(formData.total_installments) > 1) {
             // Create installments
             const totalInstallments = Number(formData.total_installments);
             const installmentAmount = Number(formData.amount) / totalInstallments;
-            
+
             for (let i = 1; i <= totalInstallments; i++) {
               const installmentDate = new Date(formData.date);
               installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
-              
+
               await transactionsApi.createTransaction({
                 ...baseTransaction,
                 amount: installmentAmount,
@@ -201,9 +205,9 @@ export default function Transactions() {
                 parent_transaction_id: null
               });
             }
-            toast({ 
-              title: 'Sucesso', 
-              description: `${totalInstallments} parcelas criadas com sucesso` 
+            toast({
+              title: 'Sucesso',
+              description: `${totalInstallments} parcelas criadas com sucesso`
             });
           } else {
             // Create single transaction
@@ -243,6 +247,7 @@ export default function Transactions() {
       account_id: transaction.account_id || '',
       card_id: transaction.card_id || '',
       destination_account_id: transaction.transfer_destination_account_id || '',
+      transfer_destination_account_id: transaction.transfer_destination_account_id || '',
       is_recurring: transaction.is_recurring || false,
       recurrence_pattern: (transaction.recurrence_pattern || 'monthly') as 'daily' | 'weekly' | 'monthly' | 'yearly',
       is_installment: false,
@@ -253,7 +258,7 @@ export default function Transactions() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta transação?')) return;
-    
+
     try {
       await transactionsApi.deleteTransaction(id);
       toast({ title: 'Sucesso', description: 'Transação excluída com sucesso' });
@@ -278,6 +283,7 @@ export default function Transactions() {
       account_id: accounts.length > 0 ? accounts[0].id : '',
       card_id: '',
       destination_account_id: '',
+      transfer_destination_account_id: '',
       is_recurring: false,
       recurrence_pattern: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
       is_installment: false,
@@ -386,6 +392,7 @@ export default function Transactions() {
       account_id: '',
       card_id: '',
       destination_account_id: '',
+      transfer_destination_account_id: '',
       is_recurring: false,
       recurrence_pattern: 'monthly',
       is_installment: false,
@@ -399,7 +406,7 @@ export default function Transactions() {
 
     // Filtro de busca (descrição)
     if (searchTerm) {
-      filtered = filtered.filter(tx => 
+      filtered = filtered.filter(tx =>
         tx.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -469,7 +476,7 @@ export default function Transactions() {
   };
 
   // Verificar se há filtros ativos
-  const hasActiveFilters = searchTerm || filterAccount !== 'all' || filterCategory !== 'all' || 
+  const hasActiveFilters = searchTerm || filterAccount !== 'all' || filterCategory !== 'all' ||
     filterType !== 'all' || filterDateFrom || filterDateTo || sortBy !== 'date-desc';
 
   // Construir lista de filtros ativos para exibição
@@ -581,7 +588,7 @@ export default function Transactions() {
           <p className="text-muted-foreground mt-1">Gerencie suas receitas, despesas e transferências</p>
         </div>
         <div className="flex gap-2 w-full xl:w-auto">
-          <Button 
+          <Button
             onClick={handleSaveCategories}
             disabled={isSavingCategories || Object.keys(categorySelections).length === 0}
             variant="outline"
@@ -607,206 +614,206 @@ export default function Transactions() {
                 Nova Transação
               </Button>
             </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingTransaction ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
-              <DialogDescription>
-                {editingTransaction ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Tipo *</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value: 'income' | 'expense' | 'transfer') => setFormData({ ...formData, type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="income">Receita</SelectItem>
-                      <SelectItem value="expense">Despesa</SelectItem>
-                      <SelectItem value="transfer">Transferência</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Valor *</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date">Data *</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                  />
-                </div>
-                
-                {formData.type !== 'transfer' && (
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingTransaction ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
+                <DialogDescription>
+                  {editingTransaction ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Categoria</Label>
+                    <Label htmlFor="type">Tipo *</Label>
                     <Select
-                      value={formData.category_id}
-                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                      value={formData.type}
+                      onValueChange={(value: 'income' | 'expense' | 'transfer') => setFormData({ ...formData, type: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories
-                          .filter(c => c.type === formData.type)
-                          .map(cat => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.icon} {cat.name}
-                            </SelectItem>
-                          ))}
+                        <SelectItem value="income">Receita</SelectItem>
+                        <SelectItem value="expense">Despesa</SelectItem>
+                        <SelectItem value="transfer">Transferência</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="account">{formData.type === 'transfer' ? 'Conta de Origem *' : 'Conta'}</Label>
-                  <Select
-                    value={formData.account_id}
-                    onValueChange={(value) => setFormData({ ...formData, account_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma conta" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map(acc => (
-                        <SelectItem key={acc.id} value={acc.id}>
-                          {acc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {formData.type === 'transfer' && (
                   <div className="space-y-2">
-                    <Label htmlFor="destination_account">Conta de Destino *</Label>
-                    <Select
-                      value={formData.destination_account_id}
-                      onValueChange={(value) => setFormData({ ...formData, destination_account_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a conta de destino" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts
-                          .filter(acc => acc.id !== formData.account_id)
-                          .map(acc => (
-                            <SelectItem key={acc.id} value={acc.id}>
-                              {acc.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="amount">Valor *</Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      required
+                    />
                   </div>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Input
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
-                
-                {formData.type !== 'transfer' && (
-                  <>
-                    <div className="flex items-center space-x-2 pt-2">
-                      <Checkbox
-                        id="is_recurring"
-                        checked={formData.is_recurring}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, is_recurring: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="is_recurring" className="cursor-pointer">
-                        Transação recorrente
-                      </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Data *</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  {formData.type !== 'transfer' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Categoria</Label>
+                      <Select
+                        value={formData.category_id}
+                        onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories
+                            .filter(c => c.type === formData.type)
+                            .map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.icon} {cat.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
                     </div>
+                  )}
 
-                    {formData.is_recurring && (
-                      <div className="space-y-2">
-                        <Label htmlFor="recurrence">Frequência</Label>
-                        <Select
-                          value={formData.recurrence_pattern}
-                          onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') => 
-                            setFormData({ ...formData, recurrence_pattern: value })
+                  <div className="space-y-2">
+                    <Label htmlFor="account">{formData.type === 'transfer' ? 'Conta de Origem *' : 'Conta'}</Label>
+                    <Select
+                      value={formData.account_id}
+                      onValueChange={(value) => setFormData({ ...formData, account_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma conta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map(acc => (
+                          <SelectItem key={acc.id} value={acc.id}>
+                            {acc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.type === 'transfer' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="destination_account">Conta de Destino *</Label>
+                      <Select
+                        value={formData.transfer_destination_account_id}
+                        onValueChange={(value) => setFormData({ ...formData, transfer_destination_account_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a conta de destino" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accounts
+                            .filter(acc => acc.id !== formData.account_id)
+                            .map(acc => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Descrição</Label>
+                    <Input
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </div>
+
+                  {formData.type !== 'transfer' && (
+                    <>
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox
+                          id="is_recurring"
+                          checked={formData.is_recurring}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, is_recurring: checked as boolean })
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="daily">Diária</SelectItem>
-                            <SelectItem value="weekly">Semanal</SelectItem>
-                            <SelectItem value="monthly">Mensal</SelectItem>
-                            <SelectItem value="yearly">Anual</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        />
+                        <Label htmlFor="is_recurring" className="cursor-pointer">
+                          Transação recorrente
+                        </Label>
                       </div>
-                    )}
 
-                    {!editingTransaction && (
-                      <>
-                        <div className="flex items-center space-x-2 pt-2">
-                          <Checkbox
-                            id="is_installment"
-                            checked={formData.is_installment}
-                            onCheckedChange={(checked) => 
-                              setFormData({ ...formData, is_installment: checked as boolean })
+                      {formData.is_recurring && (
+                        <div className="space-y-2">
+                          <Label htmlFor="recurrence">Frequência</Label>
+                          <Select
+                            value={formData.recurrence_pattern}
+                            onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') =>
+                              setFormData({ ...formData, recurrence_pattern: value })
                             }
-                          />
-                          <Label htmlFor="is_installment" className="cursor-pointer">
-                            Parcelar transação
-                          </Label>
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Diária</SelectItem>
+                              <SelectItem value="weekly">Semanal</SelectItem>
+                              <SelectItem value="monthly">Mensal</SelectItem>
+                              <SelectItem value="yearly">Anual</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
+                      )}
 
-                        {formData.is_installment && (
-                          <div className="space-y-2">
-                            <Label htmlFor="installments">Número de Parcelas</Label>
-                            <Input
-                              id="installments"
-                              type="number"
-                              min="2"
-                              max="48"
-                              value={formData.total_installments}
-                              onChange={(e) => setFormData({ ...formData, total_installments: e.target.value })}
+                      {!editingTransaction && (
+                        <>
+                          <div className="flex items-center space-x-2 pt-2">
+                            <Checkbox
+                              id="is_installment"
+                              checked={formData.is_installment}
+                              onCheckedChange={(checked) =>
+                                setFormData({ ...formData, is_installment: checked as boolean })
+                              }
                             />
-                            <p className="text-xs text-muted-foreground">
-                              Valor por parcela: R$ {(Number(formData.amount) / Number(formData.total_installments) || 0).toFixed(2)}
-                            </p>
+                            <Label htmlFor="is_installment" className="cursor-pointer">
+                              Parcelar transação
+                            </Label>
                           </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-              <DialogFooter>
-                <Button type="submit">{editingTransaction ? 'Atualizar' : 'Criar'}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+
+                          {formData.is_installment && (
+                            <div className="space-y-2">
+                              <Label htmlFor="installments">Número de Parcelas</Label>
+                              <Input
+                                id="installments"
+                                type="number"
+                                min="2"
+                                max="48"
+                                value={formData.total_installments}
+                                onChange={(e) => setFormData({ ...formData, total_installments: e.target.value })}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Valor por parcela: R$ {(Number(formData.amount) / Number(formData.total_installments) || 0).toFixed(2)}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingTransaction ? 'Atualizar' : 'Criar'}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -944,7 +951,7 @@ export default function Transactions() {
           {/* Barra de Filtros Ativos */}
           {activeFilters.length > 0 && (
             <div className="pt-4">
-              <ActiveFiltersBar 
+              <ActiveFiltersBar
                 filters={activeFilters}
                 onClearAll={clearFilters}
               />
@@ -984,21 +991,20 @@ export default function Transactions() {
           filteredAndSortedTransactions.map((tx) => {
             const category = categories.find(c => c.id === tx.category_id);
             const account = accounts.find(a => a.id === tx.account_id);
-            const destinationAccount = tx.is_transfer && tx.transfer_destination_account_id 
+            const destinationAccount = tx.is_transfer && tx.transfer_destination_account_id
               ? accounts.find(a => a.id === tx.transfer_destination_account_id)
               : null;
-            
+
             return (
               <Card key={tx.id} className="shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="flex flex-col xl:flex-row items-start xl:items-center justify-between p-5 gap-4">
                   <div className="flex items-start xl:items-center gap-4 flex-1 min-w-0">
-                    <div className={`p-3 rounded-full shrink-0 ${
-                      tx.is_transfer 
-                        ? 'bg-primary/10' 
-                        : tx.type === 'income' 
-                          ? 'bg-income/10' 
+                    <div className={`p-3 rounded-full shrink-0 ${tx.is_transfer
+                        ? 'bg-primary/10'
+                        : tx.type === 'income'
+                          ? 'bg-income/10'
                           : 'bg-expense/10'
-                    }`}>
+                      }`}>
                       {tx.is_transfer ? (
                         <ArrowRightLeft className="h-5 w-5 text-primary" />
                       ) : tx.type === 'income' ? (
@@ -1023,65 +1029,64 @@ export default function Transactions() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 xl:gap-4 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
-                    <div className={`text-xl font-bold ${
-                      tx.is_transfer 
-                        ? 'text-primary' 
-                        : tx.type === 'income' 
-                          ? 'text-income' 
+                    <div className={`text-xl font-bold ${tx.is_transfer
+                        ? 'text-primary'
+                        : tx.type === 'income'
+                          ? 'text-income'
                           : 'text-expense'
-                    }`}>
-                    {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!tx.is_transfer && (
-                      <Select
-                        value={categorySelections[tx.id] || 'none'}
-                        onValueChange={(value) => {
-                          setCategorySelections(prev => ({
-                            ...prev,
-                            [tx.id]: value
-                          }));
-                        }}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Categoria..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sem categoria</SelectItem>
-                          {categories
-                            .filter(cat => cat.type === tx.type)
-                            .map(cat => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                {cat.icon} {cat.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {!tx.is_transfer && (
+                      }`}>
+                      {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!tx.is_transfer && (
+                        <Select
+                          value={categorySelections[tx.id] || 'none'}
+                          onValueChange={(value) => {
+                            setCategorySelections(prev => ({
+                              ...prev,
+                              [tx.id]: value
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Categoria..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sem categoria</SelectItem>
+                            {categories
+                              .filter(cat => cat.type === tx.type)
+                              .map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>
+                                  {cat.icon} {cat.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {!tx.is_transfer && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(tx)}
+                          title="Editar transação"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleEdit(tx)}
-                        title="Editar transação"
+                        onClick={() => handleDelete(tx.id)}
+                        title="Excluir transação"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(tx.id)}
-                      title="Excluir transação"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
 
