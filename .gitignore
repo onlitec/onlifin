@@ -48,3 +48,4 @@ backups/
 history/*.json
 .vite_cache
 .env.coolify
+supabase/.temp/
