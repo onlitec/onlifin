@@ -65,6 +65,51 @@ services:
         max-file: "3"
 
   # ===========================================
+  # Database Migrator - Runs migrations on startup
+  # ===========================================
+  migrator:
+    container_name: onlifin-migrator
+    image: postgres:16-alpine
+    depends_on:
+      database:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: onlifin-database
+      POSTGRES_DB: ${POSTGRES_DB:-onlifin}
+      POSTGRES_USER: ${POSTGRES_USER:-onlifin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no ambiente}
+    volumes:
+      - ./docker/migrations:/migrations:ro
+    command: >
+      sh -c "
+        echo '🚀 Onlifin Migration Runner Starting...'
+        echo '⏳ Waiting for database to be ready...'
+        until PGPASSWORD=$$POSTGRES_PASSWORD psql -h $$POSTGRES_HOST -U $$POSTGRES_USER -d $$POSTGRES_DB -c '\q' 2>/dev/null; do
+          echo '   Database not ready yet. Retrying in 2 seconds...'
+          sleep 2
+        done
+        echo '✅ Database is ready!'
+        for migration in /migrations/*.sql; do
+          if [ -f \"$$migration\" ]; then
+            echo \"📄 Running migration: $$(basename $$migration)\"
+            PGPASSWORD=$$POSTGRES_PASSWORD psql -h $$POSTGRES_HOST -U $$POSTGRES_USER -d $$POSTGRES_DB -f \"$$migration\"
+            echo '   ✅ Done!'
+          fi
+        done
+        echo '🎉 All migrations completed successfully!'
+      "
+    restart: "no"
+    security_opt:
+      - apparmor:unconfined
+    networks:
+      - onlifin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ===========================================
   # API REST - PostgREST
   # ===========================================
   api:
@@ -73,6 +118,8 @@ services:
     depends_on:
       database:
         condition: service_started
+      migrator:
+        condition: service_completed_successfully
     environment:
       PGRST_DB_URI: "postgres://onlifin:${POSTGRES_PASSWORD}@onlifin-database:5432/onlifin"
       PGRST_DB_SCHEMA: "public,auth"
