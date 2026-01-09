@@ -45,8 +45,7 @@ export default function Transactions() {
     category_id: '',
     account_id: '',
     card_id: '',
-    destination_account_id: '', // Nome temporário no formulário para facilitar UI
-    transfer_destination_account_id: '', // Nome real para o banco de dados
+    transfer_destination_account_id: '',
     is_recurring: false,
     recurrence_pattern: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
     is_installment: false,
@@ -243,7 +242,6 @@ export default function Transactions() {
       category_id: transaction.category_id || '',
       account_id: transaction.account_id || '',
       card_id: transaction.card_id || '',
-      destination_account_id: transaction.transfer_destination_account_id || '',
       transfer_destination_account_id: transaction.transfer_destination_account_id || '',
       is_recurring: transaction.is_recurring || false,
       recurrence_pattern: (transaction.recurrence_pattern || 'monthly') as 'daily' | 'weekly' | 'monthly' | 'yearly',
@@ -279,7 +277,6 @@ export default function Transactions() {
       category_id: '',
       account_id: accounts.length > 0 ? accounts[0].id : '',
       card_id: '',
-      destination_account_id: '',
       transfer_destination_account_id: '',
       is_recurring: false,
       recurrence_pattern: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
