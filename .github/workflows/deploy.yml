@@ -62,8 +62,7 @@ jobs:
             ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            VITE_APP_ID=${{ secrets.VITE_APP_ID || '' }}
+
 
       - name: 🗄️ Build e Push - Database
         uses: docker/build-push-action@v5
