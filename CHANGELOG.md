@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.6.2] - 2026-01-09
+
+### Merge master into main (resolve version conflicts and bump to 1.6.1)
+
+---
+
+
+
 ## [1.6.1] - 2026-01-09
 
 ### feat(ui): display dynamic app version in header menu
