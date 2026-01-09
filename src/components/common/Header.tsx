@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { APP_VERSION } from "@/config/version";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { profilesApi } from '@/db/api';
@@ -89,7 +90,7 @@ export default function Header() {
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-primary leading-none">OnliFin</span>
-                <span className="text-[10px] text-muted-foreground font-mono">v6.0.1</span>
+                <span className="text-[10px] text-muted-foreground font-mono">v{APP_VERSION}</span>
               </div>
             </Link>
           </div>
