@@ -1,6 +1,22 @@
 # Changelog
 
 
+## [1.3.3] - 2026-01-09
+
+### fix(docker): include RPC login fix migration in postgres image
+
+---
+
+
+
+## [1.3.2] - 2026-01-09
+
+### fix(auth): correct login RPC function version and update app version display
+
+---
+
+
+
 ## [1.3.1] - 2026-01-09
 
 ### Manual release
