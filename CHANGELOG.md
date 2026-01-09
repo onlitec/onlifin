@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] - 2026-01-09
+
+### Adiciona scripts de automação de releases e GitHub Action
+
+---
+
 ## [1.1.0] - 2026-01-09 - Automatic Balance Updates
 
 ### Added
