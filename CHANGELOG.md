@@ -1,5 +1,13 @@
 # Changelog
 
+
+## [1.2.0] - 2026-01-09
+
+### feat: add fully automated release workflow
+
+---
+
+
 ## [1.1.1] - 2026-01-09
 
 ### Adiciona scripts de automação de releases e GitHub Action
