@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.4.0] - 2026-01-09
+
+### feat(ci): automate db migrations with migration service
+
+---
+
+
+
 ## [1.3.3] - 2026-01-09
 
 ### fix(docker): include RPC login fix migration in postgres image
