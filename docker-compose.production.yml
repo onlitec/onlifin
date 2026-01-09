@@ -84,7 +84,7 @@ services:
       sh -c "
         echo '🚀 Onlifin Migration Runner Starting...'
         echo '⏳ Waiting for database to be ready...'
-        until PGPASSWORD=$$POSTGRES_PASSWORD psql -h $$POSTGRES_HOST -U $$POSTGRES_USER -d $$POSTGRES_DB -c '\q' 2>/dev/null; do
+        until PGPASSWORD=$$POSTGRES_PASSWORD psql -h $$POSTGRES_HOST -U $$POSTGRES_USER -d $$POSTGRES_DB -c 'SELECT 1' 2>/dev/null; do
           echo '   Database not ready yet. Retrying in 2 seconds...'
           sleep 2
         done
@@ -177,6 +177,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --interval 300 --cleanup --include-stopped
+    environment:
+      - DOCKER_API_VERSION=1.45
     restart: unless-stopped
     security_opt:
       - apparmor:unconfined
@@ -191,7 +193,7 @@ services:
 networks:
   onlifin-network:
     name: onlifin-network
-    driver: bridge
+    external: true
 
 volumes:
   postgres_data:
