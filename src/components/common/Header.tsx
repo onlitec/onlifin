@@ -87,7 +87,10 @@ export default function Header() {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">O</span>
               </div>
-              <span className="text-xl font-bold text-primary">OnliFin</span>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-primary leading-none">OnliFin</span>
+                <span className="text-[10px] text-muted-foreground font-mono">v6.0.1</span>
+              </div>
             </Link>
           </div>
 
