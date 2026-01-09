@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.3.0] - 2026-01-09
+
+### feat: add version display in footer
+
+---
+
+
+
 ## [1.2.0] - 2026-01-09
 
 ### feat: add fully automated release workflow
