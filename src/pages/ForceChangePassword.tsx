@@ -43,7 +43,7 @@ export default function ForceChangePassword() {
         }
 
         try {
-            const { data, error } = await supabase.rpc('change_own_password', {
+            const { error } = await supabase.rpc('change_own_password', {
                 p_current_password: currentPassword,
                 p_new_password: newPassword
             });

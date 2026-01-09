@@ -13,19 +13,14 @@ import {
   Users,
   UserPlus,
   Trash2,
-  Shield,
   Loader2,
   Mail,
   Phone,
   MapPin,
   Calendar,
-  FileText,
   Edit,
-  X,
   Check,
-  KeyRound,
-  RefreshCcw,
-  CheckCircle2
+  KeyRound
 } from 'lucide-react';
 import type { Profile, UserStatus } from '@/types/types';
 import { format } from 'date-fns';

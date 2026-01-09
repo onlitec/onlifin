@@ -297,6 +297,13 @@ export const api = {
         ...onlifinClient.auth, // Manter métodos originais como fallback se não sobescritos
         ...auth // Sobrescrever com nossa auth customizada
     },
+    // Suporte a edge functions (stub para compatibilidade)
+    functions: {
+        invoke: async (name: string, options?: any) => {
+            console.warn(`🚀 Chamada para Edge Function '${name}' ignorada (ambiente standalone).`, options);
+            return { data: null, error: null };
+        }
+    },
     // Atalhos úteis
     from: (table: string) => onlifinClient.from(table),
     rpc: (fn: string, args?: any) => onlifinClient.rpc(fn, args)
