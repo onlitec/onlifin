@@ -10,21 +10,23 @@ const __dirname = path.dirname(__filename);
 
 // Load env vars
 const envPath = path.resolve(__dirname, '../.env');
-const envContent = fs.readFileSync(envPath, 'utf-8');
 const envVars = {};
-envContent.split('\n').forEach(line => {
-    const parts = line.split('=');
-    if (parts.length === 2) {
-        envVars[parts[0]] = parts[1].trim();
-    }
-});
+if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf-8');
+    envContent.split('\n').forEach(line => {
+        const parts = line.split('=');
+        if (parts.length === 2) {
+            envVars[parts[0]] = parts[1].trim();
+        }
+    });
+}
 
 const client = new Client({
-    user: envVars.POSTGRES_USER || 'onlifin',
-    host: 'localhost',
-    database: envVars.POSTGRES_DB || 'onlifin',
-    password: envVars.POSTGRES_PASSWORD,
-    port: 54320,
+    user: envVars.POSTGRES_USER || process.env.POSTGRES_USER || 'onlifin',
+    host: envVars.POSTGRES_HOST || process.env.POSTGRES_HOST || 'localhost',
+    database: envVars.POSTGRES_DB || process.env.POSTGRES_DB || 'onlifin',
+    password: envVars.POSTGRES_PASSWORD || process.env.POSTGRES_PASSWORD,
+    port: parseInt(envVars.POSTGRES_PORT || process.env.POSTGRES_PORT || '54320'),
 });
 
 async function verifyBalanceUpdate() {
