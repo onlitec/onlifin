@@ -1,4 +1,5 @@
 import React from "react";
+import { APP_VERSION } from "@/config/version";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -43,9 +44,10 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Copyright */}
+        {/* Copyright e Versão */}
         <div className="mt-8 pt-8 border-t border-border text-center text-muted-foreground">
           <p>{currentYear} OnliFin</p>
+          <p className="text-xs mt-1 opacity-60">Versão {APP_VERSION}</p>
         </div>
       </div>
     </footer>

@@ -157,13 +157,26 @@ jobs:
             echo "$ENTRY" >> CHANGELOG.md
           fi
 
+      - name: Update version.ts
+        if: steps.version_type.outputs.type != 'none'
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          cat > src/config/version.ts << EOF
+          // ===========================================
+          // Configuração da Aplicação
+          // ===========================================
+          // Esta versão é atualizada automaticamente pelo GitHub Action
+
+          export const APP_VERSION = "${NEW_VERSION}";
+          EOF
+
       - name: Commit and tag
         if: steps.version_type.outputs.type != 'none'
         run: |
           NEW_VERSION="${{ steps.new_version.outputs.version }}"
           DESCRIPTION="${{ steps.version_type.outputs.description }}"
           
-          git add package.json CHANGELOG.md
+          git add package.json CHANGELOG.md src/config/version.ts
           git commit -m "chore(release): v${NEW_VERSION} - ${DESCRIPTION}" || echo "No changes to commit"
           git tag -a "v${NEW_VERSION}" -m "Release v${NEW_VERSION} - ${DESCRIPTION}"
           git push origin HEAD
