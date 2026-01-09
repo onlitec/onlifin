@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.6.0] - 2026-01-09
+
+### feat(ui): display dynamic app version in header menu
+
+---
+
+
+
 ## [1.5.0] - 2026-01-09
 
 ### feat(ui): display dynamic app version in header menu
