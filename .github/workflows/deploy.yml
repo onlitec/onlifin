@@ -19,6 +19,7 @@ env:
   DOCKER_ORG: onlitec
   IMAGE_NAME: onlifin
   IMAGE_DB_NAME: onlifin-db
+  IMAGE_MIGRATOR_NAME: onlifin-migrator
 
 jobs:
   # ===========================================
@@ -76,6 +77,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: 🛠️ Build e Push - Migrator
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.migrator
+          push: true
+          tags: |
+            ${{ env.DOCKER_ORG }}/${{ env.IMAGE_MIGRATOR_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.DOCKER_ORG }}/${{ env.IMAGE_MIGRATOR_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   # ===========================================
   # Job 2: Notificação
   # ===========================================
@@ -98,5 +111,6 @@ jobs:
           echo "**Imagens Atualizadas:**" >> $GITHUB_STEP_SUMMARY
           echo "- \`onlitec/onlifin:latest\`" >> $GITHUB_STEP_SUMMARY
           echo "- \`onlitec/onlifin-db:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`onlitec/onlifin-migrator:latest\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "ℹ️ *O deploy no servidor será acionado automaticamente via Webhook do DockerHub/Portainer.*" >> $GITHUB_STEP_SUMMARY

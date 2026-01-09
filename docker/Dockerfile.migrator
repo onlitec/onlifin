@@ -1,0 +1,22 @@
+# ===========================================
+# Onlifin Migrator - Dockerfile
+# ===========================================
+# Imagem leve para rodar migrações
+# ===========================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Inicializar package.json mínimo com type: module
+RUN npm init -y && \
+    npm pkg set type="module" && \
+    npm install pg
+
+# Copiar scripts e migrações
+COPY scripts/deploy-migrate.js ./scripts/
+
+# Usar context do root para copiar migrations
+COPY supabase/migrations ./supabase/migrations
+
+CMD ["node", "scripts/deploy-migrate.js"]
