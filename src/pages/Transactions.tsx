@@ -385,7 +385,6 @@ export default function Transactions() {
       category_id: '',
       account_id: '',
       card_id: '',
-      destination_account_id: '',
       transfer_destination_account_id: '',
       is_recurring: false,
       recurrence_pattern: 'monthly',
