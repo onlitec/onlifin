@@ -2,7 +2,7 @@
 
 # Atualiza o repositório
 git fetch origin
-git reset --hard origin/beta
+git reset --hard origin/main
 
 # Instala dependências
 composer install --no-dev --optimize-autoloader
