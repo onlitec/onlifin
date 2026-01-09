@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.3.1] - 2026-01-09
+
+### Manual release
+
+---
+
+
+
 ## [1.3.0] - 2026-01-09
 
 ### feat: add version display in footer
