@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.1.0] - 2026-01-09 - Automatic Balance Updates
+
+### Added
+- **Automatic Account Balance Updates**: Account balances are now automatically updated when transactions are created, modified, or deleted.
+  - Database trigger `trigger_update_account_balance` on `transactions` table.
+  - Function `update_account_balance_on_transaction()` handles balance logic.
+  - Function `recalculate_account_balance(account_uuid)` available to fix discrepancies.
+  - Function `recalculate_all_account_balances(user_uuid)` to recalculate all accounts for a user.
+
+### Technical Details
+- Migration: `supabase/migrations/00003_add_balance_update_functions.sql`
+- Income transactions **add** to balance.
+- Expense transactions **subtract** from balance.
+- Updates correctly reverse old values before applying new ones.
+- Deletions correctly reverse the transaction effect.
+
+### Verification
+- Added `scripts/verify-balance.js` for automated testing.
+- All INSERT, UPDATE, DELETE scenarios verified.
+
+---
+
 ## [2025-12-08] - Menu Reorganization and Bug Fixes
 
 ### Changed
