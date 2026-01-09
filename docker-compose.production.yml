@@ -121,6 +121,26 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ===========================================
+  # Watchtower - Atualizações Automáticas
+  # ===========================================
+  watchtower:
+    container_name: onlifin-watchtower
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 --cleanup --include-stopped
+    restart: unless-stopped
+    security_opt:
+      - apparmor:unconfined
+    networks:
+      - onlifin-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
 networks:
   onlifin-network:
     name: onlifin-network
