@@ -47,6 +47,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-onlifin}
       POSTGRES_USER: ${POSTGRES_USER:-onlifin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no ambiente}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no ambiente}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     expose:

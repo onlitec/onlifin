@@ -5,9 +5,12 @@
 // Substitui antigo cliente Supabase
 
 import { createClient } from "@supabase/supabase-js";
+import axios from 'axios';
 
 const apiUrl = import.meta.env.VITE_SUPABASE_URL || window.location.origin + '/api';
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'anonymous-key-for-postgrest';
+
+console.log('🌐 Configurando Cliente API:', apiUrl);
 
 // Chave de armazenamento de sessão
 const STORAGE_KEY = 'onlifin_auth_session';
@@ -35,23 +38,23 @@ interface LocalSession {
 function loadSession(): LocalSession | null {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            const session = JSON.parse(stored);
+        if (!stored) return null;
 
-            // Validar se o token parece válido (tem 3 partes separadas por ponto)
-            if (session.access_token && session.access_token.split('.').length === 3) {
-                // Validar expiração
-                if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000)) {
-                    console.warn('⚠️ Sessão expirada, limpando...');
-                    localStorage.removeItem(STORAGE_KEY);
-                    return null;
-                }
-                return session;
-            } else {
-                console.warn('⚠️ Token inválido detectado, limpando sessão...');
+        const session = JSON.parse(stored);
+
+        // Validar se o token parece válido (tem 3 partes separadas por ponto)
+        if (session.access_token && session.access_token.split('.').length === 3) {
+            // Validar expiração
+            if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000)) {
+                console.warn('⚠️ Sessão expirada em:', new Date(session.expires_at * 1000).toLocaleString());
                 localStorage.removeItem(STORAGE_KEY);
                 return null;
             }
+            return session;
+        } else {
+            console.warn('⚠️ Token inválido detectado, limpando sessão...');
+            localStorage.removeItem(STORAGE_KEY);
+            return null;
         }
     } catch (e) {
         console.error('Erro ao carregar sessão:', e);
@@ -60,16 +63,35 @@ function loadSession(): LocalSession | null {
     return null;
 }
 
+// Sincronizar headers globais (para Axios e outros clientes legados)
+function syncGlobalHeaders(token: string | null) {
+    if (token) {
+        console.log('🛰️ Sincronizando headers globais com token');
+
+        // Axios
+        if (axios && axios.defaults) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Headers globais do navegador (experimental/apenas para log)
+        (window as any).__ONLIFIN_TOKEN = token;
+    } else {
+        console.log('🛰️ Limpando headers globais');
+        if (axios && axios.defaults) {
+            delete axios.defaults.headers.common['Authorization'];
+        }
+        delete (window as any).__ONLIFIN_TOKEN;
+    }
+}
+
 // Salvar sessão no localStorage
 function saveSession(session: LocalSession | null) {
     if (session) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+        syncGlobalHeaders(session.access_token);
 
         // Atualizar headers do cliente global se existir
         if (onlifinClient) {
-            (onlifinClient as any).headers['Authorization'] = `Bearer ${session.access_token}`;
-            // Força atualização da sessão no cliente interno do Supabase também
-            // para garantir que ele envie o token no header
             onlifinClient.auth.setSession({
                 access_token: session.access_token,
                 refresh_token: session.refresh_token || ''
@@ -77,8 +99,8 @@ function saveSession(session: LocalSession | null) {
         }
     } else {
         localStorage.removeItem(STORAGE_KEY);
+        syncGlobalHeaders(null);
         if (onlifinClient) {
-            delete (onlifinClient as any).headers['Authorization'];
             onlifinClient.auth.signOut();
         }
     }
@@ -87,13 +109,9 @@ function saveSession(session: LocalSession | null) {
 // Decodificar JWT (simples, apenas para ler payload)
 function parseJwt(token: string) {
     try {
-        console.log('🔍 Decodificando token (tamanho):', token?.length);
         const parts = token.split('.');
-        if (parts.length !== 3) {
-            console.error('❌ Token malformado (partes != 3)');
-            return null;
-        }
-        // Remove whitespace/newlines e faz decode
+        if (parts.length !== 3) return null;
+
         const base64 = parts[1].replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -110,19 +128,26 @@ function parseJwt(token: string) {
 const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const session = loadSession();
     const options = init || {};
+    const url = typeof input === 'string' ? input : (input as any).url || input.toString();
 
-    if (session?.access_token) {
-        const headers = new Headers(options.headers);
-        headers.set('Authorization', `Bearer ${session.access_token}`);
-        options.headers = headers;
+    // Só injetamos token se for requisição para nossa API
+    const isApiRequest = url.includes('/api/rest/v1/') || url.includes('/rpc/');
+
+    if (isApiRequest) {
+        if (session?.access_token) {
+            const headers = new Headers(options.headers);
+            headers.set('Authorization', `Bearer ${session.access_token}`);
+            options.headers = headers;
+            // console.debug(`🚀 [AuthFetch] Token injetado para: ${url}`);
+        } else {
+            console.warn(`⚠️ [AuthFetch] Requisição API sem token: ${url}`);
+        }
     }
 
     return fetch(input, options);
 };
 
 // Criar cliente base
-// Usamos o cliente do supabase-js pois ele é um excelente cliente PostgREST
-// Mas configuramos para NÃO usar auth do Supabase, nós gerenciamos o token
 const onlifinClient = createClient(apiUrl, anonKey, {
     auth: {
         persistSession: false,
@@ -137,6 +162,7 @@ const onlifinClient = createClient(apiUrl, anonKey, {
 // Inicializar sessão se existir
 const initialSession = loadSession();
 if (initialSession) {
+    syncGlobalHeaders(initialSession.access_token);
     onlifinClient.auth.setSession({
         access_token: initialSession.access_token,
         refresh_token: initialSession.refresh_token || ''
@@ -148,48 +174,35 @@ const authListeners: ((event: string, session: any) => void)[] = [];
 
 // Sistema de Auth Customizado
 const auth = {
-    // Login com email/senha chamando RPC
     async signInWithPassword({ email, password }: { email: string; password: string }) {
         try {
-            console.log('🔐 Tentando login via RPC:', `${apiUrl}/rpc/login`);
+            console.log('🔐 Tentando login:', email);
 
-            // Usar fetch direto para evitar interferência do cliente
             const response = await fetch(`${apiUrl}/rpc/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
-                    // Removido Authorization implícito para evitar 401 antes do login
                 },
                 body: JSON.stringify({ p_email: email, p_password: password })
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ Erro no login:', response.status, errorText);
                 return { data: { user: null, session: null }, error: new Error('Credenciais inválidas ou erro no servidor') };
             }
 
-            // A resposta AGORA é o JWT (string), não mais apenas o UUID
-            // O PostgREST retorna uma string JSON, ex: "eyJhbGciOi..."
-            // Precisamos limpar as aspas se vierem
             let token = await response.text();
             token = token.replace(/^"/, '').replace(/"$/, '');
 
             if (!token || token.length < 20) {
-                console.error('❌ Token inválido recebido:', token);
                 return { data: { user: null, session: null }, error: new Error('Resposta inválida do servidor') };
             }
 
-            // Ler dados do token
-            console.log('📦 Token bruto recebido:', token.substring(0, 20) + '...');
             const payload = parseJwt(token);
             if (!payload) {
-                console.error('❌ Não foi possível extrair payload do token');
                 return { data: { user: null, session: null }, error: new Error('Token inválido ou corrompido') };
             }
-
-            console.log('👤 Dados do payload:', payload);
 
             const user: LocalUser = {
                 id: payload.user_id,
@@ -206,8 +219,6 @@ const auth = {
                 user,
                 expires_at: payload.exp
             };
-
-            console.log('✅ Login sucesso! User:', user.email, 'Role:', user.role);
 
             saveSession(session);
             authListeners.forEach(l => l('SIGNED_IN', session));
@@ -237,7 +248,6 @@ const auth = {
 
     onAuthStateChange(callback: (event: string, session: any) => void) {
         authListeners.push(callback);
-        // Notificar estado atual imediatamente
         const session = loadSession();
         callback(session ? 'SIGNED_IN' : 'SIGNED_OUT', session);
 
@@ -255,8 +265,6 @@ const auth = {
 
     async signUp({ email, password }: { email: string; password: string }) {
         try {
-            console.log('📝 Tentando registro via RPC:', `${apiUrl}/rpc/register`);
-
             const response = await fetch(`${apiUrl}/rpc/register`, {
                 method: 'POST',
                 headers: {
@@ -289,25 +297,23 @@ const auth = {
     }
 };
 
-// Exportar cliente unificado
-// Mantemos a estrutura parecida com supabase-js para minimizar refatoração
+// Objeto de exportação unificado com suporte a tudo que a aplicação usa
 export const api = {
     ...onlifinClient,
     auth: {
-        ...onlifinClient.auth, // Manter métodos originais como fallback se não sobescritos
-        ...auth // Sobrescrever com nossa auth customizada
+        ...onlifinClient.auth,
+        ...auth
     },
-    // Suporte a edge functions (stub para compatibilidade)
     functions: {
         invoke: async (name: string, options?: any) => {
-            console.warn(`🚀 Chamada para Edge Function '${name}' ignorada (ambiente standalone).`, options);
+            console.warn(`🚀 Edge Function '${name}' redirecionada para local/ignorada.`);
             return { data: null, error: null };
         }
     },
-    // Atalhos úteis
+    // Atalhos para garantir que usem o cliente correto com o fetch customizado
     from: (table: string) => onlifinClient.from(table),
     rpc: (fn: string, args?: any) => onlifinClient.rpc(fn, args)
 };
 
-// Compatibilidade retroativa (para mudar gradualmente)
+// Export padrão como 'supabase' para compatibilidade total com o código existente
 export const supabase = api;
