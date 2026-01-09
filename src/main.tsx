@@ -1,4 +1,5 @@
 import * as React from "react";
+console.log('🚀 Onlifin v6.0.1 - Loaded');
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
