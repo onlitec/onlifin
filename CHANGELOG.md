@@ -1,9 +1,10 @@
 # Changelog
 
 
-## [1.6.0] - 2026-01-09
+## [1.6.1] - 2026-01-09
 
 ### feat(ui): display dynamic app version in header menu
+### chore(scripts): update verify-balance.js for docker execution
 
 ---
 
