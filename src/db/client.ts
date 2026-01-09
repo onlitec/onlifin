@@ -188,10 +188,6 @@ const auth = {
             });
 
             if (!response.ok) {
-                // The original code declared errorText but didn't use it.
-                // To fix the lint error (unused variable), we can either use it or remove it.
-                // For now, we'll remove it as the error message is generic.
-                // const errorText = await response.text(); // Removed to fix lint error
                 return { data: { user: null, session: null }, error: new Error('Credenciais inválidas ou erro no servidor') };
             }
 

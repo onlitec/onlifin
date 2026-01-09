@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { supabase } from '@/db/client';
-import { transactionsApi, accountsApi, cardsApi, categoriesApi } from '@/db/api';
+import { transactionsApi, accountsApi, categoriesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -9,16 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowUpDown, ArrowRightLeft, CheckCircle2, Save, Camera } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowRightLeft, Save, Camera } from 'lucide-react';
 import { ActiveFiltersBar } from '@/components/common/FilterBadge';
 import ReceiptScanner from '@/components/transactions/ReceiptScanner';
 import type { ReceiptData } from '@/services/ocrService';
-import type { Transaction, Account, Card as CardType, Category } from '@/types/types';
+import type { Transaction, Account, Category } from '@/types/types';
 
 export default function Transactions() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
-  const [cards, setCards] = React.useState<CardType[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
@@ -64,16 +63,14 @@ export default function Transactions() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [txs, accs, crds, cats] = await Promise.all([
+      const [txs, accs, cats] = await Promise.all([
         transactionsApi.getTransactions(user.id),
         accountsApi.getAccounts(user.id),
-        cardsApi.getCards(user.id),
         categoriesApi.getCategories()
       ]);
 
       setTransactions(txs);
       setAccounts(accs);
-      setCards(crds);
       setCategories(cats);
 
       // Initialize category selections with existing categories
@@ -1000,10 +997,10 @@ export default function Transactions() {
                 <CardContent className="flex flex-col xl:flex-row items-start xl:items-center justify-between p-5 gap-4">
                   <div className="flex items-start xl:items-center gap-4 flex-1 min-w-0">
                     <div className={`p-3 rounded-full shrink-0 ${tx.is_transfer
-                        ? 'bg-primary/10'
-                        : tx.type === 'income'
-                          ? 'bg-income/10'
-                          : 'bg-expense/10'
+                      ? 'bg-primary/10'
+                      : tx.type === 'income'
+                        ? 'bg-income/10'
+                        : 'bg-expense/10'
                       }`}>
                       {tx.is_transfer ? (
                         <ArrowRightLeft className="h-5 w-5 text-primary" />
@@ -1030,10 +1027,10 @@ export default function Transactions() {
                   </div>
                   <div className="flex items-center gap-3 xl:gap-4 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
                     <div className={`text-xl font-bold ${tx.is_transfer
-                        ? 'text-primary'
-                        : tx.type === 'income'
-                          ? 'text-income'
-                          : 'text-expense'
+                      ? 'text-primary'
+                      : tx.type === 'income'
+                        ? 'text-income'
+                        : 'text-expense'
                       }`}>
                       {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
                     </div>
