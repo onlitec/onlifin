@@ -126,10 +126,11 @@ Responda APENAS com o JSON.`;
 }
 
 /**
- * Gera resposta do assistente financeiro
+ * Gera resposta do assistente financeiro com memória de conversa
  */
 export async function chatWithAssistant(
     message: string,
+    conversationHistory?: { role: 'user' | 'assistant'; content: string }[],
     financialContext?: {
         totalBalance?: number;
         totalIncome?: number;
@@ -137,8 +138,20 @@ export async function chatWithAssistant(
         accountsCount?: number;
     }
 ): Promise<string> {
-    const systemPrompt = `Você é um assistente financeiro amigável e profissional.
+    // Build conversation context from history
+    let conversationContext = '';
+    if (conversationHistory && conversationHistory.length > 0) {
+        // Include last 5 messages for context
+        const recentHistory = conversationHistory.slice(-5);
+        conversationContext = recentHistory
+            .map(msg => `${msg.role === 'user' ? 'Usuário' : 'Assistente'}: ${msg.content}`)
+            .join('\n\n');
+        conversationContext += '\n\n';
+    }
+
+    const systemPrompt = `Você é um assistente financeiro amigável e profissional chamado Onlifin AI.
 Você ajuda usuários a gerenciar suas finanças, categorizar gastos e dar dicas de economia.
+Mantenha o contexto da conversa anterior e responda de forma consistente.
 
 ${financialContext ? `
 DADOS FINANCEIROS DO USUÁRIO:
@@ -147,6 +160,8 @@ DADOS FINANCEIROS DO USUÁRIO:
 - Despesas: R$ ${financialContext.totalExpense?.toFixed(2) || '0.00'}
 - Número de contas: ${financialContext.accountsCount || 0}
 ` : ''}
+
+${conversationContext ? `HISTÓRICO DA CONVERSA:\n${conversationContext}` : ''}
 
 Responda de forma concisa e útil em português brasileiro.`;
 

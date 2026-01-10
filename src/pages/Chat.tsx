@@ -267,7 +267,12 @@ export default function Chat() {
         // Regular chat message using Ollama
         let responseText: string;
         try {
-          responseText = await chatWithAssistant(input);
+          // Build conversation history from messages
+          const conversationHistory = messages.map(m => ({
+            role: m.role,
+            content: m.content
+          }));
+          responseText = await chatWithAssistant(input, conversationHistory);
         } catch (aiError: any) {
           console.warn('Ollama indisponível, usando modo degradado:', aiError.message);
           responseText = getDegradedResponse(input);
