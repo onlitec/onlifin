@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface MonthlyData {
     month: string;
@@ -27,7 +27,7 @@ const CustomTooltip = ({ active, payload }: any) => {
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-xs text-muted-foreground">Receita:</span>
+                        <span className="text-xs text-muted-foreground">Renda:</span>
                         <span className="text-sm font-semibold text-green-500">
                             {formatCurrency(payload[0].value)}
                         </span>
@@ -49,53 +49,66 @@ const CustomTooltip = ({ active, payload }: any) => {
 export function SpendingChart({ data }: SpendingChartProps) {
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Evolução Financeira</CardTitle>
-                <CardDescription>
-                    <span className="inline-flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-green-500" />
-                            <span className="text-green-500 text-sm">Receitas</span>
+            <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl font-semibold">Visão geral dos gastos</CardTitle>
+                    <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                            <span className="text-sm text-muted-foreground">Renda</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-red-500" />
-                            <span className="text-red-500 text-sm">Despesas</span>
+                        <span className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                            <span className="text-sm text-muted-foreground">Despesa</span>
                         </span>
-                    </span>
-                </CardDescription>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
+                <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.2} vertical={false} />
                         <XAxis
                             dataKey="month"
+                            axisLine={false}
+                            tickLine={false}
                             className="text-muted-foreground"
-                            tick={{ fill: 'currentColor', fontSize: 12 }}
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                            dy={10}
                         />
                         <YAxis
-                            className="text-muted-foreground"
-                            tick={{ fill: 'currentColor', fontSize: 12 }}
-                            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                            hide
                         />
                         <Tooltip content={<CustomTooltip />} />
-                        <Line
+                        <Area
                             type="monotone"
                             dataKey="income"
                             stroke="#10b981"
                             strokeWidth={2}
-                            dot={{ fill: '#10b981', r: 4 }}
-                            activeDot={{ r: 6 }}
+                            fill="url(#incomeGradient)"
+                            dot={{ fill: '#10b981', r: 4, strokeWidth: 0 }}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
                         />
-                        <Line
+                        <Area
                             type="monotone"
                             dataKey="expenses"
                             stroke="#ef4444"
                             strokeWidth={2}
-                            dot={{ fill: '#ef4444', r: 4 }}
-                            activeDot={{ r: 6 }}
+                            fill="url(#expenseGradient)"
+                            dot={{ fill: '#ef4444', r: 4, strokeWidth: 0 }}
+                            activeDot={{ r: 6, strokeWidth: 0 }}
                         />
-                    </LineChart>
+                    </AreaChart>
                 </ResponsiveContainer>
             </CardContent>
         </Card>
