@@ -43,7 +43,7 @@ function App() {
               <SidebarProvider defaultOpen={true}>
                 <div className="flex min-h-screen w-full bg-background">
                   <OnlifinSidebar />
-                  <SidebarInset>
+                  <SidebarInset className="min-w-0 overflow-x-hidden">
                     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-6 bg-card">
                       <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
                       <Separator orientation="vertical" className="mr-2 h-4" />
@@ -54,7 +54,7 @@ function App() {
                         <ThemeToggle />
                       </div>
                     </header>
-                    <main className="flex-1 overflow-y-auto bg-background">
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
                       <Routes>
                         {allRoutes.map((route, index) => (
                           <Route
