@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Home, UtensilsCrossed, ShoppingBag, Car, Gamepad2, MoreHorizontal } from 'lucide-react';
 
 interface CategoryData {
     category: string;
@@ -11,99 +12,118 @@ interface CategoryBreakdownProps {
     categories: CategoryData[];
 }
 
-const CATEGORY_COLORS = [
-    '#3b82f6', // blue
-    '#ef4444', // red  
-    '#f59e0b', // yellow
-    '#8b5cf6', // purple
-    '#ec4899', // pink
-    '#10b981', // green
-];
+const CATEGORY_CONFIG: Record<string, { color: string; bgColor: string; icon: React.ElementType }> = {
+    'Habitação': { color: '#3b82f6', bgColor: 'bg-blue-500', icon: Home },
+    'Moradia': { color: '#3b82f6', bgColor: 'bg-blue-500', icon: Home },
+    'Alimentação': { color: '#ec4899', bgColor: 'bg-pink-500', icon: UtensilsCrossed },
+    'Comida e Bebida': { color: '#ec4899', bgColor: 'bg-pink-500', icon: UtensilsCrossed },
+    'Compras': { color: '#8b5cf6', bgColor: 'bg-purple-500', icon: ShoppingBag },
+    'Transporte': { color: '#06b6d4', bgColor: 'bg-cyan-500', icon: Car },
+    'Entretenimento': { color: '#3b82f6', bgColor: 'bg-blue-600', icon: Gamepad2 },
+    'Lazer': { color: '#3b82f6', bgColor: 'bg-blue-600', icon: Gamepad2 },
+    'Outro': { color: '#6b7280', bgColor: 'bg-gray-500', icon: MoreHorizontal },
+    'Outros': { color: '#6b7280', bgColor: 'bg-gray-500', icon: MoreHorizontal },
+};
+
+const DEFAULT_CONFIG = { color: '#6b7280', bgColor: 'bg-gray-500', icon: MoreHorizontal };
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL',
-        minimumFractionDigits: 0
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
     }).format(value);
 };
 
 export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
     const total = categories.reduce((sum, cat) => sum + cat.amount, 0);
 
-    const topCategories = categories
+    const topCategories = [...categories]
         .sort((a, b) => b.amount - a.amount)
         .slice(0, 6);
 
+    const chartData = topCategories.map((cat) => ({
+        name: cat.category,
+        value: cat.amount,
+        color: CATEGORY_CONFIG[cat.category]?.color || DEFAULT_CONFIG.color
+    }));
+
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Despesas por Categoria</CardTitle>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-semibold">Gastos por categoria</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex items-center justify-between gap-6">
-                    <div className="relative flex-shrink-0">
-                        <ResponsiveContainer width={200} height={200}>
+                <div className="flex items-start gap-6">
+                    {/* Donut Chart */}
+                    <div className="relative flex-shrink-0" style={{ width: 140, height: 140 }}>
+                        <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={topCategories}
+                                    data={chartData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
+                                    innerRadius={45}
+                                    outerRadius={65}
                                     paddingAngle={2}
-                                    dataKey="amount"
+                                    dataKey="value"
+                                    stroke="none"
                                 >
-                                    {topCategories.map((_, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
-                                        />
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
                             </PieChart>
                         </ResponsiveContainer>
+                        {/* Total in center */}
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
-                                <div className="text-2xl font-bold text-foreground">
+                                <div className="text-xl font-bold text-foreground">
                                     {formatCurrency(total)}
                                 </div>
+                                <div className="text-xs text-muted-foreground">Total</div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex-1 space-y-2">
-                        {topCategories.map((cat, index) => {
+                    {/* Category List */}
+                    <div className="flex-1 space-y-3">
+                        {topCategories.map((cat) => {
                             const percentage = total > 0 ? (cat.amount / total) * 100 : 0;
+                            const config = CATEGORY_CONFIG[cat.category] || DEFAULT_CONFIG;
+                            const Icon = config.icon;
 
                             return (
-                                <div key={cat.category} className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <div
-                                            className="w-2 h-2 rounded-full flex-shrink-0"
-                                            style={{ backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }}
-                                        />
-                                        <span className="text-sm text-muted-foreground truncate">
-                                            {cat.icon} {cat.category}
-                                        </span>
+                                <div key={cat.category} className="flex items-center gap-3">
+                                    {/* Icon */}
+                                    <div className={`w-8 h-8 rounded-lg ${config.bgColor} flex items-center justify-center flex-shrink-0`}>
+                                        <Icon className="w-4 h-4 text-white" />
                                     </div>
-                                    <div className="flex items-center gap-4 flex-shrink-0">
-                                        <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full transition-all"
-                                                style={{
-                                                    width: `${percentage}%`,
-                                                    backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length]
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="text-right min-w-[80px]">
-                                            <div className="text-sm font-semibold text-foreground">
+
+                                    {/* Name and Progress */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-medium text-foreground truncate">
+                                                {cat.category}
+                                            </span>
+                                            <span className="text-sm font-semibold text-foreground ml-2">
                                                 {formatCurrency(cat.amount)}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full transition-all"
+                                                    style={{
+                                                        width: `${percentage}%`,
+                                                        backgroundColor: config.color
+                                                    }}
+                                                />
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {percentage.toFixed(0)}%
-                                            </div>
+                                            <span className="text-xs text-muted-foreground w-10 text-right">
+                                                {percentage.toFixed(0)} %
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
