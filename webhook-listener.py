@@ -13,6 +13,7 @@ import hashlib
 import subprocess
 import os
 from datetime import datetime
+import threading
 
 # Configuração
 PORT = 9003
@@ -33,34 +34,33 @@ def verify_signature(payload, signature):
     return hmac.compare_digest(signature, expected)
 
 def execute_deploy():
-    """Executa o script de deploy"""
-    log("🚀 Executando deploy...")
-    
-    try:
-        result = subprocess.run(
-            ['bash', DEPLOY_SCRIPT],
-            capture_output=True,
-            text=True,
-            timeout=900  # 15 minutos timeout
-        )
-        
-        log("📋 Deploy output:")
-        if result.stdout:
-            print(result.stdout)
-        
-        if result.stderr:
-            log("⚠️  Warnings:")
-            print(result.stderr)
-        
-        if result.returncode == 0:
-            log("✅ Deploy concluído com sucesso")
-        else:
-            log(f"❌ Deploy falhou com código: {result.returncode}")
-            
-    except subprocess.TimeoutExpired:
-        log("❌ Deploy timeout (>15 minutos)")
-    except Exception as e:
-        log(f"❌ Erro no deploy: {e}")
+    """Executa o script de deploy em background"""
+    def run():
+        log("🚀 Executando deploy...")
+        try:
+            result = subprocess.run(
+                ['bash', DEPLOY_SCRIPT],
+                capture_output=True,
+                text=True,
+                timeout=900
+            )
+            log("📋 Deploy output:")
+            if result.stdout: print(result.stdout)
+            if result.stderr:
+                log("⚠️  Warnings:")
+                print(result.stderr)
+            if result.returncode == 0:
+                log("✅ Deploy concluído com sucesso")
+            else:
+                log(f"❌ Deploy falhou com código: {result.returncode}")
+        except subprocess.TimeoutExpired:
+            log("❌ Deploy timeout (>15 minutos)")
+        except Exception as e:
+            log(f"❌ Erro no deploy: {e}")
+
+    # Iniciar em uma thread separada para não bloquear o response do webhook
+    thread = threading.Thread(target=run)
+    thread.start()
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     """Handler para requisições webhook"""
@@ -105,12 +105,12 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 log(f"👤 Por: {pusher}")
                 log(f"📝 Commits: {commits}")
                 
-                # Apenas deploy na main
+                # Apenas deploy na branch default (main)
                 if branch == 'main':
                     execute_deploy()
-                    self.send_response(200)
+                    self.send_response(202) # Accepted
                     self.end_headers()
-                    self.wfile.write(b'Deploy iniciado')
+                    self.wfile.write(b'Deploy processado em segundo plano')
                 else:
                     log(f"⏭️  Ignorando push em branch {branch}")
                     self.send_response(200)
@@ -140,6 +140,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b'Not Found')
 
 if __name__ == '__main__':
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), WebhookHandler) as httpd:
         log(f"🎧 Webhook listener rodando na porta {PORT}")
         log(f"🔐 Secret configurado")
