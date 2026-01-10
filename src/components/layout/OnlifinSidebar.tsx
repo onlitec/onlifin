@@ -269,7 +269,8 @@ export function OnlifinSidebar() {
                             <DropdownMenuContent
                                 side="top"
                                 align="start"
-                                className="w-[--radix-popper-anchor-width]"
+                                sideOffset={8}
+                                className="w-[200px] z-50"
                             >
                                 <DropdownMenuItem
                                     className="cursor-pointer"
