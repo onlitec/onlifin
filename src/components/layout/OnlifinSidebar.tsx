@@ -258,7 +258,7 @@ export function OnlifinSidebar() {
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton>
+                                <SidebarMenuButton className="cursor-pointer">
                                     <User className="size-4" />
                                     <span className="flex-1 truncate">
                                         {user?.email || 'Usuario'}
@@ -270,7 +270,7 @@ export function OnlifinSidebar() {
                                 side="top"
                                 align="start"
                                 sideOffset={8}
-                                className="w-[200px] z-50"
+                                className="w-[200px] z-[9999]"
                             >
                                 <DropdownMenuItem
                                     className="cursor-pointer"
