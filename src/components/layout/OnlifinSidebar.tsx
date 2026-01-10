@@ -43,11 +43,6 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { useAuth } from 'miaoda-auth-react';
 import { APP_VERSION } from '@/config/version';
@@ -110,6 +105,7 @@ export function OnlifinSidebar() {
     const { state } = useSidebar();
     const [transacoesOpen, setTransacoesOpen] = React.useState(false);
     const [adminOpen, setAdminOpen] = React.useState(false);
+    const [userMenuOpen, setUserMenuOpen] = React.useState(false);
 
     // Abrir menu de transações automaticamente se em uma página de transação
     React.useEffect(() => {
@@ -254,49 +250,54 @@ export function OnlifinSidebar() {
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-border">
+            <SidebarFooter className="border-t border-border relative">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <SidebarMenuButton className="cursor-pointer w-full">
-                                    <User className="size-4" />
-                                    <span className="flex-1 truncate text-left">
-                                        {user?.email || 'Usuario'}
-                                    </span>
-                                    <ChevronUp className="ml-auto size-4" />
-                                </SidebarMenuButton>
-                            </PopoverTrigger>
-                            <PopoverContent
-                                side="top"
-                                align="start"
-                                className="w-[200px] p-2"
-                                sideOffset={8}
-                            >
-                                <div className="flex flex-col gap-1">
-                                    <Link to="/user-management">
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full justify-start gap-2"
-                                        >
-                                            <User className="size-4" />
-                                            Perfil
-                                        </Button>
-                                    </Link>
+                        <SidebarMenuButton
+                            className="cursor-pointer w-full"
+                            onClick={() => setUserMenuOpen(!userMenuOpen)}
+                        >
+                            <User className="size-4" />
+                            <span className="flex-1 truncate text-left">
+                                {user?.email || 'Usuario'}
+                            </span>
+                            {userMenuOpen ? (
+                                <ChevronDown className="ml-auto size-4" />
+                            ) : (
+                                <ChevronUp className="ml-auto size-4" />
+                            )}
+                        </SidebarMenuButton>
+
+                        {userMenuOpen && (
+                            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-popover border border-border rounded-lg shadow-lg p-2 z-[9999]">
+                                <Link
+                                    to="/user-management"
+                                    onClick={() => setUserMenuOpen(false)}
+                                >
                                     <Button
                                         variant="ghost"
-                                        className="w-full justify-start gap-2 text-destructive hover:text-destructive"
-                                        onClick={() => logout()}
+                                        className="w-full justify-start gap-2"
                                     >
-                                        <LogOut className="size-4" />
-                                        Sair
+                                        <User className="size-4" />
+                                        Perfil
                                     </Button>
-                                    <div className="text-xs text-muted-foreground text-center pt-2 border-t mt-1">
-                                        v{APP_VERSION}
-                                    </div>
+                                </Link>
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => {
+                                        setUserMenuOpen(false);
+                                        logout();
+                                    }}
+                                >
+                                    <LogOut className="size-4" />
+                                    Sair
+                                </Button>
+                                <div className="text-xs text-muted-foreground text-center pt-2 border-t mt-1">
+                                    v{APP_VERSION}
                                 </div>
-                            </PopoverContent>
-                        </Popover>
+                            </div>
+                        )}
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
