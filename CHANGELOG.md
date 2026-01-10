@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.7.0] - 2026-01-10
+
+### feat(ui): implement dark/light theme toggle with sidebar navigation
+
+---
+
+
+
 ## [1.6.2] - 2026-01-09
 
 ### Merge master into main (resolve version conflicts and bump to 1.6.1)
