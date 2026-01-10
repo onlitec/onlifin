@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, CreditCard } from 'lucide-react';
+import { CardBrandSelector } from '@/components/ui/card-brand-selector';
+import { getCardBrandById, getDefaultCardIcon } from '@/config/banks';
 import type { Card as CardType, Account } from '@/types/types';
 
 export default function Cards() {
@@ -22,7 +24,8 @@ export default function Cards() {
     card_limit: '',
     closing_day: '',
     due_day: '',
-    account_id: ''
+    account_id: '',
+    icon: '' as string | null
   });
   const { toast } = useToast();
 
@@ -64,7 +67,8 @@ export default function Cards() {
         card_limit: Number(formData.card_limit),
         closing_day: formData.closing_day ? Number(formData.closing_day) : null,
         due_day: formData.due_day ? Number(formData.due_day) : null,
-        account_id: formData.account_id || null
+        account_id: formData.account_id || null,
+        brand: formData.icon || null
       };
 
       if (editingCard) {
@@ -113,7 +117,8 @@ export default function Cards() {
       card_limit: card.card_limit.toString(),
       closing_day: card.closing_day?.toString() || '',
       due_day: card.due_day?.toString() || '',
-      account_id: card.account_id || ''
+      account_id: card.account_id || '',
+      icon: card.icon || null
     });
     setIsDialogOpen(true);
   };
@@ -125,7 +130,8 @@ export default function Cards() {
       card_limit: '',
       closing_day: '',
       due_day: '',
-      account_id: ''
+      account_id: '',
+      icon: null
     });
   };
 
@@ -231,6 +237,11 @@ export default function Cards() {
                     </SelectContent>
                   </Select>
                 </div>
+                <CardBrandSelector
+                  value={formData.icon}
+                  onChange={(icon) => setFormData({ ...formData, icon })}
+                  label="Bandeira do Cartão"
+                />
               </div>
               <DialogFooter>
                 <Button type="submit">{editingCard ? 'Atualizar' : 'Criar'}</Button>
@@ -243,12 +254,16 @@ export default function Cards() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => {
           const linkedAccount = getLinkedAccount(card.account_id);
-          
+
           return (
             <Card key={card.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg font-medium">{card.name}</CardTitle>
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
+                <img
+                  src={card.icon ? getCardBrandById(card.icon)?.icon || getDefaultCardIcon() : getDefaultCardIcon()}
+                  alt={card.brand || 'Cartão'}
+                  className="h-8 w-12 object-contain"
+                />
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">

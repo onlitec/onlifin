@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Plus, Pencil, Trash2, Building2, RefreshCw, Info, TrendingUp, TrendingDown } from 'lucide-react';
+import { BankIconSelector } from '@/components/ui/bank-icon-selector';
+import { getBankById, getDefaultBankIcon } from '@/config/banks';
 import type { Account } from '@/types/types';
 
 export default function Accounts() {
@@ -29,7 +31,8 @@ export default function Accounts() {
     agency: '',
     account_number: '',
     currency: 'BRL',
-    balance: '0'
+    balance: '0',
+    icon: '' as string | null
   });
   const { toast } = useToast();
 
@@ -112,7 +115,8 @@ export default function Accounts() {
       agency: account.agency || '',
       account_number: account.account_number || '',
       currency: account.currency,
-      balance: account.balance.toString()
+      balance: account.balance.toString(),
+      icon: account.icon || null
     });
     setIsDialogOpen(true);
   };
@@ -125,7 +129,8 @@ export default function Accounts() {
       agency: '',
       account_number: '',
       currency: 'BRL',
-      balance: '0'
+      balance: '0',
+      icon: null
     });
   };
 
@@ -143,7 +148,7 @@ export default function Accounts() {
       if (!user) return;
 
       const results = await accountsApi.recalculateAllAccountBalances(user.id);
-      
+
       toast({
         title: 'Saldos Recalculados',
         description: `${results.length} conta(s) atualizada(s) com sucesso`,
@@ -199,71 +204,76 @@ export default function Accounts() {
                 Nova Conta
               </Button>
             </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingAccount ? 'Editar Conta' : 'Nova Conta'}</DialogTitle>
-              <DialogDescription>
-                Preencha os dados da conta bancária
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome da Conta *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bank">Banco</Label>
-                  <Input
-                    id="bank"
-                    value={formData.bank}
-                    onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingAccount ? 'Editar Conta' : 'Nova Conta'}</DialogTitle>
+                <DialogDescription>
+                  Preencha os dados da conta bancária
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="agency">Agência</Label>
+                    <Label htmlFor="name">Nome da Conta *</Label>
                     <Input
-                      id="agency"
-                      value={formData.agency}
-                      onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="account_number">Conta</Label>
+                    <Label htmlFor="bank">Banco</Label>
                     <Input
-                      id="account_number"
-                      value={formData.account_number}
-                      onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                      id="bank"
+                      value={formData.bank}
+                      onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="balance">Saldo Inicial</Label>
-                  <Input
-                    id="balance"
-                    type="number"
-                    step="0.01"
-                    value={formData.balance}
-                    onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
-                    required
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="agency">Agência</Label>
+                      <Input
+                        id="agency"
+                        value={formData.agency}
+                        onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="account_number">Conta</Label>
+                      <Input
+                        id="account_number"
+                        value={formData.account_number}
+                        onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <BankIconSelector
+                    value={formData.icon}
+                    onChange={(icon) => setFormData({ ...formData, icon })}
+                    label="Selecione o Banco"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    O saldo será atualizado automaticamente conforme você registra receitas e despesas
-                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="balance">Saldo Inicial</Label>
+                    <Input
+                      id="balance"
+                      type="number"
+                      step="0.01"
+                      value={formData.balance}
+                      onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      O saldo será atualizado automaticamente conforme você registra receitas e despesas
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">{editingAccount ? 'Atualizar' : 'Criar'}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <Button type="submit">{editingAccount ? 'Atualizar' : 'Criar'}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -290,8 +300,12 @@ export default function Accounts() {
           <Card key={account.id} className="shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-lg font-semibold">{account.name}</CardTitle>
-              <div className={`p-2 rounded-full ${account.balance >= 0 ? 'bg-income/10' : 'bg-expense/10'}`}>
-                <Building2 className={`h-5 w-5 ${account.balance >= 0 ? 'text-income' : 'text-expense'}`} />
+              <div className="p-1 rounded-full bg-muted">
+                <img
+                  src={account.icon ? getBankById(account.icon)?.icon || getDefaultBankIcon() : getDefaultBankIcon()}
+                  alt={account.bank || 'Banco'}
+                  className="w-10 h-10 object-contain"
+                />
               </div>
             </CardHeader>
             <CardContent>

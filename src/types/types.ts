@@ -36,6 +36,7 @@ export interface Account {
   account_number: string | null;
   currency: string;
   balance: number;
+  icon: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +49,8 @@ export interface Card {
   card_limit: number;
   closing_day: number | null;
   due_day: number | null;
+  icon: string | null;
+  brand: string | null;
   created_at: string;
   updated_at: string;
 }
