@@ -41,34 +41,32 @@ function App() {
             <InstallPrompt />
             <RequireAuth whiteList={['/login']}>
               <SidebarProvider defaultOpen={true}>
-                <div className="flex min-h-screen w-full bg-background">
-                  <OnlifinSidebar />
-                  <SidebarInset className="min-w-0 overflow-x-hidden">
-                    <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-6 bg-card">
-                      <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-                      <Separator orientation="vertical" className="mr-2 h-4" />
-                      <div className="flex flex-1 items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-semibold text-foreground">Onlifin</h2>
-                        </div>
-                        <ThemeToggle />
+                <OnlifinSidebar />
+                <SidebarInset>
+                  <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-6 bg-card">
+                    <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+                    <Separator orientation="vertical" className="mr-2 h-4" />
+                    <div className="flex flex-1 items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold text-foreground">Onlifin</h2>
                       </div>
-                    </header>
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
-                      <Routes>
-                        {allRoutes.map((route, index) => (
-                          <Route
-                            key={index}
-                            path={route.path}
-                            element={route.element}
-                          />
-                        ))}
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                      </Routes>
-                    </main>
-                    <AIAssistant />
-                  </SidebarInset>
-                </div>
+                      <ThemeToggle />
+                    </div>
+                  </header>
+                  <main className="flex-1 overflow-auto bg-background">
+                    <Routes>
+                      {allRoutes.map((route, index) => (
+                        <Route
+                          key={index}
+                          path={route.path}
+                          element={route.element}
+                        />
+                      ))}
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </main>
+                  <AIAssistant />
+                </SidebarInset>
               </SidebarProvider>
             </RequireAuth>
           </AuthProvider>
