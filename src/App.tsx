@@ -42,7 +42,7 @@ function App() {
             <RequireAuth whiteList={['/login']}>
               <SidebarProvider defaultOpen={true}>
                 <OnlifinSidebar />
-                <SidebarInset>
+                <div className="flex flex-1 flex-col ml-0 md:ml-64 transition-[margin] duration-200 group-data-[state=collapsed]/sidebar-wrapper:md:ml-12">
                   <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-6 bg-card">
                     <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
                     <Separator orientation="vertical" className="mr-2 h-4" />
@@ -66,7 +66,7 @@ function App() {
                     </Routes>
                   </main>
                   <AIAssistant />
-                </SidebarInset>
+                </div>
               </SidebarProvider>
             </RequireAuth>
           </AuthProvider>
