@@ -50,11 +50,11 @@ export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
     }));
 
     return (
-        <Card>
+        <Card className="h-full flex flex-col">
             <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-semibold">Gastos por categoria</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 flex items-center">
                 <div className="flex items-start gap-6">
                     {/* Donut Chart */}
                     <div className="relative flex-shrink-0" style={{ width: 140, height: 140 }}>

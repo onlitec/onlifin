@@ -292,10 +292,10 @@ export default function Dashboard() {
 
       {/* Charts Grid */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 h-full">
           <SpendingChart data={monthlyData} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <CategoryBreakdown categories={categoryExpenses} />
         </div>
       </div>

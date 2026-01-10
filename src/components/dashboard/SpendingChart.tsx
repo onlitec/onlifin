@@ -48,7 +48,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function SpendingChart({ data }: SpendingChartProps) {
     return (
-        <Card>
+        <Card className="h-full">
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-xl font-semibold">Visão geral dos gastos</CardTitle>
