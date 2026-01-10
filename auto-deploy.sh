@@ -64,6 +64,19 @@ if grep -q "driver: bridge" docker-compose.production.yml 2>/dev/null; then
     log "   ✅ Rede configurada como externa"
 fi
 
+# Garantir volumes como externos (evita avisos)
+if grep -q "name: onlifin-postgres-data" docker-compose.production.yml 2>/dev/null && ! grep -A 1 "name: onlifin-postgres-data" docker-compose.production.yml | grep -q "external: true"; then
+    seed_line=$(grep -n "name: onlifin-postgres-data" docker-compose.production.yml | cut -d: -f1)
+    sed -i "$((seed_line))a\    external: true" docker-compose.production.yml
+    log "   ✅ Volume postgres_data configurado como externo"
+fi
+
+if grep -q "name: onlifin-ollama-data" docker-compose.production.yml 2>/dev/null && ! grep -A 1 "name: onlifin-ollama-data" docker-compose.production.yml | grep -q "external: true"; then
+    seed_line=$(grep -n "name: onlifin-ollama-data" docker-compose.production.yml | cut -d: -f1)
+    sed -i "$((seed_line))a\    external: true" docker-compose.production.yml
+    log "   ✅ Volume ollama_data configurado como externo"
+fi
+
 # Garantir DOCKER_API_VERSION no watchtower
 if ! grep -q "DOCKER_API_VERSION" docker-compose.production.yml 2>/dev/null; then
     sed -i '/command: --interval 300 --cleanup --include-stopped/a\    environment:\n      - DOCKER_API_VERSION=1.45' docker-compose.production.yml

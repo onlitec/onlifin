@@ -198,5 +198,7 @@ networks:
 volumes:
   postgres_data:
     name: onlifin-postgres-data
+    external: true
   ollama_data:
     name: onlifin-ollama-data
+    external: true
