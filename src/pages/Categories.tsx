@@ -9,8 +9,30 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
+import {
+  Plus, Pencil, Trash2, Tag,
+  Briefcase, Code, TrendingUp, ShoppingCart, DollarSign,
+  Utensils, Car, Home, Heart, BookOpen, Gamepad2,
+  Smartphone, Plane, Shirt, Gift, Coffee, ShoppingBag,
+  Wifi, Zap, Droplet, Tv, Music, Film, Camera,
+  Dumbbell, Pill, Stethoscope, Bus, Train, Bike,
+  CreditCard, Wallet, PiggyBank, Receipt, FileText,
+  Building2, Landmark, GraduationCap, Baby, Dog, Cat,
+  Scissors, Wrench, Hammer, PaintBucket, Flower2
+} from 'lucide-react';
 import type { Category } from '@/types/types';
+
+// Mapping Lucide icon names to components
+const LUCIDE_ICONS: Record<string, React.ElementType> = {
+  Briefcase, Code, TrendingUp, ShoppingCart, DollarSign,
+  Utensils, Car, Home, Heart, BookOpen, Gamepad2,
+  Smartphone, Plane, Shirt, Gift, Coffee, ShoppingBag,
+  Wifi, Zap, Droplet, Tv, Music, Film, Camera,
+  Dumbbell, Pill, Stethoscope, Bus, Train, Bike,
+  CreditCard, Wallet, PiggyBank, Receipt, FileText,
+  Building2, Landmark, GraduationCap, Baby, Dog, Cat,
+  Scissors, Wrench, Hammer, PaintBucket, Flower2, Tag
+};
 
 const EMOJI_OPTIONS = [
   '💰', '💵', '💸', '💳', '🏦', '📈', '📊', '💼', '🎯', '🎁',
@@ -155,15 +177,29 @@ export default function Categories() {
   const userCategories = categories.filter(c => c.user_id !== null);
   const systemCategories = categories.filter(c => c.user_id === null);
 
+  // Helper to render category icon (Lucide or emoji)
+  const renderCategoryIcon = (iconName: string | null, color: string | null) => {
+    if (!iconName) return <Tag className="w-6 h-6" style={{ color: color || undefined }} />;
+
+    // Check if it's a Lucide icon name
+    const LucideIcon = LUCIDE_ICONS[iconName];
+    if (LucideIcon) {
+      return <LucideIcon className="w-6 h-6" style={{ color: color || undefined }} />;
+    }
+
+    // Otherwise render as emoji
+    return <span>{iconName}</span>;
+  };
+
   const CategoryCard = ({ category }: { category: Category }) => (
     <Card className="shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="flex items-center justify-between p-5">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0"
-            style={{ backgroundColor: `${category.color}20` }}
+            style={{ backgroundColor: `${category.color || '#6b7280'}20` }}
           >
-            {category.icon}
+            {renderCategoryIcon(category.icon, category.color)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-base truncate">{category.name}</p>
@@ -171,9 +207,9 @@ export default function Categories() {
               <span className="text-sm text-muted-foreground">
                 {category.user_id === null ? 'Sistema' : 'Personalizada'}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full" style={{ 
-                backgroundColor: `${category.color}15`,
-                color: category.color
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                backgroundColor: `${category.color || '#6b7280'}15`,
+                color: category.color || '#6b7280'
               }}>
                 {category.type === 'income' ? 'Receita' : 'Despesa'}
               </span>
@@ -262,9 +298,8 @@ export default function Categories() {
                         key={emoji}
                         type="button"
                         onClick={() => setFormData({ ...formData, icon: emoji })}
-                        className={`text-2xl p-2 rounded hover:bg-muted ${
-                          formData.icon === emoji ? 'bg-primary/20 ring-2 ring-primary' : ''
-                        }`}
+                        className={`text-2xl p-2 rounded hover:bg-muted ${formData.icon === emoji ? 'bg-primary/20 ring-2 ring-primary' : ''
+                          }`}
                       >
                         {emoji}
                       </button>
@@ -279,9 +314,8 @@ export default function Categories() {
                         key={color.value}
                         type="button"
                         onClick={() => setFormData({ ...formData, color: color.value })}
-                        className={`p-3 rounded border-2 ${
-                          formData.color === color.value ? 'border-primary' : 'border-transparent'
-                        }`}
+                        className={`p-3 rounded border-2 ${formData.color === color.value ? 'border-primary' : 'border-transparent'
+                          }`}
                         style={{ backgroundColor: color.value }}
                       >
                         <span className="text-white text-xs font-medium">{color.name}</span>
