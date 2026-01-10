@@ -126,44 +126,76 @@ Responda APENAS com o JSON.`;
 }
 
 /**
- * Gera resposta do assistente financeiro com memória de conversa
+ * Gera resposta do assistente financeiro com memória de conversa e contexto completo
  */
 export async function chatWithAssistant(
     message: string,
     conversationHistory?: { role: 'user' | 'assistant'; content: string }[],
-    financialContext?: {
-        totalBalance?: number;
-        totalIncome?: number;
-        totalExpense?: number;
-        accountsCount?: number;
-    }
+    financialContextText?: string
 ): Promise<string> {
     // Build conversation context from history
     let conversationContext = '';
     if (conversationHistory && conversationHistory.length > 0) {
-        // Include last 5 messages for context
-        const recentHistory = conversationHistory.slice(-5);
+        // Include last 6 messages for context
+        const recentHistory = conversationHistory.slice(-6);
         conversationContext = recentHistory
             .map(msg => `${msg.role === 'user' ? 'Usuário' : 'Assistente'}: ${msg.content}`)
             .join('\n\n');
-        conversationContext += '\n\n';
     }
 
-    const systemPrompt = `Você é um assistente financeiro amigável e profissional chamado Onlifin AI.
-Você ajuda usuários a gerenciar suas finanças, categorizar gastos e dar dicas de economia.
-Mantenha o contexto da conversa anterior e responda de forma consistente.
+    const systemPrompt = `Você é o Onlifin AI, um consultor financeiro pessoal altamente qualificado.
 
-${financialContext ? `
-DADOS FINANCEIROS DO USUÁRIO:
-- Saldo total: R$ ${financialContext.totalBalance?.toFixed(2) || '0.00'}
-- Receitas: R$ ${financialContext.totalIncome?.toFixed(2) || '0.00'}
-- Despesas: R$ ${financialContext.totalExpense?.toFixed(2) || '0.00'}
-- Número de contas: ${financialContext.accountsCount || 0}
+═══════════════════════════════════════════════════════════
+                    SUAS COMPETÊNCIAS
+═══════════════════════════════════════════════════════════
+
+🎯 ANÁLISE FINANCEIRA:
+• Analisar receitas, despesas e fluxo de caixa
+• Identificar padrões de gastos e oportunidades de economia
+• Calcular indicadores financeiros (taxa de poupança, endividamento)
+• Comparar períodos e identificar tendências
+
+📈 PREVISÃO FINANCEIRA:
+• Projetar saldo futuro baseado em padrões atuais
+• Alertar sobre possíveis problemas de caixa
+• Sugerir metas de economia realistas
+• Calcular tempo para atingir objetivos financeiros
+
+💡 CONSULTORIA:
+• Dar dicas personalizadas de economia
+• Sugerir realocação de gastos
+• Recomendar categorização de transações
+• Orientar sobre organização financeira
+
+🔔 ALERTAS E LEMBRETES:
+• Avisar sobre contas próximas do vencimento
+• Alertar sobre contas atrasadas
+• Identificar gastos acima do normal
+• Monitorar uso de limites de cartão
+
+═══════════════════════════════════════════════════════════
+                    REGRAS DE COMPORTAMENTO
+═══════════════════════════════════════════════════════════
+
+1. Sempre analise os dados financeiros fornecidos antes de responder
+2. Use emojis para tornar as respostas mais visuais e amigáveis
+3. Seja específico com valores e datas quando disponíveis
+4. Mantenha o contexto da conversa anterior
+5. Se não tiver dados suficientes, peça que o usuário cadastre
+6. Responda SEMPRE em português brasileiro
+7. Seja conciso mas completo
+8. Priorize ações práticas e executáveis
+
+${financialContextText || '(Dados financeiros não disponíveis - sugira ao usuário cadastrar suas contas e transações)'}
+
+${conversationContext ? `
+═══════════════════════════════════════════════════════════
+                    HISTÓRICO DA CONVERSA
+═══════════════════════════════════════════════════════════
+${conversationContext}
 ` : ''}
 
-${conversationContext ? `HISTÓRICO DA CONVERSA:\n${conversationContext}` : ''}
-
-Responda de forma concisa e útil em português brasileiro.`;
+Agora responda à mensagem do usuário de forma útil e personalizada:`;
 
     return generateWithOllama(message, systemPrompt);
 }

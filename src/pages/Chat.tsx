@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import { chatWithAssistant, categorizeTransactionsWithAI, getDegradedResponse } from '@/services/ollamaService';
-import { Bot, User, Send, Loader2, Paperclip, FileText, X, RotateCcw, XCircle } from 'lucide-react';
+import { loadFinancialContext, formatFinancialContextForPrompt, FinancialContext } from '@/services/financialContext';
+import { Bot, User, Send, Loader2, Paperclip, FileText, X, RotateCcw, XCircle, RefreshCw } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,7 +19,30 @@ interface Message {
 
 const initialMessage: Message = {
   role: 'assistant',
-  content: 'Olá! Sou seu assistente financeiro. Como posso ajudar você hoje?\n\nVocê pode:\n• Fazer perguntas sobre suas finanças\n• Pedir análises de gastos\n• Solicitar dicas de economia\n• Enviar um extrato bancário para categorização automática',
+  content: `🤖 Olá! Sou o **Onlifin AI**, seu consultor financeiro pessoal.
+
+Tenho acesso completo aos seus dados financeiros e posso ajudar com:
+
+📊 **Análise Financeira**
+• Analisar suas receitas e despesas
+• Identificar padrões de gastos
+• Calcular sua taxa de poupança
+
+📈 **Previsões**
+• Projetar seu saldo futuro
+• Alertar sobre problemas de caixa
+• Definir metas de economia
+
+💡 **Consultoria**
+• Dar dicas personalizadas
+• Sugerir cortes de gastos
+• Orientar investimentos
+
+📁 **Importação**
+• Analisar extratos bancários
+• Categorizar transações automaticamente
+
+Como posso ajudar você hoje?`,
   timestamp: new Date()
 };
 
@@ -30,9 +53,31 @@ export default function Chat() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [fileContent, setFileContent] = React.useState('');
+  const [financialContext, setFinancialContext] = React.useState<FinancialContext | null>(null);
+  const [isLoadingContext, setIsLoadingContext] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Carregar contexto financeiro ao montar
+  React.useEffect(() => {
+    loadUserFinancialContext();
+  }, []);
+
+  const loadUserFinancialContext = async () => {
+    try {
+      setIsLoadingContext(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const ctx = await loadFinancialContext(user.id);
+        setFinancialContext(ctx);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar contexto financeiro:', error);
+    } finally {
+      setIsLoadingContext(false);
+    }
+  };
 
   // Reiniciar conversa
   const handleNewConversation = () => {
@@ -272,7 +317,13 @@ export default function Chat() {
             role: m.role,
             content: m.content
           }));
-          responseText = await chatWithAssistant(input, conversationHistory);
+
+          // Format financial context for the AI
+          const contextText = financialContext
+            ? formatFinancialContextForPrompt(financialContext)
+            : undefined;
+
+          responseText = await chatWithAssistant(input, conversationHistory, contextText);
         } catch (aiError: any) {
           console.warn('Ollama indisponível, usando modo degradado:', aiError.message);
           responseText = getDegradedResponse(input);
@@ -316,11 +367,36 @@ export default function Chat() {
     <div className="container mx-auto p-6 h-[calc(100vh-8rem)]">
       <Card className="h-full flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-6 w-6" />
-            Assistente Financeiro IA
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-6 w-6" />
+              Onlifin AI
+            </CardTitle>
+            {isLoadingContext ? (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Carregando dados...
+              </span>
+            ) : financialContext ? (
+              <span className="text-xs text-green-500 flex items-center gap-1">
+                ● Dados carregados
+              </span>
+            ) : (
+              <span className="text-xs text-yellow-500">
+                ⚠ Sem dados financeiros
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadUserFinancialContext}
+              disabled={isLoading || isLoadingContext}
+              title="Atualizar dados financeiros"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingContext ? 'animate-spin' : ''}`} />
+            </Button>
             <Button
               variant="outline"
               size="sm"
