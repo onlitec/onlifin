@@ -230,9 +230,9 @@ export default function Dashboard() {
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-7xl">
+    <div className="p-6 space-y-6">
       {/* Header e Filtros */}
-      <div className="space-y-4">\
+      <div className="space-y-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
           <p className="text-muted-foreground mt-1">
