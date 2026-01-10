@@ -231,52 +231,46 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header e Filtros */}
-      <div className="space-y-4">
+      {/* Header com Título e Filtros na mesma linha */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Dashboard Financeiro</h1>
+          <p className="text-sm text-muted-foreground">
             {months.find(m => m.value === selectedMonth)?.label} de {selectedYear}
           </p>
         </div>
 
-        {/* Filtros de Data - Horizontal */}
-        <div className="flex items-end gap-3">
-          <div className="w-[180px]">
-            <label className="text-sm font-medium mb-1.5 block">Mês</label>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map(month => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Filtros de Data */}
+        <div className="flex items-center gap-3">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map(month => (
+                <SelectItem key={month.value} value={month.value}>
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <div className="w-[140px]">
-            <label className="text-sm font-medium mb-1.5 block">Ano</label>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map(year => (
-                  <SelectItem key={year.value} value={year.value}>
-                    {year.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[100px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map(year => (
+                <SelectItem key={year.value} value={year.value}>
+                  {year.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Button
             variant="default"
-            className="h-10 px-6"
+            size="sm"
             onClick={() => {
               const now = new Date();
               setSelectedMonth(now.getMonth().toString());
