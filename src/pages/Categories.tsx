@@ -88,14 +88,6 @@ export default function Categories() {
       if (!user) return;
 
       if (editingCategory) {
-        if (editingCategory.user_id === null) {
-          toast({
-            title: 'Erro',
-            description: 'Não é possível editar categorias do sistema',
-            variant: 'destructive'
-          });
-          return;
-        }
         await categoriesApi.updateCategory(editingCategory.id, formData);
         toast({ title: 'Sucesso', description: 'Categoria atualizada com sucesso' });
       } else {
@@ -119,15 +111,6 @@ export default function Categories() {
   };
 
   const handleDelete = async (category: Category) => {
-    if (category.user_id === null) {
-      toast({
-        title: 'Erro',
-        description: 'Não é possível excluir categorias do sistema',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
 
     try {
@@ -144,14 +127,6 @@ export default function Categories() {
   };
 
   const openEditDialog = (category: Category) => {
-    if (category.user_id === null) {
-      toast({
-        title: 'Aviso',
-        description: 'Categorias do sistema não podem ser editadas',
-        variant: 'destructive'
-      });
-      return;
-    }
     setEditingCategory(category);
     setFormData({
       name: category.name,
@@ -216,24 +191,22 @@ export default function Categories() {
             </div>
           </div>
         </div>
-        {category.user_id !== null && (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openEditDialog(category)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDelete(category)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openEditDialog(category)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDelete(category)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
