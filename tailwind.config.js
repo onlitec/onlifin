@@ -81,7 +81,16 @@ export default {
                     '3': 'hsl(var(--chart-3))',
                     '4': 'hsl(var(--chart-4))',
                     '5': 'hsl(var(--chart-5))'
-                }
+                },
+                // New dark theme colors from onlifin_layout
+                'onlifin-dark': {
+                    bg: '#0f172a',
+                    card: '#1e3a5f',
+                    sidebar: '#1e293b',
+                    hover: '#2d4a6f'
+                },
+                savings: '#a855f7',
+                warning: '#f59e0b'
             },
             borderRadius: {
                 lg: 'var(--radius)',
@@ -146,21 +155,21 @@ export default {
     plugins: [
         tailwindAnimate,
         containerQuery,
-        function ({addUtilities}) {
+        function ({ addUtilities }) {
             addUtilities(
                 {
-                    '.border-t-solid': {'border-top-style': 'solid'},
-                    '.border-r-solid': {'border-right-style': 'solid'},
-                    '.border-b-solid': {'border-bottom-style': 'solid'},
-                    '.border-l-solid': {'border-left-style': 'solid'},
-                    '.border-t-dashed': {'border-top-style': 'dashed'},
-                    '.border-r-dashed': {'border-right-style': 'dashed'},
-                    '.border-b-dashed': {'border-bottom-style': 'dashed'},
-                    '.border-l-dashed': {'border-left-style': 'dashed'},
-                    '.border-t-dotted': {'border-top-style': 'dotted'},
-                    '.border-r-dotted': {'border-right-style': 'dotted'},
-                    '.border-b-dotted': {'border-bottom-style': 'dotted'},
-                    '.border-l-dotted': {'border-left-style': 'dotted'},
+                    '.border-t-solid': { 'border-top-style': 'solid' },
+                    '.border-r-solid': { 'border-right-style': 'solid' },
+                    '.border-b-solid': { 'border-bottom-style': 'solid' },
+                    '.border-l-solid': { 'border-left-style': 'solid' },
+                    '.border-t-dashed': { 'border-top-style': 'dashed' },
+                    '.border-r-dashed': { 'border-right-style': 'dashed' },
+                    '.border-b-dashed': { 'border-bottom-style': 'dashed' },
+                    '.border-l-dashed': { 'border-left-style': 'dashed' },
+                    '.border-t-dotted': { 'border-top-style': 'dotted' },
+                    '.border-r-dotted': { 'border-right-style': 'dotted' },
+                    '.border-b-dotted': { 'border-bottom-style': 'dotted' },
+                    '.border-l-dotted': { 'border-left-style': 'dotted' },
                 },
                 ['responsive']
             );

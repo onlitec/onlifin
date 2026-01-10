@@ -16,10 +16,10 @@ All colors MUST be HSL.
     --card-foreground: 210 24% 16%;
     --popover: 0 0% 100%;
     --popover-foreground: 210 24% 16%;
-    --primary: 210 24% 16%;
+    --primary: 145 63% 42%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 145 63% 42%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 210 17% 95%;
+    --secondary-foreground: 210 24% 16%;
     --muted: 210 17% 95%;
     --muted-foreground: 210 10% 50%;
     --accent: 145 63% 42%;
@@ -34,13 +34,14 @@ All colors MUST be HSL.
     --chart-3: 200 18% 46%;
     --chart-4: 145 50% 60%;
     --chart-5: 210 40% 35%;
-    --sidebar: 210 24% 16%;
-    --sidebar-foreground: 0 0% 100%;
+    /* Light mode sidebar - use light colors */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 210 24% 16%;
     --sidebar-primary: 145 63% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 22%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 20% 22%;
+    --sidebar-accent: 210 17% 93%;
+    --sidebar-accent-foreground: 210 24% 16%;
+    --sidebar-border: 210 17% 90%;
     --sidebar-ring: 145 63% 42%;
     --success: 145 63% 42%;
     --success-foreground: 0 0% 100%;
@@ -49,42 +50,75 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 210 24% 10%;
-    --foreground: 210 17% 98%;
-    --card: 210 24% 14%;
-    --card-foreground: 210 17% 98%;
-    --popover: 210 24% 14%;
-    --popover-foreground: 210 17% 98%;
+    /* New Onlifin Layout Dark Theme - Base Colors */
+    --background: 222 47% 11%;
+    /* #0f172a slate-900 */
+    --foreground: 210 40% 98%;
+    /* #f1f5f9 slate-100 */
+    --card: 217 32% 24%;
+    /* #1e3a5f blue-900/darker */
+    --card-foreground: 210 40% 98%;
+    /* #f1f5f9 slate-100 */
+    --popover: 217 32% 24%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Accent Colors */
     --primary: 145 63% 42%;
+    /* Keep primary green */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 22%;
-    --secondary-foreground: 210 17% 98%;
-    --muted: 210 20% 18%;
-    --muted-foreground: 210 10% 60%;
-    --accent: 145 63% 42%;
+    --secondary: 222 47% 18%;
+    /* #1e293b slate-800 */
+    --secondary-foreground: 210 40% 98%;
+    --muted: 215 19% 35%;
+    /* #475569 slate-600 */
+    --muted-foreground: 217 19% 56%;
+    /* #64748b slate-500 */
+    --accent: 217 91% 60%;
+    /* #3b82f6 blue-500 */
     --accent-foreground: 0 0% 100%;
+
+    /* Status Colors */
     --destructive: 0 84% 60%;
+    /* #ef4444 red-500 */
     --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 22%;
-    --input: 210 20% 22%;
-    --ring: 145 63% 42%;
-    --chart-1: 145 63% 42%;
-    --chart-2: 210 40% 60%;
-    --chart-3: 200 30% 50%;
-    --chart-4: 145 50% 60%;
-    --chart-5: 210 50% 70%;
-    --sidebar: 210 24% 16%;
-    --sidebar-foreground: 210 17% 98%;
-    --sidebar-primary: 145 63% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 22%;
-    --sidebar-accent-foreground: 210 17% 98%;
-    --sidebar-border: 210 20% 22%;
-    --sidebar-ring: 145 63% 42%;
     --success: 145 63% 42%;
     --success-foreground: 0 0% 100%;
+
+    /* Borders and Inputs */
+    --border: 215 25% 27%;
+    /* #334155 slate-700 */
+    --input: 215 25% 27%;
+    --ring: 145 63% 42%;
+
+    /* Chart Colors - New theme */
+    --chart-1: 145 63% 42%;
+    /* green - income */
+    --chart-2: 0 84% 60%;
+    /* red - expense */
+    --chart-3: 271 63% 62%;
+    /* purple - savings */
+    --chart-4: 217 91% 60%;
+    /* blue - info */
+    --chart-5: 38 100% 67%;
+    /* yellow - warning */
+
+    /* Sidebar - New theme */
+    --sidebar-background: 222 47% 18%;
+    /* #1e293b slate-800 */
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 145 63% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 32% 28%;
+    /* Hover state */
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 25% 27%;
+    --sidebar-ring: 145 63% 42%;
+
+    /* Financial Colors */
     --income: 145 63% 42%;
+    /* #10b981 green-500 */
     --expense: 0 84% 60%;
+    /* #ef4444 red-500 */
   }
 }
 
@@ -95,5 +129,23 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-600 rounded;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-500;
   }
 }

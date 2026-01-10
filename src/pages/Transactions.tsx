@@ -12,6 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, TrendingUp, TrendingDown, Pencil, Trash2, Search, Filter, X, ArrowRightLeft, Save, Camera } from 'lucide-react';
 import { ActiveFiltersBar } from '@/components/common/FilterBadge';
 import ReceiptScanner from '@/components/transactions/ReceiptScanner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { ReceiptData } from '@/services/ocrService';
 import type { Transaction, Account, Category } from '@/types/types';
 
@@ -1007,7 +1013,18 @@ export default function Transactions() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-base truncate">{tx.description || 'Sem descrição'}</p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="font-semibold text-base truncate cursor-help">
+                              {tx.description || 'Sem descrição'}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md">
+                            <p className="text-sm">{tx.description || 'Sem descrição'}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <p className="text-sm text-muted-foreground mt-1">
                         {tx.is_transfer ? (
                           <>
