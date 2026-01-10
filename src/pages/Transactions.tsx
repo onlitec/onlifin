@@ -579,37 +579,37 @@ export default function Transactions() {
   };
 
   return (
-    <div className="container mx-auto p-4 xl:p-8 space-y-6">
+    <div className="container mx-auto p-4 xl:p-8 space-y-6 max-w-full overflow-x-hidden">
       {/* Header Section */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
+      <div className="flex flex-col gap-4 pb-2">
         <div>
-          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
-          <p className="text-muted-foreground mt-1">Gerencie suas receitas, despesas e transferências</p>
+          <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">Gerencie suas receitas, despesas e transferências</p>
         </div>
-        <div className="flex gap-2 w-full xl:w-auto">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleSaveCategories}
             disabled={isSavingCategories || Object.keys(categorySelections).length === 0}
             variant="outline"
-            size="lg"
-            className="flex-1 xl:flex-initial"
+            size="sm"
+            className="text-xs md:text-sm"
           >
-            <Save className="mr-2 h-5 w-5" />
-            Salvar Categorias
+            <Save className="mr-1 md:mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Salvar </span>Categorias
           </Button>
           <Button
             onClick={() => setShowReceiptScanner(true)}
             variant="outline"
-            size="lg"
-            className="flex-1 xl:flex-initial"
+            size="sm"
+            className="text-xs md:text-sm"
           >
-            <Camera className="mr-2 h-5 w-5" />
-            Escanear Cupom
+            <Camera className="mr-1 md:mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Escanear </span>Cupom
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
-              <Button size="lg" className="flex-1 xl:flex-initial">
-                <Plus className="mr-2 h-5 w-5" />
+              <Button size="sm" className="text-xs md:text-sm">
+                <Plus className="mr-1 md:mr-2 h-4 w-4" />
                 Nova Transação
               </Button>
             </DialogTrigger>
@@ -1039,7 +1039,7 @@ export default function Transactions() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 xl:gap-4 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
-                    <div className={`text-xl font-bold ${tx.is_transfer
+                    <div className={`text-base md:text-xl font-bold whitespace-nowrap ${tx.is_transfer
                       ? 'text-primary'
                       : tx.type === 'income'
                         ? 'text-income'
@@ -1058,7 +1058,7 @@ export default function Transactions() {
                             }));
                           }}
                         >
-                          <SelectTrigger className="w-[180px]">
+                          <SelectTrigger className="w-[120px] md:w-[150px]">
                             <SelectValue placeholder="Categoria..." />
                           </SelectTrigger>
                           <SelectContent>
