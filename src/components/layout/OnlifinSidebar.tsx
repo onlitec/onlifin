@@ -20,7 +20,8 @@ import {
     Users,
     Bot,
     Sliders,
-    Layers
+    Layers,
+    LogOut
 } from 'lucide-react';
 import {
     Sidebar,
@@ -43,11 +44,11 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { useAuth } from 'miaoda-auth-react';
 import { APP_VERSION } from '@/config/version';
 
@@ -256,33 +257,46 @@ export function OnlifinSidebar() {
             <SidebarFooter className="border-t border-border">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton className="cursor-pointer">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <SidebarMenuButton className="cursor-pointer w-full">
                                     <User className="size-4" />
-                                    <span className="flex-1 truncate">
+                                    <span className="flex-1 truncate text-left">
                                         {user?.email || 'Usuario'}
                                     </span>
                                     <ChevronUp className="ml-auto size-4" />
                                 </SidebarMenuButton>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
+                            </PopoverTrigger>
+                            <PopoverContent
                                 side="top"
                                 align="start"
+                                className="w-[200px] p-2"
                                 sideOffset={8}
-                                className="w-[200px] z-[9999]"
                             >
-                                <DropdownMenuItem
-                                    className="cursor-pointer"
-                                    onClick={() => logout()}
-                                >
-                                    Sair
-                                </DropdownMenuItem>
-                                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                                    v{APP_VERSION}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                <div className="flex flex-col gap-1">
+                                    <Link to="/user-management">
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start gap-2"
+                                        >
+                                            <User className="size-4" />
+                                            Perfil
+                                        </Button>
+                                    </Link>
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start gap-2 text-destructive hover:text-destructive"
+                                        onClick={() => logout()}
+                                    >
+                                        <LogOut className="size-4" />
+                                        Sair
+                                    </Button>
+                                    <div className="text-xs text-muted-foreground text-center pt-2 border-t mt-1">
+                                        v{APP_VERSION}
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
