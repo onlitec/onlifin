@@ -64,17 +64,23 @@ export default function Accounts() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const accountData = {
+        name: formData.name,
+        bank: formData.bank || null,
+        agency: formData.agency || null,
+        account_number: formData.account_number || null,
+        currency: formData.currency,
+        balance: Number(formData.balance),
+        icon: formData.icon || null
+      };
+
       if (editingAccount) {
-        await accountsApi.updateAccount(editingAccount.id, {
-          ...formData,
-          balance: Number(formData.balance)
-        });
+        await accountsApi.updateAccount(editingAccount.id, accountData);
         toast({ title: 'Sucesso', description: 'Conta atualizada com sucesso' });
       } else {
         await accountsApi.createAccount({
-          ...formData,
-          user_id: user.id,
-          balance: Number(formData.balance)
+          ...accountData,
+          user_id: user.id
         });
         toast({ title: 'Sucesso', description: 'Conta criada com sucesso' });
       }
