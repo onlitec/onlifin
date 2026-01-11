@@ -18,7 +18,7 @@ import threading
 # Configuração
 PORT = 9003
 SECRET = os.getenv('WEBHOOK_SECRET', 'onlifin-webhook-secret-2025').encode()
-DEPLOY_SCRIPT = '/opt/onlifin/deploy.sh'
+DEPLOY_SCRIPT = '/home/alfreire/docker/apps/onlifin/auto-deploy.sh'
 
 def log(message):
     """Log com timestamp"""
