@@ -579,7 +579,7 @@ export default function Transactions() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6 overflow-x-hidden">
+    <div className="w-full max-w-[1600px] mx-auto p-4 md:p-6 xl:p-8 space-y-6 overflow-x-hidden box-border">
       {/* Header Section */}
       <div className="flex flex-col gap-4 pb-2">
         <div>
@@ -996,8 +996,8 @@ export default function Transactions() {
 
             return (
               <Card key={tx.id} className="shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="flex flex-col xl:flex-row items-start xl:items-center justify-between p-5 gap-4">
-                  <div className="flex items-start xl:items-center gap-4 flex-1 min-w-0">
+                <CardContent className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 md:p-5 gap-4">
+                  <div className="flex items-start lg:items-center gap-4 flex-1 min-w-0 w-full lg:w-auto">
                     <div className={`p-3 rounded-full shrink-0 ${tx.is_transfer
                       ? 'bg-primary/10'
                       : tx.type === 'income'
@@ -1038,7 +1038,7 @@ export default function Transactions() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 xl:gap-4 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4 w-full lg:w-auto justify-between lg:justify-end">
                     <div className={`text-base md:text-xl font-bold whitespace-nowrap ${tx.is_transfer
                       ? 'text-primary'
                       : tx.type === 'income'
@@ -1101,16 +1101,18 @@ export default function Transactions() {
       </div>
 
       {/* Receipt Scanner Dialog */}
-      {showReceiptScanner && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full">
-            <ReceiptScanner
-              onDataExtracted={handleReceiptData}
-              onClose={() => setShowReceiptScanner(false)}
-            />
+      {
+        showReceiptScanner && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="max-w-2xl w-full">
+              <ReceiptScanner
+                onDataExtracted={handleReceiptData}
+                onClose={() => setShowReceiptScanner(false)}
+              />
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
