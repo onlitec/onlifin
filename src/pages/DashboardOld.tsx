@@ -357,7 +357,7 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
         <h1 className="text-3xl font-bold">Dashboard Financeiro</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(8)].map((_, i) => (
@@ -380,7 +380,7 @@ export default function Dashboard() {
   const isPositiveBalance = balance >= 0;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
       {/* Header com Seletor de Mês */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">

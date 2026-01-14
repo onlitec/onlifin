@@ -486,7 +486,7 @@ export default function ImportStatements() {
 
   if (step === 'complete') {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CheckCircle2 className="h-16 w-16 text-green-600 mb-4" />
@@ -510,7 +510,7 @@ export default function ImportStatements() {
 
   if (step === 'review') {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Revisar Transações</h1>
@@ -633,7 +633,7 @@ export default function ImportStatements() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Importar Extrato Bancário</h1>
         <p className="text-muted-foreground">

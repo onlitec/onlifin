@@ -212,7 +212,7 @@ export default function Categories() {
   );
 
   return (
-    <div className="container mx-auto p-4 xl:p-8 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
       {/* Header Section */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
         <div>

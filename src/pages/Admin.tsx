@@ -42,7 +42,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
       <h1 className="text-3xl font-bold">Administração</h1>
 
       <Card>

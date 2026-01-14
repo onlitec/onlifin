@@ -148,7 +148,7 @@ export default function ForecastDashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4 xl:p-8 space-y-6">
+      <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
           <div>
             <Skeleton className="h-10 w-64 mb-2" />
@@ -168,7 +168,7 @@ export default function ForecastDashboard() {
 
   if (!forecast) {
     return (
-      <div className="container mx-auto p-4 xl:p-8 space-y-6">
+      <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
           <div>
             <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Previsão Financeira Inteligente</h1>
@@ -203,7 +203,7 @@ export default function ForecastDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-4 xl:p-8 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
         <div>

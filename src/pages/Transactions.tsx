@@ -579,7 +579,7 @@ export default function Transactions() {
   };
 
   return (
-    <div className="container mx-auto p-4 xl:p-8 space-y-6 max-w-full overflow-x-hidden">
+    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6 overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col gap-4 pb-2">
         <div>

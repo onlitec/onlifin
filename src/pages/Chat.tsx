@@ -364,7 +364,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="container mx-auto p-6 h-[calc(100vh-8rem)]">
+    <div className="w-full max-w-[1600px] mx-auto p-6 h-[calc(100vh-8rem)]">
       <Card className="h-full flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div className="flex items-center gap-3">
