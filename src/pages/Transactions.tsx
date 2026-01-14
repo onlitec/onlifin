@@ -986,7 +986,7 @@ export default function Transactions() {
       </Card>
 
       {/* Lista de Transações */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {filteredAndSortedTransactions.length === 0 ? (
           <Card className="shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12">
@@ -1009,9 +1009,9 @@ export default function Transactions() {
 
             return (
               <Card key={tx.id} className="shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 md:p-5 gap-4">
+                <CardContent className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-3 md:p-4 gap-3">
                   <div className="flex items-start lg:items-center gap-4 flex-1 min-w-0 w-full lg:w-auto">
-                    <div className={`p-3 rounded-full shrink-0 ${tx.is_transfer
+                    <div className={`p-2 rounded-full shrink-0 ${tx.is_transfer
                       ? 'bg-primary/10'
                       : tx.type === 'income'
                         ? 'bg-income/10'
@@ -1029,7 +1029,7 @@ export default function Transactions() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <p className="font-semibold text-base md:text-lg break-words whitespace-normal line-clamp-2 cursor-help group-hover:text-primary transition-colors leading-tight mb-1">
+                            <p className="font-semibold text-sm md:text-base break-words whitespace-normal line-clamp-1 cursor-help group-hover:text-primary transition-colors leading-snug">
                               {tx.description || 'Sem descrição'}
                             </p>
                           </TooltipTrigger>
