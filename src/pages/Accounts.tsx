@@ -70,7 +70,7 @@ export default function Accounts() {
         agency: formData.agency || null,
         account_number: formData.account_number || null,
         currency: formData.currency,
-        balance: Number(formData.balance),
+        initial_balance: Number(formData.balance),
         icon: formData.icon || null
       };
 
@@ -80,6 +80,7 @@ export default function Accounts() {
       } else {
         await accountsApi.createAccount({
           ...accountData,
+          balance: Number(formData.balance), // Also set current balance to initial on create
           user_id: user.id
         });
         toast({ title: 'Sucesso', description: 'Conta criada com sucesso' });
@@ -121,7 +122,7 @@ export default function Accounts() {
       agency: account.agency || '',
       account_number: account.account_number || '',
       currency: account.currency,
-      balance: account.balance.toString(),
+      balance: account.initial_balance.toString(),
       icon: account.icon || null
     });
     setIsDialogOpen(true);

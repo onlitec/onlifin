@@ -223,6 +223,16 @@ export default function BillsToReceive() {
   const overdueBills = bills.filter(b => b.status === 'overdue');
   const paidBills = bills.filter(b => b.status === 'paid');
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('pt-BR');
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
       {/* Header */}
@@ -422,7 +432,7 @@ export default function BillsToReceive() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(bill.due_date).toLocaleDateString('pt-BR')}
+                        {formatDate(bill.due_date)}
                       </span>
                       <span className="font-medium text-income">
                         R$ {bill.amount.toFixed(2)}

@@ -32,7 +32,6 @@ export default function BillsToPay() {
   const [bills, setBills] = React.useState<BillToPay[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingBill, setEditingBill] = React.useState<BillToPay | null>(null);
 
@@ -65,7 +64,6 @@ export default function BillsToPay() {
 
   const loadData = async () => {
     try {
-      setLoading(true);
       const [billsData, accountsData, categoriesData] = await Promise.all([
         billsToPayApi.getAll(userId!),
         accountsApi.getAccounts(userId!),
@@ -81,8 +79,6 @@ export default function BillsToPay() {
         description: 'Não foi possível carregar os dados',
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -221,6 +217,16 @@ export default function BillsToPay() {
   const pendingBills = bills.filter(b => b.status === 'pending');
   const overdueBills = bills.filter(b => b.status === 'overdue');
   const paidBills = bills.filter(b => b.status === 'paid');
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('pt-BR');
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
@@ -421,7 +427,7 @@ export default function BillsToPay() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(bill.due_date).toLocaleDateString('pt-BR')}
+                        {formatDate(bill.due_date)}
                       </span>
                       <span className="font-medium text-expense">
                         R$ {bill.amount.toFixed(2)}

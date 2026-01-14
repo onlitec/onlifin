@@ -36,6 +36,7 @@ export interface Account {
   account_number: string | null;
   currency: string;
   balance: number;
+  initial_balance: number;
   icon: string | null;
   created_at: string;
   updated_at: string;
@@ -166,6 +167,7 @@ export interface BillToPay {
   recurrence_pattern: string | null;
   account_id: string | null;
   paid_date: string | null;
+  transaction_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -183,6 +185,7 @@ export interface BillToReceive {
   recurrence_pattern: string | null;
   account_id: string | null;
   received_date: string | null;
+  transaction_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

@@ -79,7 +79,7 @@ services:
       PGRST_DB_SCHEMA: "public,auth"
       PGRST_DB_ANON_ROLE: "anon"
       PGRST_JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no ambiente}
-      PGRST_LOG_LEVEL: "warn"
+      PGRST_LOG_LEVEL: "info"
     expose:
       - "3000"
     restart: unless-stopped

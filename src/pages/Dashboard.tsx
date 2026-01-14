@@ -95,6 +95,16 @@ export default function Dashboard() {
     }
   };
 
+  const formatDate = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
+    if (!dateStr) return '';
+    try {
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('pt-BR', options);
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   const loadEnhancedStats = async (
     userId: string,
     baseStats: DashboardStats,
@@ -322,7 +332,7 @@ export default function Dashboard() {
                 {predictions.daily.length > 0 ? (
                   <div className="space-y-2">
                     {predictions.daily.map(([date, balance]) => {
-                      const formattedDate = new Date(date).toLocaleDateString('pt-BR', {
+                      const formattedDate = formatDate(date, {
                         day: '2-digit',
                         month: 'short'
                       });
@@ -386,7 +396,7 @@ export default function Dashboard() {
                 {predictions.monthly.length > 0 ? (
                   <div className="space-y-2">
                     {predictions.monthly.map(([month, balance]) => {
-                      const monthName = new Date(month).toLocaleDateString('pt-BR', {
+                      const monthName = formatDate(month, {
                         month: 'short',
                         year: '2-digit'
                       });

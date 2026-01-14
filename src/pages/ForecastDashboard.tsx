@@ -97,25 +97,25 @@ export default function ForecastDashboard() {
   // Preparar dados para o gráfico diário
   const dailyChartData = forecast
     ? Object.entries(forecast.forecast_daily).map(([date, balance]) => ({
-        date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-        saldo: balance
-      }))
+      date: formatDate(date, { day: '2-digit', month: '2-digit' }),
+      saldo: balance
+    }))
     : [];
 
   // Preparar dados para o gráfico semanal
   const weeklyChartData = forecast
     ? Object.entries(forecast.forecast_weekly).map(([week, balance]) => ({
-        semana: week.replace('semana_', 'Sem '),
-        saldo: balance
-      }))
+      semana: week.replace('semana_', 'Sem '),
+      saldo: balance
+    }))
     : [];
 
   // Preparar dados para o gráfico mensal
   const monthlyChartData = forecast
     ? Object.entries(forecast.forecast_monthly).map(([month, balance]) => ({
-        mes: month.charAt(0).toUpperCase() + month.slice(1),
-        saldo: balance
-      }))
+      mes: month.charAt(0).toUpperCase() + month.slice(1),
+      saldo: balance
+    }))
     : [];
 
   // Função para determinar cor do alerta
@@ -202,6 +202,16 @@ export default function ForecastDashboard() {
     );
   }
 
+  const formatDate = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
+    if (!dateStr) return '';
+    try {
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('pt-BR', options);
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
       {/* Header */}
@@ -238,7 +248,7 @@ export default function ForecastDashboard() {
               <div>
                 <h3 className="text-xl font-semibold text-destructive">Atenção: Risco Detectado</h3>
                 <p className="text-muted-foreground">
-                  Saldo negativo previsto para {forecast.risk_date ? new Date(forecast.risk_date).toLocaleDateString('pt-BR') : 'breve'}
+                  Saldo negativo previsto para {forecast.risk_date ? formatDate(forecast.risk_date) : 'breve'}
                 </p>
               </div>
             </>

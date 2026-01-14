@@ -194,13 +194,19 @@ export default function Transactions() {
             const installmentAmount = Number(formData.amount) / totalInstallments;
 
             for (let i = 1; i <= totalInstallments; i++) {
-              const installmentDate = new Date(formData.date);
-              installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+              const [year, month, day] = formData.date.split('-').map(Number);
+              const installmentDate = new Date(year, month - 1 + (i - 1), day);
+
+              const formattedDate = [
+                installmentDate.getFullYear(),
+                String(installmentDate.getMonth() + 1).padStart(2, '0'),
+                String(installmentDate.getDate()).padStart(2, '0')
+              ].join('-');
 
               await transactionsApi.createTransaction({
                 ...baseTransaction,
                 amount: installmentAmount,
-                date: installmentDate.toISOString().split('T')[0],
+                date: formattedDate,
                 description: `${formData.description} (${i}/${totalInstallments})`,
                 installment_number: i,
                 total_installments: totalInstallments,
@@ -574,8 +580,15 @@ export default function Transactions() {
     }).format(value);
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      // Split the ISO date string to avoid timezone shifts
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString('pt-BR');
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   return (
