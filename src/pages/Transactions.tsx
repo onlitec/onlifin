@@ -1012,39 +1012,39 @@ export default function Transactions() {
                         <TrendingDown className="h-5 w-5 text-expense" />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full overflow-hidden">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <p className="font-semibold text-base md:text-lg truncate cursor-help group-hover:text-primary transition-colors">
+                            <p className="font-semibold text-base md:text-lg break-words whitespace-normal line-clamp-2 cursor-help group-hover:text-primary transition-colors leading-tight mb-1">
                               {tx.description || 'Sem descrição'}
                             </p>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-md bg-popover text-popover-foreground border-border shadow-xl">
-                            <p className="font-medium mb-1">Descrição Completa:</p>
-                            <p className="text-sm">{tx.description || 'Sem descrição'}</p>
+                            <p className="font-medium mb-1 text-xs uppercase tracking-wider opacity-70">Descrição Completa</p>
+                            <p className="text-sm leading-relaxed">{tx.description || 'Sem descrição'}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground">
                         {tx.is_transfer ? (
-                          <span className="flex items-center gap-1.5 min-w-0">
-                            <span className="truncate max-w-[120px] md:max-w-[200px]" title={account?.name}>{account?.name || 'Origem'}</span>
+                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                            <span className="truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]" title={account?.name}>{account?.name || 'Origem'}</span>
                             <ArrowRightLeft className="h-3 w-3 shrink-0 opacity-50" />
-                            <span className="truncate max-w-[120px] md:max-w-[200px]" title={destinationAccount?.name}>{destinationAccount?.name || 'Destino'}</span>
-                          </span>
+                            <span className="truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]" title={destinationAccount?.name}>{destinationAccount?.name || 'Destino'}</span>
+                          </div>
                         ) : (
-                          <>
-                            <span className="flex items-center gap-1 min-w-0">
-                              <span className="shrink-0">{category?.icon}</span>
-                              <span className="truncate max-w-[100px] md:max-w-[180px]" title={category?.name}>{category?.name || 'Sem categoria'}</span>
+                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                            <span className="flex items-center gap-1 shrink-0">
+                              <span className="text-base">{category?.icon}</span>
+                              <span className="truncate max-w-[80px] sm:max-w-[120px] md:max-w-[180px]" title={category?.name}>{category?.name || 'Sem categoria'}</span>
                             </span>
                             <span className="opacity-30">•</span>
-                            <span className="truncate max-w-[100px] md:max-w-[180px]" title={account?.name}>{account?.name || 'Sem conta'}</span>
-                          </>
+                            <span className="truncate max-w-[80px] sm:max-w-[120px] md:max-w-[180px]" title={account?.name}>{account?.name || 'Sem conta'}</span>
+                          </div>
                         )}
-                        <span className="opacity-30">•</span>
-                        <span className="whitespace-nowrap shrink-0 font-medium">{formatDate(tx.date)}</span>
+                        <span className="opacity-30 hidden sm:inline">•</span>
+                        <span className="whitespace-nowrap font-medium">{formatDate(tx.date)}</span>
                       </div>
                     </div>
                   </div>
