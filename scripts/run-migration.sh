@@ -14,11 +14,53 @@ echo "=========================================="
 # Diretório onde estão os scripts SQL
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MIGRATIONS_DIR="${SCRIPT_DIR}/../docker/migrations"
+BACKUP_DIR="${SCRIPT_DIR}/../backups"
 
 # Verificar se o container está rodando
 if ! docker ps | grep -q onlifin-database; then
     echo "❌ Container onlifin-database não está rodando!"
     exit 1
+fi
+
+# ===========================================
+# FASE 0: BACKUP AUTOMÁTICO
+# ===========================================
+echo ""
+echo "🛡️ Fase 0: Criando backup de segurança..."
+
+# Criar diretório de backups se não existir
+mkdir -p "$BACKUP_DIR"
+
+# Nome do arquivo de backup com timestamp
+BACKUP_FILE="$BACKUP_DIR/backup_pre_migration_$(date +%Y%m%d_%H%M%S).sql"
+
+# Executar backup
+echo "   📦 Salvando backup em: $BACKUP_FILE"
+docker exec onlifin-database pg_dump -U onlifin onlifin > "$BACKUP_FILE"
+
+# Verificar se o backup foi criado com sucesso
+if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
+    BACKUP_SIZE=$(ls -lh "$BACKUP_FILE" | awk '{print $5}')
+    echo "   ✅ Backup criado com sucesso! Tamanho: $BACKUP_SIZE"
+    echo ""
+    echo "   ⚠️  IMPORTANTE: Em caso de problemas, restaure com:"
+    echo "   docker exec -i onlifin-database psql -U onlifin onlifin < $BACKUP_FILE"
+    echo ""
+else
+    echo "   ❌ Erro ao criar backup! Abortando migração."
+    exit 1
+fi
+
+# Manter apenas os últimos 10 backups
+echo "   🧹 Limpando backups antigos (mantendo últimos 10)..."
+ls -t "$BACKUP_DIR"/backup_pre_migration_*.sql 2>/dev/null | tail -n +11 | xargs -r rm -f
+
+# Confirmar continuação
+echo ""
+read -p "   Deseja continuar com a migração? (s/N): " confirm
+if [[ ! "$confirm" =~ ^[Ss]$ ]]; then
+    echo "   ❌ Migração cancelada pelo usuário."
+    exit 0
 fi
 
 echo ""
