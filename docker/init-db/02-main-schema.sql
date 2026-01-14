@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     account_number text,
     currency text DEFAULT 'BRL' NOT NULL,
     balance numeric DEFAULT 0 NOT NULL,
+    initial_balance numeric DEFAULT 0 NOT NULL,
+    icon text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
@@ -51,6 +53,8 @@ CREATE TABLE IF NOT EXISTS cards (
     available_limit numeric DEFAULT 0,
     closing_day integer CHECK (closing_day >= 1 AND closing_day <= 31),
     due_day integer CHECK (due_day >= 1 AND due_day <= 31),
+    icon text,
+    brand text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
