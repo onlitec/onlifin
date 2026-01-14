@@ -986,7 +986,7 @@ export default function Transactions() {
       </Card>
 
       {/* Lista de Transações */}
-      <div className="space-y-2">
+      <div className="divide-y divide-border rounded-lg border bg-card overflow-hidden">
         {filteredAndSortedTransactions.length === 0 ? (
           <Card className="shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12">
@@ -1008,134 +1008,129 @@ export default function Transactions() {
               : null;
 
             return (
-              <Card key={tx.id} className="shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-3 md:p-4 gap-3">
-                  <div className="flex items-start lg:items-center gap-4 flex-1 min-w-0 w-full lg:w-auto">
-                    <div className={`p-2 rounded-full shrink-0 ${tx.is_transfer
-                      ? 'bg-primary/10'
-                      : tx.type === 'income'
-                        ? 'bg-income/10'
-                        : 'bg-expense/10'
-                      }`}>
+              <div key={tx.id} className="flex flex-col lg:flex-row items-start lg:items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors gap-2 lg:gap-4">
+                <div className="flex items-center gap-3 flex-1 min-w-0 w-full lg:w-auto">
+                  <div className={`p-1.5 rounded-full shrink-0 ${tx.is_transfer
+                    ? 'bg-primary/10'
+                    : tx.type === 'income'
+                      ? 'bg-income/10'
+                      : 'bg-expense/10'
+                    }`}>
+                    {tx.is_transfer ? (
+                      <ArrowRightLeft className="h-4 w-4 text-primary" />
+                    ) : tx.type === 'income' ? (
+                      <TrendingUp className="h-4 w-4 text-income" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-expense" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="font-medium text-sm truncate cursor-help">
+                            {tx.description || 'Sem descrição'}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-md">
+                          <p className="text-sm">{tx.description || 'Sem descrição'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                       {tx.is_transfer ? (
-                        <ArrowRightLeft className="h-5 w-5 text-primary" />
-                      ) : tx.type === 'income' ? (
-                        <TrendingUp className="h-5 w-5 text-income" />
+                        <>
+                          <span className="truncate max-w-[100px]">{account?.name || 'Origem'}</span>
+                          <ArrowRightLeft className="h-2.5 w-2.5 shrink-0 opacity-50" />
+                          <span className="truncate max-w-[100px]">{destinationAccount?.name || 'Destino'}</span>
+                        </>
                       ) : (
-                        <TrendingDown className="h-5 w-5 text-expense" />
+                        <>
+                          <span>{category?.icon}</span>
+                          <span className="truncate max-w-[80px]">{category?.name || 'Sem cat.'}</span>
+                          <span className="opacity-30">•</span>
+                          <span className="truncate max-w-[80px]">{account?.name || 'Sem conta'}</span>
+                        </>
                       )}
-                    </div>
-                    <div className="flex-1 min-w-0 w-full overflow-hidden">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <p className="font-semibold text-sm md:text-base break-words whitespace-normal line-clamp-1 cursor-help group-hover:text-primary transition-colors leading-snug">
-                              {tx.description || 'Sem descrição'}
-                            </p>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-md bg-popover text-popover-foreground border-border shadow-xl">
-                            <p className="font-medium mb-1 text-xs uppercase tracking-wider opacity-70">Descrição Completa</p>
-                            <p className="text-sm leading-relaxed">{tx.description || 'Sem descrição'}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-muted-foreground">
-                        {tx.is_transfer ? (
-                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                            <span className="truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]" title={account?.name}>{account?.name || 'Origem'}</span>
-                            <ArrowRightLeft className="h-3 w-3 shrink-0 opacity-50" />
-                            <span className="truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]" title={destinationAccount?.name}>{destinationAccount?.name || 'Destino'}</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                            <span className="flex items-center gap-1 shrink-0">
-                              <span className="text-base">{category?.icon}</span>
-                              <span className="truncate max-w-[80px] sm:max-w-[120px] md:max-w-[180px]" title={category?.name}>{category?.name || 'Sem categoria'}</span>
-                            </span>
-                            <span className="opacity-30">•</span>
-                            <span className="truncate max-w-[80px] sm:max-w-[120px] md:max-w-[180px]" title={account?.name}>{account?.name || 'Sem conta'}</span>
-                          </div>
-                        )}
-                        <span className="opacity-30 hidden sm:inline">•</span>
-                        <span className="whitespace-nowrap font-medium">{formatDate(tx.date)}</span>
-                      </div>
+                      <span className="opacity-30">•</span>
+                      <span className="whitespace-nowrap">{formatDate(tx.date)}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4 w-full lg:w-auto justify-between lg:justify-end">
-                    <div className={`text-base md:text-xl font-bold whitespace-nowrap ${tx.is_transfer
-                      ? 'text-primary'
-                      : tx.type === 'income'
-                        ? 'text-income'
-                        : 'text-expense'
-                      }`}>
-                      {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!tx.is_transfer && (
-                        <Select
-                          value={categorySelections[tx.id] || 'none'}
-                          onValueChange={(value) => {
-                            setCategorySelections(prev => ({
-                              ...prev,
-                              [tx.id]: value
-                            }));
-                          }}
-                        >
-                          <SelectTrigger className="w-[120px] md:w-[150px]">
-                            <SelectValue placeholder="Categoria..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Sem categoria</SelectItem>
-                            {categories
-                              .filter(cat => cat.type === tx.type)
-                              .map(cat => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                  {cat.icon} {cat.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                      {!tx.is_transfer && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(tx)}
-                          title="Editar transação"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      )}
+                </div>
+                <div className="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-end">
+                  <div className={`text-sm font-bold whitespace-nowrap ${tx.is_transfer
+                    ? 'text-primary'
+                    : tx.type === 'income'
+                      ? 'text-income'
+                      : 'text-expense'
+                    }`}>
+                    {tx.is_transfer ? '' : tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.amount)}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {!tx.is_transfer && (
+                      <Select
+                        value={categorySelections[tx.id] || 'none'}
+                        onValueChange={(value) => {
+                          setCategorySelections(prev => ({
+                            ...prev,
+                            [tx.id]: value
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="w-[100px] h-7 text-xs">
+                          <SelectValue placeholder="Categoria..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem categoria</SelectItem>
+                          {categories
+                            .filter(cat => cat.type === tx.type)
+                            .map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.icon} {cat.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {!tx.is_transfer && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(tx.id)}
-                        title="Excluir transação"
+                        className="h-7 w-7"
+                        onClick={() => handleEdit(tx)}
+                        title="Editar"
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                    </div>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleDelete(tx.id)}
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })
         )}
       </div>
 
       {/* Receipt Scanner Dialog */}
-      {
-        showReceiptScanner && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="max-w-2xl w-full">
-              <ReceiptScanner
-                onDataExtracted={handleReceiptData}
-                onClose={() => setShowReceiptScanner(false)}
-              />
-            </div>
+      {showReceiptScanner && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="max-w-2xl w-full">
+            <ReceiptScanner
+              onDataExtracted={handleReceiptData}
+              onClose={() => setShowReceiptScanner(false)}
+            />
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+    </div>
   );
 }
