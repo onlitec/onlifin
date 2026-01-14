@@ -1016,26 +1016,36 @@ export default function Transactions() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <p className="font-semibold text-base truncate cursor-help">
+                            <p className="font-semibold text-base md:text-lg truncate cursor-help group-hover:text-primary transition-colors">
                               {tx.description || 'Sem descrição'}
                             </p>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-md">
+                          <TooltipContent className="max-w-md bg-popover text-popover-foreground border-border shadow-xl">
+                            <p className="font-medium mb-1">Descrição Completa:</p>
                             <p className="text-sm">{tx.description || 'Sem descrição'}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
                         {tx.is_transfer ? (
-                          <>
-                            Transferência: {account?.name || 'Conta origem'} → {destinationAccount?.name || 'Conta destino'} • {formatDate(tx.date)}
-                          </>
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <span className="truncate max-w-[120px] md:max-w-[200px]" title={account?.name}>{account?.name || 'Origem'}</span>
+                            <ArrowRightLeft className="h-3 w-3 shrink-0 opacity-50" />
+                            <span className="truncate max-w-[120px] md:max-w-[200px]" title={destinationAccount?.name}>{destinationAccount?.name || 'Destino'}</span>
+                          </span>
                         ) : (
                           <>
-                            {category?.icon} {category?.name || 'Sem categoria'} • {account?.name || 'Sem conta'} • {formatDate(tx.date)}
+                            <span className="flex items-center gap-1 min-w-0">
+                              <span className="shrink-0">{category?.icon}</span>
+                              <span className="truncate max-w-[100px] md:max-w-[180px]" title={category?.name}>{category?.name || 'Sem categoria'}</span>
+                            </span>
+                            <span className="opacity-30">•</span>
+                            <span className="truncate max-w-[100px] md:max-w-[180px]" title={account?.name}>{account?.name || 'Sem conta'}</span>
                           </>
                         )}
-                      </p>
+                        <span className="opacity-30">•</span>
+                        <span className="whitespace-nowrap shrink-0 font-medium">{formatDate(tx.date)}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4 w-full lg:w-auto justify-between lg:justify-end">
