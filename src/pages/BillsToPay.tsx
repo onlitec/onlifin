@@ -135,7 +135,8 @@ export default function BillsToPay() {
         recurrence_pattern: formData.recurrence_pattern || null,
         notes: formData.notes || null,
         status: 'pending' as const,
-        paid_date: null
+        paid_date: null,
+        transaction_id: null
       };
 
       if (editingBill) {
