@@ -170,10 +170,71 @@ jobs:
           export const APP_VERSION = "${NEW_VERSION}";
           EOF
 
+      - name: Check if tag already exists
+        if: steps.version_type.outputs.type != 'none'
+        id: check_tag
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          if git rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
+            echo "⚠️ Tag v${NEW_VERSION} already exists!"
+            echo "exists=true" >> $GITHUB_OUTPUT
+            
+            # Find next available version
+            IFS='.' read -ra VERSION_PARTS <<< "$NEW_VERSION"
+            MAJOR=${VERSION_PARTS[0]}
+            MINOR=${VERSION_PARTS[1]}
+            PATCH=${VERSION_PARTS[2]}
+            
+            while git rev-parse "v${MAJOR}.${MINOR}.${PATCH}" >/dev/null 2>&1; do
+              PATCH=$((PATCH + 1))
+            done
+            
+            NEXT_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+            echo "📌 Next available version: v${NEXT_VERSION}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "next_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update files with corrected version
+        if: steps.version_type.outputs.type != 'none' && steps.check_tag.outputs.exists == 'true'
+        run: |
+          CORRECTED_VERSION="${{ steps.check_tag.outputs.next_version }}"
+          echo "🔄 Updating files to use corrected version: v${CORRECTED_VERSION}"
+          
+          # Update package.json
+          node -e "
+            const fs = require('fs');
+            const pkg = require('./package.json');
+            pkg.version = '${CORRECTED_VERSION}';
+            fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          
+          # Update version.ts
+          cat > src/config/version.ts << EOF
+          // ===========================================
+          // Configuração da Aplicação
+          // ===========================================
+          // Esta versão é atualizada automaticamente pelo GitHub Action
+
+          export const APP_VERSION = "${CORRECTED_VERSION}";
+          EOF
+
+      - name: Determine final version
+        if: steps.version_type.outputs.type != 'none'
+        id: final_version
+        run: |
+          if [ "${{ steps.check_tag.outputs.exists }}" == "true" ]; then
+            echo "version=${{ steps.check_tag.outputs.next_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ steps.new_version.outputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Commit and tag
         if: steps.version_type.outputs.type != 'none'
         run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          NEW_VERSION="${{ steps.final_version.outputs.version }}"
           DESCRIPTION="${{ steps.version_type.outputs.description }}"
           
           git add package.json CHANGELOG.md src/config/version.ts
@@ -186,7 +247,7 @@ jobs:
         if: steps.version_type.outputs.type != 'none'
         id: release_notes
         run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          NEW_VERSION="${{ steps.final_version.outputs.version }}"
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
           if [ -z "$LAST_TAG" ]; then
@@ -203,8 +264,8 @@ jobs:
         if: steps.version_type.outputs.type != 'none'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "v${{ steps.new_version.outputs.version }}"
-          name: "Release v${{ steps.new_version.outputs.version }}"
+          tag_name: "v${{ steps.final_version.outputs.version }}"
+          name: "Release v${{ steps.final_version.outputs.version }}"
           body: |
             ## O que mudou
             
@@ -212,7 +273,7 @@ jobs:
             
             ---
             
-            **Versão**: v${{ steps.new_version.outputs.version }}
+            **Versão**: v${{ steps.final_version.outputs.version }}
             **Data**: ${{ github.event.head_commit.timestamp }}
           draft: false
           prerelease: false
@@ -222,8 +283,8 @@ jobs:
       - name: Summary
         if: steps.version_type.outputs.type != 'none'
         run: |
-          echo "## 🚀 Release v${{ steps.new_version.outputs.version }} criada!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Release v${{ steps.final_version.outputs.version }} criada!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Tipo**: ${{ steps.version_type.outputs.type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Versão anterior**: $(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
-          echo "- **Nova versão**: v${{ steps.new_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Nova versão**: v${{ steps.final_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
