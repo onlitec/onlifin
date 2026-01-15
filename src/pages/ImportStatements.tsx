@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles, History, X, Pencil } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles, History, X, Pencil, Activity } from 'lucide-react';
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import type { Category, Account, Transaction } from '@/types/types';
 import { accountsApi } from '@/db/api';
@@ -70,7 +70,15 @@ export default function ImportStatements() {
   const [step, setStep] = React.useState<'upload' | 'review' | 'edit_phase' | 'complete'>('upload');
   const [ofxError, setOfxError] = React.useState<string>('');
   const [transactionsToEdit, setTransactionsToEdit] = React.useState<CategorizedTransaction[]>([]);
+  const [analysisProgress, setAnalysisProgress] = React.useState(0);
+  const [analysisLog, setAnalysisLog] = React.useState<string[]>([]);
+  const [currentAnalysisStep, setCurrentAnalysisStep] = React.useState('');
   const { toast } = useToast();
+
+  const addLog = (message: string) => {
+    const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setAnalysisLog(prev => [...prev, `[${time}] ${message}`]);
+  };
 
   React.useEffect(() => {
     loadAccounts();
@@ -304,15 +312,24 @@ export default function ImportStatements() {
     }
 
     setIsAnalyzing(true);
+    setAnalysisProgress(0);
+    setAnalysisLog([]);
+    setCurrentAnalysisStep('Iniciando análise...');
+    addLog('Análise iniciada');
 
     try {
       // Detecta e faz parse do conteúdo baseado no formato
       let parsed: ParsedTransaction[] = [];
       const content = fileContent || textContent;
 
+      setAnalysisProgress(10);
+      setCurrentAnalysisStep('Identificando formato do arquivo...');
+      addLog('Identificando formato do arquivo...');
+
       // Verifica se é OFX
       if (isValidOFX(content)) {
-        console.log('Arquivo OFX detectado, fazendo parse...');
+        addLog('Formato OFX detectado');
+        setCurrentAnalysisStep('Processando arquivo OFX...');
         try {
           parsed = parseOFX(content);
           setOfxError(''); // Limpa erro anterior se houver
@@ -324,9 +341,14 @@ export default function ImportStatements() {
       }
       // Caso contrário, tenta CSV ou texto
       else {
+        addLog('Formato CSV/Texto detectado');
+        setCurrentAnalysisStep('Processando arquivo CSV/Texto...');
         setOfxError(''); // Limpa erro OFX se não for OFX
         parsed = fileContent ? parseCSV(fileContent) : parseTextContent(textContent);
       }
+
+      setAnalysisProgress(30);
+      addLog(`${parsed.length} transações encontradas no extrato`);
 
       if (parsed.length === 0) {
         toast({
@@ -370,6 +392,10 @@ export default function ImportStatements() {
 
       if (txError) throw txError;
       setExistingTransactions(existingTx || []);
+      addLog(`${(existingTx || []).length} transações existentes na conta`);
+
+      setAnalysisProgress(60);
+      setCurrentAnalysisStep('Carregando categorias...');
 
       const { data: categories, error: catError } = await supabase
         .from('categories')
@@ -378,13 +404,20 @@ export default function ImportStatements() {
 
       if (catError) throw catError;
       setExistingCategories(categories || []);
+      addLog(`${(categories || []).length} categorias disponíveis`);
+
+      setAnalysisProgress(70);
+      setCurrentAnalysisStep('Enviando para categorização com IA...');
+      addLog('Iniciando categorização com modelo de IA...');
 
       // Send to AI for categorization using local Ollama
       let result: any;
       try {
         result = await categorizeTransactionsWithAI(parsed, categories || []);
+        addLog('Categorização por IA concluída com sucesso');
       } catch (aiError: any) {
         console.error('Erro da IA:', aiError);
+        addLog('⚠️ IA indisponível - usando categorização manual');
         // Fallback: create basic categorization without AI
         toast({
           title: 'Aviso',
@@ -402,6 +435,10 @@ export default function ImportStatements() {
           newCategories: []
         };
       }
+
+      setAnalysisProgress(85);
+      setCurrentAnalysisStep('Verificando duplicatas...');
+      addLog('Identificando transações duplicadas...');
 
       if (!result) {
         throw new Error('Resposta inválida da IA');
@@ -434,11 +471,19 @@ export default function ImportStatements() {
 
       setCategorizedTransactions(processed);
       setNewCategorySuggestions(result.newCategories || []);
+
+      const duplicateCount = processed.filter(p => p.isDuplicate).length;
+      addLog(`${duplicateCount} duplicatas potenciais identificadas`);
+
+      setAnalysisProgress(100);
+      setCurrentAnalysisStep('Análise concluída!');
+      addLog('✅ Análise completa - pronto para revisão');
+
       setStep('review');
 
       toast({
         title: 'Análise concluída',
-        description: `${parsed.length} transações analisadas. ${processed.filter(p => p.isDuplicate).length} duplicatas potenciais encontradas.`,
+        description: `${parsed.length} transações analisadas. ${duplicateCount} duplicatas potenciais encontradas.`,
       });
     } catch (error: any) {
       console.error('Erro completo:', error);
@@ -1036,6 +1081,50 @@ export default function ImportStatements() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Progress Panel - shows during analysis */}
+      {isAnalyzing && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <Activity className="h-5 w-5 animate-pulse" />
+              Análise em Progresso
+            </CardTitle>
+            <CardDescription className="text-blue-600">
+              {currentAnalysisStep}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Progress Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-blue-700">
+                <span>Progresso</span>
+                <span className="font-medium">{analysisProgress}%</span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${analysisProgress}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Activity Log */}
+            <div className="bg-white/80 rounded-lg border border-blue-200 p-3 max-h-[200px] overflow-y-auto">
+              <div className="text-xs font-mono space-y-1">
+                {analysisLog.map((log, index) => (
+                  <div key={index} className="text-gray-600">
+                    {log}
+                  </div>
+                ))}
+                {analysisLog.length === 0 && (
+                  <div className="text-gray-400 italic">Aguardando início...</div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex justify-end">
         <Button
