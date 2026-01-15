@@ -24,9 +24,10 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles, History, X, Pencil } from 'lucide-react';
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
-import type { Category } from '@/types/types';
+import type { Category, Account, Transaction } from '@/types/types';
+import { accountsApi } from '@/db/api';
 
 interface ParsedTransaction {
   date: string;
@@ -42,6 +43,10 @@ interface CategorizedTransaction extends ParsedTransaction {
   isNewCategory: boolean;
   confidence: number;
   selectedCategoryId?: string;
+  // Intelligent Matching Fields
+  action: 'new' | 'reconcile' | 'ignore' | 'edit';
+  matchId?: string;
+  isDuplicate?: boolean;
 }
 
 interface NewCategorySuggestion {
@@ -55,13 +60,34 @@ export default function ImportStatements() {
   const [textContent, setTextContent] = React.useState('');
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
-  const [parsedTransactions, setParsedTransactions] = React.useState<ParsedTransaction[]>([]);
   const [categorizedTransactions, setCategorizedTransactions] = React.useState<CategorizedTransaction[]>([]);
   const [newCategorySuggestions, setNewCategorySuggestions] = React.useState<NewCategorySuggestion[]>([]);
   const [existingCategories, setExistingCategories] = React.useState<Category[]>([]);
-  const [step, setStep] = React.useState<'upload' | 'review' | 'complete'>('upload');
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = React.useState<string>('');
+  const [existingTransactions, setExistingTransactions] = React.useState<Transaction[]>([]);
+  const [step, setStep] = React.useState<'upload' | 'review' | 'edit_phase' | 'complete'>('upload');
   const [ofxError, setOfxError] = React.useState<string>('');
+  const [transactionsToEdit, setTransactionsToEdit] = React.useState<CategorizedTransaction[]>([]);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  const loadAccounts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const data = await accountsApi.getAccounts(user.id);
+      setAccounts(data);
+      if (data.length > 0 && !selectedAccountId) {
+        setSelectedAccountId(data[0].id);
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar contas:', error);
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -313,9 +339,36 @@ export default function ImportStatements() {
 
       setParsedTransactions(parsed);
 
-      // Get existing categories
+      // Get existing categories and accounts
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
+
+      if (!selectedAccountId) {
+        throw new Error('Selecione uma conta bancária antes de analisar');
+      }
+
+      // Determine date range for pre-fetching existing transactions
+      const transactionDates = parsed.map(t => {
+        // Handle various date formats (DD/MM/YYYY or YYYY-MM-DD)
+        const parts = t.date.split(/[\/\-]/);
+        if (parts[0].length === 4) return new Date(t.date); // YYYY-MM-DD
+        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])); // DD/MM/YYYY
+      }).filter(d => !isNaN(d.getTime()));
+
+      const minDate = new Date(Math.min(...transactionDates.map(d => d.getTime()))).toISOString().split('T')[0];
+      const maxDate = new Date(Math.max(...transactionDates.map(d => d.getTime()))).toISOString().split('T')[0];
+
+      // Fetch existing transactions for duplicate matching
+      const { data: existingTx, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('account_id', selectedAccountId)
+        .gte('date', minDate)
+        .lte('date', maxDate);
+
+      if (txError) throw txError;
+      setExistingTransactions(existingTx || []);
 
       const { data: categories, error: catError } = await supabase
         .from('categories')
@@ -324,11 +377,6 @@ export default function ImportStatements() {
 
       if (catError) throw catError;
       setExistingCategories(categories || []);
-
-      console.log('Enviando para IA:', {
-        transactionCount: parsed.length,
-        categoryCount: categories?.length || 0
-      });
 
       // Send to AI for categorization
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
@@ -339,32 +387,48 @@ export default function ImportStatements() {
         },
       });
 
-      console.log('Resposta da IA:', { data, error });
-
       if (error) {
-        console.error('Erro da Edge Function:', error);
-        const errorMsg = await error?.context?.text();
-        console.error('Mensagem de erro:', errorMsg);
-        throw new Error(errorMsg || 'Erro ao analisar transações');
-      }
-
-      if (!data) {
-        throw new Error('Resposta vazia da IA');
+        console.error('Erro da IA:', error);
+        throw new Error('Erro ao categorizar transações com IA');
       }
 
       const result = data;
-
-      if (!result.categorizedTransactions || result.categorizedTransactions.length === 0) {
-        throw new Error('IA não retornou transações categorizadas');
+      if (!result) {
+        throw new Error('Resposta inválida da IA');
       }
 
-      setCategorizedTransactions(result.categorizedTransactions || []);
+      // Perform intelligent matching
+      const processed: CategorizedTransaction[] = (result.categorizedTransactions || []).map((t: any) => {
+        // Helper to normalize date for comparison
+        const parseTDate = (d: string) => {
+          const parts = d.split(/[\/\-]/);
+          if (parts[0].length === 4) return d; // YYYY-MM-DD
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        };
+
+        const targetDate = parseTDate(t.date);
+
+        // Find exact match (same date and amount)
+        const match = (existingTx || []).find(ex =>
+          ex.date === targetDate &&
+          Math.abs(Number(ex.amount)) === Math.abs(t.amount)
+        );
+
+        return {
+          ...t,
+          action: match ? 'reconcile' : 'new',
+          matchId: match?.id,
+          isDuplicate: !!match
+        };
+      });
+
+      setCategorizedTransactions(processed);
       setNewCategorySuggestions(result.newCategories || []);
       setStep('review');
 
       toast({
         title: 'Análise concluída',
-        description: `${parsed.length} transações analisadas e categorizadas`,
+        description: `${parsed.length} transações analisadas. ${processed.filter(p => p.isDuplicate).length} duplicatas potenciais encontradas.`,
       });
     } catch (error: any) {
       console.error('Erro completo:', error);
@@ -397,21 +461,7 @@ export default function ImportStatements() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      // Get user's accounts
-      const { data: accounts, error: accError } = await supabase
-        .from('accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .limit(1);
-
-      if (accError) throw accError;
-      if (!accounts || accounts.length === 0) {
-        throw new Error('Você precisa ter pelo menos uma conta cadastrada para importar transações');
-      }
-
-      const defaultAccountId = accounts[0].id;
-
-      // Create new categories
+      // 1. Process new categories
       const selectedNewCategories = newCategorySuggestions.filter(c => c.selected);
       const createdCategoryMap = new Map<string, string>();
 
@@ -432,38 +482,64 @@ export default function ImportStatements() {
         createdCategoryMap.set(newCat.name, created.id);
       }
 
-      // Prepare transactions for insert
-      const transactionsToInsert = categorizedTransactions.map(t => {
-        let categoryId = t.selectedCategoryId || t.suggestedCategoryId;
+      // 2. Identify transactions by action
+      const toInsert = categorizedTransactions.filter(t => t.action === 'new');
+      const toReconcile = categorizedTransactions.filter(t => t.action === 'reconcile');
+      const toEditLater = categorizedTransactions.filter(t => t.action === 'edit');
 
-        // If it's a new category, get the created ID
-        if (t.isNewCategory && createdCategoryMap.has(t.suggestedCategory)) {
-          categoryId = createdCategoryMap.get(t.suggestedCategory);
-        }
+      // 3. Perform Reconciliations (Update existing transactions)
+      for (const t of toReconcile) {
+        if (!t.matchId) continue;
+        const { error: recError } = await supabase
+          .from('transactions')
+          .update({ is_reconciled: true, updated_at: new Date().toISOString() })
+          .eq('id', t.matchId);
 
-        return {
-          user_id: user.id,
-          type: t.type,
-          amount: t.amount,
-          date: t.date,
-          description: t.description,
-          category_id: categoryId,
-          account_id: defaultAccountId,
-        };
-      });
+        if (recError) console.error(`Erro ao conciliar ${t.matchId}:`, recError);
+      }
 
-      // Insert transactions
-      const { error: insertError } = await supabase
-        .from('transactions')
-        .insert(transactionsToInsert);
+      // 4. Perform New Insertions
+      if (toInsert.length > 0) {
+        const transactionsToInsert = toInsert.map(t => {
+          let categoryId = t.selectedCategoryId || t.suggestedCategoryId;
+          if (t.isNewCategory && createdCategoryMap.has(t.suggestedCategory)) {
+            categoryId = createdCategoryMap.get(t.suggestedCategory);
+          }
 
-      if (insertError) throw insertError;
+          return {
+            user_id: user.id,
+            type: t.type,
+            amount: t.amount,
+            date: t.date,
+            description: t.description,
+            category_id: categoryId,
+            account_id: selectedAccountId,
+            is_reconciled: true
+          };
+        });
 
-      setStep('complete');
-      toast({
-        title: 'Importação concluída',
-        description: `${transactionsToInsert.length} transações importadas com sucesso`,
-      });
+        const { error: insertError } = await supabase
+          .from('transactions')
+          .insert(transactionsToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      // 5. Handle Phase 2 (Editing)
+      if (toEditLater.length > 0) {
+        setTransactionsToEdit(toEditLater);
+        setStep('edit_phase');
+        toast({
+          title: 'Fase 1 concluída',
+          description: `${toInsert.length + toReconcile.length} transações processadas. Agora revise as transações marcadas para edição.`,
+        });
+      } else {
+        setStep('complete');
+        toast({
+          title: 'Importação concluída',
+          description: `${toInsert.length + toReconcile.length} transações processadas com sucesso.`,
+        });
+      }
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -504,6 +580,162 @@ export default function ImportStatements() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  const finishEditing = async () => {
+    setIsImporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const transactionsToInsert = transactionsToEdit.map(t => ({
+        user_id: user.id,
+        type: t.type,
+        amount: t.amount,
+        date: t.date,
+        description: t.description,
+        category_id: t.selectedCategoryId || t.suggestedCategoryId,
+        account_id: selectedAccountId,
+        is_reconciled: true
+      }));
+
+      const { error } = await supabase
+        .from('transactions')
+        .insert(transactionsToInsert);
+
+      if (error) throw error;
+
+      setStep('complete');
+      toast({
+        title: 'Importação concluída',
+        description: `${transactionsToInsert.length} transações editadas e importadas com sucesso.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao salvar transações editadas',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  if (step === 'edit_phase') {
+    return (
+      <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Pencil className="h-8 w-8 text-blue-500" />
+              Fase 2: Edição Manual
+            </h1>
+            <p className="text-muted-foreground">
+              Ajuste as transações que você marcou para edição antes do cadastro final
+            </p>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Transações para Ajuste</CardTitle>
+            <CardDescription>
+              Você pode alterar a descrição, data e valor destas transações
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[150px]">Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="w-[150px]">Valor (R$)</TableHead>
+                  <TableHead>Categoria</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactionsToEdit.map((transaction, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Input
+                        type="date"
+                        value={transaction.date.split('/').length === 3 ? transaction.date.split('/').reverse().join('-') : transaction.date}
+                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const updated = [...transactionsToEdit];
+                          updated[index].date = e.target.value;
+                          setTransactionsToEdit(updated);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={transaction.description}
+                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const updated = [...transactionsToEdit];
+                          updated[index].description = e.target.value;
+                          setTransactionsToEdit(updated);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={transaction.amount}
+                        className={`h-8 text-xs font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
+                        onChange={(e) => {
+                          const updated = [...transactionsToEdit];
+                          updated[index].amount = Number(e.target.value);
+                          setTransactionsToEdit(updated);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={transaction.selectedCategoryId || transaction.suggestedCategoryId || ''}
+                        onValueChange={(value) => {
+                          const updated = [...transactionsToEdit];
+                          updated[index].selectedCategoryId = value;
+                          setTransactionsToEdit(updated);
+                        }}
+                      >
+                        <SelectTrigger className="w-[180px] h-8 text-xs">
+                          <SelectValue placeholder="Categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {existingCategories
+                            .filter(c => c.type === transaction.type)
+                            .map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.icon} {cat.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-4">
+          <Button onClick={finishEditing} disabled={isImporting}>
+            {isImporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Finalizando...
+              </>
+            ) : (
+              'Concluir Importação'
+            )}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -564,50 +796,95 @@ export default function ImportStatements() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
+                  <TableHead className="w-[100px]">Data</TableHead>
                   <TableHead>Descrição</TableHead>
-                  <TableHead>Tipo</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Status/Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categorizedTransactions.map((transaction, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{transaction.date}</TableCell>
-                    <TableCell>{transaction.description}</TableCell>
-                    <TableCell>
-                      <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                        {transaction.type === 'income' ? 'Receita' : 'Despesa'}
-                      </span>
-                    </TableCell>
-                    <TableCell>R$ {transaction.amount.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={transaction.selectedCategoryId || transaction.suggestedCategoryId || ''}
-                        onValueChange={(value) => handleCategoryChange(index, value)}
-                      >
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Selecione categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {existingCategories
-                            .filter(c => c.type === transaction.type)
-                            .map(cat => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                          {transaction.isNewCategory && transaction.suggestedCategory && (
-                            <SelectItem value={transaction.suggestedCategoryId || `new_${transaction.suggestedCategory}`}>
-                              {transaction.suggestedCategory} (Nova)
-                            </SelectItem>
+                {categorizedTransactions.map((transaction, index) => {
+                  const hasMatch = transaction.isDuplicate && transaction.matchId;
+                  const matchingTx = existingTransactions.find(et => et.id === transaction.matchId);
+
+                  return (
+                    <TableRow key={index} className={transaction.action === 'ignore' ? 'opacity-50' : ''}>
+                      <TableCell>{transaction.date}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{transaction.description}</span>
+                          {hasMatch && (
+                            <span className="text-[10px] text-yellow-600 flex items-center gap-1 mt-1 bg-yellow-50 w-fit px-1 rounded border border-yellow-200">
+                              <History className="h-3 w-3" />
+                              Já existe: {matchingTx?.description}
+                            </span>
                           )}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className={transaction.type === 'income' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          {transaction.type === 'income' ? '+' : '-'} R$ {transaction.amount.toFixed(2)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={transaction.selectedCategoryId || transaction.suggestedCategoryId || ''}
+                          onValueChange={(value) => handleCategoryChange(index, value)}
+                          disabled={transaction.action === 'ignore' || transaction.action === 'reconcile'}
+                        >
+                          <SelectTrigger className="w-[180px] h-8 text-xs">
+                            <SelectValue placeholder="Categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {existingCategories
+                              .filter(c => c.type === transaction.type)
+                              .map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>
+                                  {cat.icon} {cat.name}
+                                </SelectItem>
+                              ))}
+                            {transaction.isNewCategory && transaction.suggestedCategory && (
+                              <SelectItem value={transaction.suggestedCategoryId || `new_${transaction.suggestedCategory}`}>
+                                {transaction.suggestedCategory} (Nova)
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={transaction.action}
+                          onValueChange={(value: any) => {
+                            const updated = [...categorizedTransactions];
+                            updated[index].action = value;
+                            setCategorizedTransactions(updated);
+                          }}
+                        >
+                          <SelectTrigger className={`w-[140px] h-8 text-xs ${transaction.action === 'reconcile' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                            transaction.action === 'ignore' ? 'bg-gray-50 text-gray-500' :
+                              transaction.action === 'edit' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                'bg-green-50 border-green-200 text-green-700'
+                            }`}>
+                            <div className="flex items-center gap-2">
+                              {transaction.action === 'reconcile' && <History className="h-3 w-3" />}
+                              {transaction.action === 'new' && <CheckCircle2 className="h-3 w-3" />}
+                              {transaction.action === 'ignore' && <X className="h-3 w-3" />}
+                              {transaction.action === 'edit' && <Pencil className="h-3 w-3" />}
+                              <SelectValue />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new" className="text-green-600 font-medium">Novo Cadastro</SelectItem>
+                            {hasMatch && <SelectItem value="reconcile" className="text-yellow-600 font-medium">Conciliar</SelectItem>}
+                            <SelectItem value="edit" className="text-blue-600 font-medium">Editar</SelectItem>
+                            <SelectItem value="ignore" className="text-gray-500 font-medium">Não Importar</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
@@ -668,18 +945,35 @@ export default function ImportStatements() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="file" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="file">Arquivo de Extrato</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  accept=".csv,.txt,.ofx"
-                  onChange={handleFileUpload}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Formatos aceitos: CSV, TXT ou OFX
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="account">Conta para Importação *</Label>
+                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                    <SelectTrigger id="account">
+                      <SelectValue placeholder="Selecione a conta..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map(acc => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="file">Arquivo de Extrato *</Label>
+                  <Input
+                    id="file"
+                    type="file"
+                    accept=".csv,.txt,.ofx"
+                    onChange={handleFileUpload}
+                  />
+                </div>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Formatos aceitos: CSV, TXT ou OFX. Selecione a conta onde essas transações ocorreram.
+              </p>
               {fileContent && (
                 <Alert>
                   <CheckCircle2 className="h-4 w-4" />
