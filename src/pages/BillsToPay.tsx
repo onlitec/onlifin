@@ -400,68 +400,70 @@ export default function BillsToPay() {
       </div>
 
       {/* Bills List */}
-      <div className="space-y-3">
+      <div className="divide-y divide-border rounded-lg border bg-card overflow-hidden">
         {bills.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <DollarSign className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">Nenhuma conta cadastrada</p>
-              <p className="text-sm text-muted-foreground">
-                Comece adicionando suas contas a pagar
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-10">
+            <DollarSign className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-base font-medium mb-1">Nenhuma conta cadastrada</p>
+            <p className="text-sm text-muted-foreground">
+              Comece adicionando suas contas a pagar
+            </p>
+          </div>
         ) : (
           bills.map((bill) => (
-            <Card key={bill.id} className="shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="flex items-center justify-between p-5">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="p-3 rounded-full bg-expense/10">
-                    <DollarSign className="h-6 w-6 text-expense" />
+            <div key={bill.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="p-1.5 rounded-full bg-expense/10">
+                  <DollarSign className="h-4 w-4 text-expense" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm truncate">{bill.description}</p>
+                    {getStatusBadge(bill.status)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-base truncate">{bill.description}</p>
-                      {getStatusBadge(bill.status)}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(bill.due_date)}
-                      </span>
-                      <span className="font-medium text-expense">
-                        R$ {bill.amount.toFixed(2)}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(bill.due_date)}
+                    </span>
+                    <span className="font-medium text-expense">
+                      R$ {bill.amount.toFixed(2)}
+                    </span>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  {bill.status === 'pending' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleMarkAsPaid(bill)}
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                    </Button>
-                  )}
+              </div>
+              <div className="flex gap-1">
+                {bill.status === 'pending' && (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(bill)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleMarkAsPaid(bill)}
+                    title="Marcar como paga"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <CheckCircle className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(bill)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => openEditDialog(bill)}
+                  title="Editar"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => handleDelete(bill)}
+                  title="Excluir"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </div>
+            </div>
           ))
         )}
       </div>
