@@ -632,245 +632,243 @@ export default function Transactions() {
   };
 
   return (
-    <div className="w-full space-y-6">
-      <div className="w-full bg-card border-b py-4">
-        <div className="max-w-[1600px] mx-auto px-4 md:px-6 xl:px-8 flex flex-col gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">Gerencie suas receitas, despesas e transferências</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={handleSaveCategories}
-              disabled={isSavingCategories || Object.keys(categorySelections).length === 0}
-              variant="outline"
-              size="sm"
-              className="text-xs md:text-sm"
-            >
-              <Save className="mr-1 md:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Salvar </span>Categorias
-            </Button>
-            <Button
-              onClick={() => setShowReceiptScanner(true)}
-              variant="outline"
-              size="sm"
-              className="text-xs md:text-sm"
-            >
-              <Camera className="mr-1 md:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Escanear </span>Cupom
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="text-xs md:text-sm">
-                  <Plus className="mr-1 md:mr-2 h-4 w-4" />
-                  Nova Transação
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingTransaction ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
-                  <DialogDescription>
-                    {editingTransaction ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="type">Tipo *</Label>
-                      <Select
-                        value={formData.type}
-                        onValueChange={(value: 'income' | 'expense' | 'transfer') => setFormData({ ...formData, type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="income">Receita</SelectItem>
-                          <SelectItem value="expense">Despesa</SelectItem>
-                          <SelectItem value="transfer">Transferência</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="amount">Valor *</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        step="0.01"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Data *</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        required
-                      />
-                    </div>
-
-                    {formData.type !== 'transfer' && (
-                      <div className="space-y-2">
-                        <Label htmlFor="category">Categoria</Label>
-                        <Select
-                          value={formData.category_id}
-                          onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma categoria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories
-                              .filter(c => c.type === formData.type)
-                              .map(cat => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                  {cat.icon} {cat.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="account">{formData.type === 'transfer' ? 'Conta de Origem *' : 'Conta'}</Label>
-                      <Select
-                        value={formData.account_id}
-                        onValueChange={(value) => setFormData({ ...formData, account_id: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma conta" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {accounts.map(acc => (
-                            <SelectItem key={acc.id} value={acc.id}>
-                              {acc.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {formData.type === 'transfer' && (
-                      <div className="space-y-2">
-                        <Label htmlFor="destination_account">Conta de Destino *</Label>
-                        <Select
-                          value={formData.transfer_destination_account_id}
-                          onValueChange={(value) => setFormData({ ...formData, transfer_destination_account_id: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a conta de destino" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {accounts
-                              .filter(acc => acc.id !== formData.account_id)
-                              .map(acc => (
-                                <SelectItem key={acc.id} value={acc.id}>
-                                  {acc.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Descrição</Label>
-                      <Input
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      />
-                    </div>
-
-                    {formData.type !== 'transfer' && (
-                      <>
-                        <div className="flex items-center space-x-2 pt-2">
-                          <Checkbox
-                            id="is_recurring"
-                            checked={formData.is_recurring}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, is_recurring: checked as boolean })
-                            }
-                          />
-                          <Label htmlFor="is_recurring" className="cursor-pointer">
-                            Transação recorrente
-                          </Label>
-                        </div>
-
-                        {formData.is_recurring && (
-                          <div className="space-y-2">
-                            <Label htmlFor="recurrence">Frequência</Label>
-                            <Select
-                              value={formData.recurrence_pattern}
-                              onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') =>
-                                setFormData({ ...formData, recurrence_pattern: value })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="daily">Diária</SelectItem>
-                                <SelectItem value="weekly">Semanal</SelectItem>
-                                <SelectItem value="monthly">Mensal</SelectItem>
-                                <SelectItem value="yearly">Anual</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-
-                        {!editingTransaction && (
-                          <>
-                            <div className="flex items-center space-x-2 pt-2">
-                              <Checkbox
-                                id="is_installment"
-                                checked={formData.is_installment}
-                                onCheckedChange={(checked) =>
-                                  setFormData({ ...formData, is_installment: checked as boolean })
-                                }
-                              />
-                              <Label htmlFor="is_installment" className="cursor-pointer">
-                                Parcelar transação
-                              </Label>
-                            </div>
-
-                            {formData.is_installment && (
-                              <div className="space-y-2">
-                                <Label htmlFor="installments">Número de Parcelas</Label>
-                                <Input
-                                  id="installments"
-                                  type="number"
-                                  min="2"
-                                  max="48"
-                                  value={formData.total_installments}
-                                  onChange={(e) => setFormData({ ...formData, total_installments: e.target.value })}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  Valor por parcela: R$ {(Number(formData.amount) / Number(formData.total_installments) || 0).toFixed(2)}
-                                </p>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </>
-                    )}
+    <div className="w-full max-w-[1600px] mx-auto p-4 md:p-6 xl:p-8 space-y-6">
+      <div className="flex flex-col gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">Gerencie suas receitas, despesas e transferências</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleSaveCategories}
+            disabled={isSavingCategories || Object.keys(categorySelections).length === 0}
+            variant="outline"
+            size="sm"
+            className="text-xs md:text-sm"
+          >
+            <Save className="mr-1 md:mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Salvar </span>Categorias
+          </Button>
+          <Button
+            onClick={() => setShowReceiptScanner(true)}
+            variant="outline"
+            size="sm"
+            className="text-xs md:text-sm"
+          >
+            <Camera className="mr-1 md:mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Escanear </span>Cupom
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="text-xs md:text-sm">
+                <Plus className="mr-1 md:mr-2 h-4 w-4" />
+                Nova Transação
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingTransaction ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
+                <DialogDescription>
+                  {editingTransaction ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Tipo *</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value: 'income' | 'expense' | 'transfer') => setFormData({ ...formData, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="income">Receita</SelectItem>
+                        <SelectItem value="expense">Despesa</SelectItem>
+                        <SelectItem value="transfer">Transferência</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <DialogFooter>
-                    <Button type="submit">{editingTransaction ? 'Atualizar' : 'Criar'}</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Valor *</Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Data *</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  {formData.type !== 'transfer' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Categoria</Label>
+                      <Select
+                        value={formData.category_id}
+                        onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories
+                            .filter(c => c.type === formData.type)
+                            .map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.icon} {cat.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="account">{formData.type === 'transfer' ? 'Conta de Origem *' : 'Conta'}</Label>
+                    <Select
+                      value={formData.account_id}
+                      onValueChange={(value) => setFormData({ ...formData, account_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma conta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map(acc => (
+                          <SelectItem key={acc.id} value={acc.id}>
+                            {acc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.type === 'transfer' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="destination_account">Conta de Destino *</Label>
+                      <Select
+                        value={formData.transfer_destination_account_id}
+                        onValueChange={(value) => setFormData({ ...formData, transfer_destination_account_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a conta de destino" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accounts
+                            .filter(acc => acc.id !== formData.account_id)
+                            .map(acc => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Descrição</Label>
+                    <Input
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </div>
+
+                  {formData.type !== 'transfer' && (
+                    <>
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox
+                          id="is_recurring"
+                          checked={formData.is_recurring}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, is_recurring: checked as boolean })
+                          }
+                        />
+                        <Label htmlFor="is_recurring" className="cursor-pointer">
+                          Transação recorrente
+                        </Label>
+                      </div>
+
+                      {formData.is_recurring && (
+                        <div className="space-y-2">
+                          <Label htmlFor="recurrence">Frequência</Label>
+                          <Select
+                            value={formData.recurrence_pattern}
+                            onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') =>
+                              setFormData({ ...formData, recurrence_pattern: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Diária</SelectItem>
+                              <SelectItem value="weekly">Semanal</SelectItem>
+                              <SelectItem value="monthly">Mensal</SelectItem>
+                              <SelectItem value="yearly">Anual</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {!editingTransaction && (
+                        <>
+                          <div className="flex items-center space-x-2 pt-2">
+                            <Checkbox
+                              id="is_installment"
+                              checked={formData.is_installment}
+                              onCheckedChange={(checked) =>
+                                setFormData({ ...formData, is_installment: checked as boolean })
+                              }
+                            />
+                            <Label htmlFor="is_installment" className="cursor-pointer">
+                              Parcelar transação
+                            </Label>
+                          </div>
+
+                          {formData.is_installment && (
+                            <div className="space-y-2">
+                              <Label htmlFor="installments">Número de Parcelas</Label>
+                              <Input
+                                id="installments"
+                                type="number"
+                                min="2"
+                                max="48"
+                                value={formData.total_installments}
+                                onChange={(e) => setFormData({ ...formData, total_installments: e.target.value })}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Valor por parcela: R$ {(Number(formData.amount) / Number(formData.total_installments) || 0).toFixed(2)}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button type="submit">{editingTransaction ? 'Atualizar' : 'Criar'}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-4 md:px-6 xl:px-8 space-y-6 overflow-x-hidden box-border">
+      <div className="space-y-6 overflow-x-hidden box-border">
 
         {/* Barra de Busca e Filtros */}
         <div className="rounded-lg border bg-card p-3 space-y-2">
