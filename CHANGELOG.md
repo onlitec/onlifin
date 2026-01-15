@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.8.0] - 2026-01-15
+
+### feat: add automatic backup before running migrations
+
+---
+
+
+
 ## [1.6.2] - 2026-01-09
 
 ### Merge master into main (resolve version conflicts and bump to 1.6.1)
