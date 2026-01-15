@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.12.2] - 2026-01-15
+
+### fix(import): auto-select first account and fix missing recurring_schedules table
+
+---
+
+
+
 ## [1.12.1] - 2026-01-15
 
 ### style(ui): update headers to full-width and fix lint errors
