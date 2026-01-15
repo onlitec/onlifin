@@ -16,4 +16,5 @@ CREATE TABLE IF NOT EXISTS recurring_schedules (
 CREATE INDEX IF NOT EXISTS idx_recurring_schedules_user_id ON recurring_schedules(user_id);
 
 -- Permissions
-GRANT ALL ON recurring_schedules TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON recurring_schedules TO authenticated;
+GRANT SELECT ON recurring_schedules TO anon;
