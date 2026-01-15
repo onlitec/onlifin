@@ -44,6 +44,11 @@ export default function Import() {
       ]);
       setAccounts(accountsData);
       setCategories(categoriesData);
+
+      // Auto-select first account
+      if (accountsData.length > 0 && !selectedAccount) {
+        setSelectedAccount(accountsData[0].id);
+      }
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -75,13 +80,13 @@ export default function Import() {
     const transactions: ParsedTransaction[] = [];
 
     // Skip header if exists
-    const startIndex = lines[0].toLowerCase().includes('data') || 
-                       lines[0].toLowerCase().includes('date') ? 1 : 0;
+    const startIndex = lines[0].toLowerCase().includes('data') ||
+      lines[0].toLowerCase().includes('date') ? 1 : 0;
 
     for (let i = startIndex; i < lines.length; i++) {
       const line = lines[i];
       const parts = line.split(/[,;]/);
-      
+
       if (parts.length >= 3) {
         const date = parts[0].trim();
         const description = parts[1].trim();
@@ -270,8 +275,8 @@ export default function Import() {
       const incomeCategory = categories.find(c => c.name === 'Outros' && c.type === 'income');
 
       for (const transaction of selectedTransactions) {
-        const categoryId = transaction.type === 'expense' 
-          ? expenseCategory?.id 
+        const categoryId = transaction.type === 'expense'
+          ? expenseCategory?.id
           : incomeCategory?.id;
 
         await transactionsApi.createTransaction({
@@ -332,7 +337,7 @@ export default function Import() {
   };
 
   const toggleTransaction = (index: number) => {
-    setParsedData(prev => prev.map((t, i) => 
+    setParsedData(prev => prev.map((t, i) =>
       i === index ? { ...t, selected: !t.selected } : t
     ));
   };
@@ -478,11 +483,10 @@ export default function Import() {
                       <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell>{transaction.description}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                          transaction.type === 'income' 
-                            ? 'bg-green-100 text-green-700' 
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${transaction.type === 'income'
+                            ? 'bg-green-100 text-green-700'
                             : 'bg-red-100 text-red-700'
-                        }`}>
+                          }`}>
                           {transaction.type === 'income' ? (
                             <>
                               <CheckCircle className="h-3 w-3" />
