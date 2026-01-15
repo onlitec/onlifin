@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.10.0] - 2026-01-15
+
+### feat(bills): show associated bank account in bills list
+
+---
+
+
+
 ## [1.9.1] - 2026-01-15
 
 ### fix(dashboard): exclude internal transfers from income/expense totals
