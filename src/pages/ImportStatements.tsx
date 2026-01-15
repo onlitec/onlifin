@@ -397,14 +397,16 @@ export default function ImportStatements() {
       setAnalysisProgress(60);
       setCurrentAnalysisStep('Carregando categorias...');
 
+      // Carregar categorias do usuário E categorias padrão do sistema
       const { data: categories, error: catError } = await supabase
         .from('categories')
         .select('*')
-        .eq('user_id', user.id);
+        .or(`user_id.eq.${user.id},user_id.is.null`);
 
       if (catError) throw catError;
-      setExistingCategories(categories || []);
-      addLog(`${(categories || []).length} categorias disponíveis`);
+      const allCategories = categories || [];
+      setExistingCategories(allCategories);
+      addLog(`${allCategories.length} categorias disponíveis`);
 
       setAnalysisProgress(70);
       setCurrentAnalysisStep('Enviando para categorização com IA...');
@@ -899,9 +901,17 @@ export default function ImportStatements() {
                             <SelectValue placeholder="Categoria" />
                           </SelectTrigger>
                           <SelectContent>
+                            {/* Mostrar categorias do mesmo tipo OU todas se tipo não definido */}
                             {existingCategories
-                              .filter(c => c.type === transaction.type)
+                              .filter(c => !transaction.type || c.type === transaction.type)
                               .map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>
+                                  {cat.icon} {cat.name}
+                                </SelectItem>
+                              ))}
+                            {/* Se não houver categorias filtradas, mostrar todas */}
+                            {existingCategories.filter(c => !transaction.type || c.type === transaction.type).length === 0 &&
+                              existingCategories.map(cat => (
                                 <SelectItem key={cat.id} value={cat.id}>
                                   {cat.icon} {cat.name}
                                 </SelectItem>
