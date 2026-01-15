@@ -33,7 +33,7 @@ export default function BillsToReceive() {
   const [bills, setBills] = React.useState<BillToReceive[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
-  // loading state removed as it was unused
+  const [loading, setLoading] = React.useState(true);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingBill, setEditingBill] = React.useState<BillToReceive | null>(null);
 
