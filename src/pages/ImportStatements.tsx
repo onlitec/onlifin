@@ -28,6 +28,7 @@ import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles, History
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import type { Category, Account, Transaction } from '@/types/types';
 import { accountsApi } from '@/db/api';
+import { categorizeTransactionsWithAI } from '@/services/ollamaService';
 
 interface ParsedTransaction {
   date: string;
@@ -378,21 +379,30 @@ export default function ImportStatements() {
       if (catError) throw catError;
       setExistingCategories(categories || []);
 
-      // Send to AI for categorization
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          action: 'categorize_transactions',
-          transactions: parsed,
-          existingCategories: categories || [],
-        },
-      });
-
-      if (error) {
-        console.error('Erro da IA:', error);
-        throw new Error('Erro ao categorizar transações com IA');
+      // Send to AI for categorization using local Ollama
+      let result: any;
+      try {
+        result = await categorizeTransactionsWithAI(parsed, categories || []);
+      } catch (aiError: any) {
+        console.error('Erro da IA:', aiError);
+        // Fallback: create basic categorization without AI
+        toast({
+          title: 'Aviso',
+          description: 'IA indisponível. Categorização manual será necessária.',
+          variant: 'destructive',
+        });
+        result = {
+          categorizedTransactions: parsed.map(t => ({
+            ...t,
+            suggestedCategory: 'Sem categoria',
+            suggestedCategoryId: null,
+            isNewCategory: false,
+            confidence: 0
+          })),
+          newCategories: []
+        };
       }
 
-      const result = data as any;
       if (!result) {
         throw new Error('Resposta inválida da IA');
       }
