@@ -380,18 +380,20 @@ export const transactionsApi = {
       supabase.from('accounts').select('balance').eq('user_id', userId),
       supabase.from('cards').select('id').eq('user_id', userId),
       supabase.from('transactions')
-        .select('type, amount')
+        .select('type, amount, is_transfer')
         .eq('user_id', userId)
         .gte('date', firstDayOfMonth)
         .lte('date', lastDayOfMonth)
     ]);
 
     const totalBalance = (accountsData.data || []).reduce((sum, acc) => sum + Number(acc.balance), 0);
+
+    // Filtrar transferências internas - não devem contar como receita/despesa real
     const monthlyIncome = (transactionsData.data || [])
-      .filter(t => t.type === 'income')
+      .filter(t => t.type === 'income' && !t.is_transfer)
       .reduce((sum, t) => sum + Number(t.amount), 0);
     const monthlyExpenses = (transactionsData.data || [])
-      .filter(t => t.type === 'expense')
+      .filter(t => t.type === 'expense' && !t.is_transfer)
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
     return {
@@ -447,17 +449,18 @@ export const transactionsApi = {
 
       const { data } = await supabase
         .from('transactions')
-        .select('type, amount')
+        .select('type, amount, is_transfer')
         .eq('user_id', userId)
         .gte('date', firstDay)
         .lte('date', lastDay);
 
+      // Filtrar transferências internas
       const income = (data || [])
-        .filter(t => t.type === 'income')
+        .filter(t => t.type === 'income' && !t.is_transfer)
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       const expenses = (data || [])
-        .filter(t => t.type === 'expense')
+        .filter(t => t.type === 'expense' && !t.is_transfer)
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       result.push({

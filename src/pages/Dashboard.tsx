@@ -132,17 +132,18 @@ export default function Dashboard() {
 
     const { data: transactions } = await supabase
       .from('transactions')
-      .select('amount, type')
+      .select('amount, type, is_transfer')
       .eq('user_id', userId)
       .gte('date', firstDay)
       .lte('date', lastDay);
 
+    // Filtrar transferências internas - não contam como receita/despesa real
     const monthlyIncome = transactions
-      ?.filter(t => t.type === 'income')
+      ?.filter(t => t.type === 'income' && !t.is_transfer)
       .reduce((sum, t) => sum + t.amount, 0) || 0;
 
     const monthlyExpenses = transactions
-      ?.filter(t => t.type === 'expense')
+      ?.filter(t => t.type === 'expense' && !t.is_transfer)
       .reduce((sum, t) => sum + t.amount, 0) || 0;
 
     const savingsRate = monthlyIncome > 0
