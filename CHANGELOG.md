@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.11.0] - 2026-01-15
+
+### feat(ui): add colored borders to status cards and lists
+
+---
+
+
+
 ## [1.10.0] - 2026-01-15
 
 ### feat(bills): show associated bank account in bills list
