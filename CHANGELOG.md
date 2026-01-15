@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.12.1] - 2026-01-15
+
+### style(ui): update headers to full-width and fix lint errors
+
+---
+
+
+
 ## [1.12.0] - 2026-01-15
 
 ### feat(accounts): convert from cards to compact list layout
