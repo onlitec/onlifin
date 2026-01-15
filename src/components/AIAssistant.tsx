@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { MessageCircle, X, Send, Loader2, RotateCcw } from 'lucide-react';
 import { chatWithAssistant, getDegradedResponse } from '@/services/ollamaService';
+import { loadFinancialContext, formatFinancialContextForPrompt } from '@/services/financialContext';
+import { supabase } from '@/db/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -72,10 +74,24 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
+      // Carregar contexto financeiro
+      const { data: { user } } = await supabase.auth.getUser();
+      let contextText: string | undefined;
+
+      if (user) {
+        try {
+          const financialContext = await loadFinancialContext(user.id);
+          contextText = formatFinancialContextForPrompt(financialContext);
+        } catch (ctxError) {
+          console.error('Erro ao carregar contexto financeiro:', ctxError);
+        }
+      }
+
       // Usar Ollama local para gerar resposta
       let responseText: string;
       try {
-        responseText = await chatWithAssistant(userMessage);
+        // Passamos o histórico de mensagens (não apenas a última) e o contexto financeiro
+        responseText = await chatWithAssistant(userMessage, updatedMessages, contextText);
       } catch (aiError: any) {
         console.warn('Ollama indisponível, usando modo degradado:', aiError.message);
         responseText = getDegradedResponse(userMessage);
@@ -172,8 +188,8 @@ export default function AIAssistant() {
                   >
                     <div
                       className={`max-w-[85%] rounded-lg px-4 py-2 ${msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
                         }`}
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>

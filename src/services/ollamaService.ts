@@ -2,9 +2,14 @@
 
 const OLLAMA_MODEL = 'qwen2.5:0.5b';
 
-interface OllamaGenerateRequest {
+interface OllamaMessage {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+}
+
+interface OllamaChatRequest {
     model: string;
-    prompt: string;
+    messages: OllamaMessage[];
     stream?: boolean;
     options?: {
         temperature?: number;
@@ -12,36 +17,30 @@ interface OllamaGenerateRequest {
     };
 }
 
-interface OllamaGenerateResponse {
+interface OllamaChatResponse {
     model: string;
-    response: string;
+    message: OllamaMessage;
     done: boolean;
-    done_reason?: string;
 }
 
 /**
- * Chama a API do Ollama para gerar uma resposta
+ * Chama a API do Ollama para gerar uma resposta usando o endpoint de chat
  */
-export async function generateWithOllama(
-    prompt: string,
-    systemPrompt?: string
+export async function chatWithOllama(
+    messages: OllamaMessage[]
 ): Promise<string> {
-    const fullPrompt = systemPrompt
-        ? `${systemPrompt}\n\nUsuário: ${prompt}\n\nAssistente:`
-        : prompt;
-
-    const requestBody: OllamaGenerateRequest = {
+    const requestBody: OllamaChatRequest = {
         model: OLLAMA_MODEL,
-        prompt: fullPrompt,
+        messages,
         stream: false,
         options: {
-            temperature: 0.7,
-            num_predict: 2048,
+            temperature: 0.6, // Reduzido ligeiramente para maior consistência
+            num_predict: 1024,
         }
     };
 
     try {
-        const response = await fetch('/ollama/api/generate', {
+        const response = await fetch('/ollama/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -54,12 +53,23 @@ export async function generateWithOllama(
             throw new Error(`Ollama error: ${response.status} - ${errorText}`);
         }
 
-        const data: OllamaGenerateResponse = await response.json();
-        return data.response || '';
+        const data: OllamaChatResponse = await response.json();
+        return data.message.content || '';
     } catch (error: any) {
-        console.error('Erro ao chamar Ollama:', error.message);
+        console.error('Erro ao chamar Ollama Chat:', error.message);
         throw error;
     }
+}
+
+// Mantendo suporte para generate se necessário
+export async function generateWithOllama(
+    prompt: string,
+    systemPrompt?: string
+): Promise<string> {
+    const messages: OllamaMessage[] = [];
+    if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: 'user', content: prompt });
+    return chatWithOllama(messages);
 }
 
 /**
@@ -133,71 +143,37 @@ export async function chatWithAssistant(
     conversationHistory?: { role: 'user' | 'assistant'; content: string }[],
     financialContextText?: string
 ): Promise<string> {
-    // Build conversation context from history
-    let conversationContext = '';
+    const systemPrompt = `Você é o Onlifin AI, assistente financeiro pessoal.
+Responda sempre em Português (PT-BR). Seja conciso, direto e amigável. Use emojis.
+Analise os dados financeiros abaixo para fundamentar suas respostas. Se não houver dados, peça para o usuário cadastrar.
+
+DADOS FINANCEIROS DO USUÁRIO:
+${financialContextText || 'Nenhum dado financeiro disponível.'}
+
+INSTRUÇÕES:
+1. Use os dados acima para responder perguntas sobre gastos, saldo e economia.
+2. Identifique tendências ou gastos excessivos.
+3. Se o usuário perguntar algo não financeiro, tente trazer o assunto de volta para finanças.`;
+
+    const messages: OllamaMessage[] = [
+        { role: 'system', content: systemPrompt }
+    ];
+
+    // Adicionar histórico (últimas 10 mensagens para manter contexto sem estourar token limit)
     if (conversationHistory && conversationHistory.length > 0) {
-        // Include last 6 messages for context
-        const recentHistory = conversationHistory.slice(-6);
-        conversationContext = recentHistory
-            .map(msg => `${msg.role === 'user' ? 'Usuário' : 'Assistente'}: ${msg.content}`)
-            .join('\n\n');
+        const recentHistory = conversationHistory.slice(-10);
+        recentHistory.forEach(msg => {
+            messages.push({
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content
+            });
+        });
     }
 
-    const systemPrompt = `Você é o Onlifin AI, um consultor financeiro pessoal altamente qualificado.
+    // Adicionar a mensagem atual
+    messages.push({ role: 'user', content: message });
 
-═══════════════════════════════════════════════════════════
-                    SUAS COMPETÊNCIAS
-═══════════════════════════════════════════════════════════
-
-🎯 ANÁLISE FINANCEIRA:
-• Analisar receitas, despesas e fluxo de caixa
-• Identificar padrões de gastos e oportunidades de economia
-• Calcular indicadores financeiros (taxa de poupança, endividamento)
-• Comparar períodos e identificar tendências
-
-📈 PREVISÃO FINANCEIRA:
-• Projetar saldo futuro baseado em padrões atuais
-• Alertar sobre possíveis problemas de caixa
-• Sugerir metas de economia realistas
-• Calcular tempo para atingir objetivos financeiros
-
-💡 CONSULTORIA:
-• Dar dicas personalizadas de economia
-• Sugerir realocação de gastos
-• Recomendar categorização de transações
-• Orientar sobre organização financeira
-
-🔔 ALERTAS E LEMBRETES:
-• Avisar sobre contas próximas do vencimento
-• Alertar sobre contas atrasadas
-• Identificar gastos acima do normal
-• Monitorar uso de limites de cartão
-
-═══════════════════════════════════════════════════════════
-                    REGRAS DE COMPORTAMENTO
-═══════════════════════════════════════════════════════════
-
-1. Sempre analise os dados financeiros fornecidos antes de responder
-2. Use emojis para tornar as respostas mais visuais e amigáveis
-3. Seja específico com valores e datas quando disponíveis
-4. Mantenha o contexto da conversa anterior
-5. Se não tiver dados suficientes, peça que o usuário cadastre
-6. Responda SEMPRE em português brasileiro
-7. Seja conciso mas completo
-8. Priorize ações práticas e executáveis
-
-${financialContextText || '(Dados financeiros não disponíveis - sugira ao usuário cadastrar suas contas e transações)'}
-
-${conversationContext ? `
-═══════════════════════════════════════════════════════════
-                    HISTÓRICO DA CONVERSA
-═══════════════════════════════════════════════════════════
-${conversationContext}
-` : ''}
-
-Agora responda à mensagem do usuário de forma útil e personalizada:`;
-
-    return generateWithOllama(message, systemPrompt);
+    return chatWithOllama(messages);
 }
 
 /**
