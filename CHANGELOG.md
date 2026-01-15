@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.9.0] - 2026-01-15
+
+### feat(dashboard): add pending bills to receive card
+
+---
+
+
+
 ## [1.8.0] - 2026-01-15
 
 ### feat: add automatic backup before running migrations
