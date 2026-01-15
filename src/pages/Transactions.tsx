@@ -633,8 +633,8 @@ export default function Transactions() {
 
   return (
     <div className="w-full space-y-6">
-      <div className="w-full bg-card border-b px-4 md:px-6 xl:px-8 py-4">
-        <div className="max-w-[1600px] mx-auto flex flex-col gap-4">
+      <div className="w-full bg-card border-b py-4">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-6 xl:px-8 flex flex-col gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
             <p className="text-muted-foreground mt-1 text-sm md:text-base">Gerencie suas receitas, despesas e transferências</p>
