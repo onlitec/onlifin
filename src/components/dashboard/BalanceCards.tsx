@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface BalanceCardsProps {
@@ -6,6 +6,7 @@ interface BalanceCardsProps {
     monthlyIncome: number;
     monthlyExpenses: number;
     savingsRate: number;
+    pendingToReceive?: number;
 }
 
 const formatCurrency = (value: number) => {
@@ -15,30 +16,44 @@ const formatCurrency = (value: number) => {
     }).format(value);
 };
 
-export function BalanceCards({ totalBalance, monthlyIncome, monthlyExpenses, savingsRate }: BalanceCardsProps) {
+export function BalanceCards({
+    totalBalance,
+    monthlyIncome,
+    monthlyExpenses,
+    savingsRate,
+    pendingToReceive = 0
+}: BalanceCardsProps) {
     const savings = monthlyIncome - monthlyExpenses;
 
     const cards = [
         {
             title: 'Saldo Total',
             value: totalBalance,
-            change: '+12.5%',
+            subtitle: 'Saldo atual das contas',
             icon: Wallet,
             iconBg: 'bg-blue-500',
             iconColor: 'text-white'
         },
         {
-            title: 'Receitas',
+            title: 'Receitas Confirmadas',
             value: monthlyIncome,
-            change: '+8.2%',
+            subtitle: 'Receitas recebidas no mês',
             icon: TrendingUp,
             iconBg: 'bg-green-500',
             iconColor: 'text-white'
         },
         {
+            title: 'A Receber',
+            value: pendingToReceive,
+            subtitle: 'Contas pendentes',
+            icon: Clock,
+            iconBg: 'bg-amber-500',
+            iconColor: 'text-white'
+        },
+        {
             title: 'Despesas',
             value: monthlyExpenses,
-            change: '-4.1%',
+            subtitle: 'Gastos do mês',
             icon: TrendingDown,
             iconBg: 'bg-red-500',
             iconColor: 'text-white'
@@ -46,7 +61,7 @@ export function BalanceCards({ totalBalance, monthlyIncome, monthlyExpenses, sav
         {
             title: 'Poupança',
             value: savings,
-            change: `+${savingsRate.toFixed(1)}%`,
+            subtitle: `Taxa: ${savingsRate.toFixed(1)}%`,
             icon: PiggyBank,
             iconBg: 'bg-purple-500',
             iconColor: 'text-white'
@@ -54,37 +69,29 @@ export function BalanceCards({ totalBalance, monthlyIncome, monthlyExpenses, sav
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {cards.map((card, index) => {
                 const Icon = card.icon;
                 const isNegative = card.value < 0;
-                const changeIsNegative = card.change.startsWith('-');
 
                 return (
                     <Card
                         key={index}
                         className="hover:shadow-md transition-shadow"
                     >
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-sm text-muted-foreground">{card.title}</span>
-                                <div className={`p-2 rounded-lg ${card.iconBg}`}>
-                                    <Icon className={`h-5 w-5 ${card.iconColor}`} />
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs text-muted-foreground font-medium">{card.title}</span>
+                                <div className={`p-1.5 rounded-lg ${card.iconBg}`}>
+                                    <Icon className={`h-4 w-4 ${card.iconColor}`} />
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <h3 className={`text-2xl font-bold ${isNegative ? 'text-red-500' : 'text-foreground'
-                                    }`}>
+                            <div className="space-y-0.5">
+                                <h3 className={`text-xl font-bold ${isNegative ? 'text-red-500' : 'text-foreground'}`}>
                                     {formatCurrency(card.value)}
                                 </h3>
-                                <p className={`text-sm flex items-center gap-1 ${changeIsNegative ? 'text-red-500' : 'text-green-500'
-                                    }`}>
-                                    {changeIsNegative ? (
-                                        <TrendingDown className="h-3 w-3" />
-                                    ) : (
-                                        <TrendingUp className="h-3 w-3" />
-                                    )}
-                                    {card.change}
+                                <p className="text-xs text-muted-foreground">
+                                    {card.subtitle}
                                 </p>
                             </div>
                         </CardContent>
@@ -94,3 +101,4 @@ export function BalanceCards({ totalBalance, monthlyIncome, monthlyExpenses, sav
         </div>
     );
 }
+

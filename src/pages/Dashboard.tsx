@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { supabase } from '@/db/client';
-import { transactionsApi, forecastsApi } from '@/db/api';
+import { transactionsApi, forecastsApi, billsToReceiveApi } from '@/db/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
   const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
   const [forecast, setForecast] = React.useState<FinancialForecast | null>(null);
+  const [pendingToReceive, setPendingToReceive] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
 
   // Estado para mês/ano selecionado
@@ -85,6 +86,16 @@ export default function Dashboard() {
       setCategoryExpenses(expenses);
       setMonthlyData(monthly);
       setForecast(latestForecast);
+
+      // Carregar contas a receber pendentes
+      try {
+        const pendingBills = await billsToReceiveApi.getPending(user.id);
+        const totalPending = pendingBills.reduce((sum, bill) => sum + bill.amount, 0);
+        setPendingToReceive(totalPending);
+      } catch (err) {
+        console.error('Erro ao carregar contas a receber:', err);
+        setPendingToReceive(0);
+      }
 
       // Calcular estatísticas avançadas
       await loadEnhancedStats(user.id, dashboardStats, year, month);
@@ -298,6 +309,7 @@ export default function Dashboard() {
         monthlyIncome={enhancedStats?.monthlyIncome || 0}
         monthlyExpenses={enhancedStats?.monthlyExpenses || 0}
         savingsRate={enhancedStats?.savingsRate || 0}
+        pendingToReceive={pendingToReceive}
       />
 
       {/* Charts Grid */}
