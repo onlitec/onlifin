@@ -364,39 +364,39 @@ export default function BillsToReceive() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-        <Card>
+        <Card className="border-2 border-yellow-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <AlertCircle className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingBills.length}</div>
+            <div className="text-2xl font-bold text-yellow-500">{pendingBills.length}</div>
             <p className="text-xs text-muted-foreground">
               R$ {pendingBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-red-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
+            <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{overdueBills.length}</div>
+            <div className="text-2xl font-bold text-red-500">{overdueBills.length}</div>
             <p className="text-xs text-muted-foreground">
               R$ {overdueBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-green-500">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Recebidas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-income" />
+            <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-income">{paidBills.length}</div>
+            <div className="text-2xl font-bold text-green-500">{paidBills.length}</div>
             <p className="text-xs text-muted-foreground">
               R$ {paidBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
             </p>
@@ -405,7 +405,7 @@ export default function BillsToReceive() {
       </div>
 
       {/* Bills List */}
-      <div className="divide-y divide-border rounded-lg border bg-card overflow-hidden">
+      <div className="rounded-lg border-2 border-white/20 bg-card overflow-hidden">
         {bills.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10">
             <DollarSign className="h-10 w-10 text-muted-foreground mb-3" />
@@ -416,7 +416,7 @@ export default function BillsToReceive() {
           </div>
         ) : (
           bills.map((bill) => (
-            <div key={bill.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors">
+            <div key={bill.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors border-b border-white/10 last:border-b-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="p-1.5 rounded-full bg-income/10">
                   <DollarSign className="h-4 w-4 text-income" />
