@@ -2,19 +2,13 @@ import * as React from 'react';
 import { supabase } from '@/db/client';
 import { accountsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// Card components removed - using list layout now
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Plus, Pencil, Trash2, Building2, RefreshCw, Info, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, Info } from 'lucide-react';
 import { BankIconSelector } from '@/components/ui/bank-icon-selector';
 import { getBankById, getDefaultBankIcon } from '@/config/banks';
 import type { Account } from '@/types/types';
@@ -302,89 +296,78 @@ export default function Accounts() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {accounts.map((account) => (
-          <Card key={account.id} className="shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-lg font-semibold">{account.name}</CardTitle>
-              <div className="p-1 rounded-full bg-muted">
-                <img
-                  src={account.icon ? getBankById(account.icon)?.icon || getDefaultBankIcon() : getDefaultBankIcon()}
-                  alt={account.bank || 'Banco'}
-                  className="w-10 h-10 object-contain"
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {account.bank && (
-                  <p className="text-sm text-muted-foreground font-medium">{account.bank}</p>
-                )}
-                {account.agency && account.account_number && (
-                  <p className="text-sm text-muted-foreground">
-                    Ag: {account.agency} / Conta: {account.account_number}
-                  </p>
-                )}
-                <div className="flex items-center gap-2 pt-2">
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground mb-1">Saldo Atual</p>
-                    <p className={`text-2xl font-bold flex items-center gap-1 ${account.balance >= 0 ? 'text-income' : 'text-expense'}`}>
-                      {account.balance >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-                      {formatCurrency(account.balance)}
-                    </p>
-                  </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-sm">
-                          O saldo é atualizado automaticamente com suas transações:
-                          <br />• Receitas aumentam o saldo
-                          <br />• Despesas diminuem o saldo
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="flex gap-2 pt-3 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(account)}
-                    className="flex-1"
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(account.id)}
-                    className="flex-1"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {accounts.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">Nenhuma conta cadastrada</p>
-            <p className="text-sm text-muted-foreground mb-4">
+      {/* Lista de Contas */}
+      <div className="rounded-lg border-2 border-white/40 bg-card overflow-hidden">
+        {accounts.length === 0 && !isLoading ? (
+          <div className="flex flex-col items-center justify-center py-10">
+            <Building2 className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-base font-medium mb-1">Nenhuma conta cadastrada</p>
+            <p className="text-sm text-muted-foreground">
               Comece adicionando sua primeira conta bancária
             </p>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        ) : (
+          accounts.map((account) => (
+            <div key={account.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors border-b border-white/20 last:border-b-0">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                {/* Ícone do Banco */}
+                <div className="p-1 rounded-full bg-muted shrink-0">
+                  <img
+                    src={account.icon ? getBankById(account.icon)?.icon || getDefaultBankIcon() : getDefaultBankIcon()}
+                    alt={account.bank || 'Banco'}
+                    className="w-8 h-8 object-contain"
+                  />
+                </div>
+
+                {/* Informações da Conta */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm truncate">{account.name}</p>
+                    {account.bank && (
+                      <span className="text-xs text-muted-foreground">• {account.bank}</span>
+                    )}
+                  </div>
+                  {account.agency && account.account_number && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Ag: {account.agency} / Conta: {account.account_number}
+                    </p>
+                  )}
+                </div>
+
+                {/* Saldo */}
+                <div className="text-right shrink-0">
+                  <p className={`text-lg font-bold flex items-center gap-1 justify-end ${account.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {account.balance >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    {formatCurrency(account.balance)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex gap-1 ml-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => openEditDialog(account)}
+                  title="Editar"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handleDelete(account.id)}
+                  title="Excluir"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
