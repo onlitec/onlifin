@@ -1,6 +1,6 @@
 // API Service para Ollama AI local
 
-const OLLAMA_MODEL = 'phi3';
+const OLLAMA_MODEL = 'qwen2.5:1.5b';
 
 interface OllamaMessage {
     role: 'system' | 'user' | 'assistant';
@@ -199,23 +199,30 @@ Responda APENAS com JSON válido:
       "confidence": 0.9
     }
   ],
-  "newCategories": [
-    {
-      "name": "Nome em Português",
-      "type": "income" ou "expense"
-    }
-  ]
+  "newCategories": []
 }`;
 
     try {
+        console.log('[AI] Enviando prompt para Ollama...');
         const response = await generateWithOllama(prompt);
+        console.log('[AI] Resposta bruta:', response.substring(0, 500));
 
-        // Extrair JSON da resposta
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        // Extrair JSON da resposta - tentar múltiplos padrões
+        let jsonMatch = response.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
+            // Tentar extrair de bloco de código
+            const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (codeBlockMatch) {
+                jsonMatch = codeBlockMatch[1].match(/\{[\s\S]*\}/);
+            }
+        }
+
+        if (!jsonMatch) {
+            console.error('[AI] Resposta não contém JSON:', response);
             throw new Error('Resposta da IA não contém JSON válido');
         }
 
+        console.log('[AI] JSON extraído:', jsonMatch[0].substring(0, 300));
         const result = JSON.parse(jsonMatch[0]);
 
         // Garantir que as transações tenham os campos necessários
