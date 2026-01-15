@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.13.0] - 2026-01-15
+
+### feat(import): add real-time progress bar and activity log during AI analysis
+
+---
+
+
+
 ## [1.12.2] - 2026-01-15
 
 ### fix(import): auto-select first account and fix missing recurring_schedules table
