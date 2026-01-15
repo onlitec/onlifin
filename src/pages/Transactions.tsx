@@ -130,29 +130,38 @@ export default function Transactions() {
       }
 
       if (editingTransaction) {
-        // Não permitir editar transferências (devem ser excluídas e recriadas)
+        // Editar transferências
         if (editingTransaction.is_transfer) {
-          toast({
-            title: 'Erro',
-            description: 'Transferências não podem ser editadas. Exclua e crie uma nova.',
-            variant: 'destructive'
+          const pair = await transactionsApi.getTransferPair(editingTransaction.id);
+          if (pair) {
+            await transactionsApi.updateTransfer({
+              sourceTransactionId: pair.source_transaction_id,
+              destinationTransactionId: pair.destination_transaction_id,
+              sourceAccountId: formData.account_id,
+              destinationAccountId: formData.transfer_destination_account_id,
+              amount: Number(formData.amount),
+              date: formData.date,
+              description: formData.description
+            });
+            toast({ title: 'Sucesso', description: 'Transferência atualizada com sucesso' });
+          } else {
+            throw new Error('Não foi possível encontrar os detalhes da transferência');
+          }
+        } else {
+          // Update existing transaction
+          await transactionsApi.updateTransaction(editingTransaction.id, {
+            type: formData.type,
+            amount: Number(formData.amount),
+            date: formData.date,
+            description: formData.description,
+            category_id: formData.category_id || null,
+            account_id: formData.account_id || null,
+            card_id: formData.card_id || null,
+            is_recurring: formData.is_recurring,
+            recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null
           });
-          return;
+          toast({ title: 'Sucesso', description: 'Transação atualizada com sucesso' });
         }
-
-        // Update existing transaction
-        await transactionsApi.updateTransaction(editingTransaction.id, {
-          type: formData.type,
-          amount: Number(formData.amount),
-          date: formData.date,
-          description: formData.description,
-          category_id: formData.category_id || null,
-          account_id: formData.account_id || null,
-          card_id: formData.card_id || null,
-          is_recurring: formData.is_recurring,
-          recurrence_pattern: formData.is_recurring ? formData.recurrence_pattern : null
-        });
-        toast({ title: 'Sucesso', description: 'Transação atualizada com sucesso' });
       } else {
         // Criar transferência
         if (formData.type === 'transfer') {
@@ -244,8 +253,39 @@ export default function Transactions() {
     }
   };
 
-  const handleEdit = (transaction: Transaction) => {
+  const handleEdit = async (transaction: Transaction) => {
     setEditingTransaction(transaction);
+
+    if (transaction.is_transfer) {
+      try {
+        const pair = await transactionsApi.getTransferPair(transaction.id);
+        if (pair) {
+          setFormData({
+            type: 'transfer',
+            amount: pair.amount.toString(),
+            date: pair.date,
+            description: pair.description || '',
+            category_id: '',
+            account_id: pair.source_account_id,
+            card_id: '',
+            transfer_destination_account_id: pair.destination_account_id,
+            is_recurring: false,
+            recurrence_pattern: 'monthly',
+            is_installment: false,
+            total_installments: '1'
+          });
+          setIsDialogOpen(true);
+          return;
+        }
+      } catch (error: any) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível carregar os detalhes da transferência',
+          variant: 'destructive'
+        });
+      }
+    }
+
     setFormData({
       type: transaction.type,
       amount: transaction.amount.toString(),
@@ -1095,17 +1135,15 @@ export default function Transactions() {
                           </SelectContent>
                         </Select>
                       )}
-                      {!tx.is_transfer && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleEdit(tx)}
-                          title="Editar"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleEdit(tx)}
+                        title="Editar"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

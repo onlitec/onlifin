@@ -500,10 +500,10 @@ export const transactionsApi = {
   },
 
   async getTransferPair(transactionId: string): Promise<{
-    sourceTransactionId: string;
-    destinationTransactionId: string;
-    sourceAccountId: string;
-    destinationAccountId: string;
+    source_transaction_id: string;
+    destination_transaction_id: string;
+    source_account_id: string;
+    destination_account_id: string;
     amount: number;
     date: string;
     description: string;
@@ -514,6 +514,45 @@ export const transactionsApi = {
 
     if (error) throw error;
     return data && data.length > 0 ? data[0] : null;
+  },
+
+  async updateTransfer(params: {
+    sourceTransactionId: string;
+    destinationTransactionId: string;
+    sourceAccountId: string;
+    destinationAccountId: string;
+    amount: number;
+    date: string;
+    description: string;
+  }): Promise<void> {
+    // Update source transaction
+    const { error: error1 } = await supabase
+      .from('transactions')
+      .update({
+        account_id: params.sourceAccountId,
+        amount: params.amount,
+        date: params.date,
+        description: params.description,
+        transfer_destination_account_id: params.destinationAccountId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', params.sourceTransactionId);
+
+    if (error1) throw error1;
+
+    // Update destination transaction
+    const { error: error2 } = await supabase
+      .from('transactions')
+      .update({
+        account_id: params.destinationAccountId,
+        amount: params.amount,
+        date: params.date,
+        description: params.description,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', params.destinationTransactionId);
+
+    if (error2) throw error2;
   }
 };
 
