@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark } from 'lucide-react';
 
 export default function BillsToReceive() {
   const { toast } = useToast();
@@ -431,6 +431,12 @@ export default function BillsToReceive() {
                       <Calendar className="h-3 w-3" />
                       {formatDate(bill.due_date)}
                     </span>
+                    {bill.account_id && (
+                      <span className="flex items-center gap-1">
+                        <Landmark className="h-3 w-3" />
+                        {accounts.find(a => a.id === bill.account_id)?.name || 'Conta'}
+                      </span>
+                    )}
                     <span className="font-medium text-income">
                       R$ {bill.amount.toFixed(2)}
                     </span>
