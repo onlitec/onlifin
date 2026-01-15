@@ -337,7 +337,7 @@ export default function ImportStatements() {
         return;
       }
 
-      setParsedTransactions(parsed);
+      // setCategorizedTransactions will be set after AI analysis
 
       // Get existing categories and accounts
       const { data: { user } } = await supabase.auth.getUser();
@@ -554,7 +554,7 @@ export default function ImportStatements() {
   const resetImport = () => {
     setFileContent('');
     setTextContent('');
-    setParsedTransactions([]);
+    // Clear state
     setCategorizedTransactions([]);
     setNewCategorySuggestions([]);
     setStep('upload');
