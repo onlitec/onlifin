@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.11.1] - 2026-01-15
+
+### fix(ui): increase border opacity for better visibility
+
+---
+
+
+
 ## [1.11.0] - 2026-01-15
 
 ### feat(ui): add colored borders to status cards and lists
