@@ -1,6 +1,6 @@
 // API Service para Ollama AI local
 
-const OLLAMA_MODEL = 'qwen2.5:0.5b';
+const OLLAMA_MODEL = 'phi3';
 
 interface OllamaMessage {
     role: 'system' | 'user' | 'assistant';
@@ -73,16 +73,67 @@ export async function generateWithOllama(
 }
 
 /**
- * Categoriza transações usando IA local
+ * Categoriza transações usando IA local com aprendizado por exemplos
  */
 export async function categorizeTransactionsWithAI(
     transactions: any[],
-    existingCategories: any[]
+    existingCategories: any[],
+    userExamples?: any[], // Transações recentes do usuário para few-shot learning
+    keywordRules?: any[]  // Regras de palavras-chave
 ): Promise<{
     categorizedTransactions: any[];
     newCategories: any[];
 }> {
-    // Formatar categorias de forma clara para a IA
+    // 1. Primeiro, aplicar regras de palavras-chave (mais rápido e preciso)
+    const preProcessed = transactions.map(t => {
+        const description = (t.description || '').toUpperCase();
+
+        // Verificar regras de palavras-chave
+        if (keywordRules && keywordRules.length > 0) {
+            for (const rule of keywordRules) {
+                const keyword = (rule.keyword || '').toUpperCase();
+                let matches = false;
+
+                if (rule.match_type === 'exact') {
+                    matches = description === keyword;
+                } else if (rule.match_type === 'starts_with') {
+                    matches = description.startsWith(keyword);
+                } else { // contains (default)
+                    matches = description.includes(keyword);
+                }
+
+                if (matches) {
+                    const category = existingCategories.find(c => c.id === rule.category_id);
+                    if (category) {
+                        return {
+                            ...t,
+                            suggestedCategory: category.name,
+                            suggestedCategoryId: category.id,
+                            isNewCategory: false,
+                            confidence: 1.0, // 100% confidence for rule match
+                            matchedByRule: true
+                        };
+                    }
+                }
+            }
+        }
+
+        return { ...t, matchedByRule: false };
+    });
+
+    // Separar transações já categorizadas por regras das que precisam de IA
+    const alreadyCategorized = preProcessed.filter(t => t.matchedByRule);
+    const needsAI = preProcessed.filter(t => !t.matchedByRule);
+
+    // Se todas foram categorizadas por regras, retornar direto
+    if (needsAI.length === 0) {
+        return {
+            categorizedTransactions: alreadyCategorized,
+            newCategories: []
+        };
+    }
+
+    // 2. Formatar categorias de forma clara para a IA
     const incomeCategories = existingCategories
         .filter(c => c.type === 'income')
         .map(c => `- "${c.name}" (ID: ${c.id})`)
@@ -93,8 +144,23 @@ export async function categorizeTransactionsWithAI(
         .map(c => `- "${c.name}" (ID: ${c.id})`)
         .join('\n');
 
-    // Formatar transações de forma simplificada
-    const formattedTransactions = transactions.map((t, i) =>
+    // 3. Formatar exemplos do usuário (Few-Shot Learning)
+    let examplesSection = '';
+    if (userExamples && userExamples.length > 0) {
+        const examples = userExamples.slice(0, 10).map(ex =>
+            `- "${ex.description}" → ${ex.category?.name || 'Sem categoria'} (${ex.type === 'income' ? 'Receita' : 'Despesa'})`
+        ).join('\n');
+
+        examplesSection = `
+EXEMPLOS DE COMO O USUÁRIO JÁ CATEGORIZOU TRANSAÇÕES SIMILARES:
+${examples}
+
+Use estes exemplos como referência para categorizar transações similares.
+`;
+    }
+
+    // 4. Formatar transações que precisam de IA
+    const formattedTransactions = needsAI.map((t, i) =>
         `${i + 1}. ${t.date} | ${t.description} | R$ ${Math.abs(t.amount).toFixed(2)} | ${t.amount >= 0 ? 'RECEITA' : 'DESPESA'}`
     ).join('\n');
 
@@ -105,7 +171,7 @@ ${incomeCategories || '(nenhuma categoria de receita cadastrada)'}
 
 CATEGORIAS DE DESPESA EXISTENTES:
 ${expenseCategories || '(nenhuma categoria de despesa cadastrada)'}
-
+${examplesSection}
 TRANSAÇÕES PARA CATEGORIZAR:
 ${formattedTransactions}
 
@@ -116,6 +182,8 @@ REGRAS IMPORTANTES:
 4. Se precisar criar nova categoria, use nome em PORTUGUÊS
 5. Marque "isNewCategory: true" APENAS se a categoria não existe
 6. Para novas categorias, sugira nomes claros em português (ex: "Supermercado", "Restaurante", "Salário", "Aluguel")
+7. Analise padrões: "PIX", "TED", "Transferência" geralmente são Transferências
+8. Lojas conhecidas: UBER=Transporte, IFOOD=Alimentação, NETFLIX=Entretenimento
 
 Responda APENAS com JSON válido:
 {
@@ -151,13 +219,18 @@ Responda APENAS com JSON válido:
         const result = JSON.parse(jsonMatch[0]);
 
         // Garantir que as transações tenham os campos necessários
-        result.categorizedTransactions = (result.categorizedTransactions || []).map((t: any) => ({
+        const aiCategorized = (result.categorizedTransactions || []).map((t: any) => ({
             ...t,
             suggestedCategoryId: t.suggestedCategoryId || null,
-            isNewCategory: t.isNewCategory || false
+            isNewCategory: t.isNewCategory || false,
+            matchedByRule: false
         }));
 
-        return result;
+        // Combinar transações categorizadas por regras + IA
+        return {
+            categorizedTransactions: [...alreadyCategorized, ...aiCategorized],
+            newCategories: result.newCategories || []
+        };
     } catch (error: any) {
         console.error('Erro ao categorizar transações:', error);
         throw error;

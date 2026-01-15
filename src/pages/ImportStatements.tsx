@@ -408,15 +408,39 @@ export default function ImportStatements() {
       setExistingCategories(allCategories);
       addLog(`${allCategories.length} categorias disponíveis`);
 
-      setAnalysisProgress(70);
-      setCurrentAnalysisStep('Enviando para categorização com IA...');
-      addLog('Iniciando categorização com modelo de IA...');
+      // Buscar transações recentes do usuário como exemplos (Few-Shot Learning)
+      addLog('Carregando exemplos de transações anteriores...');
+      const { data: recentTransactions } = await supabase
+        .from('transactions')
+        .select('*, category:categories(name)')
+        .eq('user_id', user.id)
+        .not('category_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-      // Send to AI for categorization using local Ollama
+      // Buscar regras de palavras-chave do usuário
+      const { data: keywordRules } = await supabase
+        .from('category_rules')
+        .select('*')
+        .eq('user_id', user.id);
+
+      addLog(`${(recentTransactions || []).length} exemplos e ${(keywordRules || []).length} regras de palavras-chave`);
+
+      setAnalysisProgress(70);
+      setCurrentAnalysisStep('Enviando para categorização com IA (phi3)...');
+      addLog('Iniciando categorização com modelo Phi-3...');
+
+      // Send to AI for categorization using local Ollama with examples and rules
       let result: any;
       try {
-        result = await categorizeTransactionsWithAI(parsed, categories || []);
-        addLog('Categorização por IA concluída com sucesso');
+        result = await categorizeTransactionsWithAI(
+          parsed,
+          allCategories,
+          recentTransactions || [],
+          keywordRules || []
+        );
+        const ruleMatches = (result.categorizedTransactions || []).filter((t: any) => t.matchedByRule).length;
+        addLog(`Categorização concluída: ${ruleMatches} por regras, ${(result.categorizedTransactions || []).length - ruleMatches} por IA`);
       } catch (aiError: any) {
         console.error('Erro da IA:', aiError);
         addLog('⚠️ IA indisponível - usando categorização manual');
