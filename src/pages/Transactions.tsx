@@ -830,160 +830,160 @@ export default function Transactions() {
       </div>
 
       {/* Barra de Busca e Filtros */}
-      <Card className="shadow-sm">
-        <CardContent className="p-6 space-y-4">
-          {/* Busca e botões de ação */}
-          <div className="flex flex-col xl:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar transações por descrição..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={showFilters ? "default" : "outline"}
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex-1 xl:flex-none"
-              >
-                <Filter className="mr-2 h-4 w-4" />
-                Filtros
-              </Button>
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  onClick={clearFilters}
-                  title="Limpar filtros"
-                  className="flex-1 xl:flex-none"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Limpar
-                </Button>
-              )}
-            </div>
+      <div className="rounded-lg border bg-card p-3 space-y-2">
+        {/* Busca e botões de ação */}
+        <div className="flex flex-col xl:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar transações por descrição..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
           </div>
-
-          {/* Painel de Filtros */}
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t">
-              {/* Filtro por Tipo */}
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="income">Receitas</SelectItem>
-                    <SelectItem value="expense">Despesas</SelectItem>
-                    <SelectItem value="transfer">Transferências</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Filtro por Conta */}
-              <div className="space-y-2">
-                <Label>Conta Bancária</Label>
-                <Select value={filterAccount} onValueChange={setFilterAccount}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as contas</SelectItem>
-                    {accounts.map(acc => (
-                      <SelectItem key={acc.id} value={acc.id}>
-                        {acc.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Filtro por Categoria */}
-              <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Filtro por Data (De) */}
-              <div className="space-y-2">
-                <Label>Data Inicial</Label>
-                <Input
-                  type="date"
-                  value={filterDateFrom}
-                  onChange={(e) => setFilterDateFrom(e.target.value)}
-                />
-              </div>
-
-              {/* Filtro por Data (Até) */}
-              <div className="space-y-2">
-                <Label>Data Final</Label>
-                <Input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={(e) => setFilterDateTo(e.target.value)}
-                />
-              </div>
-
-              {/* Ordenação */}
-              <div className="space-y-2">
-                <Label>Ordenar Por</Label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date-desc">Data (mais recente)</SelectItem>
-                    <SelectItem value="date-asc">Data (mais antiga)</SelectItem>
-                    <SelectItem value="category">Categoria</SelectItem>
-                    <SelectItem value="amount-desc">Valor (maior para menor)</SelectItem>
-                    <SelectItem value="amount-asc">Valor (menor para maior)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {/* Barra de Filtros Ativos */}
-          {activeFilters.length > 0 && (
-            <div className="pt-4">
-              <ActiveFiltersBar
-                filters={activeFilters}
-                onClearAll={clearFilters}
-              />
-            </div>
-          )}
-
-          {/* Contador de resultados */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t">
-            <span>
-              {filteredAndSortedTransactions.length} {filteredAndSortedTransactions.length === 1 ? 'transação encontrada' : 'transações encontradas'}
-            </span>
+          <div className="flex gap-1.5">
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              size="sm"
+              className="flex-1 xl:flex-none h-9"
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              Filtros
+            </Button>
             {hasActiveFilters && (
-              <span className="flex items-center gap-1">
-                <Filter className="h-3 w-3" />
-                Filtros ativos
-              </span>
+              <Button
+                variant="ghost"
+                onClick={clearFilters}
+                title="Limpar filtros"
+                size="sm"
+                className="flex-1 xl:flex-none h-9"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpar
+              </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Painel de Filtros */}
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t">
+            {/* Filtro por Tipo */}
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="income">Receitas</SelectItem>
+                  <SelectItem value="expense">Despesas</SelectItem>
+                  <SelectItem value="transfer">Transferências</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Conta */}
+            <div className="space-y-2">
+              <Label>Conta Bancária</Label>
+              <Select value={filterAccount} onValueChange={setFilterAccount}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as contas</SelectItem>
+                  {accounts.map(acc => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Categoria */}
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Data (De) */}
+            <div className="space-y-2">
+              <Label>Data Inicial</Label>
+              <Input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+              />
+            </div>
+
+            {/* Filtro por Data (Até) */}
+            <div className="space-y-2">
+              <Label>Data Final</Label>
+              <Input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+              />
+            </div>
+
+            {/* Ordenação */}
+            <div className="space-y-2">
+              <Label>Ordenar Por</Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">Data (mais recente)</SelectItem>
+                  <SelectItem value="date-asc">Data (mais antiga)</SelectItem>
+                  <SelectItem value="category">Categoria</SelectItem>
+                  <SelectItem value="amount-desc">Valor (maior para menor)</SelectItem>
+                  <SelectItem value="amount-asc">Valor (menor para maior)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {/* Barra de Filtros Ativos */}
+        {activeFilters.length > 0 && (
+          <div className="pt-4">
+            <ActiveFiltersBar
+              filters={activeFilters}
+              onClearAll={clearFilters}
+            />
+          </div>
+        )}
+
+        {/* Contador de resultados */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+          <span>
+            {filteredAndSortedTransactions.length} {filteredAndSortedTransactions.length === 1 ? 'transação encontrada' : 'transações encontradas'}
+          </span>
+          {hasActiveFilters && (
+            <span className="flex items-center gap-1">
+              <Filter className="h-3 w-3" />
+              Filtros ativos
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Lista de Transações */}
       <div className="divide-y divide-border rounded-lg border bg-card overflow-hidden">
