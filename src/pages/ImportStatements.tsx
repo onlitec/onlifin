@@ -358,10 +358,10 @@ export default function ImportStatements() {
       const minDate = new Date(Math.min(...transactionDates.map(d => d.getTime()))).toISOString().split('T')[0];
       const maxDate = new Date(Math.max(...transactionDates.map(d => d.getTime()))).toISOString().split('T')[0];
 
-      // Fetch existing transactions for duplicate matching
+      // Fetch existing transactions for duplicate matching, including category name
       const { data: existingTx, error: txError } = await supabase
         .from('transactions')
-        .select('*')
+        .select('*, category:categories(name)')
         .eq('user_id', user.id)
         .eq('account_id', selectedAccountId)
         .gte('date', minDate)
@@ -392,7 +392,7 @@ export default function ImportStatements() {
         throw new Error('Erro ao categorizar transações com IA');
       }
 
-      const result = data;
+      const result = data as any;
       if (!result) {
         throw new Error('Resposta inválida da IA');
       }
@@ -490,9 +490,16 @@ export default function ImportStatements() {
       // 3. Perform Reconciliations (Update existing transactions)
       for (const t of toReconcile) {
         if (!t.matchId) continue;
+
+        const categoryId = t.selectedCategoryId || t.suggestedCategoryId;
+
         const { error: recError } = await supabase
           .from('transactions')
-          .update({ is_reconciled: true, updated_at: new Date().toISOString() })
+          .update({
+            is_reconciled: true,
+            category_id: categoryId, // Update category if changed/confirmed
+            updated_at: new Date().toISOString()
+          })
           .eq('id', t.matchId);
 
         if (recError) console.error(`Erro ao conciliar ${t.matchId}:`, recError);
@@ -817,7 +824,7 @@ export default function ImportStatements() {
                           {hasMatch && (
                             <span className="text-[10px] text-yellow-600 flex items-center gap-1 mt-1 bg-yellow-50 w-fit px-1 rounded border border-yellow-200">
                               <History className="h-3 w-3" />
-                              Já existe: {matchingTx?.description}
+                              Já existe: {matchingTx?.description} {(matchingTx as any)?.category?.name ? `[${(matchingTx as any).category.name}]` : ''}
                             </span>
                           )}
                         </div>
@@ -831,7 +838,7 @@ export default function ImportStatements() {
                         <Select
                           value={transaction.selectedCategoryId || transaction.suggestedCategoryId || ''}
                           onValueChange={(value) => handleCategoryChange(index, value)}
-                          disabled={transaction.action === 'ignore' || transaction.action === 'reconcile'}
+                          disabled={transaction.action === 'ignore'}
                         >
                           <SelectTrigger className="w-[180px] h-8 text-xs">
                             <SelectValue placeholder="Categoria" />
