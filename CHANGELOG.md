@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.9.1] - 2026-01-15
+
+### fix(dashboard): exclude internal transfers from income/expense totals
+
+---
+
+
+
 ## [1.9.0] - 2026-01-15
 
 ### feat(dashboard): add pending bills to receive card
