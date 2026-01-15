@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.12.0] - 2026-01-15
+
+### feat(accounts): convert from cards to compact list layout
+
+---
+
+
+
 ## [1.11.1] - 2026-01-15
 
 ### fix(ui): increase border opacity for better visibility
