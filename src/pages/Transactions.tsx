@@ -986,7 +986,7 @@ export default function Transactions() {
       </div>
 
       {/* Lista de Transações */}
-      <div className="rounded-lg border-2 border-white/20 bg-card overflow-hidden">
+      <div className="rounded-lg border-2 border-white/40 bg-card overflow-hidden">
         {filteredAndSortedTransactions.length === 0 ? (
           <Card className="shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12">
@@ -1008,7 +1008,7 @@ export default function Transactions() {
               : null;
 
             return (
-              <div key={tx.id} className="flex flex-col lg:flex-row items-start lg:items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors gap-2 lg:gap-4 border-b border-white/10 last:border-b-0">
+              <div key={tx.id} className="flex flex-col lg:flex-row items-start lg:items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors gap-2 lg:gap-4 border-b border-white/20 last:border-b-0">
                 <div className="flex items-center gap-3 flex-1 min-w-0 w-full lg:w-auto">
                   <div className={`p-1.5 rounded-full shrink-0 ${tx.is_transfer
                     ? 'bg-primary/10'

@@ -400,7 +400,7 @@ export default function BillsToPay() {
       </div>
 
       {/* Bills List */}
-      <div className="rounded-lg border-2 border-white/20 bg-card overflow-hidden">
+      <div className="rounded-lg border-2 border-white/40 bg-card overflow-hidden">
         {bills.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10">
             <DollarSign className="h-10 w-10 text-muted-foreground mb-3" />
@@ -411,7 +411,7 @@ export default function BillsToPay() {
           </div>
         ) : (
           bills.map((bill) => (
-            <div key={bill.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors border-b border-white/10 last:border-b-0">
+            <div key={bill.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors border-b border-white/20 last:border-b-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="p-1.5 rounded-full bg-expense/10">
                   <DollarSign className="h-4 w-4 text-expense" />
