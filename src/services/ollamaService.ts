@@ -82,42 +82,62 @@ export async function categorizeTransactionsWithAI(
     categorizedTransactions: any[];
     newCategories: any[];
 }> {
-    const prompt = `Você é um especialista em categorização de transações financeiras.
+    // Formatar categorias de forma clara para a IA
+    const incomeCategories = existingCategories
+        .filter(c => c.type === 'income')
+        .map(c => `- "${c.name}" (ID: ${c.id})`)
+        .join('\n');
 
-Analise as seguintes transações e sugira a categoria mais apropriada para cada uma.
+    const expenseCategories = existingCategories
+        .filter(c => c.type === 'expense')
+        .map(c => `- "${c.name}" (ID: ${c.id})`)
+        .join('\n');
 
-CATEGORIAS EXISTENTES:
-${JSON.stringify(existingCategories, null, 2)}
+    // Formatar transações de forma simplificada
+    const formattedTransactions = transactions.map((t, i) =>
+        `${i + 1}. ${t.date} | ${t.description} | R$ ${Math.abs(t.amount).toFixed(2)} | ${t.amount >= 0 ? 'RECEITA' : 'DESPESA'}`
+    ).join('\n');
+
+    const prompt = `Você é um especialista brasileiro em finanças pessoais. Analise transações bancárias e categorize cada uma usando PREFERENCIALMENTE as categorias já existentes.
+
+CATEGORIAS DE RECEITA EXISTENTES:
+${incomeCategories || '(nenhuma categoria de receita cadastrada)'}
+
+CATEGORIAS DE DESPESA EXISTENTES:
+${expenseCategories || '(nenhuma categoria de despesa cadastrada)'}
 
 TRANSAÇÕES PARA CATEGORIZAR:
-${JSON.stringify(transactions, null, 2)}
+${formattedTransactions}
 
-Para cada transação:
-1. Analise a descrição e valor
-2. Escolha a categoria mais apropriada das existentes
-3. Se nenhuma existente servir, sugira uma nova
+REGRAS IMPORTANTES:
+1. SEMPRE use categorias existentes quando possível
+2. Use o NOME EXATO da categoria existente no campo "suggestedCategory"
+3. Use o ID da categoria existente no campo "suggestedCategoryId"
+4. Se precisar criar nova categoria, use nome em PORTUGUÊS
+5. Marque "isNewCategory: true" APENAS se a categoria não existe
+6. Para novas categorias, sugira nomes claros em português (ex: "Supermercado", "Restaurante", "Salário", "Aluguel")
 
-Responda APENAS com JSON válido no formato:
+Responda APENAS com JSON válido:
 {
   "categorizedTransactions": [
     {
-      "date": "data",
-      "description": "descrição",
-      "amount": valor,
+      "date": "data original",
+      "description": "descrição original",
+      "amount": valor_numerico,
       "type": "income" ou "expense",
-      "suggestedCategory": "nome da categoria",
-      "confidence": 0.0 a 1.0
+      "suggestedCategory": "Nome da Categoria",
+      "suggestedCategoryId": "id-da-categoria-existente-ou-null",
+      "isNewCategory": false,
+      "confidence": 0.9
     }
   ],
   "newCategories": [
     {
-      "name": "nome",
+      "name": "Nome em Português",
       "type": "income" ou "expense"
     }
   ]
-}
-
-Responda APENAS com o JSON.`;
+}`;
 
     try {
         const response = await generateWithOllama(prompt);
@@ -128,7 +148,16 @@ Responda APENAS com o JSON.`;
             throw new Error('Resposta da IA não contém JSON válido');
         }
 
-        return JSON.parse(jsonMatch[0]);
+        const result = JSON.parse(jsonMatch[0]);
+
+        // Garantir que as transações tenham os campos necessários
+        result.categorizedTransactions = (result.categorizedTransactions || []).map((t: any) => ({
+            ...t,
+            suggestedCategoryId: t.suggestedCategoryId || null,
+            isNewCategory: t.isNewCategory || false
+        }));
+
+        return result;
     } catch (error: any) {
         console.error('Erro ao categorizar transações:', error);
         throw error;
