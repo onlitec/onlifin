@@ -588,6 +588,15 @@ export default function ImportStatements() {
 
       // 4. Perform New Insertions
       if (toInsert.length > 0) {
+        // Função para converter data DD/MM/YYYY para YYYY-MM-DD
+        const convertDateToISO = (dateStr: string): string => {
+          const parts = dateStr.split(/[\/\-]/);
+          // Se já está em YYYY-MM-DD, retornar como está
+          if (parts[0].length === 4) return dateStr;
+          // Converter DD/MM/YYYY para YYYY-MM-DD
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        };
+
         const transactionsToInsert = toInsert.map(t => {
           let categoryId = t.selectedCategoryId || t.suggestedCategoryId;
           if (t.isNewCategory && createdCategoryMap.has(t.suggestedCategory)) {
@@ -598,7 +607,7 @@ export default function ImportStatements() {
             user_id: user.id,
             type: t.type,
             amount: t.amount,
-            date: t.date,
+            date: convertDateToISO(t.date), // Converter data para formato ISO
             description: t.description,
             category_id: categoryId,
             account_id: selectedAccountId,
