@@ -24,27 +24,28 @@ interface OllamaChatResponse {
 }
 
 // Regras de palavras-chave padrão (fallback quando não há regras no banco)
+// IMPORTANTE: Os nomes das categorias devem corresponder às categorias do banco de dados
 const DEFAULT_KEYWORD_RULES = [
-    // Gás e Combustível
-    { keyword: 'BRASIL GAS', category_name: 'Gás e Combustível', type: 'expense', match_type: 'contains' },
-    { keyword: 'POSTO', category_name: 'Combustível', type: 'expense', match_type: 'contains' },
-    { keyword: 'SHELL', category_name: 'Combustível', type: 'expense', match_type: 'contains' },
-    { keyword: 'IPIRANGA', category_name: 'Combustível', type: 'expense', match_type: 'contains' },
+    // Gás e Combustível -> Transporte (categoria existente)
+    { keyword: 'BRASIL GAS', category_name: 'Contas', type: 'expense', match_type: 'contains' },
+    { keyword: 'POSTO', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: 'SHELL', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: 'IPIRANGA', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
 
-    // Supermercado
-    { keyword: 'MERCADO', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
-    { keyword: 'SUPERMERCADO', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
-    { keyword: 'CARREFOUR', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
-    { keyword: 'ATACADAO', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
-    { keyword: 'ASSAI', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
-    { keyword: 'EXTRA', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
+    // Supermercado -> Alimentação (categoria existente)
+    { keyword: 'MERCADO', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'SUPERMERCADO', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'CARREFOUR', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'ATACADAO', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'ASSAI', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'EXTRA', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
 
-    // Pagamentos Online
-    { keyword: 'PAGAR.ME', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
-    { keyword: 'PAGSEGURO', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
-    { keyword: 'MERCADOPAGO', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
-    { keyword: 'PICPAY', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
-    { keyword: 'STONE', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
+    // Pagamentos Online -> Compras (categoria existente)
+    { keyword: 'PAGAR.ME', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'PAGSEGURO', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'MERCADOPAGO', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'PICPAY', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'STONE', category_name: 'Compras', type: 'expense', match_type: 'contains' },
 
     // Delivery/Alimentação
     { keyword: 'IFOOD', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
@@ -59,29 +60,31 @@ const DEFAULT_KEYWORD_RULES = [
     { keyword: '99 APP', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
     { keyword: '99POP', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
 
-    // Assinaturas
-    { keyword: 'NETFLIX', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
-    { keyword: 'SPOTIFY', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
-    { keyword: 'AMAZON PRIME', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
-    { keyword: 'DISNEY', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
-    { keyword: 'HBO', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
-    { keyword: 'GLOBOPLAY', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
+    // Assinaturas -> Lazer (categoria existente)
+    { keyword: 'NETFLIX', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'SPOTIFY', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'AMAZON PRIME', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'DISNEY', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'HBO', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'GLOBOPLAY', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
 
-    // Transferências - ordem importa!
-    { keyword: 'Transferência Recebida', category_name: 'Transferência Recebida', type: 'income', match_type: 'starts_with' },
-    { keyword: 'Transferência recebida', category_name: 'Transferência Recebida', type: 'income', match_type: 'contains' },
-    { keyword: 'TED recebid', category_name: 'Transferência Recebida', type: 'income', match_type: 'contains' },
-    { keyword: 'PIX recebid', category_name: 'Transferência Recebida', type: 'income', match_type: 'contains' },
-    { keyword: 'Transferência enviada', category_name: 'Transferência Enviada', type: 'expense', match_type: 'contains' },
-    { keyword: 'TED enviad', category_name: 'Transferência Enviada', type: 'expense', match_type: 'contains' },
-    { keyword: 'PIX enviad', category_name: 'Transferência Enviada', type: 'expense', match_type: 'contains' },
+    // Transferências Recebidas -> Outros Rendimentos (categoria existente)
+    { keyword: 'Transferência Recebida', category_name: 'Outros Rendimentos', type: 'income', match_type: 'starts_with' },
+    { keyword: 'Transferência recebida', category_name: 'Outros Rendimentos', type: 'income', match_type: 'contains' },
+    { keyword: 'TED recebid', category_name: 'Outros Rendimentos', type: 'income', match_type: 'contains' },
+    { keyword: 'PIX recebid', category_name: 'Outros Rendimentos', type: 'income', match_type: 'contains' },
+
+    // Transferências Enviadas -> Outros Gastos (categoria existente)
+    { keyword: 'Transferência enviada', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
+    { keyword: 'TED enviad', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
+    { keyword: 'PIX enviad', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
 
     // Compras genéricas
     { keyword: 'Compra no débito', category_name: 'Compras', type: 'expense', match_type: 'starts_with' },
     { keyword: 'Compra no crédito', category_name: 'Compras', type: 'expense', match_type: 'starts_with' },
 
-    // Saques
-    { keyword: 'SAQUE', category_name: 'Saque', type: 'expense', match_type: 'contains' },
+    // Saques -> Outros Gastos
+    { keyword: 'SAQUE', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
 
     // Salário
     { keyword: 'SALARIO', category_name: 'Salário', type: 'income', match_type: 'contains' },
