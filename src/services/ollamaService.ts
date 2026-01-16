@@ -1,6 +1,6 @@
 // API Service para Ollama AI local
 
-const OLLAMA_MODEL = 'qwen2.5:1.5b';
+const OLLAMA_MODEL = 'qwen2.5:0.5b'; // Modelo mais rápido para categorização
 
 interface OllamaMessage {
     role: 'system' | 'user' | 'assistant';
@@ -23,6 +23,72 @@ interface OllamaChatResponse {
     done: boolean;
 }
 
+// Regras de palavras-chave padrão (fallback quando não há regras no banco)
+const DEFAULT_KEYWORD_RULES = [
+    // Gás e Combustível
+    { keyword: 'BRASIL GAS', category_name: 'Gás e Combustível', type: 'expense', match_type: 'contains' },
+    { keyword: 'POSTO', category_name: 'Combustível', type: 'expense', match_type: 'contains' },
+    { keyword: 'SHELL', category_name: 'Combustível', type: 'expense', match_type: 'contains' },
+    { keyword: 'IPIRANGA', category_name: 'Combustível', type: 'expense', match_type: 'contains' },
+
+    // Supermercado
+    { keyword: 'MERCADO', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
+    { keyword: 'SUPERMERCADO', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
+    { keyword: 'CARREFOUR', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
+    { keyword: 'ATACADAO', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
+    { keyword: 'ASSAI', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
+    { keyword: 'EXTRA', category_name: 'Supermercado', type: 'expense', match_type: 'contains' },
+
+    // Pagamentos Online
+    { keyword: 'PAGAR.ME', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
+    { keyword: 'PAGSEGURO', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
+    { keyword: 'MERCADOPAGO', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
+    { keyword: 'PICPAY', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
+    { keyword: 'STONE', category_name: 'Pagamentos', type: 'expense', match_type: 'contains' },
+
+    // Delivery/Alimentação
+    { keyword: 'IFOOD', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'UBER EATS', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'RAPPI', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'RESTAURANTE', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'LANCHONETE', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'PADARIA', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+
+    // Transporte
+    { keyword: 'UBER ', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: '99 APP', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: '99POP', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+
+    // Assinaturas
+    { keyword: 'NETFLIX', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
+    { keyword: 'SPOTIFY', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
+    { keyword: 'AMAZON PRIME', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
+    { keyword: 'DISNEY', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
+    { keyword: 'HBO', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
+    { keyword: 'GLOBOPLAY', category_name: 'Assinaturas', type: 'expense', match_type: 'contains' },
+
+    // Transferências - ordem importa!
+    { keyword: 'Transferência Recebida', category_name: 'Transferência Recebida', type: 'income', match_type: 'starts_with' },
+    { keyword: 'Transferência recebida', category_name: 'Transferência Recebida', type: 'income', match_type: 'contains' },
+    { keyword: 'TED recebid', category_name: 'Transferência Recebida', type: 'income', match_type: 'contains' },
+    { keyword: 'PIX recebid', category_name: 'Transferência Recebida', type: 'income', match_type: 'contains' },
+    { keyword: 'Transferência enviada', category_name: 'Transferência Enviada', type: 'expense', match_type: 'contains' },
+    { keyword: 'TED enviad', category_name: 'Transferência Enviada', type: 'expense', match_type: 'contains' },
+    { keyword: 'PIX enviad', category_name: 'Transferência Enviada', type: 'expense', match_type: 'contains' },
+
+    // Compras genéricas
+    { keyword: 'Compra no débito', category_name: 'Compras', type: 'expense', match_type: 'starts_with' },
+    { keyword: 'Compra no crédito', category_name: 'Compras', type: 'expense', match_type: 'starts_with' },
+
+    // Saques
+    { keyword: 'SAQUE', category_name: 'Saque', type: 'expense', match_type: 'contains' },
+
+    // Salário
+    { keyword: 'SALARIO', category_name: 'Salário', type: 'income', match_type: 'contains' },
+    { keyword: 'SALÁRIO', category_name: 'Salário', type: 'income', match_type: 'contains' },
+    { keyword: 'FOLHA', category_name: 'Salário', type: 'income', match_type: 'contains' },
+];
+
 /**
  * Chama a API do Ollama para gerar uma resposta usando o endpoint de chat
  */
@@ -34,19 +100,25 @@ export async function chatWithOllama(
         messages,
         stream: false,
         options: {
-            temperature: 0.6, // Reduzido ligeiramente para maior consistência
-            num_predict: 1024,
+            temperature: 0.3,
+            num_predict: 2000 // Limitar resposta para evitar timeout
         }
     };
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
         const response = await fetch('/ollama/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -73,175 +145,219 @@ export async function generateWithOllama(
 }
 
 /**
+ * Encontra categoria por nome (busca flexível)
+ */
+function findCategoryByName(categories: any[], name: string, type?: string): any | null {
+    const normalizedName = name.toLowerCase().trim();
+
+    return categories.find(c => {
+        const catName = (c.name || '').toLowerCase().trim();
+        const matchesType = !type || c.type === type;
+
+        return matchesType && (
+            catName === normalizedName ||
+            catName.includes(normalizedName) ||
+            normalizedName.includes(catName)
+        );
+    }) || null;
+}
+
+/**
+ * Aplica regras de palavras-chave (internas + do usuário)
+ */
+function applyKeywordRules(
+    transactions: any[],
+    existingCategories: any[],
+    userRules?: any[]
+): { categorized: any[], needsAI: any[] } {
+    // Combinar regras do usuário com regras padrão
+    const allRules = [...(userRules || []), ...DEFAULT_KEYWORD_RULES];
+
+    const categorized: any[] = [];
+    const needsAI: any[] = [];
+
+    for (const t of transactions) {
+        const description = (t.description || '').toUpperCase();
+        let matched = false;
+
+        for (const rule of allRules) {
+            const keyword = (rule.keyword || '').toUpperCase();
+            let matches = false;
+
+            if (rule.match_type === 'exact') {
+                matches = description === keyword;
+            } else if (rule.match_type === 'starts_with') {
+                matches = description.startsWith(keyword);
+            } else { // contains (default)
+                matches = description.includes(keyword);
+            }
+
+            if (matches) {
+                // Tentar encontrar categoria existente pelo ID ou nome
+                let category = rule.category_id
+                    ? existingCategories.find(c => c.id === rule.category_id)
+                    : findCategoryByName(existingCategories, rule.category_name, rule.type);
+
+                categorized.push({
+                    ...t,
+                    suggestedCategory: category?.name || rule.category_name,
+                    suggestedCategoryId: category?.id || null,
+                    isNewCategory: !category,
+                    confidence: 1.0,
+                    matchedByRule: true,
+                    matchedKeyword: rule.keyword
+                });
+                matched = true;
+                break;
+            }
+        }
+
+        if (!matched) {
+            needsAI.push({ ...t, matchedByRule: false });
+        }
+    }
+
+    return { categorized, needsAI };
+}
+
+/**
  * Categoriza transações usando IA local com aprendizado por exemplos
  */
 export async function categorizeTransactionsWithAI(
     transactions: any[],
     existingCategories: any[],
-    userExamples?: any[], // Transações recentes do usuário para few-shot learning
-    keywordRules?: any[]  // Regras de palavras-chave
+    userExamples?: any[],
+    keywordRules?: any[]
 ): Promise<{
     categorizedTransactions: any[];
     newCategories: any[];
 }> {
-    // 1. Primeiro, aplicar regras de palavras-chave (mais rápido e preciso)
-    const preProcessed = transactions.map(t => {
-        const description = (t.description || '').toUpperCase();
+    console.log(`[AI] Iniciando categorização de ${transactions.length} transações...`);
 
-        // Verificar regras de palavras-chave
-        if (keywordRules && keywordRules.length > 0) {
-            for (const rule of keywordRules) {
-                const keyword = (rule.keyword || '').toUpperCase();
-                let matches = false;
+    // 1. Aplicar regras de palavras-chave primeiro (rápido e preciso)
+    const { categorized: byRules, needsAI } = applyKeywordRules(
+        transactions,
+        existingCategories,
+        keywordRules
+    );
 
-                if (rule.match_type === 'exact') {
-                    matches = description === keyword;
-                } else if (rule.match_type === 'starts_with') {
-                    matches = description.startsWith(keyword);
-                } else { // contains (default)
-                    matches = description.includes(keyword);
-                }
-
-                if (matches) {
-                    const category = existingCategories.find(c => c.id === rule.category_id);
-                    if (category) {
-                        return {
-                            ...t,
-                            suggestedCategory: category.name,
-                            suggestedCategoryId: category.id,
-                            isNewCategory: false,
-                            confidence: 1.0, // 100% confidence for rule match
-                            matchedByRule: true
-                        };
-                    }
-                }
-            }
-        }
-
-        return { ...t, matchedByRule: false };
-    });
-
-    // Separar transações já categorizadas por regras das que precisam de IA
-    const alreadyCategorized = preProcessed.filter(t => t.matchedByRule);
-    const needsAI = preProcessed.filter(t => !t.matchedByRule);
+    console.log(`[AI] ${byRules.length} categorizadas por regras, ${needsAI.length} precisam de IA`);
 
     // Se todas foram categorizadas por regras, retornar direto
     if (needsAI.length === 0) {
         return {
-            categorizedTransactions: alreadyCategorized,
+            categorizedTransactions: byRules,
             newCategories: []
         };
     }
 
-    // 2. Formatar categorias de forma clara para a IA
-    const incomeCategories = existingCategories
-        .filter(c => c.type === 'income')
-        .map(c => `- "${c.name}" (ID: ${c.id})`)
-        .join('\n');
+    // 2. Para transações que precisam de IA, processar em lotes pequenos
+    const BATCH_SIZE = 3;
+    const aiCategorized: any[] = [];
 
-    const expenseCategories = existingCategories
-        .filter(c => c.type === 'expense')
-        .map(c => `- "${c.name}" (ID: ${c.id})`)
-        .join('\n');
+    for (let i = 0; i < needsAI.length; i += BATCH_SIZE) {
+        const batch = needsAI.slice(i, i + BATCH_SIZE);
 
-    // 3. Formatar exemplos do usuário (Few-Shot Learning)
-    let examplesSection = '';
-    if (userExamples && userExamples.length > 0) {
-        const examples = userExamples.slice(0, 10).map(ex =>
-            `- "${ex.description}" → ${ex.category?.name || 'Sem categoria'} (${ex.type === 'income' ? 'Receita' : 'Despesa'})`
-        ).join('\n');
-
-        examplesSection = `
-EXEMPLOS DE COMO O USUÁRIO JÁ CATEGORIZOU TRANSAÇÕES SIMILARES:
-${examples}
-
-Use estes exemplos como referência para categorizar transações similares.
-`;
-    }
-
-    // 4. Formatar transações que precisam de IA
-    const formattedTransactions = needsAI.map((t, i) =>
-        `${i + 1}. ${t.date} | ${t.description} | R$ ${Math.abs(t.amount).toFixed(2)} | ${t.amount >= 0 ? 'RECEITA' : 'DESPESA'}`
-    ).join('\n');
-
-    const prompt = `Você é um especialista brasileiro em finanças pessoais. Analise transações bancárias e categorize cada uma usando PREFERENCIALMENTE as categorias já existentes.
-
-CATEGORIAS DE RECEITA EXISTENTES:
-${incomeCategories || '(nenhuma categoria de receita cadastrada)'}
-
-CATEGORIAS DE DESPESA EXISTENTES:
-${expenseCategories || '(nenhuma categoria de despesa cadastrada)'}
-${examplesSection}
-TRANSAÇÕES PARA CATEGORIZAR:
-${formattedTransactions}
-
-REGRAS IMPORTANTES:
-1. SEMPRE use categorias existentes quando possível
-2. Use o NOME EXATO da categoria existente no campo "suggestedCategory"
-3. Use o ID da categoria existente no campo "suggestedCategoryId"
-4. Se precisar criar nova categoria, use nome em PORTUGUÊS
-5. Marque "isNewCategory: true" APENAS se a categoria não existe
-6. Para novas categorias, sugira nomes claros em português (ex: "Supermercado", "Restaurante", "Salário", "Aluguel")
-7. Analise padrões: "PIX", "TED", "Transferência" geralmente são Transferências
-8. Lojas conhecidas: UBER=Transporte, IFOOD=Alimentação, NETFLIX=Entretenimento
-
-Responda APENAS com JSON válido:
-{
-  "categorizedTransactions": [
-    {
-      "date": "data original",
-      "description": "descrição original",
-      "amount": valor_numerico,
-      "type": "income" ou "expense",
-      "suggestedCategory": "Nome da Categoria",
-      "suggestedCategoryId": "id-da-categoria-existente-ou-null",
-      "isNewCategory": false,
-      "confidence": 0.9
-    }
-  ],
-  "newCategories": []
-}`;
-
-    try {
-        console.log('[AI] Enviando prompt para Ollama...');
-        const response = await generateWithOllama(prompt);
-        console.log('[AI] Resposta bruta:', response.substring(0, 500));
-
-        // Extrair JSON da resposta - tentar múltiplos padrões
-        let jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            // Tentar extrair de bloco de código
-            const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-            if (codeBlockMatch) {
-                jsonMatch = codeBlockMatch[1].match(/\{[\s\S]*\}/);
+        try {
+            const batchResult = await categorizeSmallBatch(batch, existingCategories, userExamples);
+            aiCategorized.push(...batchResult);
+        } catch (error) {
+            console.error(`[AI] Erro no lote ${i / BATCH_SIZE + 1}:`, error);
+            // Fallback: marcar como não categorizado
+            for (const t of batch) {
+                aiCategorized.push({
+                    ...t,
+                    suggestedCategory: 'Não categorizado',
+                    suggestedCategoryId: null,
+                    isNewCategory: false,
+                    confidence: 0,
+                    matchedByRule: false
+                });
             }
         }
+    }
 
-        if (!jsonMatch) {
-            console.error('[AI] Resposta não contém JSON:', response);
-            throw new Error('Resposta da IA não contém JSON válido');
+    return {
+        categorizedTransactions: [...byRules, ...aiCategorized],
+        newCategories: []
+    };
+}
+
+/**
+ * Categoriza um lote pequeno de transações com IA
+ */
+async function categorizeSmallBatch(
+    transactions: any[],
+    existingCategories: any[],
+    _userExamples?: any[] // Prefixo _ indica que é opcional e pode não ser usado
+): Promise<any[]> {
+    const categoryList = existingCategories
+        .map(c => `${c.name} (${c.type === 'income' ? 'receita' : 'despesa'})`)
+        .join(', ');
+
+    const formattedTransactions = transactions.map((t, i) =>
+        `${i + 1}. ${t.description.substring(0, 50)} | R$ ${Math.abs(t.amount).toFixed(2)} | ${t.amount >= 0 ? 'RECEITA' : 'DESPESA'}`
+    ).join('\n');
+
+    // Prompt simplificado para resposta mais rápida
+    const prompt = `Categorize estas transações brasileiras.
+
+CATEGORIAS: ${categoryList}
+
+TRANSAÇÕES:
+${formattedTransactions}
+
+Responda em JSON: {"results": [{"index": 1, "category": "Nome", "confidence": 0.9}]}`;
+
+    console.log(`[AI] Enviando ${transactions.length} transações para IA...`);
+
+    const response = await generateWithOllama(prompt,
+        'Você categoriza transações financeiras. Responda APENAS em JSON válido, sem explicações.'
+    );
+
+    console.log('[AI] Resposta:', response.substring(0, 200));
+
+    // Extrair JSON
+    let jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+        const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (codeBlockMatch) {
+            jsonMatch = codeBlockMatch[1].match(/\{[\s\S]*\}/);
+        }
+    }
+
+    if (!jsonMatch) {
+        throw new Error('Resposta da IA não contém JSON válido');
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    const aiResults = result.results || result.categorizedTransactions || [];
+
+    // Mapear resultados de volta para as transações
+    return transactions.map((t, index) => {
+        const aiResult = aiResults.find((r: any) => r.index === index + 1) || aiResults[index];
+
+        if (aiResult) {
+            const category = findCategoryByName(existingCategories, aiResult.category || aiResult.suggestedCategory);
+            return {
+                ...t,
+                suggestedCategory: category?.name || aiResult.category || 'Não categorizado',
+                suggestedCategoryId: category?.id || null,
+                isNewCategory: !category && aiResult.category,
+                confidence: aiResult.confidence || 0.7,
+                matchedByRule: false
+            };
         }
 
-        console.log('[AI] JSON extraído:', jsonMatch[0].substring(0, 300));
-        const result = JSON.parse(jsonMatch[0]);
-
-        // Garantir que as transações tenham os campos necessários
-        const aiCategorized = (result.categorizedTransactions || []).map((t: any) => ({
-            ...t,
-            suggestedCategoryId: t.suggestedCategoryId || null,
-            isNewCategory: t.isNewCategory || false,
-            matchedByRule: false
-        }));
-
-        // Combinar transações categorizadas por regras + IA
         return {
-            categorizedTransactions: [...alreadyCategorized, ...aiCategorized],
-            newCategories: result.newCategories || []
+            ...t,
+            suggestedCategory: 'Não categorizado',
+            suggestedCategoryId: null,
+            isNewCategory: false,
+            confidence: 0,
+            matchedByRule: false
         };
-    } catch (error: any) {
-        console.error('Erro ao categorizar transações:', error);
-        throw error;
-    }
+    });
 }
 
 /**

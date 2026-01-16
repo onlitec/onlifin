@@ -427,8 +427,8 @@ export default function ImportStatements() {
       addLog(`${(recentTransactions || []).length} exemplos e ${(keywordRules || []).length} regras de palavras-chave`);
 
       setAnalysisProgress(70);
-      setCurrentAnalysisStep('Enviando para categorização com IA (phi3)...');
-      addLog('Iniciando categorização com modelo Phi-3...');
+      setCurrentAnalysisStep('Aplicando regras + IA para categorização...');
+      addLog('Iniciando categorização híbrida (regras + qwen2.5)...');
 
       // Send to AI for categorization using local Ollama with examples and rules
       let result: any;
