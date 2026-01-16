@@ -320,8 +320,13 @@ Responda em JSON: {"results": [{"index": 1, "category": "Nome", "confidence": 0.
 
     console.log('[AI] Resposta:', response.substring(0, 200));
 
-    // Extrair JSON
+    // Extrair JSON - tentar múltiplos métodos
+    let jsonString = '';
+
+    // Método 1: JSON direto
     let jsonMatch = response.match(/\{[\s\S]*\}/);
+
+    // Método 2: Dentro de bloco de código
     if (!jsonMatch) {
         const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
         if (codeBlockMatch) {
@@ -329,11 +334,47 @@ Responda em JSON: {"results": [{"index": 1, "category": "Nome", "confidence": 0.
         }
     }
 
-    if (!jsonMatch) {
+    if (jsonMatch) {
+        jsonString = jsonMatch[0];
+    } else {
         throw new Error('Resposta da IA não contém JSON válido');
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    // Tentar corrigir JSON truncado ou malformado
+    let result: any;
+    try {
+        result = JSON.parse(jsonString);
+    } catch (parseError) {
+        // Tentar corrigir JSON incompleto
+        let fixedJson = jsonString;
+
+        // Contar chaves e colchetes para corrigir
+        const openBraces = (fixedJson.match(/\{/g) || []).length;
+        const closeBraces = (fixedJson.match(/\}/g) || []).length;
+        const openBrackets = (fixedJson.match(/\[/g) || []).length;
+        const closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+        // Adicionar fechamentos faltantes
+        for (let i = 0; i < openBrackets - closeBrackets; i++) {
+            fixedJson += ']';
+        }
+        for (let i = 0; i < openBraces - closeBraces; i++) {
+            fixedJson += '}';
+        }
+
+        // Remover vírgula final antes de ] ou }
+        fixedJson = fixedJson.replace(/,\s*([}\]])/g, '$1');
+
+        try {
+            result = JSON.parse(fixedJson);
+            console.log('[AI] JSON corrigido com sucesso');
+        } catch (fixError) {
+            // Último recurso: criar resultado vazio
+            console.error('[AI] Não foi possível parsear JSON:', jsonString.substring(0, 100));
+            result = { results: [] };
+        }
+    }
+
     const aiResults = result.results || result.categorizedTransactions || [];
 
     // Mapear resultados de volta para as transações
