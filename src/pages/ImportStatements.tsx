@@ -44,6 +44,8 @@ interface CategorizedTransaction extends ParsedTransaction {
   isNewCategory: boolean;
   confidence: number;
   selectedCategoryId?: string;
+  matchedByRule?: boolean; // True se foi categorizado por regra de palavra-chave
+  matchedKeyword?: string; // Palavra-chave que fez match
   // Intelligent Matching Fields
   action: 'new' | 'reconcile' | 'ignore' | 'edit';
   matchId?: string;
@@ -54,6 +56,55 @@ interface NewCategorySuggestion {
   name: string;
   type: 'income' | 'expense';
   selected: boolean;
+}
+
+/**
+ * Extrai palavra-chave significativa da descrição da transação
+ * para criar regras de categorização automática
+ */
+function extractKeywordFromDescription(description: string): string {
+  if (!description) return '';
+
+  // Palavras a ignorar (stop words e termos bancários genéricos)
+  const stopWords = new Set([
+    'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'nas', 'nos',
+    'para', 'pelo', 'pela', 'pelos', 'pelas', 'com', 'sem', 'sob',
+    'pix', 'ted', 'doc', 'debito', 'credito', 'débito', 'crédito',
+    'transferencia', 'transferência', 'enviada', 'enviado', 'recebida', 'recebido',
+    'pagamento', 'compra', 'saque', 'deposito', 'depósito',
+    'agencia', 'agência', 'conta', 'banco', 'bco',
+    's.a.', 'sa', 'ltda', 'me', 'mei', 'eireli',
+    'cpf', 'cnpj', 'ip', 'ref', 'memo',
+    'e', 'a', 'o', 'os', 'as', 'um', 'uma', 'uns', 'umas'
+  ]);
+
+  // Limpar descrição
+  let cleaned = description
+    .toUpperCase()
+    .replace(/<\/MEMO>/gi, '') // Remover tags XML
+    .replace(/[•*-]/g, ' ') // Remover caracteres especiais
+    .replace(/\d{3,}/g, ' ') // Remover números longos (contas, CPF, etc)
+    .replace(/\s+/g, ' ') // Normalizar espaços
+    .trim();
+
+  // Dividir em palavras
+  const words = cleaned.split(/\s+/);
+
+  // Encontrar primeira palavra significativa (não é stop word, >= 3 chars)
+  for (const word of words) {
+    const normalizedWord = word.toLowerCase().replace(/[^a-záéíóúãõçâêî]/gi, '');
+    if (normalizedWord.length >= 3 && !stopWords.has(normalizedWord)) {
+      // Retornar a palavra original (uppercase) para matching
+      return word.replace(/[^A-ZÁÉÍÓÚÃÕÇÂÊÎ\s]/gi, '').trim();
+    }
+  }
+
+  // Se não encontrou palavra significativa, retornar primeiras 2-3 palavras juntas
+  const significantWords = words
+    .filter(w => w.length >= 2 && !stopWords.has(w.toLowerCase()))
+    .slice(0, 2);
+
+  return significantWords.join(' ');
 }
 
 export default function ImportStatements() {
@@ -620,6 +671,47 @@ export default function ImportStatements() {
           .insert(transactionsToInsert);
 
         if (insertError) throw insertError;
+
+        // 4.1 Criar regras de categorização automaticamente para transações importadas
+        // Isso permite que futuras transações similares sejam categorizadas automaticamente
+        const rulesCreated: string[] = [];
+        for (const t of toInsert) {
+          const categoryId = t.selectedCategoryId || t.suggestedCategoryId;
+          if (!categoryId || t.matchedByRule) continue; // Já tem regra ou sem categoria
+
+          // Extrair palavra-chave da descrição (primeiras 3-4 palavras significativas)
+          const keyword = extractKeywordFromDescription(t.description);
+          if (!keyword || keyword.length < 3) continue;
+
+          // Verificar se já existe regra com esta palavra-chave
+          const { data: existingRule } = await supabase
+            .from('category_rules')
+            .select('id')
+            .eq('user_id', user.id)
+            .ilike('keyword', keyword)
+            .maybeSingle();
+
+          if (!existingRule) {
+            // Criar nova regra
+            const { error: ruleError } = await supabase
+              .from('category_rules')
+              .insert({
+                user_id: user.id,
+                category_id: categoryId,
+                keyword: keyword,
+                match_type: 'contains',
+                priority: 10 // Prioridade baixa para regras automáticas
+              });
+
+            if (!ruleError) {
+              rulesCreated.push(keyword);
+            }
+          }
+        }
+
+        if (rulesCreated.length > 0) {
+          console.log(`[Import] ${rulesCreated.length} regras de categorização criadas automaticamente`);
+        }
       }
 
       // 5. Handle Phase 2 (Editing)
