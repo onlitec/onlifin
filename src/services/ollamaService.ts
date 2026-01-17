@@ -320,62 +320,80 @@ Responda em JSON: {"results": [{"index": 1, "category": "Nome", "confidence": 0.
 
     console.log('[AI] Resposta:', response.substring(0, 200));
 
-    // Extrair JSON - tentar múltiplos métodos
-    let jsonString = '';
+    // Extrair e processar JSON - tentar múltiplos métodos
+    let allResults: any[] = [];
 
-    // Método 1: JSON direto
-    let jsonMatch = response.match(/\{[\s\S]*\}/);
+    // Remover blocos de código markdown se existirem
+    let cleanResponse = response
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
 
-    // Método 2: Dentro de bloco de código
-    if (!jsonMatch) {
-        const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (codeBlockMatch) {
-            jsonMatch = codeBlockMatch[1].match(/\{[\s\S]*\}/);
+    // Método 1: Tentar encontrar TODOS os objetos JSON com "results"
+    const jsonObjects = cleanResponse.match(/\{[^{}]*"results"\s*:\s*\[[^\]]*\][^{}]*\}/g);
+
+    if (jsonObjects && jsonObjects.length > 0) {
+        // Múltiplos objetos JSON - combinar todos os results
+        for (const jsonStr of jsonObjects) {
+            try {
+                const parsed = JSON.parse(jsonStr);
+                if (parsed.results && Array.isArray(parsed.results)) {
+                    allResults.push(...parsed.results);
+                }
+            } catch (e) {
+                // Ignorar objetos malformados
+            }
+        }
+
+        if (allResults.length > 0) {
+            console.log(`[AI] Combinados ${jsonObjects.length} objetos JSON em ${allResults.length} resultados`);
         }
     }
 
-    if (jsonMatch) {
-        jsonString = jsonMatch[0];
-    } else {
-        throw new Error('Resposta da IA não contém JSON válido');
+    // Método 2: Se não encontrou múltiplos, tentar JSON único
+    if (allResults.length === 0) {
+        let jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+
+        if (jsonMatch) {
+            let jsonString = jsonMatch[0];
+
+            // Tentar corrigir JSON truncado ou malformado
+            try {
+                const result = JSON.parse(jsonString);
+                allResults = result.results || result.categorizedTransactions || [];
+            } catch (parseError) {
+                // Tentar corrigir JSON incompleto
+                let fixedJson = jsonString;
+
+                // Contar chaves e colchetes para corrigir
+                const openBraces = (fixedJson.match(/\{/g) || []).length;
+                const closeBraces = (fixedJson.match(/\}/g) || []).length;
+                const openBrackets = (fixedJson.match(/\[/g) || []).length;
+                const closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+                // Adicionar fechamentos faltantes
+                for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                    fixedJson += ']';
+                }
+                for (let i = 0; i < openBraces - closeBraces; i++) {
+                    fixedJson += '}';
+                }
+
+                // Remover vírgula final antes de ] ou }
+                fixedJson = fixedJson.replace(/,\s*([}\]])/g, '$1');
+
+                try {
+                    const result = JSON.parse(fixedJson);
+                    allResults = result.results || result.categorizedTransactions || [];
+                    console.log('[AI] JSON corrigido com sucesso');
+                } catch (fixError) {
+                    console.error('[AI] Não foi possível parsear JSON:', jsonString.substring(0, 100));
+                }
+            }
+        }
     }
 
-    // Tentar corrigir JSON truncado ou malformado
-    let result: any;
-    try {
-        result = JSON.parse(jsonString);
-    } catch (parseError) {
-        // Tentar corrigir JSON incompleto
-        let fixedJson = jsonString;
-
-        // Contar chaves e colchetes para corrigir
-        const openBraces = (fixedJson.match(/\{/g) || []).length;
-        const closeBraces = (fixedJson.match(/\}/g) || []).length;
-        const openBrackets = (fixedJson.match(/\[/g) || []).length;
-        const closeBrackets = (fixedJson.match(/\]/g) || []).length;
-
-        // Adicionar fechamentos faltantes
-        for (let i = 0; i < openBrackets - closeBrackets; i++) {
-            fixedJson += ']';
-        }
-        for (let i = 0; i < openBraces - closeBraces; i++) {
-            fixedJson += '}';
-        }
-
-        // Remover vírgula final antes de ] ou }
-        fixedJson = fixedJson.replace(/,\s*([}\]])/g, '$1');
-
-        try {
-            result = JSON.parse(fixedJson);
-            console.log('[AI] JSON corrigido com sucesso');
-        } catch (fixError) {
-            // Último recurso: criar resultado vazio
-            console.error('[AI] Não foi possível parsear JSON:', jsonString.substring(0, 100));
-            result = { results: [] };
-        }
-    }
-
-    const aiResults = result.results || result.categorizedTransactions || [];
+    const aiResults = allResults;
 
     // Mapear resultados de volta para as transações
     return transactions.map((t, index) => {
