@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, Info, Briefcase } from 'lucide-react';
 import { BankIconSelector } from '@/components/ui/bank-icon-selector';
 import { getBankById, getDefaultBankIcon } from '@/config/banks';
+import { useSelectedCompany } from '@/contexts/CompanyContext';
+import { Badge } from '@/components/ui/badge';
 import type { Account } from '@/types/types';
 
 export default function Accounts() {
@@ -30,16 +32,22 @@ export default function Accounts() {
   });
   const { toast } = useToast();
 
+  // Empresa selecionada no contexto
+  const selectedCompany = useSelectedCompany();
+
   React.useEffect(() => {
     loadAccounts();
-  }, []);
+  }, [selectedCompany]);
 
   const loadAccounts = async () => {
+    setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const data = await accountsApi.getAccounts(user.id);
+      // Carregar contas - se tiver empresa selecionada, filtra por ela
+      // Caso contrário, carrega todas as contas do usuário
+      const data = await accountsApi.getAccounts(user.id, selectedCompany?.id);
       setAccounts(data);
     } catch (error: any) {
       toast({
@@ -75,7 +83,8 @@ export default function Accounts() {
         await accountsApi.createAccount({
           ...accountData,
           balance: Number(formData.balance), // Also set current balance to initial on create
-          user_id: user.id
+          user_id: user.id,
+          company_id: selectedCompany?.id || null // Associar à empresa selecionada
         });
         toast({ title: 'Sucesso', description: 'Conta criada com sucesso' });
       }

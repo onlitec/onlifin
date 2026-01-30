@@ -103,12 +103,22 @@ export const profilesApi = {
 };
 
 export const accountsApi = {
-  async getAccounts(userId: string): Promise<Account[]> {
-    const { data, error } = await supabase
+  async getAccounts(userId: string, companyId?: string | null): Promise<Account[]> {
+    let query = supabase
       .from('accounts')
       .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .eq('user_id', userId);
+
+    // Filtrar por empresa se especificado
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];

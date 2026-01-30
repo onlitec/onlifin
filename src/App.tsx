@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, RequireAuth } from 'miaoda-auth-react';
 import { supabase } from '@/db/client';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { OnlifinSidebar } from '@/components/layout/OnlifinSidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { CompanyProvider } from '@/contexts/CompanyContext';
@@ -13,6 +13,7 @@ import AIAssistant from '@/components/AIAssistant';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { UpdateNotification } from '@/components/pwa/UpdateNotification';
 import { PWAStatus } from '@/components/pwa/PWAStatus';
+import { CompanySelectorCompact } from '@/components/company';
 import routes from './routes';
 
 function App() {
@@ -49,8 +50,9 @@ function App() {
                       <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
                       <Separator orientation="vertical" className="mr-2 h-4" />
                       <div className="flex flex-1 items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
                           <h2 className="text-lg font-semibold text-foreground">Onlifin</h2>
+                          <CompanySelectorCompact />
                         </div>
                         <ThemeToggle />
                       </div>

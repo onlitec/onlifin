@@ -4,6 +4,7 @@ import {
     Home,
     ArrowLeftRight,
     Building2,
+    Briefcase,
     CreditCard,
     PieChart,
     BarChart3,
@@ -58,6 +59,11 @@ const simpleMenuItems = [
         title: 'Contas',
         icon: Building2,
         path: '/accounts',
+    },
+    {
+        title: 'Empresas',
+        icon: Briefcase,
+        path: '/companies',
     },
     {
         title: 'Cartões',

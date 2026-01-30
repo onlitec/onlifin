@@ -30,6 +30,7 @@ export interface Profile {
 export interface Account {
   id: string;
   user_id: string;
+  company_id: string | null;
   name: string;
   bank: string | null;
   agency: string | null;
