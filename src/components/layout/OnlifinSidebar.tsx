@@ -17,8 +17,20 @@ import {
     Bot,
     Sliders,
     Layers,
-    LogOut
+    LogOut,
+    Plus,
+    Check,
+    ChevronRight
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Sidebar,
     SidebarContent,
@@ -89,12 +101,14 @@ const adminSubmenus = [
 ];
 
 export function OnlifinSidebar() {
-    const location = useLocation();
+    const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { state } = useSidebar();
     const { companies, selectedCompany, selectCompany } = useCompany();
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
     const [userMenuOpen, setUserMenuOpen] = React.useState(false);
+    const [pfOpen, setPfOpen] = React.useState(true);
+    const [pjOpen, setPjOpen] = React.useState(true);
 
     // Abrir menus automaticamente com base na rota
     React.useEffect(() => {
@@ -121,6 +135,16 @@ export function OnlifinSidebar() {
     };
 
     const isActive = (path: string) => location.pathname === path;
+
+    const handleCompanyChange = (companyId: string) => {
+        selectCompany(companyId);
+        // Atualizar rota se estiver em uma página PJ
+        if (location.pathname.startsWith('/pj/')) {
+            const pathParts = location.pathname.split('/');
+            const restOfPath = pathParts.slice(3).join('/');
+            navigate(`/pj/${companyId}${restOfPath ? `/${restOfPath}` : ''}`);
+        }
+    };
 
     const renderMenuItem = (item: any, basePath: string = '') => {
         const fullPath = item.path || `${basePath}${item.subPath}`;
@@ -204,54 +228,115 @@ export function OnlifinSidebar() {
 
             <SidebarContent>
                 {/* PESSOA FÍSICA */}
-                <SidebarGroup>
-                    <div className="px-2 py-2">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-                            Pessoa Física
-                        </span>
-                    </div>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {PF_MENU.map(item => renderMenuItem(item))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                <Collapsible open={pfOpen} onOpenChange={setPfOpen}>
+                    <SidebarGroup>
+                        <CollapsibleTrigger asChild>
+                            <div className="px-2 py-2 flex items-center justify-between cursor-pointer group">
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                                    Pessoa Física
+                                </span>
+                                {state === 'expanded' && (
+                                    <ChevronDown className={`size-3 text-muted-foreground transition-transform ${pfOpen ? 'rotate-180' : ''}`} />
+                                )}
+                            </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {PF_MENU.map(item => renderMenuItem(item))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </CollapsibleContent>
+                    </SidebarGroup>
+                </Collapsible>
 
                 {/* PESSOA JURÍDICA */}
-                <SidebarGroup>
-                    <div className="px-2 py-2 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-                            Pessoa Jurídica
-                        </span>
-                        {state === 'expanded' && (
-                            <Link to="/companies" className="text-[10px] text-primary hover:underline px-2">
-                                Gerenciar
-                            </Link>
-                        )}
-                    </div>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {selectedCompany ? (
-                                <>
-                                    <div className="px-4 py-1 mb-2 bg-accent/50 rounded-md mx-2">
-                                        <p className="text-[11px] font-medium truncate">{selectedCompany.nome_fantasia || selectedCompany.razao_social}</p>
-                                        <p className="text-[10px] text-muted-foreground truncate">{selectedCompany.cnpj}</p>
-                                    </div>
-                                    {PJ_MENU_BASE(selectedCompany.id).map(item => renderMenuItem(item))}
-                                </>
-                            ) : (
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild tooltip="Selecionar Empresa">
-                                        <Link to="/companies">
-                                            <Building2 className="size-4" />
-                                            <span>Selecionar Empresa</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+                <Collapsible open={pjOpen} onOpenChange={setPjOpen}>
+                    <SidebarGroup>
+                        <div className="px-2 py-2 flex items-center justify-between">
+                            <CollapsibleTrigger asChild>
+                                <div className="flex items-center gap-1 cursor-pointer group">
+                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                                        Pessoa Jurídica
+                                    </span>
+                                    {state === 'expanded' && (
+                                        <ChevronDown className={`size-3 text-muted-foreground transition-transform ${pjOpen ? 'rotate-180' : ''}`} />
+                                    )}
+                                </div>
+                            </CollapsibleTrigger>
+                            {state === 'expanded' && (
+                                <Link to="/companies" className="text-[10px] text-primary hover:underline px-2">
+                                    Gerenciar
+                                </Link>
                             )}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                        </div>
+                        <CollapsibleContent>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {companies.length > 0 ? (
+                                        <>
+                                            {/* Seletor de Empresa na Sidebar */}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <div className="px-3 py-2 mb-2 bg-accent/50 hover:bg-accent rounded-md mx-2 cursor-pointer transition-colors border border-transparent hover:border-border group">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[11px] font-bold truncate">
+                                                                    {selectedCompany?.nome_fantasia || selectedCompany?.razao_social || 'Selecionar Empresa'}
+                                                                </p>
+                                                                {selectedCompany && (
+                                                                    <p className="text-[10px] text-muted-foreground truncate">{selectedCompany.cnpj}</p>
+                                                                )}
+                                                            </div>
+                                                            <ChevronRight className="size-3 text-muted-foreground group-hover:text-foreground transition-all ml-1" />
+                                                        </div>
+                                                    </div>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start" className="w-[240px] z-[9999]">
+                                                    <DropdownMenuLabel className="text-xs">Minhas Empresas</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    {companies.map(company => (
+                                                        <DropdownMenuItem
+                                                            key={company.id}
+                                                            onClick={() => handleCompanyChange(company.id)}
+                                                            className="flex items-center justify-between text-xs cursor-pointer"
+                                                        >
+                                                            <div className="flex flex-col truncate pr-2">
+                                                                <span className="font-medium truncate">{company.nome_fantasia || company.razao_social}</span>
+                                                                <span className="text-[10px] text-muted-foreground">{company.cnpj}</span>
+                                                            </div>
+                                                            {selectedCompany?.id === company.id && (
+                                                                <Check className="size-3 text-primary ml-auto" />
+                                                            )}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem asChild>
+                                                        <Link to="/companies" className="flex items-center gap-2 cursor-pointer text-xs">
+                                                            <Plus className="size-3" />
+                                                            Adicionar Empresa
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+
+                                            {selectedCompany && PJ_MENU_BASE(selectedCompany.id).map(item => renderMenuItem(item))}
+                                        </>
+                                    ) : (
+                                        <SidebarMenuItem>
+                                            <SidebarMenuButton asChild tooltip="Selecionar Empresa">
+                                                <Link to="/companies">
+                                                    <Building2 className="size-4" />
+                                                    <span>Selecionar Empresa</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    )}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </CollapsibleContent>
+                    </SidebarGroup>
+                </Collapsible>
 
                 {/* ADMIN */}
                 <SidebarGroup className="mt-auto">
