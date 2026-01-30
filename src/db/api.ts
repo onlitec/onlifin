@@ -717,12 +717,22 @@ export const importHistoryApi = {
 
 // Bills To Pay API
 export const billsToPayApi = {
-  async getAll(userId: string): Promise<BillToPay[]> {
-    const { data, error } = await supabase
+  async getAll(userId: string, companyId?: string | null): Promise<BillToPay[]> {
+    let query = supabase
       .from('bills_to_pay')
       .select('*')
-      .eq('user_id', userId)
-      .order('due_date', { ascending: true });
+      .eq('user_id', userId);
+
+    // Filtrar por empresa se especificado
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -814,12 +824,22 @@ export const billsToPayApi = {
 
 // Bills To Receive API
 export const billsToReceiveApi = {
-  async getAll(userId: string): Promise<BillToReceive[]> {
-    const { data, error } = await supabase
+  async getAll(userId: string, companyId?: string | null): Promise<BillToReceive[]> {
+    let query = supabase
       .from('bills_to_receive')
       .select('*')
-      .eq('user_id', userId)
-      .order('due_date', { ascending: true });
+      .eq('user_id', userId);
+
+    // Filtrar por empresa se especificado
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];

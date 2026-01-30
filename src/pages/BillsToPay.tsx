@@ -25,6 +25,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark } from 'lucide-react';
+import { useSelectedCompany } from '@/contexts/CompanyContext';
 
 export default function BillsToPay() {
   const { toast } = useToast();
@@ -56,17 +57,20 @@ export default function BillsToPay() {
     initUser();
   }, []);
 
+  // Empresa selecionada no contexto
+  const selectedCompany = useSelectedCompany();
+
   React.useEffect(() => {
     if (userId) {
       loadData();
     }
-  }, [userId]);
+  }, [userId, selectedCompany]);
 
   const loadData = async () => {
     try {
       const [billsData, accountsData, categoriesData] = await Promise.all([
-        billsToPayApi.getAll(userId!),
-        accountsApi.getAccounts(userId!),
+        billsToPayApi.getAll(userId!, selectedCompany?.id),
+        accountsApi.getAccounts(userId!, selectedCompany?.id),
         categoriesApi.getCategories()
       ]);
       setBills(billsData);
@@ -126,6 +130,7 @@ export default function BillsToPay() {
     try {
       const billData = {
         user_id: userId!,
+        company_id: selectedCompany?.id || null,
         description: formData.description,
         amount: Number.parseFloat(formData.amount),
         due_date: formData.due_date,

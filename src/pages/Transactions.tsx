@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useSelectedCompany } from '@/contexts/CompanyContext';
 import type { ReceiptData } from '@/services/ocrService';
 import type { Transaction, Account, Category } from '@/types/types';
 
@@ -59,9 +60,12 @@ export default function Transactions() {
   });
   const { toast } = useToast();
 
+  // Empresa selecionada no contexto
+  const selectedCompany = useSelectedCompany();
+
   React.useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedCompany]);
 
   const loadData = async () => {
     try {
@@ -69,8 +73,8 @@ export default function Transactions() {
       if (!user) return;
 
       const [txs, accs, cats] = await Promise.all([
-        transactionsApi.getTransactions(user.id),
-        accountsApi.getAccounts(user.id),
+        transactionsApi.getTransactions(user.id, { companyId: selectedCompany?.id }),
+        accountsApi.getAccounts(user.id, selectedCompany?.id),
         categoriesApi.getCategories()
       ]);
 
@@ -182,6 +186,7 @@ export default function Transactions() {
           const baseTransaction = {
             ...formData,
             user_id: user.id,
+            company_id: selectedCompany?.id || null,
             amount: Number(formData.amount),
             category_id: formData.category_id || null,
             account_id: formData.account_id || null,
