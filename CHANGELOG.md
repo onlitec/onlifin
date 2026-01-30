@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.16.0] - 2026-01-30
+
+### feat(sidebar): display Nome Fantasia prominently in header and selector
+
+---
+
+
+
 ## [1.15.0] - 2026-01-30
 
 ### feat(sidebar): implement collapsible PF/PJ sections and company selector
