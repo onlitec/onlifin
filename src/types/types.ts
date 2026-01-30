@@ -30,6 +30,7 @@ export interface Profile {
 export interface Account {
   id: string;
   user_id: string;
+  company_id: string | null;
   name: string;
   bank: string | null;
   agency: string | null;
@@ -45,6 +46,7 @@ export interface Account {
 export interface Card {
   id: string;
   user_id: string;
+  company_id: string | null;
   account_id: string | null;
   name: string;
   card_limit: number;
@@ -59,6 +61,7 @@ export interface Card {
 export interface Category {
   id: string;
   user_id: string | null;
+  company_id: string | null;
   name: string;
   type: CategoryType;
   icon: string | null;
@@ -69,6 +72,7 @@ export interface Category {
 export interface Transaction {
   id: string;
   user_id: string;
+  company_id: string | null;
   account_id: string | null;
   card_id: string | null;
   category_id: string | null;
@@ -158,6 +162,7 @@ export type NotificationSeverity = 'low' | 'medium' | 'high';
 export interface BillToPay {
   id: string;
   user_id: string;
+  company_id: string | null;
   description: string;
   amount: number;
   due_date: string;
@@ -176,6 +181,7 @@ export interface BillToPay {
 export interface BillToReceive {
   id: string;
   user_id: string;
+  company_id: string | null;
   description: string;
   amount: number;
   due_date: string;

@@ -1,0 +1,156 @@
+{
+  "metadata": {
+    "date": "2026-01-16T23:14:08.816Z",
+    "totalTransactions": 12,
+    "categorizedByRules": 12,
+    "categorizedByAI": 0,
+    "uncategorized": 0
+  },
+  "transactions": [
+    {
+      "date": "02/01/2026",
+      "description": "Transferência Recebida - Márcia Aparecida Domingos Freire - •••.569.868-•• - NU PAGAMENTOS - IP (0260) Agência: 1 Conta: 15572782-4",
+      "amount": 50,
+      "type": "income",
+      "id": "6957b346-1411-4aa0-b098-dcfa63900535",
+      "suggestedCategory": "Transferência Recebida",
+      "suggestedCategoryId": "cat-transferencia-entrada",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência Recebida"
+    },
+    {
+      "date": "02/01/2026",
+      "description": "Compra no débito - BRASIL GAS ADMINISTRAC",
+      "amount": -30,
+      "type": "expense",
+      "id": "6957c83e-8ae0-4ecd-8086-3b462d5d7557",
+      "suggestedCategory": "Gás e Combustível",
+      "suggestedCategoryId": "cat-gas",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "BRASIL GAS"
+    },
+    {
+      "date": "03/01/2026",
+      "description": "Transferência enviada pelo Pix - Márcia Aparecida Domingos Freire - •••.569.868-•• - NU PAGAMENTOS - IP (0260) Agência: 1 Conta: 15572782-4",
+      "amount": -30,
+      "type": "expense",
+      "id": "695940fd-b9b2-4382-a53e-d565fcb262c3",
+      "suggestedCategory": "Transferência Enviada",
+      "suggestedCategoryId": "cat-transferencia-saida",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência enviada"
+    },
+    {
+      "date": "05/01/2026",
+      "description": "Transferência enviada pelo Pix - Márcia Aparecida Domingos Freire - •••.569.868-•• - NU PAGAMENTOS - IP (0260) Agência: 1 Conta: 15572782-4",
+      "amount": -3,
+      "type": "expense",
+      "id": "695c369f-14fb-4346-a241-0842d8794e5c",
+      "suggestedCategory": "Transferência Enviada",
+      "suggestedCategoryId": "cat-transferencia-saida",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência enviada"
+    },
+    {
+      "date": "06/01/2026",
+      "description": "Transferência recebida pelo Pix - MICHELLE GALVAO FREIRE - •••.234.998-•• - BCO C6 S.A. (0336) Agência: 1 Conta: 27968388-0",
+      "amount": 30,
+      "type": "income",
+      "id": "695cf427-f2c8-4220-b406-9eb70786be73",
+      "suggestedCategory": "Transferência Recebida",
+      "suggestedCategoryId": "cat-transferencia-entrada",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência Recebida"
+    },
+    {
+      "date": "08/01/2026",
+      "description": "Transferência enviada pelo Pix - Beatriz Domingos Galvão Freire - •••.630.298-•• - NU PAGAMENTOS - IP (0260) Agência: 1 Conta: 238189961-1",
+      "amount": -7,
+      "type": "expense",
+      "id": "695fed7d-ff42-43e6-ad7a-9bbcf99109b0",
+      "suggestedCategory": "Transferência Enviada",
+      "suggestedCategoryId": "cat-transferencia-saida",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência enviada"
+    },
+    {
+      "date": "09/01/2026",
+      "description": "Transferência enviada pelo Pix - CARLOS CORREA MACHADO                    - •••.604.218-•• - BCO BRADESCO S.A. (0237) Agência: 1960 Conta: 11567-3",
+      "amount": -21,
+      "type": "expense",
+      "id": "69614649-4750-4cfd-9f49-6855781bb9b1",
+      "suggestedCategory": "Transferência Enviada",
+      "suggestedCategoryId": "cat-transferencia-saida",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência enviada"
+    },
+    {
+      "date": "09/01/2026",
+      "description": "Transferência recebida pelo Pix - RITA DE CASSIA ALVES DE OLIVEIRA - •••.841.338-•• - BCO BRADESCO S.A. (0237) Agência: 1960 Conta: 50471-8",
+      "amount": 80,
+      "type": "income",
+      "id": "69616438-0fa4-4ea2-aead-f3677e37f35e",
+      "suggestedCategory": "Transferência Recebida",
+      "suggestedCategoryId": "cat-transferencia-entrada",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência Recebida"
+    },
+    {
+      "date": "09/01/2026",
+      "description": "Transferência enviada pelo Pix - PAGAR.ME PAGAMENTOS - 18.727.053/0001-74 - STONE IP S.A. (0197) Agência: 1 Conta: 16714636-4",
+      "amount": -41.43,
+      "type": "expense",
+      "id": "6961a9b8-b08a-495c-ac3d-e855f761c30c",
+      "suggestedCategory": "Pagamentos",
+      "suggestedCategoryId": "cat-pagamentos",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "PAGAR.ME"
+    },
+    {
+      "date": "10/01/2026",
+      "description": "Transferência enviada pelo Pix - PAGAR.ME PAGAMENTOS - 18.727.053/0001-74 - STONE IP S.A. (0197) Agência: 1 Conta: 16714636-4",
+      "amount": -38.8,
+      "type": "expense",
+      "id": "6962912c-a7b1-46fb-b56b-a8625596bbc3",
+      "suggestedCategory": "Pagamentos",
+      "suggestedCategoryId": "cat-pagamentos",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "PAGAR.ME"
+    },
+    {
+      "date": "12/01/2026",
+      "description": "Transferência recebida pelo Pix - Alessandro Galvao Freire - •••.841.228-•• - 99PAY IP S.A. (0769) Agência: 1 Conta: 514588-0",
+      "amount": 2,
+      "type": "income",
+      "id": "69655fb5-fb75-4568-bab1-0fd6b6abe47e",
+      "suggestedCategory": "Transferência Recebida",
+      "suggestedCategoryId": "cat-transferencia-entrada",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "Transferência Recebida"
+    },
+    {
+      "date": "12/01/2026",
+      "description": "Compra no débito - MERCADO SEVEN II",
+      "amount": -5,
+      "type": "expense",
+      "id": "69656153-e38a-4f49-8fbb-00d78705d7d7",
+      "suggestedCategory": "Supermercado",
+      "suggestedCategoryId": "cat-mercado",
+      "confidence": 1,
+      "matchedByRule": true,
+      "matchedKeyword": "MERCADO"
+    }
+  ],
+  "rulesUsed": 29
+}

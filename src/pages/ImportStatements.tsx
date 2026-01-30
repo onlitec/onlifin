@@ -29,6 +29,7 @@ import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import type { Category, Account, Transaction } from '@/types/types';
 import { accountsApi } from '@/db/api';
 import { categorizeTransactionsWithAI } from '@/services/ollamaService';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 interface ParsedTransaction {
   date: string;
@@ -44,6 +45,8 @@ interface CategorizedTransaction extends ParsedTransaction {
   isNewCategory: boolean;
   confidence: number;
   selectedCategoryId?: string;
+  matchedByRule?: boolean; // True se foi categorizado por regra de palavra-chave
+  matchedKeyword?: string; // Palavra-chave que fez match
   // Intelligent Matching Fields
   action: 'new' | 'reconcile' | 'ignore' | 'edit';
   matchId?: string;
@@ -56,11 +59,66 @@ interface NewCategorySuggestion {
   selected: boolean;
 }
 
+/**
+ * Extrai palavra-chave significativa da descrição da transação
+ * para criar regras de categorização automática
+ */
+function extractKeywordFromDescription(description: string): string {
+  if (!description) return '';
+
+  // Palavras a ignorar (stop words e termos bancários genéricos)
+  const stopWords = new Set([
+    'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'nas', 'nos',
+    'para', 'pelo', 'pela', 'pelos', 'pelas', 'com', 'sem', 'sob',
+    'pix', 'ted', 'doc', 'debito', 'credito', 'débito', 'crédito',
+    'transferencia', 'transferência', 'enviada', 'enviado', 'recebida', 'recebido',
+    'pagamento', 'compra', 'saque', 'deposito', 'depósito',
+    'agencia', 'agência', 'conta', 'banco', 'bco',
+    's.a.', 'sa', 'ltda', 'me', 'mei', 'eireli',
+    'cpf', 'cnpj', 'ip', 'ref', 'memo',
+    'e', 'a', 'o', 'os', 'as', 'um', 'uma', 'uns', 'umas'
+  ]);
+
+  // Limpar descrição
+  let cleaned = description
+    .toUpperCase()
+    .replace(/<\/MEMO>/gi, '') // Remover tags XML
+    .replace(/[•*-]/g, ' ') // Remover caracteres especiais
+    .replace(/\d{3,}/g, ' ') // Remover números longos (contas, CPF, etc)
+    .replace(/\s+/g, ' ') // Normalizar espaços
+    .trim();
+
+  // Dividir em palavras
+  const words = cleaned.split(/\s+/);
+
+  // Encontrar primeira palavra significativa (não é stop word, >= 3 chars)
+  for (const word of words) {
+    const normalizedWord = word.toLowerCase().replace(/[^a-záéíóúãõçâêî]/gi, '');
+    if (normalizedWord.length >= 3 && !stopWords.has(normalizedWord)) {
+      // Retornar a palavra original (uppercase) para matching
+      return word.replace(/[^A-ZÁÉÍÓÚÃÕÇÂÊÎ\s]/gi, '').trim();
+    }
+  }
+
+  // Se não encontrou palavra significativa, retornar primeiras 2-3 palavras juntas
+  const significantWords = words
+    .filter(w => w.length >= 2 && !stopWords.has(w.toLowerCase()))
+    .slice(0, 2);
+
+  return significantWords.join(' ');
+}
+
 export default function ImportStatements() {
+  const { toast } = useToast();
   const [fileContent, setFileContent] = React.useState('');
   const [textContent, setTextContent] = React.useState('');
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
+
+  const addLog = (message: string) => {
+    setAnalysisLog(prev => [...prev.slice(-19), `${new Date().toLocaleTimeString()} - ${message}`]);
+    setCurrentAnalysisStep(message);
+  };
   const [categorizedTransactions, setCategorizedTransactions] = React.useState<CategorizedTransaction[]>([]);
   const [newCategorySuggestions, setNewCategorySuggestions] = React.useState<NewCategorySuggestion[]>([]);
   const [existingCategories, setExistingCategories] = React.useState<Category[]>([]);
@@ -73,22 +131,17 @@ export default function ImportStatements() {
   const [analysisProgress, setAnalysisProgress] = React.useState(0);
   const [analysisLog, setAnalysisLog] = React.useState<string[]>([]);
   const [currentAnalysisStep, setCurrentAnalysisStep] = React.useState('');
-  const { toast } = useToast();
-
-  const addLog = (message: string) => {
-    const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setAnalysisLog(prev => [...prev, `[${time}] ${message}`]);
-  };
+  const { companyId, isPJ } = useFinanceScope();
 
   React.useEffect(() => {
     loadAccounts();
-  }, []);
+  }, [companyId]);
 
   const loadAccounts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const data = await accountsApi.getAccounts(user.id);
+      const data = await accountsApi.getAccounts(user.id, companyId);
       setAccounts(data);
       if (data.length > 0 && !selectedAccountId) {
         setSelectedAccountId(data[0].id);
@@ -397,24 +450,54 @@ export default function ImportStatements() {
       setAnalysisProgress(60);
       setCurrentAnalysisStep('Carregando categorias...');
 
-      const { data: categories, error: catError } = await supabase
-        .from('categories')
+      // Carregar categorias do usuário E categorias padrão do sistema, respeitando empresa
+      const categories = await categoriesApi.getCategories(companyId);
+
+      const allCategories = categories || [];
+      setExistingCategories(allCategories);
+      addLog(`${allCategories.length} categorias disponíveis`);
+
+      // Buscar transações recentes do usuário como exemplos (Few-Shot Learning)
+      addLog('Carregando exemplos de transações anteriores...');
+      let recentQuery = supabase
+        .from('transactions')
+        .select('*, category:categories(name)')
+        .eq('user_id', user.id)
+        .not('category_id', 'is', null);
+
+      if (companyId) {
+        recentQuery = recentQuery.eq('company_id', companyId);
+      } else {
+        recentQuery = recentQuery.is('company_id', null);
+      }
+
+      const { data: recentTransactions } = await recentQuery
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // Buscar regras de palavras-chave do usuário
+      const { data: keywordRules } = await supabase
+        .from('category_rules')
         .select('*')
         .eq('user_id', user.id);
 
-      if (catError) throw catError;
-      setExistingCategories(categories || []);
-      addLog(`${(categories || []).length} categorias disponíveis`);
+      addLog(`${(recentTransactions || []).length} exemplos e ${(keywordRules || []).length} regras de palavras-chave`);
 
       setAnalysisProgress(70);
-      setCurrentAnalysisStep('Enviando para categorização com IA...');
-      addLog('Iniciando categorização com modelo de IA...');
+      setCurrentAnalysisStep('Aplicando regras + IA para categorização...');
+      addLog('Iniciando categorização híbrida (regras + qwen2.5)...');
 
-      // Send to AI for categorization using local Ollama
+      // Send to AI for categorization using local Ollama with examples and rules
       let result: any;
       try {
-        result = await categorizeTransactionsWithAI(parsed, categories || []);
-        addLog('Categorização por IA concluída com sucesso');
+        result = await categorizeTransactionsWithAI(
+          parsed,
+          allCategories,
+          recentTransactions || [],
+          keywordRules || []
+        );
+        const ruleMatches = (result.categorizedTransactions || []).filter((t: any) => t.matchedByRule).length;
+        addLog(`Categorização concluída: ${ruleMatches} por regras, ${(result.categorizedTransactions || []).length - ruleMatches} por IA`);
       } catch (aiError: any) {
         console.error('Erro da IA:', aiError);
         addLog('⚠️ IA indisponível - usando categorização manual');
@@ -456,7 +539,7 @@ export default function ImportStatements() {
         const targetDate = parseTDate(t.date);
 
         // Find exact match (same date and amount)
-        const match = (existingTx || []).find(ex =>
+        const match = (existingTx || []).find((ex: any) =>
           ex.date === targetDate &&
           Math.abs(Number(ex.amount)) === Math.abs(t.amount)
         );
@@ -525,6 +608,7 @@ export default function ImportStatements() {
           .from('categories')
           .insert({
             user_id: user.id,
+            company_id: companyId, // Associar à empresa (URL)
             name: newCat.name,
             type: newCat.type,
             icon: 'tag',
@@ -562,6 +646,15 @@ export default function ImportStatements() {
 
       // 4. Perform New Insertions
       if (toInsert.length > 0) {
+        // Função para converter data DD/MM/YYYY para YYYY-MM-DD
+        const convertDateToISO = (dateStr: string): string => {
+          const parts = dateStr.split(/[\/\-]/);
+          // Se já está em YYYY-MM-DD, retornar como está
+          if (parts[0].length === 4) return dateStr;
+          // Converter DD/MM/YYYY para YYYY-MM-DD
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        };
+
         const transactionsToInsert = toInsert.map(t => {
           let categoryId = t.selectedCategoryId || t.suggestedCategoryId;
           if (t.isNewCategory && createdCategoryMap.has(t.suggestedCategory)) {
@@ -570,9 +663,10 @@ export default function ImportStatements() {
 
           return {
             user_id: user.id,
+            company_id: companyId, // Associar à empresa (URL)
             type: t.type,
             amount: t.amount,
-            date: t.date,
+            date: convertDateToISO(t.date), // Converter data para formato ISO
             description: t.description,
             category_id: categoryId,
             account_id: selectedAccountId,
@@ -585,6 +679,48 @@ export default function ImportStatements() {
           .insert(transactionsToInsert);
 
         if (insertError) throw insertError;
+
+        // 4.1 Criar regras de categorização automaticamente para transações importadas
+        // Isso permite que futuras transações similares sejam categorizadas automaticamente
+        const rulesCreated: string[] = [];
+        for (const t of toInsert) {
+          const categoryId = t.selectedCategoryId || t.suggestedCategoryId;
+          if (!categoryId || t.matchedByRule) continue; // Já tem regra ou sem categoria
+
+          // Extrair palavra-chave da descrição (primeiras 3-4 palavras significativas)
+          const keyword = extractKeywordFromDescription(t.description);
+          if (!keyword || keyword.length < 3) continue;
+
+          // Verificar se já existe regra com esta palavra-chave
+          const { data: existingRule } = await supabase
+            .from('category_rules')
+            .select('id')
+            .eq('user_id', user.id)
+            .ilike('keyword', keyword)
+            .maybeSingle();
+
+          if (!existingRule) {
+            // Criar nova regra
+            const { error: ruleError } = await supabase
+              .from('category_rules')
+              .insert({
+                user_id: user.id,
+                company_id: companyId, // Associar à empresa (URL)
+                category_id: categoryId,
+                keyword: keyword,
+                match_type: 'contains',
+                priority: 10 // Prioridade baixa para regras automáticas
+              });
+
+            if (!ruleError) {
+              rulesCreated.push(keyword);
+            }
+          }
+        }
+
+        if (rulesCreated.length > 0) {
+          console.log(`[Import] ${rulesCreated.length} regras de categorização criadas automaticamente`);
+        }
       }
 
       // 5. Handle Phase 2 (Editing)
@@ -899,9 +1035,17 @@ export default function ImportStatements() {
                             <SelectValue placeholder="Categoria" />
                           </SelectTrigger>
                           <SelectContent>
+                            {/* Mostrar categorias do mesmo tipo OU todas se tipo não definido */}
                             {existingCategories
-                              .filter(c => c.type === transaction.type)
+                              .filter(c => !transaction.type || c.type === transaction.type)
                               .map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>
+                                  {cat.icon} {cat.name}
+                                </SelectItem>
+                              ))}
+                            {/* Se não houver categorias filtradas, mostrar todas */}
+                            {existingCategories.filter(c => !transaction.type || c.type === transaction.type).length === 0 &&
+                              existingCategories.map(cat => (
                                 <SelectItem key={cat.id} value={cat.id}>
                                   {cat.icon} {cat.name}
                                 </SelectItem>
@@ -974,7 +1118,7 @@ export default function ImportStatements() {
   return (
     <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Importar Extrato Bancário</h1>
+        <h1 className="text-3xl font-bold">Importar Extrato {isPJ ? 'PJ' : 'PF'}</h1>
         <p className="text-muted-foreground">
           Importe seu extrato e deixe a IA categorizar automaticamente suas transações
         </p>
