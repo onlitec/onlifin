@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.14.0] - 2026-01-30
+
+### feat: implement PF/PJ module separation and UI isolation
+
+---
+
+
+
 ## [1.13.0] - 2026-01-15
 
 ### feat(import): add real-time progress bar and activity log during AI analysis
