@@ -29,6 +29,7 @@ import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import type { Category, Account, Transaction } from '@/types/types';
 import { accountsApi } from '@/db/api';
 import { categorizeTransactionsWithAI } from '@/services/ollamaService';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 interface ParsedTransaction {
   date: string;
@@ -108,10 +109,16 @@ function extractKeywordFromDescription(description: string): string {
 }
 
 export default function ImportStatements() {
+  const { toast } = useToast();
   const [fileContent, setFileContent] = React.useState('');
   const [textContent, setTextContent] = React.useState('');
   const [isAnalyzing, setIsAnalyzing] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
+
+  const addLog = (message: string) => {
+    setAnalysisLog(prev => [...prev.slice(-19), `${new Date().toLocaleTimeString()} - ${message}`]);
+    setCurrentAnalysisStep(message);
+  };
   const [categorizedTransactions, setCategorizedTransactions] = React.useState<CategorizedTransaction[]>([]);
   const [newCategorySuggestions, setNewCategorySuggestions] = React.useState<NewCategorySuggestion[]>([]);
   const [existingCategories, setExistingCategories] = React.useState<Category[]>([]);
@@ -124,22 +131,17 @@ export default function ImportStatements() {
   const [analysisProgress, setAnalysisProgress] = React.useState(0);
   const [analysisLog, setAnalysisLog] = React.useState<string[]>([]);
   const [currentAnalysisStep, setCurrentAnalysisStep] = React.useState('');
-  const { toast } = useToast();
-
-  const addLog = (message: string) => {
-    const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setAnalysisLog(prev => [...prev, `[${time}] ${message}`]);
-  };
+  const { companyId, isPJ } = useFinanceScope();
 
   React.useEffect(() => {
     loadAccounts();
-  }, []);
+  }, [companyId]);
 
   const loadAccounts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const data = await accountsApi.getAccounts(user.id);
+      const data = await accountsApi.getAccounts(user.id, companyId);
       setAccounts(data);
       if (data.length > 0 && !selectedAccountId) {
         setSelectedAccountId(data[0].id);
@@ -448,24 +450,28 @@ export default function ImportStatements() {
       setAnalysisProgress(60);
       setCurrentAnalysisStep('Carregando categorias...');
 
-      // Carregar categorias do usuário E categorias padrão do sistema
-      const { data: categories, error: catError } = await supabase
-        .from('categories')
-        .select('*')
-        .or(`user_id.eq.${user.id},user_id.is.null`);
+      // Carregar categorias do usuário E categorias padrão do sistema, respeitando empresa
+      const categories = await categoriesApi.getCategories(companyId);
 
-      if (catError) throw catError;
       const allCategories = categories || [];
       setExistingCategories(allCategories);
       addLog(`${allCategories.length} categorias disponíveis`);
 
       // Buscar transações recentes do usuário como exemplos (Few-Shot Learning)
       addLog('Carregando exemplos de transações anteriores...');
-      const { data: recentTransactions } = await supabase
+      let recentQuery = supabase
         .from('transactions')
         .select('*, category:categories(name)')
         .eq('user_id', user.id)
-        .not('category_id', 'is', null)
+        .not('category_id', 'is', null);
+
+      if (companyId) {
+        recentQuery = recentQuery.eq('company_id', companyId);
+      } else {
+        recentQuery = recentQuery.is('company_id', null);
+      }
+
+      const { data: recentTransactions } = await recentQuery
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -533,7 +539,7 @@ export default function ImportStatements() {
         const targetDate = parseTDate(t.date);
 
         // Find exact match (same date and amount)
-        const match = (existingTx || []).find(ex =>
+        const match = (existingTx || []).find((ex: any) =>
           ex.date === targetDate &&
           Math.abs(Number(ex.amount)) === Math.abs(t.amount)
         );
@@ -602,6 +608,7 @@ export default function ImportStatements() {
           .from('categories')
           .insert({
             user_id: user.id,
+            company_id: companyId, // Associar à empresa (URL)
             name: newCat.name,
             type: newCat.type,
             icon: 'tag',
@@ -656,6 +663,7 @@ export default function ImportStatements() {
 
           return {
             user_id: user.id,
+            company_id: companyId, // Associar à empresa (URL)
             type: t.type,
             amount: t.amount,
             date: convertDateToISO(t.date), // Converter data para formato ISO
@@ -697,6 +705,7 @@ export default function ImportStatements() {
               .from('category_rules')
               .insert({
                 user_id: user.id,
+                company_id: companyId, // Associar à empresa (URL)
                 category_id: categoryId,
                 keyword: keyword,
                 match_type: 'contains',
@@ -1109,7 +1118,7 @@ export default function ImportStatements() {
   return (
     <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Importar Extrato Bancário</h1>
+        <h1 className="text-3xl font-bold">Importar Extrato {isPJ ? 'PJ' : 'PF'}</h1>
         <p className="text-muted-foreground">
           Importe seu extrato e deixe a IA categorizar automaticamente suas transações
         </p>

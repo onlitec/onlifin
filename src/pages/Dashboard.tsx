@@ -3,22 +3,14 @@ import { supabase } from '@/db/client';
 import { transactionsApi, forecastsApi, billsToReceiveApi } from '@/db/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Wallet,
-  TrendingUp,
-  TrendingDown,
   Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  DollarSign,
-  Activity,
   Sparkles,
-  AlertTriangle,
   Target,
-  PiggyBank
+  Activity,
+  DollarSign
 } from 'lucide-react';
 import type { DashboardStats, CategoryExpense, MonthlyData, FinancialForecast } from '@/types/types';
 import {
@@ -39,6 +31,7 @@ import {
 import { BalanceCards } from '@/components/dashboard/BalanceCards';
 import { CategoryBreakdown } from '@/components/dashboard/CategoryBreakdown';
 import { SpendingChart } from '@/components/dashboard/SpendingChart';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 interface EnhancedStats extends DashboardStats {
   savingsRate: number;
@@ -47,6 +40,7 @@ interface EnhancedStats extends DashboardStats {
 }
 
 export default function Dashboard() {
+  const { companyId, isPJ } = useFinanceScope();
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [enhancedStats, setEnhancedStats] = React.useState<EnhancedStats | null>(null);
   const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
@@ -61,7 +55,7 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     loadDashboardData();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, companyId]);
 
   const loadDashboardData = async () => {
     try {
@@ -74,12 +68,12 @@ export default function Dashboard() {
       const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-      // Carregar dados básicos incluindo previsão
+      // Carregar dados básicos incluindo previsão, filtrando pelo ID da URL (null para PF)
       const [dashboardStats, expenses, monthly, latestForecast] = await Promise.all([
-        transactionsApi.getDashboardStats(user.id),
-        transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth),
-        transactionsApi.getMonthlyData(user.id, 6),
-        forecastsApi.getLatest(user.id).catch(() => null)
+        transactionsApi.getDashboardStats(user.id, companyId),
+        transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth, companyId),
+        transactionsApi.getMonthlyData(user.id, 6, { companyId: companyId }),
+        forecastsApi.getLatest(user.id, companyId).catch(() => null)
       ]);
 
       setStats(dashboardStats);
@@ -130,21 +124,29 @@ export default function Dashboard() {
     const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
     const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-    const { data: transactions } = await supabase
+    let transactionsQuery = supabase
       .from('transactions')
       .select('amount, type, is_transfer')
       .eq('user_id', userId)
       .gte('date', firstDay)
       .lte('date', lastDay);
 
+    if (companyId) {
+      transactionsQuery = transactionsQuery.eq('company_id', companyId);
+    } else {
+      transactionsQuery = transactionsQuery.is('company_id', null);
+    }
+
+    const { data: transactions } = await transactionsQuery;
+
     // Filtrar transferências internas - não contam como receita/despesa real
     const monthlyIncome = transactions
-      ?.filter(t => t.type === 'income' && !t.is_transfer)
-      .reduce((sum, t) => sum + t.amount, 0) || 0;
+      ?.filter((t: any) => t.type === 'income' && !t.is_transfer)
+      .reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
 
     const monthlyExpenses = transactions
-      ?.filter(t => t.type === 'expense' && !t.is_transfer)
-      .reduce((sum, t) => sum + t.amount, 0) || 0;
+      ?.filter((t: any) => t.type === 'expense' && !t.is_transfer)
+      .reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
 
     const savingsRate = monthlyIncome > 0
       ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100
@@ -256,7 +258,9 @@ export default function Dashboard() {
       {/* Header com Título e Filtros na mesma linha */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard Financeiro</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Dashboard {isPJ ? 'Pessoa Jurídica' : 'Pessoa Física'}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {months.find(m => m.value === selectedMonth)?.label} de {selectedYear}
           </p>

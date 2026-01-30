@@ -51,7 +51,7 @@ function App() {
                       <Separator orientation="vertical" className="mr-2 h-4" />
                       <div className="flex flex-1 items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <h2 className="text-lg font-semibold text-foreground">Onlifin</h2>
+                          <h2 className="text-lg font-semibold text-foreground">Onlifin PJ</h2>
                           <CompanySelectorCompact />
                         </div>
                         <ThemeToggle />

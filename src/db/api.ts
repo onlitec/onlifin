@@ -187,12 +187,21 @@ export const accountsApi = {
 };
 
 export const cardsApi = {
-  async getCards(userId: string): Promise<Card[]> {
-    const { data, error } = await supabase
+  async getCards(userId: string, companyId?: string | null): Promise<Card[]> {
+    let query = supabase
       .from('cards')
       .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .eq('user_id', userId);
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -243,11 +252,29 @@ export const cardsApi = {
 };
 
 export const categoriesApi = {
-  async getCategories(): Promise<Category[]> {
-    const { data, error } = await supabase
+  async getCategories(companyId?: string | null): Promise<Category[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    let query = supabase
       .from('categories')
-      .select('*')
-      .order('name', { ascending: true });
+      .select('*');
+
+    if (user) {
+      if (companyId !== undefined) {
+        // Filtrar por: categorias do sistema (user_id IS NULL)
+        // OU categorias do usuário sem empresa (user_id = user.id AND company_id IS NULL)
+        // OU categorias desta empresa específica (user_id = user.id AND company_id = companyId)
+        if (companyId === null) {
+          query = query.or(`user_id.is.null,and(user_id.eq.${user.id},company_id.is.null)`);
+        } else {
+          query = query.or(`user_id.is.null,and(user_id.eq.${user.id},company_id.is.null),and(user_id.eq.${user.id},company_id.eq.${companyId})`);
+        }
+      } else {
+        query = query.or(`user_id.eq.${user.id},user_id.is.null`);
+      }
+    }
+
+    const { data, error } = await query.order('name', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -390,30 +417,47 @@ export const transactionsApi = {
     if (error) throw error;
   },
 
-  async getDashboardStats(userId: string): Promise<DashboardStats> {
+  async getDashboardStats(userId: string, companyId?: string | null): Promise<DashboardStats> {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
+    // Build queries with company filtering
+    let accountsQuery = supabase.from('accounts').select('balance').eq('user_id', userId);
+    let cardsQuery = supabase.from('cards').select('id').eq('user_id', userId);
+    let transactionsQuery = supabase.from('transactions')
+      .select('type, amount, is_transfer')
+      .eq('user_id', userId)
+      .gte('date', firstDayOfMonth)
+      .lte('date', lastDayOfMonth);
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        accountsQuery = accountsQuery.is('company_id', null);
+        cardsQuery = cardsQuery.is('company_id', null);
+        transactionsQuery = transactionsQuery.is('company_id', null);
+      } else {
+        accountsQuery = accountsQuery.eq('company_id', companyId);
+        cardsQuery = cardsQuery.eq('company_id', companyId);
+        transactionsQuery = transactionsQuery.eq('company_id', companyId);
+      }
+    }
+
     const [accountsData, cardsData, transactionsData] = await Promise.all([
-      supabase.from('accounts').select('balance').eq('user_id', userId),
-      supabase.from('cards').select('id').eq('user_id', userId),
-      supabase.from('transactions')
-        .select('type, amount, is_transfer')
-        .eq('user_id', userId)
-        .gte('date', firstDayOfMonth)
-        .lte('date', lastDayOfMonth)
+      accountsQuery,
+      cardsQuery,
+      transactionsQuery
     ]);
 
-    const totalBalance = (accountsData.data || []).reduce((sum, acc) => sum + Number(acc.balance), 0);
+    const totalBalance = (accountsData.data || []).reduce((sum: number, acc: any) => sum + Number(acc.balance), 0);
 
     // Filtrar transferências internas - não devem contar como receita/despesa real
     const monthlyIncome = (transactionsData.data || [])
-      .filter(t => t.type === 'income' && !t.is_transfer)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter((t: any) => t.type === 'income' && !t.is_transfer)
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
     const monthlyExpenses = (transactionsData.data || [])
-      .filter(t => t.type === 'expense' && !t.is_transfer)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter((t: any) => t.type === 'expense' && !t.is_transfer)
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
     return {
       totalBalance,
@@ -424,8 +468,8 @@ export const transactionsApi = {
     };
   },
 
-  async getCategoryExpenses(userId: string, startDate: string, endDate: string): Promise<CategoryExpense[]> {
-    const { data, error } = await supabase
+  async getCategoryExpenses(userId: string, startDate: string, endDate: string, companyId?: string | null): Promise<CategoryExpense[]> {
+    let query = supabase
       .from('transactions')
       .select(`
         amount,
@@ -435,6 +479,16 @@ export const transactionsApi = {
       .eq('type', 'expense')
       .gte('date', startDate)
       .lte('date', endDate);
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -457,7 +511,7 @@ export const transactionsApi = {
     }));
   },
 
-  async getMonthlyData(userId: string, months: number = 6): Promise<MonthlyData[]> {
+  async getMonthlyData(userId: string, months: number = 6, filters?: { companyId?: string | null }): Promise<MonthlyData[]> {
     const result: MonthlyData[] = [];
     const now = new Date();
 
@@ -466,21 +520,31 @@ export const transactionsApi = {
       const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
       const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
 
-      const { data } = await supabase
+      let query = supabase
         .from('transactions')
         .select('type, amount, is_transfer')
         .eq('user_id', userId)
         .gte('date', firstDay)
         .lte('date', lastDay);
 
+      if (filters?.companyId !== undefined) {
+        if (filters.companyId === null) {
+          query = query.is('company_id', null);
+        } else {
+          query = query.eq('company_id', filters.companyId);
+        }
+      }
+
+      const { data } = await query;
+
       // Filtrar transferências internas
       const income = (data || [])
-        .filter(t => t.type === 'income' && !t.is_transfer)
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .filter((t: any) => t.type === 'income' && !t.is_transfer)
+        .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
       const expenses = (data || [])
-        .filter(t => t.type === 'expense' && !t.is_transfer)
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .filter((t: any) => t.type === 'expense' && !t.is_transfer)
+        .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
       result.push({
         month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
@@ -499,6 +563,7 @@ export const transactionsApi = {
     amount: number;
     date: string;
     description: string;
+    companyId?: string | null;
   }): Promise<{ success: boolean; sourceTransactionId: string; destinationTransactionId: string }> {
     const { data, error } = await supabase.rpc('create_transfer', {
       p_user_id: params.userId,
@@ -506,7 +571,8 @@ export const transactionsApi = {
       p_destination_account_id: params.destinationAccountId,
       p_amount: params.amount,
       p_date: params.date,
-      p_description: params.description
+      p_description: params.description,
+      p_company_id: params.companyId
     });
 
     if (error) throw error;
@@ -749,25 +815,43 @@ export const billsToPayApi = {
     return data;
   },
 
-  async getPending(userId: string): Promise<BillToPay[]> {
-    const { data, error } = await supabase
+  async getPending(userId: string, companyId?: string | null): Promise<BillToPay[]> {
+    let query = supabase
       .from('bills_to_pay')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'pending')
-      .order('due_date', { ascending: true });
+      .eq('status', 'pending');
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
 
-  async getOverdue(userId: string): Promise<BillToPay[]> {
-    const { data, error } = await supabase
+  async getOverdue(userId: string, companyId?: string | null): Promise<BillToPay[]> {
+    let query = supabase
       .from('bills_to_pay')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'overdue')
-      .order('due_date', { ascending: true });
+      .eq('status', 'overdue');
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -856,25 +940,43 @@ export const billsToReceiveApi = {
     return data;
   },
 
-  async getPending(userId: string): Promise<BillToReceive[]> {
-    const { data, error } = await supabase
+  async getPending(userId: string, companyId?: string | null): Promise<BillToReceive[]> {
+    let query = supabase
       .from('bills_to_receive')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'pending')
-      .order('due_date', { ascending: true });
+      .eq('status', 'pending');
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
 
-  async getOverdue(userId: string): Promise<BillToReceive[]> {
-    const { data, error } = await supabase
+  async getOverdue(userId: string, companyId?: string | null): Promise<BillToReceive[]> {
+    let query = supabase
       .from('bills_to_receive')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'overdue')
-      .order('due_date', { ascending: true });
+      .eq('status', 'overdue');
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -931,11 +1033,21 @@ export const billsToReceiveApi = {
 
 // Financial Forecasts API
 export const forecastsApi = {
-  async getLatest(userId: string): Promise<FinancialForecast | null> {
-    const { data, error } = await supabase
+  async getLatest(userId: string, companyId?: string | null): Promise<FinancialForecast | null> {
+    let query = supabase
       .from('financial_forecasts')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId);
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query
       .order('calculation_date', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -944,12 +1056,21 @@ export const forecastsApi = {
     return data;
   },
 
-  async getAll(userId: string): Promise<FinancialForecast[]> {
-    const { data, error } = await supabase
+  async getAll(userId: string, companyId?: string | null): Promise<FinancialForecast[]> {
+    let query = supabase
       .from('financial_forecasts')
       .select('*')
-      .eq('user_id', userId)
-      .order('calculation_date', { ascending: false });
+      .eq('user_id', userId);
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    const { data, error } = await query.order('calculation_date', { ascending: false });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -966,10 +1087,13 @@ export const forecastsApi = {
     return data;
   },
 
-  async triggerGeneration(userId: string): Promise<void> {
+  async triggerGeneration(userId: string, companyId?: string | null): Promise<void> {
     // Chama a Edge Function para gerar previsão
     const { error } = await supabase.functions.invoke('financial-forecast', {
-      body: { user_id: userId }
+      body: {
+        user_id: userId,
+        company_id: companyId
+      }
     });
 
     if (error) throw error;

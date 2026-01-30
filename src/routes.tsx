@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import * as React from 'react';
 import Dashboard from './pages/Dashboard';
 import Companies from './pages/Companies';
@@ -6,7 +7,6 @@ import Cards from './pages/Cards';
 import Transactions from './pages/Transactions';
 import Categories from './pages/Categories';
 import Reports from './pages/Reports';
-import Import from './pages/Import';
 import ImportStatements from './pages/ImportStatements';
 import Reconciliation from './pages/Reconciliation';
 import Chat from './pages/Chat';
@@ -30,68 +30,62 @@ interface RouteConfig {
 }
 
 const routes: RouteConfig[] = [
+  // Redirecionamento inicial
   {
-    name: 'Dashboard',
+    name: 'Home',
     path: '/',
-    element: <Dashboard />,
-    visible: true
+    element: <Navigate to="/pf" replace />,
+    visible: false
   },
+
+  // ===========================================
+  // Módulo Pessoa Física (PF)
+  // ===========================================
   {
-    name: 'Empresas',
+    name: 'Pessoa Física',
+    path: '/pf',
+    element: <Dashboard />,
+    visible: true,
+    children: [
+      { name: 'Dashboard PF', path: '/pf', element: <Dashboard />, visible: true },
+      { name: 'Contas PF', path: '/pf/accounts', element: <Accounts />, visible: true },
+      { name: 'Cartões PF', path: '/pf/cards', element: <Cards />, visible: true },
+      { name: 'Transações PF', path: '/pf/transactions', element: <Transactions />, visible: true },
+      { name: 'Contas a Pagar PF', path: '/pf/bills-to-pay', element: <BillsToPay />, visible: true },
+      { name: 'Contas a Receber PF', path: '/pf/bills-to-receive', element: <BillsToReceive />, visible: true },
+      { name: 'Importar Extrato PF', path: '/pf/import-statements', element: <ImportStatements />, visible: true },
+      { name: 'Conciliação PF', path: '/pf/reconciliation', element: <Reconciliation />, visible: true },
+    ]
+  },
+
+  // ===========================================
+  // Módulo Pessoa Jurídica (PJ)
+  // ===========================================
+  {
+    name: 'Pessoa Jurídica',
+    path: '/pj/:companyId',
+    element: <Dashboard />,
+    visible: true,
+    children: [
+      { name: 'Dashboard PJ', path: '/pj/:companyId', element: <Dashboard />, visible: true },
+      { name: 'Contas PJ', path: '/pj/:companyId/accounts', element: <Accounts />, visible: true },
+      { name: 'Cartões PJ', path: '/pj/:companyId/cards', element: <Cards />, visible: true },
+      { name: 'Transações PJ', path: '/pj/:companyId/transactions', element: <Transactions />, visible: true },
+      { name: 'Contas a Pagar PJ', path: '/pj/:companyId/bills-to-pay', element: <BillsToPay />, visible: true },
+      { name: 'Contas a Receber PJ', path: '/pj/:companyId/bills-to-receive', element: <BillsToReceive />, visible: true },
+      { name: 'Importar Extrato PJ', path: '/pj/:companyId/import-statements', element: <ImportStatements />, visible: true },
+      { name: 'Conciliação PJ', path: '/pj/:companyId/reconciliation', element: <Reconciliation />, visible: true },
+    ]
+  },
+
+  // Rota de listagem de empresas (Gerenciamento)
+  {
+    name: 'Minhas Empresas',
     path: '/companies',
     element: <Companies />,
     visible: true
   },
-  {
-    name: 'Contas',
-    path: '/accounts',
-    element: <Accounts />,
-    visible: true
-  },
-  {
-    name: 'Cartões',
-    path: '/cards',
-    element: <Cards />,
-    visible: true
-  },
-  {
-    name: 'Transações',
-    path: '/transactions',
-    element: <Transactions />,
-    visible: true,
-    children: [
-      {
-        name: 'Contas a Pagar',
-        path: '/bills-to-pay',
-        element: <BillsToPay />,
-        visible: true
-      },
-      {
-        name: 'Contas a Receber',
-        path: '/bills-to-receive',
-        element: <BillsToReceive />,
-        visible: true
-      },
-      {
-        name: 'Importar Extrato',
-        path: '/import-statements',
-        element: <ImportStatements />,
-        visible: true
-      },
-      {
-        name: 'Importar',
-        path: '/import',
-        element: <Import />,
-        visible: true
-      },
-      {
-        name: 'Conciliação',
-        path: '/reconciliation',
-        element: <Reconciliation />,
-        visible: true
-      }
-    ]
-  },
+
   {
     name: 'Relatórios',
     path: '/reports',

@@ -78,15 +78,16 @@ export const companyService = {
      * Busca empresa pelo CNPJ
      */
     async getByCNPJ(cnpj: string): Promise<Company | null> {
-        const { data, error } = await supabase
+        const { data, error, status } = await supabase
             .from('companies')
             .select('*')
             .eq('cnpj', cnpj)
-            .single();
+            .maybeSingle(); // maybeSingle é mais seguro, retorna null se não encontrar
 
         if (error) {
-            if (error.code === 'PGRST116') {
-                return null; // Não encontrado
+            // PGRST116 ou status 406 indicam que o objeto único não foi encontrado
+            if (error.code === 'PGRST116' || status === 406) {
+                return null;
             }
             console.error('Erro ao buscar empresa por CNPJ:', error);
             throw new Error('Erro ao verificar CNPJ');
@@ -115,7 +116,8 @@ export const companyService = {
         const companies = await this.getAll();
         const isFirst = companies.length === 0;
 
-        const { data: newCompany, error } = await supabase
+        // Inserir sem select().single() imediato para evitar URL complexa
+        const { data: insertData, error: insertError } = await supabase
             .from('companies')
             .insert([{
                 ...data,
@@ -123,43 +125,49 @@ export const companyService = {
                 is_default: isFirst || data.is_default || false,
                 is_active: true,
             }])
-            .select()
-            .single();
+            .select();
 
-        if (error) {
-            console.error('Erro ao criar empresa:', error);
-            if (error.code === '23505') {
+        if (insertError) {
+            console.error('Erro ao criar empresa (insert):', insertError);
+            if (insertError.code === '23505') {
                 throw new Error('CNPJ já cadastrado');
             }
-            if (error.message?.includes('validate_cnpj')) {
+            if (insertError.message?.includes('validate_cnpj')) {
                 throw new Error('CNPJ inválido');
             }
             throw new Error('Não foi possível criar a empresa');
         }
 
-        return newCompany;
+        if (!insertData || insertData.length === 0) {
+            throw new Error('Erro ao obter dados da empresa criada');
+        }
+
+        return insertData[0];
     },
 
     /**
      * Atualiza uma empresa existente
      */
     async update(id: string, data: UpdateCompanyDTO): Promise<Company> {
-        const { data: updatedCompany, error } = await supabase
+        const { data: updatedData, error } = await supabase
             .from('companies')
             .update({
                 ...data,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id)
-            .select()
-            .single();
+            .select();
 
         if (error) {
             console.error('Erro ao atualizar empresa:', error);
             throw new Error('Não foi possível atualizar a empresa');
         }
 
-        return updatedCompany;
+        if (!updatedData || updatedData.length === 0) {
+            throw new Error('Empresa não encontrada para atualização');
+        }
+
+        return updatedData[0];
     },
 
     /**

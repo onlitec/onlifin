@@ -26,7 +26,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark } from 'lucide-react';
-import { useSelectedCompany } from '@/contexts/CompanyContext';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function BillsToReceive() {
   const { toast } = useToast();
@@ -59,22 +59,21 @@ export default function BillsToReceive() {
     initUser();
   }, []);
 
-  // Empresa selecionada no contexto
-  const selectedCompany = useSelectedCompany();
+  const { companyId, isPJ } = useFinanceScope();
 
   React.useEffect(() => {
     if (userId) {
       loadData();
     }
-  }, [userId, selectedCompany]);
+  }, [userId, companyId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const [billsData, accountsData, categoriesData] = await Promise.all([
-        billsToReceiveApi.getAll(userId!, selectedCompany?.id),
-        accountsApi.getAccounts(userId!, selectedCompany?.id),
-        categoriesApi.getCategories()
+        billsToReceiveApi.getAll(userId!, companyId),
+        accountsApi.getAccounts(userId!, companyId),
+        categoriesApi.getCategories(companyId)
       ]);
       setBills(billsData);
       setAccounts(accountsData);
@@ -132,10 +131,19 @@ export default function BillsToReceive() {
       return;
     }
 
+    if (!userId || !companyId) { // Ensure userId and companyId are available
+      toast({
+        title: 'Erro',
+        description: 'Dados do usuário ou empresa ausentes. Tente novamente.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       const billData = {
         user_id: userId!,
-        company_id: selectedCompany?.id || null,
+        company_id: companyId, // Associar ao ID da URL
         description: formData.description,
         amount: Number.parseFloat(formData.amount),
         due_date: formData.due_date,
@@ -245,8 +253,10 @@ export default function BillsToReceive() {
       <div className="w-full bg-card border-b px-4 xl:px-8 py-4">
         <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
           <div>
-            <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Contas a Receber</h1>
-            <p className="text-muted-foreground mt-1">Gerencie suas receitas e valores a receber financeiros</p>
+            <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">
+              Contas a Receber {isPJ ? 'PJ' : 'PF'}
+            </h1>
+            <p className="text-muted-foreground mt-1">Gerencie suas receitas {isPJ ? 'empresariais' : 'pessoais'} e entradas financeiras</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);

@@ -81,7 +81,9 @@ export function CompanyProvider({ children }: CompanyProviderProps) {
 
     /**
      * Configura subscription para mudanças em tempo real
+     * Desabilitado temporariamente para evitar erros com o cliente customizado
      */
+    /*
     useEffect(() => {
         const channel = supabase
             .channel('companies_changes')
@@ -104,6 +106,7 @@ export function CompanyProvider({ children }: CompanyProviderProps) {
             supabase.removeChannel(channel);
         };
     }, [loadCompanies]);
+    */
 
     /**
      * Seleciona uma empresa pelo ID

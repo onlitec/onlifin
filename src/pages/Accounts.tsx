@@ -8,11 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, Info, Briefcase } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, Info } from 'lucide-react';
 import { BankIconSelector } from '@/components/ui/bank-icon-selector';
 import { getBankById, getDefaultBankIcon } from '@/config/banks';
-import { useSelectedCompany } from '@/contexts/CompanyContext';
-import { Badge } from '@/components/ui/badge';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 import type { Account } from '@/types/types';
 
 export default function Accounts() {
@@ -32,12 +31,11 @@ export default function Accounts() {
   });
   const { toast } = useToast();
 
-  // Empresa selecionada no contexto
-  const selectedCompany = useSelectedCompany();
+  const { companyId, isPJ } = useFinanceScope();
 
   React.useEffect(() => {
     loadAccounts();
-  }, [selectedCompany]);
+  }, [companyId]);
 
   const loadAccounts = async () => {
     setIsLoading(true);
@@ -45,9 +43,8 @@ export default function Accounts() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Carregar contas - se tiver empresa selecionada, filtra por ela
-      // Caso contrário, carrega todas as contas do usuário
-      const data = await accountsApi.getAccounts(user.id, selectedCompany?.id);
+      // Carregar contas - filtrando pelo ID da URL (null para PF)
+      const data = await accountsApi.getAccounts(user.id, companyId);
       setAccounts(data);
     } catch (error: any) {
       toast({
@@ -84,7 +81,7 @@ export default function Accounts() {
           ...accountData,
           balance: Number(formData.balance), // Also set current balance to initial on create
           user_id: user.id,
-          company_id: selectedCompany?.id || null // Associar à empresa selecionada
+          company_id: companyId // Associar ao ID da URL (null para PF)
         });
         toast({ title: 'Sucesso', description: 'Conta criada com sucesso' });
       }
@@ -182,8 +179,12 @@ export default function Accounts() {
       {/* Header Section */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
         <div>
-          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Contas Bancárias</h1>
-          <p className="text-muted-foreground mt-1">Gerencie suas contas e acompanhe seus saldos</p>
+          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">
+            Contas {isPJ ? 'PJ' : 'PF'}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie suas contas {isPJ ? 'empresariais' : 'pessoais'} e acompanhe seus saldos
+          </p>
         </div>
         <div className="flex gap-2 w-full xl:w-auto">
           <Button

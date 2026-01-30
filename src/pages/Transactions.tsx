@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useSelectedCompany } from '@/contexts/CompanyContext';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 import type { ReceiptData } from '@/services/ocrService';
 import type { Transaction, Account, Category } from '@/types/types';
 
@@ -60,12 +60,11 @@ export default function Transactions() {
   });
   const { toast } = useToast();
 
-  // Empresa selecionada no contexto
-  const selectedCompany = useSelectedCompany();
+  const { companyId, isPJ } = useFinanceScope();
 
   React.useEffect(() => {
     loadData();
-  }, [selectedCompany]);
+  }, [companyId]);
 
   const loadData = async () => {
     try {
@@ -73,9 +72,9 @@ export default function Transactions() {
       if (!user) return;
 
       const [txs, accs, cats] = await Promise.all([
-        transactionsApi.getTransactions(user.id, { companyId: selectedCompany?.id }),
-        accountsApi.getAccounts(user.id, selectedCompany?.id),
-        categoriesApi.getCategories()
+        transactionsApi.getTransactions(user.id, { companyId: companyId }),
+        accountsApi.getAccounts(user.id, companyId),
+        categoriesApi.getCategories(companyId)
       ]);
 
       setTransactions(txs);
@@ -134,7 +133,6 @@ export default function Transactions() {
       }
 
       if (editingTransaction) {
-        // Editar transferências
         if (editingTransaction.is_transfer) {
           const pair = await transactionsApi.getTransferPair(editingTransaction.id);
           if (pair) {
@@ -152,7 +150,6 @@ export default function Transactions() {
             throw new Error('Não foi possível encontrar os detalhes da transferência');
           }
         } else {
-          // Update existing transaction
           await transactionsApi.updateTransaction(editingTransaction.id, {
             type: formData.type,
             amount: Number(formData.amount),
@@ -167,7 +164,6 @@ export default function Transactions() {
           toast({ title: 'Sucesso', description: 'Transação atualizada com sucesso' });
         }
       } else {
-        // Criar transferência
         if (formData.type === 'transfer') {
           await transactionsApi.createTransfer({
             userId: user.id,
@@ -175,18 +171,18 @@ export default function Transactions() {
             destinationAccountId: formData.transfer_destination_account_id,
             amount: Number(formData.amount),
             date: formData.date,
-            description: formData.description || 'Transferência entre contas'
+            description: formData.description || 'Transferência entre contas',
+            companyId: companyId
           });
           toast({
             title: 'Sucesso',
             description: 'Transferência realizada com sucesso'
           });
         } else {
-          // Create new transaction (income or expense)
           const baseTransaction = {
             ...formData,
             user_id: user.id,
-            company_id: selectedCompany?.id || null,
+            company_id: companyId,
             amount: Number(formData.amount),
             category_id: formData.category_id || null,
             account_id: formData.account_id || null,
@@ -199,18 +195,15 @@ export default function Transactions() {
             tags: null
           };
 
-          // Remover campos temporários que não existem no banco
           delete (baseTransaction as any).destination_account_id;
 
           if (formData.is_installment && Number(formData.total_installments) > 1) {
-            // Create installments
             const totalInstallments = Number(formData.total_installments);
             const installmentAmount = Number(formData.amount) / totalInstallments;
 
             for (let i = 1; i <= totalInstallments; i++) {
               const [year, month, day] = formData.date.split('-').map(Number);
               const installmentDate = new Date(year, month - 1 + (i - 1), day);
-
               const formattedDate = [
                 installmentDate.getFullYear(),
                 String(installmentDate.getMonth() + 1).padStart(2, '0'),
@@ -232,7 +225,6 @@ export default function Transactions() {
               description: `${totalInstallments} parcelas criadas com sucesso`
             });
           } else {
-            // Create single transaction
             await transactionsApi.createTransaction({
               ...baseTransaction,
               date: formData.date,
@@ -640,7 +632,9 @@ export default function Transactions() {
     <div className="w-full max-w-[1600px] mx-auto p-4 md:p-6 xl:p-8 space-y-6">
       <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl xl:text-4xl font-bold tracking-tight">Transações</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Transações {isPJ ? 'PJ' : 'PF'}
+          </h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">Gerencie suas receitas, despesas e transferências</p>
         </div>
         <div className="flex flex-wrap gap-2">

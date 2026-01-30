@@ -4,16 +4,12 @@ import {
     Home,
     ArrowLeftRight,
     Building2,
-    Briefcase,
     CreditCard,
-    BarChart3,
     Settings,
     ChevronUp,
     ChevronDown,
     User,
-    TrendingUp,
     FileText,
-    FilePlus,
     RefreshCw,
     Receipt,
     DollarSign,
@@ -45,53 +41,41 @@ import {
 } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { useAuth } from 'miaoda-auth-react';
+import { useCompany } from '@/contexts/CompanyContext';
 import { APP_VERSION } from '@/config/version';
 
-// Menu items simples
-const simpleMenuItems = [
+// Configuração comum de submenus para Transações
+const TRANSACTIONS_SUBMENU = [
+    { title: 'Geral', icon: ArrowLeftRight, subPath: '/transactions' },
+    { title: 'Contas a Pagar', icon: Receipt, subPath: '/bills-to-pay' },
+    { title: 'Contas a Receber', icon: DollarSign, subPath: '/bills-to-receive' },
+    { title: 'Importar Extrato', icon: FileText, subPath: '/import-statements' },
+    { title: 'Conciliação', icon: RefreshCw, subPath: '/reconciliation' },
+];
+
+// Menu Pessoa Física (PF)
+const PF_MENU = [
+    { title: 'Dashboard', icon: Home, path: '/pf' },
+    { title: 'Contas', icon: Building2, path: '/pf/accounts' },
+    { title: 'Cartões', icon: CreditCard, path: '/pf/cards' },
     {
-        title: 'Dashboard',
-        icon: Home,
-        path: '/',
-    },
-    {
-        title: 'Contas',
-        icon: Building2,
-        path: '/accounts',
-    },
-    {
-        title: 'Empresas',
-        icon: Briefcase,
-        path: '/companies',
-    },
-    {
-        title: 'Cartões',
-        icon: CreditCard,
-        path: '/cards',
+        title: 'Transações',
+        icon: ArrowLeftRight,
+        basePath: '/pf',
+        subItems: TRANSACTIONS_SUBMENU
     },
 ];
 
-// Transações com submenus
-const transacoesSubmenus = [
-    { title: 'Transações', icon: ArrowLeftRight, path: '/transactions' },
-    { title: 'Contas a Pagar', icon: Receipt, path: '/bills-to-pay' },
-    { title: 'Contas a Receber', icon: DollarSign, path: '/bills-to-receive' },
-    { title: 'Importar Extrato', icon: FileText, path: '/import-statements' },
-    { title: 'Importar', icon: FilePlus, path: '/import' },
-    { title: 'Conciliação', icon: RefreshCw, path: '/reconciliation' },
-];
-
-// Itens após transações
-const afterTransacoesItems = [
+// Menu Pessoa Jurídica (PJ) - Base
+const PJ_MENU_BASE = (companyId: string) => [
+    { title: 'Dashboard', icon: Home, path: `/pj/${companyId}` },
+    { title: 'Contas', icon: Building2, path: `/pj/${companyId}/accounts` },
+    { title: 'Cartões', icon: CreditCard, path: `/pj/${companyId}/cards` },
     {
-        title: 'Relatórios',
-        icon: BarChart3,
-        path: '/reports',
-    },
-    {
-        title: 'Previsão Financeira',
-        icon: TrendingUp,
-        path: '/forecast',
+        title: 'Transações',
+        icon: ArrowLeftRight,
+        basePath: `/pj/${companyId}`,
+        subItems: TRANSACTIONS_SUBMENU
     },
 ];
 
@@ -108,22 +92,99 @@ export function OnlifinSidebar() {
     const location = useLocation();
     const { user, logout } = useAuth();
     const { state } = useSidebar();
-    const [transacoesOpen, setTransacoesOpen] = React.useState(false);
-    const [adminOpen, setAdminOpen] = React.useState(false);
+    const { companies, selectedCompany, selectCompany } = useCompany();
+    const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
     const [userMenuOpen, setUserMenuOpen] = React.useState(false);
 
-    // Abrir menu de transações automaticamente se em uma página de transação
+    // Abrir menus automaticamente com base na rota
     React.useEffect(() => {
-        const isInTransacoes = transacoesSubmenus.some(item => location.pathname === item.path);
-        if (isInTransacoes) setTransacoesOpen(true);
+        const currentPath = location.pathname;
+        const newOpenMenus = { ...openMenus };
 
-        const isInAdmin = adminSubmenus.some(item => location.pathname === item.path);
-        if (isInAdmin) setAdminOpen(true);
+        if (currentPath.includes('/transactions') ||
+            currentPath.includes('/bills-') ||
+            currentPath.includes('/import-statements') ||
+            currentPath.includes('/reconciliation')) {
+            if (currentPath.startsWith('/pf')) newOpenMenus['pf-transactions'] = true;
+            if (currentPath.startsWith('/pj')) newOpenMenus['pj-transactions'] = true;
+        }
+
+        if (adminSubmenus.some(item => currentPath === item.path)) {
+            newOpenMenus['admin'] = true;
+        }
+
+        setOpenMenus(newOpenMenus);
     }, [location.pathname]);
 
+    const toggleMenu = (key: string) => {
+        setOpenMenus(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
     const isActive = (path: string) => location.pathname === path;
-    const isGroupActive = (items: { path: string }[]) =>
-        items.some(item => location.pathname === item.path);
+
+    const renderMenuItem = (item: any, basePath: string = '') => {
+        const fullPath = item.path || `${basePath}${item.subPath}`;
+
+        if (item.subItems) {
+            const menuKey = `${basePath.replace(/\//g, '-')}-${item.title.toLowerCase()}`;
+            const isOpen = openMenus[menuKey];
+            const isAnySubActive = item.subItems.some((sub: any) => isActive(`${item.basePath}${sub.subPath}`));
+
+            return (
+                <Collapsible
+                    key={menuKey}
+                    open={isOpen}
+                    onOpenChange={() => toggleMenu(menuKey)}
+                    className="group/collapsible"
+                >
+                    <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                                tooltip={item.title}
+                                isActive={isAnySubActive}
+                            >
+                                <item.icon className="size-4" />
+                                <span>{item.title}</span>
+                                <ChevronDown className={`ml-auto size-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                            </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <SidebarMenuSub>
+                                {item.subItems.map((subItem: any) => (
+                                    <SidebarMenuSubItem key={subItem.subPath}>
+                                        <SidebarMenuSubButton
+                                            asChild
+                                            isActive={isActive(`${item.basePath}${subItem.subPath}`)}
+                                        >
+                                            <Link to={`${item.basePath}${subItem.subPath}`}>
+                                                <subItem.icon className="size-4" />
+                                                <span>{subItem.title}</span>
+                                            </Link>
+                                        </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                ))}
+                            </SidebarMenuSub>
+                        </CollapsibleContent>
+                    </SidebarMenuItem>
+                </Collapsible>
+            );
+        }
+
+        return (
+            <SidebarMenuItem key={fullPath}>
+                <SidebarMenuButton
+                    asChild
+                    isActive={isActive(fullPath)}
+                    tooltip={item.title}
+                >
+                    <Link to={fullPath}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        );
+    };
 
     return (
         <Sidebar collapsible="icon" className="border-r border-border">
@@ -135,100 +196,81 @@ export function OnlifinSidebar() {
                     {state === 'expanded' && (
                         <div className="flex flex-col">
                             <span className="text-sm font-semibold text-foreground">Onlifin</span>
-                            <span className="text-xs text-muted-foreground">Personal Finance</span>
+                            <span className="text-xs text-muted-foreground">Personal & Business</span>
                         </div>
                     )}
                 </div>
             </SidebarHeader>
 
             <SidebarContent>
+                {/* PESSOA FÍSICA */}
                 <SidebarGroup>
+                    <div className="px-2 py-2">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                            Pessoa Física
+                        </span>
+                    </div>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {/* Menu items simples */}
-                            {simpleMenuItems.map((item) => (
-                                <SidebarMenuItem key={item.path}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={isActive(item.path)}
-                                        tooltip={item.title}
-                                    >
-                                        <Link to={item.path}>
-                                            <item.icon className="size-4" />
-                                            <span>{item.title}</span>
+                            {PF_MENU.map(item => renderMenuItem(item))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                {/* PESSOA JURÍDICA */}
+                <SidebarGroup>
+                    <div className="px-2 py-2 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
+                            Pessoa Jurídica
+                        </span>
+                        {state === 'expanded' && (
+                            <Link to="/companies" className="text-[10px] text-primary hover:underline px-2">
+                                Gerenciar
+                            </Link>
+                        )}
+                    </div>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {selectedCompany ? (
+                                <>
+                                    <div className="px-4 py-1 mb-2 bg-accent/50 rounded-md mx-2">
+                                        <p className="text-[11px] font-medium truncate">{selectedCompany.nome_fantasia || selectedCompany.razao_social}</p>
+                                        <p className="text-[10px] text-muted-foreground truncate">{selectedCompany.cnpj}</p>
+                                    </div>
+                                    {PJ_MENU_BASE(selectedCompany.id).map(item => renderMenuItem(item))}
+                                </>
+                            ) : (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild tooltip="Selecionar Empresa">
+                                        <Link to="/companies">
+                                            <Building2 className="size-4" />
+                                            <span>Selecionar Empresa</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            ))}
+                            )}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
 
-                            {/* Transações com submenus */}
+                {/* ADMIN */}
+                <SidebarGroup className="mt-auto">
+                    <SidebarGroupContent>
+                        <SidebarMenu>
                             <Collapsible
-                                open={transacoesOpen}
-                                onOpenChange={setTransacoesOpen}
+                                open={openMenus['admin']}
+                                onOpenChange={() => toggleMenu('admin')}
                                 className="group/collapsible"
                             >
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger asChild>
                                         <SidebarMenuButton
-                                            tooltip="Transações"
-                                            isActive={isGroupActive(transacoesSubmenus)}
-                                        >
-                                            <ArrowLeftRight className="size-4" />
-                                            <span>Transações</span>
-                                            <ChevronDown className={`ml-auto size-4 transition-transform ${transacoesOpen ? 'rotate-180' : ''}`} />
-                                        </SidebarMenuButton>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent>
-                                        <SidebarMenuSub>
-                                            {transacoesSubmenus.map((subItem) => (
-                                                <SidebarMenuSubItem key={subItem.path}>
-                                                    <SidebarMenuSubButton
-                                                        asChild
-                                                        isActive={isActive(subItem.path)}
-                                                    >
-                                                        <Link to={subItem.path}>
-                                                            <subItem.icon className="size-4" />
-                                                            <span>{subItem.title}</span>
-                                                        </Link>
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                            ))}
-                                        </SidebarMenuSub>
-                                    </CollapsibleContent>
-                                </SidebarMenuItem>
-                            </Collapsible>
-
-                            {/* Itens após transações */}
-                            {afterTransacoesItems.map((item) => (
-                                <SidebarMenuItem key={item.path}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={isActive(item.path)}
-                                        tooltip={item.title}
-                                    >
-                                        <Link to={item.path}>
-                                            <item.icon className="size-4" />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-
-                            {/* Admin com submenus */}
-                            <Collapsible
-                                open={adminOpen}
-                                onOpenChange={setAdminOpen}
-                                className="group/collapsible"
-                            >
-                                <SidebarMenuItem>
-                                    <CollapsibleTrigger asChild>
-                                        <SidebarMenuButton
-                                            tooltip="Admin"
-                                            isActive={isGroupActive(adminSubmenus)}
+                                            tooltip="Ajustes e IA"
+                                            isActive={adminSubmenus.some(item => isActive(item.path))}
                                         >
                                             <Settings className="size-4" />
-                                            <span>Admin</span>
-                                            <ChevronDown className={`ml-auto size-4 transition-transform ${adminOpen ? 'rotate-180' : ''}`} />
+                                            <span>Ajustes e IA</span>
+                                            <ChevronDown className={`ml-auto size-4 transition-transform ${openMenus['admin'] ? 'rotate-180' : ''}`} />
                                         </SidebarMenuButton>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
@@ -264,7 +306,7 @@ export function OnlifinSidebar() {
                         >
                             <User className="size-4" />
                             <span className="flex-1 truncate text-left">
-                                {user?.email || 'Usuario'}
+                                {user?.email || 'Usuário'}
                             </span>
                             {userMenuOpen ? (
                                 <ChevronDown className="ml-auto size-4" />
