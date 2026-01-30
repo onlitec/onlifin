@@ -1,5 +1,6 @@
 import * as React from 'react';
 import Dashboard from './pages/Dashboard';
+import Companies from './pages/Companies';
 import Accounts from './pages/Accounts';
 import Cards from './pages/Cards';
 import Transactions from './pages/Transactions';
@@ -33,6 +34,12 @@ const routes: RouteConfig[] = [
     name: 'Dashboard',
     path: '/',
     element: <Dashboard />,
+    visible: true
+  },
+  {
+    name: 'Empresas',
+    path: '/companies',
+    element: <Companies />,
     visible: true
   },
   {
