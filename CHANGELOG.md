@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.15.0] - 2026-01-30
+
+### feat(sidebar): implement collapsible PF/PJ sections and company selector
+
+---
+
+
+
 ## [1.14.0] - 2026-01-30
 
 ### feat: implement PF/PJ module separation and UI isolation
