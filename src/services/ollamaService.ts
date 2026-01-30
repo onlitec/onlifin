@@ -1,6 +1,6 @@
 // API Service para Ollama AI local
 
-const OLLAMA_MODEL = 'qwen2.5:0.5b';
+const OLLAMA_MODEL = 'qwen2.5:0.5b'; // Modelo mais rápido para categorização
 
 interface OllamaMessage {
     role: 'system' | 'user' | 'assistant';
@@ -23,6 +23,75 @@ interface OllamaChatResponse {
     done: boolean;
 }
 
+// Regras de palavras-chave padrão (fallback quando não há regras no banco)
+// IMPORTANTE: Os nomes das categorias devem corresponder às categorias do banco de dados
+const DEFAULT_KEYWORD_RULES = [
+    // Gás e Combustível -> Transporte (categoria existente)
+    { keyword: 'BRASIL GAS', category_name: 'Contas', type: 'expense', match_type: 'contains' },
+    { keyword: 'POSTO', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: 'SHELL', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: 'IPIRANGA', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+
+    // Supermercado -> Alimentação (categoria existente)
+    { keyword: 'MERCADO', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'SUPERMERCADO', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'CARREFOUR', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'ATACADAO', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'ASSAI', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'EXTRA', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+
+    // Pagamentos Online -> Compras (categoria existente)
+    { keyword: 'PAGAR.ME', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'PAGSEGURO', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'MERCADOPAGO', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'PICPAY', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+    { keyword: 'STONE', category_name: 'Compras', type: 'expense', match_type: 'contains' },
+
+    // Delivery/Alimentação
+    { keyword: 'IFOOD', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'UBER EATS', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'RAPPI', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'RESTAURANTE', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'LANCHONETE', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+    { keyword: 'PADARIA', category_name: 'Alimentação', type: 'expense', match_type: 'contains' },
+
+    // Transporte
+    { keyword: 'UBER ', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: '99 APP', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+    { keyword: '99POP', category_name: 'Transporte', type: 'expense', match_type: 'contains' },
+
+    // Assinaturas -> Lazer (categoria existente)
+    { keyword: 'NETFLIX', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'SPOTIFY', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'AMAZON PRIME', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'DISNEY', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'HBO', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+    { keyword: 'GLOBOPLAY', category_name: 'Lazer', type: 'expense', match_type: 'contains' },
+
+    // Transferências Recebidas -> Outros Rendimentos (categoria existente)
+    { keyword: 'Transferência Recebida', category_name: 'Outros Rendimentos', type: 'income', match_type: 'starts_with' },
+    { keyword: 'Transferência recebida', category_name: 'Outros Rendimentos', type: 'income', match_type: 'contains' },
+    { keyword: 'TED recebid', category_name: 'Outros Rendimentos', type: 'income', match_type: 'contains' },
+    { keyword: 'PIX recebid', category_name: 'Outros Rendimentos', type: 'income', match_type: 'contains' },
+
+    // Transferências Enviadas -> Outros Gastos (categoria existente)
+    { keyword: 'Transferência enviada', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
+    { keyword: 'TED enviad', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
+    { keyword: 'PIX enviad', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
+
+    // Compras genéricas
+    { keyword: 'Compra no débito', category_name: 'Compras', type: 'expense', match_type: 'starts_with' },
+    { keyword: 'Compra no crédito', category_name: 'Compras', type: 'expense', match_type: 'starts_with' },
+
+    // Saques -> Outros Gastos
+    { keyword: 'SAQUE', category_name: 'Outros Gastos', type: 'expense', match_type: 'contains' },
+
+    // Salário
+    { keyword: 'SALARIO', category_name: 'Salário', type: 'income', match_type: 'contains' },
+    { keyword: 'SALÁRIO', category_name: 'Salário', type: 'income', match_type: 'contains' },
+    { keyword: 'FOLHA', category_name: 'Salário', type: 'income', match_type: 'contains' },
+];
+
 /**
  * Chama a API do Ollama para gerar uma resposta usando o endpoint de chat
  */
@@ -34,19 +103,25 @@ export async function chatWithOllama(
         messages,
         stream: false,
         options: {
-            temperature: 0.6, // Reduzido ligeiramente para maior consistência
-            num_predict: 1024,
+            temperature: 0.3,
+            num_predict: 2000 // Limitar resposta para evitar timeout
         }
     };
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
         const response = await fetch('/ollama/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -73,66 +148,278 @@ export async function generateWithOllama(
 }
 
 /**
- * Categoriza transações usando IA local
+ * Encontra categoria por nome (busca flexível)
+ */
+function findCategoryByName(categories: any[], name: string, type?: string): any | null {
+    const normalizedName = name.toLowerCase().trim();
+
+    return categories.find(c => {
+        const catName = (c.name || '').toLowerCase().trim();
+        const matchesType = !type || c.type === type;
+
+        return matchesType && (
+            catName === normalizedName ||
+            catName.includes(normalizedName) ||
+            normalizedName.includes(catName)
+        );
+    }) || null;
+}
+
+/**
+ * Aplica regras de palavras-chave (internas + do usuário)
+ */
+function applyKeywordRules(
+    transactions: any[],
+    existingCategories: any[],
+    userRules?: any[]
+): { categorized: any[], needsAI: any[] } {
+    // Combinar regras do usuário com regras padrão
+    const allRules = [...(userRules || []), ...DEFAULT_KEYWORD_RULES];
+
+    const categorized: any[] = [];
+    const needsAI: any[] = [];
+
+    for (const t of transactions) {
+        const description = (t.description || '').toUpperCase();
+        let matched = false;
+
+        for (const rule of allRules) {
+            const keyword = (rule.keyword || '').toUpperCase();
+            let matches = false;
+
+            if (rule.match_type === 'exact') {
+                matches = description === keyword;
+            } else if (rule.match_type === 'starts_with') {
+                matches = description.startsWith(keyword);
+            } else { // contains (default)
+                matches = description.includes(keyword);
+            }
+
+            if (matches) {
+                // Tentar encontrar categoria existente pelo ID ou nome
+                let category = rule.category_id
+                    ? existingCategories.find(c => c.id === rule.category_id)
+                    : findCategoryByName(existingCategories, rule.category_name, rule.type);
+
+                categorized.push({
+                    ...t,
+                    suggestedCategory: category?.name || rule.category_name,
+                    suggestedCategoryId: category?.id || null,
+                    isNewCategory: !category,
+                    confidence: 1.0,
+                    matchedByRule: true,
+                    matchedKeyword: rule.keyword
+                });
+                matched = true;
+                break;
+            }
+        }
+
+        if (!matched) {
+            needsAI.push({ ...t, matchedByRule: false });
+        }
+    }
+
+    return { categorized, needsAI };
+}
+
+/**
+ * Categoriza transações usando IA local com aprendizado por exemplos
  */
 export async function categorizeTransactionsWithAI(
     transactions: any[],
-    existingCategories: any[]
+    existingCategories: any[],
+    userExamples?: any[],
+    keywordRules?: any[]
 ): Promise<{
     categorizedTransactions: any[];
     newCategories: any[];
 }> {
-    const prompt = `Você é um especialista em categorização de transações financeiras.
+    console.log(`[AI] Iniciando categorização de ${transactions.length} transações...`);
 
-Analise as seguintes transações e sugira a categoria mais apropriada para cada uma.
+    // 1. Aplicar regras de palavras-chave primeiro (rápido e preciso)
+    const { categorized: byRules, needsAI } = applyKeywordRules(
+        transactions,
+        existingCategories,
+        keywordRules
+    );
 
-CATEGORIAS EXISTENTES:
-${JSON.stringify(existingCategories, null, 2)}
+    console.log(`[AI] ${byRules.length} categorizadas por regras, ${needsAI.length} precisam de IA`);
 
-TRANSAÇÕES PARA CATEGORIZAR:
-${JSON.stringify(transactions, null, 2)}
-
-Para cada transação:
-1. Analise a descrição e valor
-2. Escolha a categoria mais apropriada das existentes
-3. Se nenhuma existente servir, sugira uma nova
-
-Responda APENAS com JSON válido no formato:
-{
-  "categorizedTransactions": [
-    {
-      "date": "data",
-      "description": "descrição",
-      "amount": valor,
-      "type": "income" ou "expense",
-      "suggestedCategory": "nome da categoria",
-      "confidence": 0.0 a 1.0
+    // Se todas foram categorizadas por regras, retornar direto
+    if (needsAI.length === 0) {
+        return {
+            categorizedTransactions: byRules,
+            newCategories: []
+        };
     }
-  ],
-  "newCategories": [
-    {
-      "name": "nome",
-      "type": "income" ou "expense"
+
+    // 2. Para transações que precisam de IA, processar em lotes pequenos
+    const BATCH_SIZE = 3;
+    const aiCategorized: any[] = [];
+
+    for (let i = 0; i < needsAI.length; i += BATCH_SIZE) {
+        const batch = needsAI.slice(i, i + BATCH_SIZE);
+
+        try {
+            const batchResult = await categorizeSmallBatch(batch, existingCategories, userExamples);
+            aiCategorized.push(...batchResult);
+        } catch (error) {
+            console.error(`[AI] Erro no lote ${i / BATCH_SIZE + 1}:`, error);
+            // Fallback: marcar como não categorizado
+            for (const t of batch) {
+                aiCategorized.push({
+                    ...t,
+                    suggestedCategory: 'Não categorizado',
+                    suggestedCategoryId: null,
+                    isNewCategory: false,
+                    confidence: 0,
+                    matchedByRule: false
+                });
+            }
+        }
     }
-  ]
+
+    return {
+        categorizedTransactions: [...byRules, ...aiCategorized],
+        newCategories: []
+    };
 }
 
-Responda APENAS com o JSON.`;
+/**
+ * Categoriza um lote pequeno de transações com IA
+ */
+async function categorizeSmallBatch(
+    transactions: any[],
+    existingCategories: any[],
+    _userExamples?: any[] // Prefixo _ indica que é opcional e pode não ser usado
+): Promise<any[]> {
+    const categoryList = existingCategories
+        .map(c => `${c.name} (${c.type === 'income' ? 'receita' : 'despesa'})`)
+        .join(', ');
 
-    try {
-        const response = await generateWithOllama(prompt);
+    const formattedTransactions = transactions.map((t, i) =>
+        `${i + 1}. ${t.description.substring(0, 50)} | R$ ${Math.abs(t.amount).toFixed(2)} | ${t.amount >= 0 ? 'RECEITA' : 'DESPESA'}`
+    ).join('\n');
 
-        // Extrair JSON da resposta
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error('Resposta da IA não contém JSON válido');
+    // Prompt simplificado para resposta mais rápida
+    const prompt = `Categorize estas transações brasileiras.
+
+CATEGORIAS: ${categoryList}
+
+TRANSAÇÕES:
+${formattedTransactions}
+
+Responda em JSON: {"results": [{"index": 1, "category": "Nome", "confidence": 0.9}]}`;
+
+    console.log(`[AI] Enviando ${transactions.length} transações para IA...`);
+
+    const response = await generateWithOllama(prompt,
+        'Você categoriza transações financeiras. Responda APENAS em JSON válido, sem explicações.'
+    );
+
+    console.log('[AI] Resposta:', response.substring(0, 200));
+
+    // Extrair e processar JSON - tentar múltiplos métodos
+    let allResults: any[] = [];
+
+    // Remover blocos de código markdown se existirem
+    let cleanResponse = response
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+    // Método 1: Tentar encontrar TODOS os objetos JSON com "results"
+    const jsonObjects = cleanResponse.match(/\{[^{}]*"results"\s*:\s*\[[^\]]*\][^{}]*\}/g);
+
+    if (jsonObjects && jsonObjects.length > 0) {
+        // Múltiplos objetos JSON - combinar todos os results
+        for (const jsonStr of jsonObjects) {
+            try {
+                const parsed = JSON.parse(jsonStr);
+                if (parsed.results && Array.isArray(parsed.results)) {
+                    allResults.push(...parsed.results);
+                }
+            } catch (e) {
+                // Ignorar objetos malformados
+            }
         }
 
-        return JSON.parse(jsonMatch[0]);
-    } catch (error: any) {
-        console.error('Erro ao categorizar transações:', error);
-        throw error;
+        if (allResults.length > 0) {
+            console.log(`[AI] Combinados ${jsonObjects.length} objetos JSON em ${allResults.length} resultados`);
+        }
     }
+
+    // Método 2: Se não encontrou múltiplos, tentar JSON único
+    if (allResults.length === 0) {
+        let jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+
+        if (jsonMatch) {
+            let jsonString = jsonMatch[0];
+
+            // Tentar corrigir JSON truncado ou malformado
+            try {
+                const result = JSON.parse(jsonString);
+                allResults = result.results || result.categorizedTransactions || [];
+            } catch (parseError) {
+                // Tentar corrigir JSON incompleto
+                let fixedJson = jsonString;
+
+                // Contar chaves e colchetes para corrigir
+                const openBraces = (fixedJson.match(/\{/g) || []).length;
+                const closeBraces = (fixedJson.match(/\}/g) || []).length;
+                const openBrackets = (fixedJson.match(/\[/g) || []).length;
+                const closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+                // Adicionar fechamentos faltantes
+                for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                    fixedJson += ']';
+                }
+                for (let i = 0; i < openBraces - closeBraces; i++) {
+                    fixedJson += '}';
+                }
+
+                // Remover vírgula final antes de ] ou }
+                fixedJson = fixedJson.replace(/,\s*([}\]])/g, '$1');
+
+                try {
+                    const result = JSON.parse(fixedJson);
+                    allResults = result.results || result.categorizedTransactions || [];
+                    console.log('[AI] JSON corrigido com sucesso');
+                } catch (fixError) {
+                    console.error('[AI] Não foi possível parsear JSON:', jsonString.substring(0, 100));
+                }
+            }
+        }
+    }
+
+    const aiResults = allResults;
+
+    // Mapear resultados de volta para as transações
+    return transactions.map((t, index) => {
+        const aiResult = aiResults.find((r: any) => r.index === index + 1) || aiResults[index];
+
+        if (aiResult) {
+            const category = findCategoryByName(existingCategories, aiResult.category || aiResult.suggestedCategory);
+            return {
+                ...t,
+                suggestedCategory: category?.name || aiResult.category || 'Não categorizado',
+                suggestedCategoryId: category?.id || null,
+                isNewCategory: !category && aiResult.category,
+                confidence: aiResult.confidence || 0.7,
+                matchedByRule: false
+            };
+        }
+
+        return {
+            ...t,
+            suggestedCategory: 'Não categorizado',
+            suggestedCategoryId: null,
+            isNewCategory: false,
+            confidence: 0,
+            matchedByRule: false
+        };
+    });
 }
 
 /**

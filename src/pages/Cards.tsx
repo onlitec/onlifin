@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, CreditCard } from 'lucide-react';
 import { CardBrandSelector } from '@/components/ui/card-brand-selector';
 import { getCardBrandById, getDefaultCardIcon } from '@/config/banks';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 import type { Card as CardType, Account } from '@/types/types';
 
 export default function Cards() {
@@ -29,9 +30,11 @@ export default function Cards() {
   });
   const { toast } = useToast();
 
+  const { companyId, isPJ } = useFinanceScope();
+
   React.useEffect(() => {
     loadData();
-  }, []);
+  }, [companyId]);
 
   const loadData = async () => {
     try {
@@ -39,8 +42,8 @@ export default function Cards() {
       if (!user) return;
 
       const [cardsData, accountsData] = await Promise.all([
-        cardsApi.getCards(user.id),
-        accountsApi.getAccounts(user.id)
+        cardsApi.getCards(user.id, companyId),
+        accountsApi.getAccounts(user.id, companyId)
       ]);
 
       setCards(cardsData);
@@ -63,7 +66,7 @@ export default function Cards() {
       if (!user) return;
 
       const cardData = {
-        ...formData,
+        name: formData.name,
         card_limit: Number(formData.card_limit),
         closing_day: formData.closing_day ? Number(formData.closing_day) : null,
         due_day: formData.due_day ? Number(formData.due_day) : null,
@@ -72,12 +75,17 @@ export default function Cards() {
       };
 
       if (editingCard) {
-        await cardsApi.updateCard(editingCard.id, cardData);
+        await cardsApi.updateCard(editingCard.id, {
+          ...cardData,
+          icon: formData.icon || null
+        });
         toast({ title: 'Sucesso', description: 'Cartão atualizado com sucesso' });
       } else {
         await cardsApi.createCard({
           ...cardData,
-          user_id: user.id
+          icon: formData.icon || null,
+          user_id: user.id,
+          company_id: companyId // Associar ao ID da URL (null para PF)
         });
         toast({ title: 'Sucesso', description: 'Cartão criado com sucesso' });
       }
@@ -311,7 +319,7 @@ export default function Cards() {
             <CreditCard className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium mb-2">Nenhum cartão cadastrado</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Comece adicionando seu primeiro cartão de crédito
+              Comece adicionando seu primeiro cartão de crédito {isPJ ? 'empresarial' : 'pessoal'}
             </p>
           </CardContent>
         </Card>

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, AlertCircle, Loader2, Save } from 'lucide-react';
 import { accountsApi, transactionsApi, categoriesApi } from '@/db/api';
 import { Account, Transaction, Category } from '@/types/types';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function Reconciliation() {
   const [accounts, setAccounts] = React.useState<Account[]>([]);
@@ -24,10 +25,12 @@ export default function Reconciliation() {
   const [categorySelections, setCategorySelections] = React.useState<Record<string, string>>({});
   const { toast } = useToast();
 
+  const { companyId, isPJ } = useFinanceScope();
+
   React.useEffect(() => {
     loadAccounts();
     loadCategories();
-  }, []);
+  }, [companyId]);
 
   React.useEffect(() => {
     if (selectedAccount) {
@@ -40,7 +43,7 @@ export default function Reconciliation() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const data = await accountsApi.getAccounts(user.id);
+      const data = await accountsApi.getAccounts(user.id, companyId);
       setAccounts(data);
     } catch (error: any) {
       toast({
@@ -53,7 +56,7 @@ export default function Reconciliation() {
 
   const loadCategories = async () => {
     try {
-      const data = await categoriesApi.getCategories();
+      const data = await categoriesApi.getCategories(companyId);
       setCategories(data);
     } catch (error: any) {
       toast({
@@ -70,10 +73,10 @@ export default function Reconciliation() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const data = await transactionsApi.getTransactions(user.id);
+      const data = await transactionsApi.getTransactions(user.id, { companyId: companyId });
       const filtered = data.filter(t => t.account_id === selectedAccount);
       setTransactions(filtered);
-      
+
       // Initialize category selections with existing categories
       const initialSelections: Record<string, string> = {};
       filtered.forEach(t => {
@@ -135,7 +138,7 @@ export default function Reconciliation() {
 
   const handleFinishReconciliation = async () => {
     const difference = getDifference();
-    
+
     if (Math.abs(difference) > 0.01) {
       toast({
         title: 'Aviso',
@@ -227,7 +230,7 @@ export default function Reconciliation() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Conciliação Bancária</h1>
+        <h1 className="text-3xl font-bold">Conciliação Bancária {isPJ ? 'PJ' : 'PF'}</h1>
         <p className="text-muted-foreground">
           Compare e reconcilie suas transações com o extrato bancário
         </p>

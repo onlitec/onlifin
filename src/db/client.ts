@@ -297,22 +297,35 @@ const auth = {
 };
 
 // Objeto de exportação unificado com suporte a tudo que a aplicação usa
-export const api = {
-    ...onlifinClient,
-    auth: {
-        ...onlifinClient.auth,
-        ...auth
-    },
-    functions: {
-        invoke: async (name: string, _options?: any) => {
-            console.warn(`🚀 Edge Function '${name}' redirecionada para local/ignorada.`);
-            return { data: null, error: null };
+// Usamos Proxy para garantir que todos os métodos do onlifinClient (incluindo prototype) sejam acessíveis
+export const api = new Proxy(onlifinClient, {
+    get(target, prop, receiver) {
+        // Interceptar 'auth' para usar a nossa implementação customizada
+        if (prop === 'auth') {
+            return {
+                ...target.auth,
+                ...auth
+            };
         }
-    },
-    // Atalhos para garantir que usem o cliente correto com o fetch customizado
-    from: (table: string) => onlifinClient.from(table),
-    rpc: (fn: string, args?: any) => onlifinClient.rpc(fn, args)
-};
+
+        // Interceptar 'functions'
+        if (prop === 'functions') {
+            return {
+                invoke: async (name: string, _options?: any) => {
+                    console.warn(`🚀 Edge Function '${name}' redirecionada para local/ignorada.`);
+                    return { data: null, error: null };
+                }
+            };
+        }
+
+        // Delegar tudo o mais para o cliente supabase original
+        const value = Reflect.get(target, prop, receiver);
+        if (typeof value === 'function') {
+            return value.bind(target);
+        }
+        return value;
+    }
+}) as any;
 
 // Export padrão como 'supabase' para compatibilidade total com o código existente
 export const supabase = api;

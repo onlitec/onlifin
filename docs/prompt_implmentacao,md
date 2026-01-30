@@ -1,0 +1,1330 @@
+# 🤖 PROMPT MASTER: Implementação de Sistema de Contas para Pessoas Jurídicas - OnliFin
+
+## 📋 CONTEXTO
+
+Você é um desenvolvedor full-stack especializado em React, TypeScript, Supabase e PostgreSQL. Seu objetivo é implementar um sistema completo de gestão financeira para Pessoas Jurídicas (PJ) na plataforma OnliFin, que atualmente suporta apenas contas de Pessoa Física (PF).
+
+### Plataforma Atual
+- **Frontend**: React + TypeScript + Vite
+- **Backend**: Supabase (PostgreSQL)
+- **UI**: shadcn/ui + Tailwind CSS
+- **Autenticação**: Supabase Auth
+- **Deploy**: Docker + GitHub Actions
+
+### Repositório
+- GitHub: https://github.com/onlitec/onlifin
+- Branch principal: `main`
+- Nova branch de trabalho: `feature/pj-accounts`
+
+---
+
+## 🎯 OBJETIVO PRINCIPAL
+
+Implementar um sistema que permita:
+1. ✅ Gestão de múltiplas empresas (CNPJ) separadas por usuário
+2. ✅ Isolamento completo de dados entre PF e PJ
+3. ✅ Isolamento de dados entre diferentes empresas PJ
+4. ✅ Visualização consolidada de todas as empresas na mesma plataforma
+5. ✅ Relatórios, gráficos e análises comparativas multi-empresa
+6. ✅ Transições entre contas PF e PJ sem conflitos
+7. ✅ Manutenção de todas as funcionalidades existentes para PF
+
+---
+
+## 🏗️ ARQUITETURA
+
+### Estratégia de Multi-Tenancy
+**Modelo Escolhido**: Row-Level Security (RLS) com Tenant Isolation
+
+**Justificativa**:
+- Máximo isolamento de dados
+- Segurança nativa do PostgreSQL
+- Performance otimizada com índices
+- Escalabilidade horizontal
+- Auditoria completa
+
+### Princípios de Design
+1. **Separação Clara**: PF e PJ são tipos de conta distintos
+2. **Flexibilidade**: Um usuário pode ter conta PF E múltiplas PJ
+3. **Isolamento**: Dados de cada empresa são completamente separados
+4. **Consolidação**: Relatórios podem agregar dados de múltiplas empresas
+5. **Rastreabilidade**: Todas as operações são auditadas
+
+---
+
+## 📊 MODELO DE DADOS
+
+### Tabelas Principais
+
+#### 1. account_types
+```sql
+CREATE TABLE account_types (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  code VARCHAR(2) UNIQUE NOT NULL CHECK (code IN ('PF', 'PJ')),
+  name VARCHAR(50) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+```
+
+#### 2. user_profiles (ESTENDIDA)
+```sql
+-- Adicionar campos:
+ALTER TABLE user_profiles ADD COLUMN account_type_id UUID REFERENCES account_types(id);
+ALTER TABLE user_profiles ADD COLUMN cpf VARCHAR(14) UNIQUE;
+ALTER TABLE user_profiles ADD COLUMN birth_date DATE;
+ALTER TABLE user_profiles ADD COLUMN phone VARCHAR(20);
+ALTER TABLE user_profiles ADD COLUMN default_company_id UUID;
+
+-- Constraint para garantir CPF em contas PF
+ALTER TABLE user_profiles ADD CONSTRAINT valid_pf_data CHECK (
+  (account_type_id = (SELECT id FROM account_types WHERE code = 'PF') AND cpf IS NOT NULL)
+  OR account_type_id != (SELECT id FROM account_types WHERE code = 'PF')
+);
+```
+
+#### 3. companies (NOVA)
+```sql
+CREATE TABLE companies (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
+  
+  -- Dados Principais
+  cnpj VARCHAR(18) UNIQUE NOT NULL,
+  razao_social VARCHAR(255) NOT NULL,
+  nome_fantasia VARCHAR(255),
+  inscricao_estadual VARCHAR(50),
+  inscricao_municipal VARCHAR(50),
+  
+  -- Endereço
+  cep VARCHAR(10),
+  logradouro VARCHAR(255),
+  numero VARCHAR(20),
+  complemento VARCHAR(100),
+  bairro VARCHAR(100),
+  cidade VARCHAR(100),
+  uf VARCHAR(2),
+  
+  -- Contato
+  email VARCHAR(255),
+  phone VARCHAR(20),
+  website VARCHAR(255),
+  
+  -- Classificação
+  porte VARCHAR(20) CHECK (porte IN ('MEI', 'ME', 'EPP', 'MEDIA', 'GRANDE')),
+  regime_tributario VARCHAR(30) CHECK (regime_tributario IN ('SIMPLES', 'LUCRO_PRESUMIDO', 'LUCRO_REAL')),
+  
+  -- Dados Bancários Padrão
+  banco_padrao VARCHAR(100),
+  agencia_padrao VARCHAR(20),
+  conta_padrao VARCHAR(30),
+  
+  -- Status
+  is_active BOOLEAN DEFAULT true,
+  is_default BOOLEAN DEFAULT false,
+  
+  -- Configurações
+  settings JSONB DEFAULT '{}'::jsonb,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  
+  CONSTRAINT unique_default_per_user UNIQUE (user_id, is_default) WHERE is_default = true
+);
+```
+
+#### 4. Tabelas Existentes (ADAPTADAS)
+
+Todas as tabelas existentes (`bank_accounts`, `categories`, `transactions`, `financial_goals`, `budgets`) devem ser estendidas com:
+
+```sql
+ALTER TABLE [table_name] ADD COLUMN company_id UUID REFERENCES companies(id) ON DELETE CASCADE;
+
+-- Constraint para garantir consistência
+ALTER TABLE [table_name] ADD CONSTRAINT pf_no_company CHECK (
+  (company_id IS NULL AND user_id IN (SELECT id FROM user_profiles WHERE account_type_id = (SELECT id FROM account_types WHERE code = 'PF')))
+  OR company_id IS NOT NULL
+);
+```
+
+### Row-Level Security (RLS)
+
+**CRÍTICO**: Todas as tabelas DEVEM ter RLS habilitado com policies que garantam:
+
+```sql
+-- Exemplo para transactions
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own transactions"
+  ON transactions FOR SELECT
+  USING (
+    auth.uid() = user_id AND
+    (company_id IS NULL OR company_id IN (SELECT id FROM companies WHERE user_id = auth.uid()))
+  );
+
+CREATE POLICY "Users can insert own transactions"
+  ON transactions FOR INSERT
+  WITH CHECK (
+    auth.uid() = user_id AND
+    (company_id IS NULL OR company_id IN (SELECT id FROM companies WHERE user_id = auth.uid()))
+  );
+
+-- Repetir para UPDATE e DELETE
+```
+
+### Functions Essenciais
+
+#### Validação de CNPJ
+```sql
+CREATE OR REPLACE FUNCTION validate_cnpj(cnpj_input VARCHAR)
+RETURNS BOOLEAN AS $$
+DECLARE
+  cnpj VARCHAR(14);
+  sum1 INTEGER := 0;
+  sum2 INTEGER := 0;
+  digit1 INTEGER;
+  digit2 INTEGER;
+  multiplier INTEGER;
+BEGIN
+  cnpj := REGEXP_REPLACE(cnpj_input, '[^0-9]', '', 'g');
+  
+  IF LENGTH(cnpj) != 14 THEN
+    RETURN FALSE;
+  END IF;
+  
+  IF cnpj IN ('00000000000000', '11111111111111', '22222222222222', 
+              '33333333333333', '44444444444444', '55555555555555',
+              '66666666666666', '77777777777777', '88888888888888', 
+              '99999999999999') THEN
+    RETURN FALSE;
+  END IF;
+  
+  -- Cálculo dos dígitos verificadores
+  FOR i IN 1..12 LOOP
+    multiplier := CASE WHEN i <= 4 THEN 6 - i ELSE 14 - i END;
+    sum1 := sum1 + (CAST(SUBSTRING(cnpj FROM i FOR 1) AS INTEGER) * multiplier);
+  END LOOP;
+  
+  digit1 := CASE WHEN (sum1 % 11) < 2 THEN 0 ELSE 11 - (sum1 % 11) END;
+  
+  FOR i IN 1..13 LOOP
+    multiplier := CASE WHEN i <= 5 THEN 7 - i ELSE 15 - i END;
+    sum2 := sum2 + (CAST(SUBSTRING(cnpj FROM i FOR 1) AS INTEGER) * multiplier);
+  END LOOP;
+  
+  digit2 := CASE WHEN (sum2 % 11) < 2 THEN 0 ELSE 11 - (sum2 % 11) END;
+  
+  RETURN (digit1 = CAST(SUBSTRING(cnpj FROM 13 FOR 1) AS INTEGER) AND
+          digit2 = CAST(SUBSTRING(cnpj FROM 14 FOR 1) AS INTEGER));
+END;
+$$ LANGUAGE plpgsql;
+
+ALTER TABLE companies ADD CONSTRAINT valid_cnpj CHECK (validate_cnpj(cnpj));
+```
+
+#### Atualização de Saldo
+```sql
+CREATE OR REPLACE FUNCTION calculate_account_balance(account_uuid UUID)
+RETURNS DECIMAL AS $$
+DECLARE
+  total_income DECIMAL;
+  total_expense DECIMAL;
+  initial_bal DECIMAL;
+BEGIN
+  SELECT initial_balance INTO initial_bal
+  FROM bank_accounts WHERE id = account_uuid;
+  
+  SELECT COALESCE(SUM(amount), 0) INTO total_income
+  FROM transactions
+  WHERE account_id = account_uuid AND type = 'income' AND status = 'completed';
+  
+  SELECT COALESCE(SUM(amount), 0) INTO total_expense
+  FROM transactions
+  WHERE account_id = account_uuid AND type = 'expense' AND status = 'completed';
+  
+  RETURN initial_bal + total_income - total_expense;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Auditoria
+```sql
+CREATE TABLE audit_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES user_profiles(id) NOT NULL,
+  company_id UUID REFERENCES companies(id),
+  action VARCHAR(50) NOT NULL,
+  table_name VARCHAR(100) NOT NULL,
+  record_id UUID,
+  old_data JSONB,
+  new_data JSONB,
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+CREATE OR REPLACE FUNCTION audit_log_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO audit_logs (user_id, company_id, action, table_name, record_id, old_data, new_data)
+  VALUES (
+    auth.uid(),
+    COALESCE(NEW.company_id, OLD.company_id),
+    TG_OP,
+    TG_TABLE_NAME,
+    COALESCE(NEW.id, OLD.id),
+    CASE WHEN TG_OP = 'DELETE' THEN row_to_json(OLD) ELSE NULL END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW) ELSE NULL END
+  );
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+### Views Consolidadas
+```sql
+CREATE OR REPLACE VIEW v_company_summary AS
+SELECT 
+  c.id as company_id,
+  c.user_id,
+  c.razao_social,
+  c.nome_fantasia,
+  c.cnpj,
+  COUNT(DISTINCT ba.id) as total_accounts,
+  SUM(ba.current_balance) as total_balance,
+  COUNT(DISTINCT t.id) as total_transactions,
+  SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) as total_income,
+  SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) as total_expense
+FROM companies c
+LEFT JOIN bank_accounts ba ON c.id = ba.company_id
+LEFT JOIN transactions t ON c.id = t.company_id
+WHERE c.is_active = true
+GROUP BY c.id, c.user_id, c.razao_social, c.nome_fantasia, c.cnpj;
+```
+
+### Índices de Performance
+```sql
+CREATE INDEX idx_companies_user_id ON companies(user_id);
+CREATE INDEX idx_companies_cnpj ON companies(cnpj);
+CREATE INDEX idx_bank_accounts_company_id ON bank_accounts(company_id);
+CREATE INDEX idx_transactions_company_id ON transactions(company_id);
+CREATE INDEX idx_transactions_user_company_date ON transactions(user_id, company_id, date DESC);
+```
+
+---
+
+## 🎨 FRONTEND
+
+### 1. Context API para Empresas
+
+**Arquivo**: `src/context/CompanyContext.tsx`
+
+**Responsabilidades**:
+- Gerenciar lista de empresas do usuário
+- Manter empresa selecionada
+- Prover funções CRUD para empresas
+- Sincronizar com localStorage
+
+**Interface Principal**:
+```typescript
+interface CompanyContextType {
+  companies: Company[];
+  selectedCompany: Company | null;
+  isLoadingCompanies: boolean;
+  selectCompany: (companyId: string) => void;
+  refreshCompanies: () => Promise<void>;
+  createCompany: (data: Partial<Company>) => Promise<Company>;
+  updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
+  deleteCompany: (id: string) => Promise<void>;
+}
+```
+
+**Funcionalidades Críticas**:
+1. Carregar empresas ao montar
+2. Selecionar empresa padrão automaticamente
+3. Persistir empresa selecionada em localStorage
+4. Sincronização em tempo real com Supabase Realtime
+
+### 2. Hook de Filtro Multi-Empresa
+
+**Arquivo**: `src/hooks/useMultiCompanyFilter.ts`
+
+**Propósito**: Facilitar consultas que agregam dados de múltiplas empresas
+
+**Exemplo de Uso**:
+```typescript
+const { filterOptions, setFilterOptions, buildSupabaseFilter } = useMultiCompanyFilter();
+
+// Aplicar filtro em query
+let query = supabase.from('transactions').select('*');
+query = buildSupabaseFilter(query);
+const { data } = await query;
+```
+
+### 3. Componentes Principais
+
+#### CompanySelector
+**Arquivo**: `src/components/company/CompanySelector.tsx`
+
+**Features**:
+- Dropdown com lista de empresas
+- Exibir nome fantasia ou razão social
+- Mostrar CNPJ formatado
+- Badge "Padrão" para empresa default
+- Botão para adicionar nova empresa
+
+#### CompanyDialog
+**Arquivo**: `src/components/company/CompanyDialog.tsx`
+
+**Features**:
+- Formulário completo de empresa
+- Validação de CNPJ em tempo real
+- Formatação automática de campos
+- Consulta à API da Receita Federal (opcional)
+- Modo criar/editar
+
+**Campos do Formulário**:
+- CNPJ (obrigatório, com validação)
+- Razão Social (obrigatório)
+- Nome Fantasia
+- Inscrição Estadual
+- Inscrição Municipal
+- Endereço completo
+- Dados de contato
+- Porte da empresa
+- Regime tributário
+- Dados bancários padrão
+
+#### CompanyCard
+**Arquivo**: `src/components/company/CompanyCard.tsx`
+
+**Features**:
+- Exibir informações resumidas da empresa
+- Ações rápidas (editar, excluir, tornar padrão)
+- Indicadores visuais de status
+- Métricas básicas (saldo, transações)
+
+### 4. Páginas
+
+#### CompaniesPage
+**Arquivo**: `src/pages/companies/CompaniesPage.tsx`
+
+**Layout**:
+- Grid de cards de empresas
+- Botão de adicionar empresa
+- Filtros e busca
+- Estatísticas gerais
+
+#### ConsolidatedDashboard
+**Arquivo**: `src/pages/dashboard/ConsolidatedDashboard.tsx`
+
+**Seções**:
+1. **Cards de Resumo Geral**
+   - Saldo total (todas as empresas)
+   - Receitas totais
+   - Despesas totais
+   - Lucro líquido
+
+2. **Tabs de Visualização**
+   - Comparação: Gráfico de barras comparando receitas/despesas
+   - Distribuição: Pizza mostrando distribuição de saldos
+   - Performance: Margem de lucro por empresa
+   - Evolução: Linha temporal de crescimento
+
+3. **Filtros**
+   - Seleção de empresas
+   - Período de análise
+   - Categorias específicas
+
+#### MultiCompanyReport
+**Arquivo**: `src/components/reports/MultiCompanyReport.tsx`
+
+**Features**:
+- Seleção múltipla de empresas
+- Filtro por período
+- Agregação de dados
+- Exportação para PDF/Excel
+- Gráficos comparativos
+- Tabela consolidada
+
+### 5. Utilitários
+
+**Arquivo**: `src/utils/validators.ts`
+
+```typescript
+export const validateCNPJ = (cnpj: string): boolean => {
+  // Implementação completa de validação de CNPJ
+};
+
+export const formatCNPJ = (value: string): string => {
+  // Formatar como 00.000.000/0000-00
+};
+
+export const validateCPF = (cpf: string): boolean => {
+  // Validação de CPF
+};
+
+export const formatCPF = (value: string): string => {
+  // Formatar como 000.000.000-00
+};
+```
+
+**Arquivo**: `src/utils/cnpjApi.ts`
+
+```typescript
+export const consultarCNPJ = async (cnpj: string): Promise<CompanyData> => {
+  // Consultar API da Receita Federal
+  // Retornar dados estruturados
+};
+```
+
+### 6. Services
+
+**Arquivo**: `src/services/companyService.ts`
+
+```typescript
+export const companyService = {
+  async getAll(): Promise<Company[]> {
+    // Buscar todas as empresas do usuário
+  },
+  
+  async getById(id: string): Promise<Company> {
+    // Buscar empresa específica
+  },
+  
+  async create(data: CreateCompanyDTO): Promise<Company> {
+    // Criar nova empresa
+  },
+  
+  async update(id: string, data: UpdateCompanyDTO): Promise<Company> {
+    // Atualizar empresa
+  },
+  
+  async delete(id: string): Promise<void> {
+    // Soft delete (is_active = false)
+  },
+  
+  async setDefault(id: string): Promise<void> {
+    // Definir como empresa padrão
+  },
+};
+```
+
+### 7. Types
+
+**Arquivo**: `src/types/company.ts`
+
+```typescript
+export interface Company {
+  id: string;
+  user_id: string;
+  cnpj: string;
+  razao_social: string;
+  nome_fantasia?: string;
+  inscricao_estadual?: string;
+  inscricao_municipal?: string;
+  
+  // Endereço
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
+  
+  // Contato
+  email?: string;
+  phone?: string;
+  website?: string;
+  
+  // Classificação
+  porte?: 'MEI' | 'ME' | 'EPP' | 'MEDIA' | 'GRANDE';
+  regime_tributario?: 'SIMPLES' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL';
+  
+  // Dados Bancários
+  banco_padrao?: string;
+  agencia_padrao?: string;
+  conta_padrao?: string;
+  
+  // Status
+  is_active: boolean;
+  is_default: boolean;
+  
+  // Configurações
+  settings?: Record<string, any>;
+  
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCompanyDTO {
+  cnpj: string;
+  razao_social: string;
+  nome_fantasia?: string;
+  // ... outros campos opcionais
+}
+
+export interface UpdateCompanyDTO {
+  razao_social?: string;
+  nome_fantasia?: string;
+  // ... campos editáveis
+}
+```
+
+---
+
+## 🔄 ADAPTAÇÕES EM COMPONENTES EXISTENTES
+
+### Componentes que Precisam Ser Adaptados
+
+#### 1. TransactionForm
+**Mudanças**:
+- Adicionar seletor de empresa (se PJ)
+- Filtrar contas bancárias pela empresa selecionada
+- Filtrar categorias pela empresa selecionada
+
+#### 2. BankAccountForm
+**Mudanças**:
+- Adicionar campo company_id
+- Exibir apenas se conta PJ
+- Validar que a empresa pertence ao usuário
+
+#### 3. CategoryForm
+**Mudanças**:
+- Adicionar campo company_id
+- Permitir criar categorias específicas por empresa
+- Manter categorias globais do usuário
+
+#### 4. Dashboard (Principal)
+**Mudanças**:
+- Adicionar toggle PF/PJ
+- Se PJ, mostrar seletor de empresa
+- Filtrar todos os dados pela empresa selecionada
+- Adicionar link para dashboard consolidado
+
+#### 5. TransactionsList
+**Mudanças**:
+- Adicionar coluna de empresa (se visualização consolidada)
+- Filtros adicionais por empresa
+- Agrupamento por empresa (opcional)
+
+#### 6. Reports
+**Mudanças**:
+- Adicionar opção de relatório multi-empresa
+- Filtros de empresa
+- Comparativos entre empresas
+
+---
+
+## 🚀 PLANO DE IMPLEMENTAÇÃO PASSO A PASSO
+
+### FASE 1: Preparação (Dias 1-3)
+
+**Dia 1: Setup**
+```bash
+# Criar branch de feature
+git checkout -b feature/pj-accounts
+
+# Instalar dependências se necessário
+npm install
+
+# Preparar ambiente de desenvolvimento
+```
+
+**Dia 2-3: Banco de Dados**
+1. Criar arquivo de migration: `supabase/migrations/YYYYMMDD_add_pj_support.sql`
+2. Implementar todas as tabelas e alterações
+3. Criar functions de validação
+4. Implementar RLS policies
+5. Criar views consolidadas
+6. Adicionar índices
+7. Testar migration em ambiente local
+
+**Checklist Banco de Dados**:
+- [ ] Tabela account_types criada
+- [ ] Tabela companies criada
+- [ ] Tabelas existentes estendidas com company_id
+- [ ] RLS habilitado em todas as tabelas
+- [ ] Policies criadas e testadas
+- [ ] Function validate_cnpj criada
+- [ ] Function validate_cpf criada
+- [ ] Function calculate_account_balance adaptada
+- [ ] Triggers de auditoria criados
+- [ ] Views consolidadas criadas
+- [ ] Índices criados
+- [ ] Migration testada com rollback
+
+### FASE 2: Types e Utilitários (Dias 4-5)
+
+**Dia 4: Types**
+```typescript
+// src/types/company.ts
+// src/types/accountType.ts
+// Atualizar src/types/transaction.ts
+// Atualizar src/types/bankAccount.ts
+// Atualizar src/types/category.ts
+```
+
+**Dia 5: Utilitários**
+```typescript
+// src/utils/validators.ts - Validações de CNPJ/CPF
+// src/utils/formatters.ts - Formatações
+// src/utils/cnpjApi.ts - Consulta à Receita Federal (opcional)
+```
+
+**Checklist Types e Utilitários**:
+- [ ] Interface Company definida
+- [ ] DTOs de Company definidos
+- [ ] Types existentes atualizados
+- [ ] validateCNPJ implementado e testado
+- [ ] validateCPF implementado e testado
+- [ ] formatCNPJ implementado
+- [ ] formatCPF implementado
+- [ ] Testes unitários de validações
+
+### FASE 3: Services e Context (Dias 6-8)
+
+**Dia 6: Company Service**
+```typescript
+// src/services/companyService.ts
+// Implementar todas as operações CRUD
+// Adicionar tratamento de erros
+// Implementar cache se necessário
+```
+
+**Dia 7-8: Context API**
+```typescript
+// src/context/CompanyContext.tsx
+// Implementar provider
+// Criar hook useCompany
+// Integrar com localStorage
+// Implementar Realtime subscriptions (opcional)
+```
+
+**Checklist Services e Context**:
+- [ ] companyService.getAll implementado
+- [ ] companyService.getById implementado
+- [ ] companyService.create implementado
+- [ ] companyService.update implementado
+- [ ] companyService.delete implementado
+- [ ] companyService.setDefault implementado
+- [ ] CompanyProvider implementado
+- [ ] useCompany hook criado
+- [ ] Integração com localStorage
+- [ ] Tratamento de erros
+- [ ] Loading states
+
+### FASE 4: Componentes Base (Dias 9-12)
+
+**Dia 9: CompanySelector**
+```typescript
+// src/components/company/CompanySelector.tsx
+// Dropdown de seleção
+// Integração com Context
+// Styling com shadcn/ui
+```
+
+**Dia 10: CompanyDialog**
+```typescript
+// src/components/company/CompanyDialog.tsx
+// Formulário completo
+// Validações em tempo real
+// Modo criar/editar
+// Consulta CNPJ (opcional)
+```
+
+**Dia 11: CompanyCard**
+```typescript
+// src/components/company/CompanyCard.tsx
+// Exibição de dados
+// Ações rápidas
+// Indicadores visuais
+```
+
+**Dia 12: Componentes Auxiliares**
+```typescript
+// src/components/company/CompanyBadge.tsx
+// src/components/company/CompanyAvatar.tsx
+// src/components/forms/CNPJInput.tsx
+```
+
+**Checklist Componentes Base**:
+- [ ] CompanySelector funcionando
+- [ ] CompanyDialog - modo criar
+- [ ] CompanyDialog - modo editar
+- [ ] CompanyCard criado
+- [ ] Validações de formulário
+- [ ] Formatação automática de CNPJ
+- [ ] Feedback visual de erros
+- [ ] Responsividade mobile
+- [ ] Acessibilidade (a11y)
+
+### FASE 5: Páginas Principais (Dias 13-16)
+
+**Dia 13-14: CompaniesPage**
+```typescript
+// src/pages/companies/CompaniesPage.tsx
+// Lista de empresas em grid
+// Funcionalidade de busca
+// Filtros
+// Estatísticas gerais
+```
+
+**Dia 15-16: Adaptar Dashboard**
+```typescript
+// src/pages/dashboard/Dashboard.tsx
+// Adicionar seletor de empresa para PJ
+// Filtrar dados pela empresa selecionada
+// Toggle PF/PJ
+// Integrar CompanySelector
+```
+
+**Checklist Páginas Principais**:
+- [ ] CompaniesPage - layout grid
+- [ ] CompaniesPage - busca
+- [ ] CompaniesPage - filtros
+- [ ] CompaniesPage - estatísticas
+- [ ] Dashboard - seletor de empresa
+- [ ] Dashboard - filtro por empresa
+- [ ] Dashboard - toggle PF/PJ
+- [ ] Navegação entre páginas
+- [ ] Breadcrumbs atualizados
+
+### FASE 6: Dashboard Consolidado (Dias 17-20)
+
+**Dia 17-18: ConsolidatedDashboard**
+```typescript
+// src/pages/dashboard/ConsolidatedDashboard.tsx
+// Cards de resumo geral
+// Gráficos comparativos
+// Filtros multi-empresa
+```
+
+**Dia 19-20: Gráficos e Visualizações**
+```typescript
+// Implementar gráficos com Recharts
+// Gráfico de barras comparativo
+// Gráfico de pizza de distribuição
+// Gráfico de linhas de evolução
+```
+
+**Checklist Dashboard Consolidado**:
+- [ ] Cards de resumo implementados
+- [ ] Gráfico de comparação
+- [ ] Gráfico de distribuição
+- [ ] Gráfico de performance
+- [ ] Filtros de empresa
+- [ ] Filtros de período
+- [ ] Cálculos de métricas
+- [ ] Formatação de valores
+- [ ] Loading states
+- [ ] Empty states
+
+### FASE 7: Relatórios Multi-Empresa (Dias 21-23)
+
+**Dia 21-22: MultiCompanyReport**
+```typescript
+// src/components/reports/MultiCompanyReport.tsx
+// Seleção de empresas
+// Agregação de dados
+// Tabela consolidada
+```
+
+**Dia 23: Exportações**
+```typescript
+// src/utils/export.ts
+// Exportar para PDF
+// Exportar para Excel
+// Exportar para CSV
+```
+
+**Checklist Relatórios**:
+- [ ] Seleção múltipla de empresas
+- [ ] Agregação de transações
+- [ ] Tabela consolidada
+- [ ] Totalizadores
+- [ ] Exportação PDF
+- [ ] Exportação Excel
+- [ ] Exportação CSV
+- [ ] Gráficos no relatório
+
+### FASE 8: Adaptações em Componentes Existentes (Dias 24-27)
+
+**Dia 24: TransactionForm**
+```typescript
+// src/components/forms/TransactionForm.tsx
+// Adicionar seletor de empresa
+// Filtrar contas por empresa
+// Filtrar categorias por empresa
+```
+
+**Dia 25: BankAccountForm**
+```typescript
+// src/components/forms/BankAccountForm.tsx
+// Adicionar campo company_id
+// Validações específicas
+```
+
+**Dia 26: CategoryForm**
+```typescript
+// src/components/forms/CategoryForm.tsx
+// Adicionar campo company_id
+// Permitir categorias por empresa
+```
+
+**Dia 27: TransactionsList**
+```typescript
+// src/components/transactions/TransactionsList.tsx
+// Adicionar coluna de empresa
+// Filtros por empresa
+// Agrupamento por empresa
+```
+
+**Checklist Adaptações**:
+- [ ] TransactionForm adaptado
+- [ ] BankAccountForm adaptado
+- [ ] CategoryForm adaptado
+- [ ] TransactionsList adaptado
+- [ ] Filtros funcionando
+- [ ] Validações corretas
+- [ ] Sem regressões em PF
+
+### FASE 9: Hooks Customizados (Dias 28-29)
+
+**Dia 28: useMultiCompanyFilter**
+```typescript
+// src/hooks/useMultiCompanyFilter.ts
+// Gerenciar filtros multi-empresa
+// Builder de queries Supabase
+```
+
+**Dia 29: Outros Hooks**
+```typescript
+// src/hooks/useCompanyMetrics.ts
+// src/hooks/useCompanyTransactions.ts
+// src/hooks/useCompanyAccounts.ts
+```
+
+**Checklist Hooks**:
+- [ ] useMultiCompanyFilter implementado
+- [ ] useCompanyMetrics implementado
+- [ ] useCompanyTransactions implementado
+- [ ] useCompanyAccounts implementado
+- [ ] Memoização otimizada
+- [ ] Tratamento de erros
+
+### FASE 10: Testes (Dias 30-35)
+
+**Dia 30-31: Testes Unitários**
+```bash
+# Testar validações
+# Testar utilitários
+# Testar services
+# Testar hooks
+```
+
+**Dia 32-33: Testes de Integração**
+```bash
+# Testar fluxos completos
+# Testar integrações com Supabase
+# Testar RLS policies
+```
+
+**Dia 34-35: Testes E2E**
+```bash
+# Testar fluxo de criação de empresa
+# Testar fluxo de transação PJ
+# Testar dashboard consolidado
+# Testar relatórios
+```
+
+**Checklist Testes**:
+- [ ] Testes unitários de validators
+- [ ] Testes de companyService
+- [ ] Testes de hooks
+- [ ] Testes de componentes
+- [ ] Testes de integração
+- [ ] Testes de RLS
+- [ ] Testes E2E principais
+- [ ] Cobertura > 80%
+
+### FASE 11: Migração de Dados (Dias 36-38)
+
+**Dia 36: Preparar Script de Migração**
+```sql
+-- Script para migrar dados PF existentes
+-- Manter integridade referencial
+-- Rollback plan
+```
+
+**Dia 37: Executar Migração em Staging**
+```bash
+# Backup completo
+# Executar migration
+# Validar dados
+# Testes de smoke
+```
+
+**Dia 38: Validação**
+```bash
+# Verificar integridade dos dados
+# Validar RLS
+# Testar performance
+```
+
+**Checklist Migração**:
+- [ ] Script de migração criado
+- [ ] Backup realizado
+- [ ] Migration executada
+- [ ] Dados validados
+- [ ] RLS testado
+- [ ] Performance ok
+- [ ] Rollback plan testado
+
+### FASE 12: Documentação (Dias 39-40)
+
+**Dia 39: Documentação Técnica**
+```markdown
+# Criar README.md da feature
+# Documentar API
+# Documentar banco de dados
+# Diagramas de arquitetura
+```
+
+**Dia 40: Guia do Usuário**
+```markdown
+# Como criar empresa
+# Como gerenciar empresas
+# Como usar dashboard consolidado
+# Como gerar relatórios
+```
+
+**Checklist Documentação**:
+- [ ] README da feature
+- [ ] Documentação de API
+- [ ] Documentação do banco
+- [ ] Diagramas atualizados
+- [ ] Guia do usuário
+- [ ] FAQ
+- [ ] Release notes
+
+### FASE 13: Deploy (Dias 41-42)
+
+**Dia 41: Preparação para Deploy**
+```bash
+# Code review
+# Merge da branch
+# Build de produção
+# Preparar rollback plan
+```
+
+**Dia 42: Deploy e Monitoramento**
+```bash
+# Deploy em staging
+# Testes finais
+# Deploy em produção
+# Monitoramento intensivo
+```
+
+**Checklist Deploy**:
+- [ ] Code review concluído
+- [ ] Branch merged
+- [ ] Build sem erros
+- [ ] Deploy em staging ok
+- [ ] Testes finais ok
+- [ ] Deploy em produção ok
+- [ ] Monitoramento ativo
+- [ ] Hotfix plan pronto
+
+---
+
+## ✅ CHECKLIST FINAL DE VALIDAÇÃO
+
+### Funcionalidades Core
+- [ ] Usuário pode criar múltiplas empresas
+- [ ] CNPJ é validado corretamente
+- [ ] Dados de PF e PJ são completamente isolados
+- [ ] Dados entre empresas PJ são isolados
+- [ ] Empresa padrão é selecionada automaticamente
+- [ ] Dashboard mostra dados da empresa selecionada
+- [ ] Dashboard consolidado agrega todas as empresas
+- [ ] Transações são criadas com company_id correto
+- [ ] Contas bancárias pertencem às empresas corretas
+- [ ] Categorias podem ser por empresa ou globais
+
+### Segurança
+- [ ] RLS está habilitado em todas as tabelas
+- [ ] Usuário só vê suas próprias empresas
+- [ ] Usuário só vê dados de suas empresas
+- [ ] Não há vazamento de dados entre usuários
+- [ ] Não há vazamento de dados entre empresas
+- [ ] Validações funcionam no backend
+- [ ] Auditoria registra todas as operações
+
+### Performance
+- [ ] Dashboard carrega em < 2s
+- [ ] Queries com índices otimizados
+- [ ] Paginação implementada onde necessário
+- [ ] Lazy loading de componentes
+- [ ] Memoização otimizada
+- [ ] Bundle size aceitável
+
+### UX/UI
+- [ ] Interface intuitiva
+- [ ] Feedback visual adequado
+- [ ] Loading states em todas as ações
+- [ ] Mensagens de erro claras
+- [ ] Confirmações de ações destrutivas
+- [ ] Responsivo mobile
+- [ ] Acessibilidade (a11y)
+
+### Qualidade de Código
+- [ ] ESLint sem erros
+- [ ] TypeScript sem erros
+- [ ] Código comentado onde necessário
+- [ ] Naming conventions consistentes
+- [ ] Arquitetura limpa
+- [ ] Princípios SOLID seguidos
+
+### Testes
+- [ ] Testes unitários passando
+- [ ] Testes de integração passando
+- [ ] Testes E2E passando
+- [ ] Cobertura de testes > 80%
+- [ ] Edge cases testados
+
+### Documentação
+- [ ] README atualizado
+- [ ] Documentação de API
+- [ ] Guia do usuário
+- [ ] Comentários no código
+- [ ] Changelog atualizado
+
+---
+
+## 🎯 CRITÉRIOS DE SUCESSO
+
+### Técnicos
+1. ✅ 100% de isolamento de dados entre PF e PJ
+2. ✅ 100% de isolamento de dados entre empresas PJ
+3. ✅ Validação de CNPJ com 100% de precisão
+4. ✅ Performance: Dashboard < 2s de carregamento
+5. ✅ Sem quebras em funcionalidades PF existentes
+6. ✅ Cobertura de testes > 80%
+
+### Funcionais
+1. ✅ Usuário pode gerenciar até 50 empresas
+2. ✅ Dashboard consolidado funciona com todas as empresas
+3. ✅ Relatórios agregam dados de múltiplas empresas
+4. ✅ Exportação de relatórios funcionando
+5. ✅ Mobile responsivo
+
+### Negócio
+1. ✅ Sistema pronto para produção
+2. ✅ Documentação completa
+3. ✅ Treinamento de usuários preparado
+4. ✅ Suporte preparado para dúvidas
+
+---
+
+## 🔧 COMANDOS ÚTEIS
+
+### Desenvolvimento
+```bash
+# Iniciar servidor de desenvolvimento
+npm run dev
+
+# Build de produção
+npm run build
+
+# Executar testes
+npm run test
+
+# Executar testes com cobertura
+npm run test:coverage
+
+# Lint
+npm run lint
+
+# Formatar código
+npm run format
+```
+
+### Supabase
+```bash
+# Rodar migrations
+supabase db push
+
+# Gerar types TypeScript
+supabase gen types typescript --local > src/types/supabase.ts
+
+# Resetar database local
+supabase db reset
+
+# Ver logs
+supabase functions logs
+```
+
+### Git
+```bash
+# Criar branch de feature
+git checkout -b feature/pj-accounts
+
+# Commit com mensagem semântica
+git commit -m "feat: add company management system"
+
+# Push da branch
+git push origin feature/pj-accounts
+
+# Criar Pull Request
+gh pr create --title "feat: Add PJ Account Support" --body "..."
+```
+
+---
+
+## 📚 RECURSOS E REFERÊNCIAS
+
+### Documentação Oficial
+- [Supabase RLS](https://supabase.com/docs/guides/auth/row-level-security)
+- [PostgreSQL Row Security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+- [React Context](https://react.dev/reference/react/useContext)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Recharts](https://recharts.org/)
+
+### Validação de CNPJ
+- [Algoritmo de Validação](https://www.geradorcnpj.com/algoritmo_do_cnpj.htm)
+- [Receita Federal API](https://receitaws.com.br/api)
+
+### Best Practices
+- [Multi-tenancy Patterns](https://docs.aws.amazon.com/whitepapers/latest/saas-architecture-fundamentals/multi-tenancy-models.html)
+- [React Best Practices](https://react.dev/learn)
+- [TypeScript Do's and Don'ts](https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html)
+
+---
+
+## 🚨 PONTOS DE ATENÇÃO
+
+### CRÍTICOS
+1. **Isolamento de Dados**: Testar exaustivamente RLS
+2. **Validação de CNPJ**: Não confiar apenas no frontend
+3. **Performance**: Monitorar queries complexas
+4. **Migração**: Ter plano de rollback sempre pronto
+5. **Auditoria**: Não esquecer de logar operações críticas
+
+### IMPORTANTES
+1. Manter compatibilidade com contas PF
+2. Não quebrar funcionalidades existentes
+3. Garantir UX consistente
+4. Documentar todas as mudanças
+5. Comunicar breaking changes
+
+### OPCIONAIS (Mas Recomendados)
+1. Integração com API da Receita Federal
+2. Realtime updates com Supabase
+3. Cache de dados para performance
+4. PWA para funcionar offline
+5. Exportação avançada de relatórios
+
+---
+
+## 🎓 PADRÕES DE CÓDIGO
+
+### Naming Conventions
+```typescript
+// Componentes: PascalCase
+export function CompanySelector() {}
+
+// Hooks: camelCase com prefixo 'use'
+export function useCompany() {}
+
+// Services: camelCase com sufixo 'Service'
+export const companyService = {}
+
+// Constants: UPPER_SNAKE_CASE
+export const MAX_COMPANIES_PER_USER = 50;
+
+// Types/Interfaces: PascalCase
+export interface Company {}
+```
+
+### Estrutura de Arquivos
+```
+src/
+├── components/
+│   ├── company/
+│   │   ├── CompanySelector.tsx
+│   │   ├── CompanyDialog.tsx
+│   │   └── CompanyCard.tsx
+│   └── forms/
+│       └── CNPJInput.tsx
+├── context/
+│   └── CompanyContext.tsx
+├── hooks/
+│   ├── useCompany.ts
+│   └── useMultiCompanyFilter.ts
+├── pages/
+│   ├── companies/
+│   │   └── CompaniesPage.tsx
+│   └── dashboard/
+│       └── ConsolidatedDashboard.tsx
+├── services/
+│   └── companyService.ts
+├── types/
+│   ├── company.ts
+│   └── supabase.ts
+└── utils/
+    ├── validators.ts
+    └── formatters.ts
+```
+
+### Comentários
+```typescript
+/**
+ * Valida um CNPJ usando o algoritmo oficial da Receita Federal.
+ * 
+ * @param cnpj - CNPJ a ser validado (com ou sem formatação)
+ * @returns true se o CNPJ é válido, false caso contrário
+ * 
+ * @example
+ * validateCNPJ('12.345.678/0001-90') // true
+ * validateCNPJ('00000000000000') // false
+ */
+export function validateCNPJ(cnpj: string): boolean {
+  // Implementação
+}
+```
+
+---
+
+## 🎯 PRÓXIMOS PASSOS APÓS IMPLEMENTAÇÃO
+
+### Curto Prazo (1-2 meses)
+1. Coletar feedback dos usuários
+2. Ajustar UX com base no uso real
+3. Otimizar queries lentas
+4. Adicionar métricas de uso
+5. Implementar melhorias sugeridas
+
+### Médio Prazo (3-6 meses)
+1. Integração com Receita Federal
+2. Importação de NFe
+3. Conciliação bancária automática
+4. BI avançado com IA
+5. App mobile nativo
+
+### Longo Prazo (6-12 meses)
+1. Multi-user (permissões por empresa)
+2. API pública
+3. Integrações com ERPs
+4. Módulo de folha de pagamento
+5. Módulo fiscal completo
+
+---
+
+**FIM DO PROMPT MASTER**
+
+Este documento deve servir como guia completo para a implementação do sistema de contas PJ no OnliFin. Siga cada etapa com atenção, validando constantemente o isolamento de dados e a segurança do sistema.
+
+Boa implementação! 🚀

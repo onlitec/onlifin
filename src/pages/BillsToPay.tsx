@@ -25,6 +25,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark } from 'lucide-react';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function BillsToPay() {
   const { toast } = useToast();
@@ -56,18 +57,20 @@ export default function BillsToPay() {
     initUser();
   }, []);
 
+  const { companyId, isPJ } = useFinanceScope();
+
   React.useEffect(() => {
     if (userId) {
       loadData();
     }
-  }, [userId]);
+  }, [userId, companyId]);
 
   const loadData = async () => {
     try {
       const [billsData, accountsData, categoriesData] = await Promise.all([
-        billsToPayApi.getAll(userId!),
-        accountsApi.getAccounts(userId!),
-        categoriesApi.getCategories()
+        billsToPayApi.getAll(userId!, companyId),
+        accountsApi.getAccounts(userId!, companyId),
+        categoriesApi.getCategories(companyId)
       ]);
       setBills(billsData);
       setAccounts(accountsData);
@@ -126,6 +129,7 @@ export default function BillsToPay() {
     try {
       const billData = {
         user_id: userId!,
+        company_id: companyId, // Associar ao ID da URL
         description: formData.description,
         amount: Number.parseFloat(formData.amount),
         due_date: formData.due_date,
@@ -234,8 +238,10 @@ export default function BillsToPay() {
       {/* Header */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
         <div>
-          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">Contas a Pagar</h1>
-          <p className="text-muted-foreground mt-1">Gerencie suas despesas e compromissos financeiros</p>
+          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">
+            Contas a Pagar {isPJ ? 'PJ' : 'PF'}
+          </h1>
+          <p className="text-muted-foreground mt-1">Gerencie suas despesas {isPJ ? 'empresariais' : 'pessoais'} e compromissos financeiros</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
