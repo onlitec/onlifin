@@ -101,6 +101,7 @@ const adminSubmenus = [
 ];
 
 export function OnlifinSidebar() {
+    const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { state } = useSidebar();
@@ -215,12 +216,22 @@ export function OnlifinSidebar() {
             <SidebarHeader className="border-b border-border p-4">
                 <div className="flex items-center gap-2">
                     <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                        <span className="text-lg font-bold">O</span>
+                        <span className="text-lg font-bold">
+                            {selectedCompany?.nome_fantasia?.[0] || selectedCompany?.razao_social?.[0] || 'O'}
+                        </span>
                     </div>
                     {state === 'expanded' && (
                         <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-foreground">Onlifin</span>
-                            <span className="text-xs text-muted-foreground">Personal & Business</span>
+                            <span className="text-sm font-bold text-foreground truncate max-w-[150px]">
+                                {location.pathname.startsWith('/pj') && selectedCompany
+                                    ? (selectedCompany.nome_fantasia || selectedCompany.razao_social)
+                                    : 'Onlifin'}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                                {location.pathname.startsWith('/pj') && selectedCompany
+                                    ? 'Pessoa Jurídica'
+                                    : 'Personal & Business'}
+                            </span>
                         </div>
                     )}
                 </div>
@@ -278,17 +289,17 @@ export function OnlifinSidebar() {
                                             {/* Seletor de Empresa na Sidebar */}
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <div className="px-3 py-2 mb-2 bg-accent/50 hover:bg-accent rounded-md mx-2 cursor-pointer transition-colors border border-transparent hover:border-border group">
+                                                    <div className="px-3 py-3 mb-4 bg-primary text-primary-foreground rounded-lg mx-2 cursor-pointer transition-all hover:brightness-110 shadow-md group">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-[11px] font-bold truncate">
+                                                                <p className="text-xs font-black uppercase tracking-tight truncate">
                                                                     {selectedCompany?.nome_fantasia || selectedCompany?.razao_social || 'Selecionar Empresa'}
                                                                 </p>
                                                                 {selectedCompany && (
-                                                                    <p className="text-[10px] text-muted-foreground truncate">{selectedCompany.cnpj}</p>
+                                                                    <p className="text-[10px] opacity-80 truncate">{selectedCompany.cnpj}</p>
                                                                 )}
                                                             </div>
-                                                            <ChevronRight className="size-3 text-muted-foreground group-hover:text-foreground transition-all ml-1" />
+                                                            <ChevronRight className="size-4 opacity-80 group-hover:opacity-100 transition-all ml-2" />
                                                         </div>
                                                     </div>
                                                 </DropdownMenuTrigger>
