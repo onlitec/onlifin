@@ -6,7 +6,6 @@ import {
     Building2,
     Briefcase,
     CreditCard,
-    PieChart,
     BarChart3,
     Settings,
     ChevronUp,

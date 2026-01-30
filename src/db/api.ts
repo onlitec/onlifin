@@ -303,6 +303,7 @@ export const transactionsApi = {
     endDate?: string;
     type?: string;
     categoryId?: string;
+    companyId?: string | null;
   }): Promise<TransactionWithDetails[]> {
     let query = supabase
       .from('transactions')
@@ -325,6 +326,14 @@ export const transactionsApi = {
     }
     if (filters?.categoryId) {
       query = query.eq('category_id', filters.categoryId);
+    }
+    // Filtrar por empresa
+    if (filters?.companyId !== undefined) {
+      if (filters.companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', filters.companyId);
+      }
     }
 
     const { data, error } = await query.order('date', { ascending: false });
