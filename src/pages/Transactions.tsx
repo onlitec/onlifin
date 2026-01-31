@@ -1068,7 +1068,7 @@ export default function Transactions() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <p className="font-medium text-sm truncate cursor-help">
+                            <p className="font-medium text-sm break-words line-clamp-2 lg:truncate cursor-help">
                               {tx.description || 'Sem descrição'}
                             </p>
                           </TooltipTrigger>
