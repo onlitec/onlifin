@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.16.1] - 2026-01-31
+
+### chore: sync docs and sidebar updates across branches
+
+---
+
+
+
 ## [1.16.0] - 2026-01-30
 
 ### feat(sidebar): display Nome Fantasia prominently in header and selector
