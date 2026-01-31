@@ -13,6 +13,8 @@ import Chat from './pages/Chat';
 import ForecastDashboard from './pages/ForecastDashboard';
 import BillsToPay from './pages/BillsToPay';
 import BillsToReceive from './pages/BillsToReceive';
+import People from './pages/People';
+
 
 import AIAdmin from './pages/AIAdmin';
 import AdminGeneral from './pages/AdminGeneral';
@@ -55,6 +57,7 @@ const routes: RouteConfig[] = [
       { name: 'Contas a Receber PF', path: '/pf/bills-to-receive', element: <BillsToReceive />, visible: true },
       { name: 'Importar Extrato PF', path: '/pf/import-statements', element: <ImportStatements />, visible: true },
       { name: 'Conciliação PF', path: '/pf/reconciliation', element: <Reconciliation />, visible: true },
+      { name: 'Pessoas PF', path: '/pf/people', element: <People />, visible: true },
     ]
   },
 

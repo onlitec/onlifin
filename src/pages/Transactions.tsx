@@ -60,11 +60,11 @@ export default function Transactions() {
   });
   const { toast } = useToast();
 
-  const { companyId, isPJ } = useFinanceScope();
+  const { companyId, isPJ, personId } = useFinanceScope();
 
   React.useEffect(() => {
     loadData();
-  }, [companyId]);
+  }, [companyId, personId]);
 
   const loadData = async () => {
     try {
@@ -72,8 +72,8 @@ export default function Transactions() {
       if (!user) return;
 
       const [txs, accs, cats] = await Promise.all([
-        transactionsApi.getTransactions(user.id, { companyId: companyId }),
-        accountsApi.getAccounts(user.id, companyId),
+        transactionsApi.getTransactions(user.id, { companyId: companyId, personId: personId }),
+        accountsApi.getAccounts(user.id, companyId, personId),
         categoriesApi.getCategories(companyId)
       ]);
 
@@ -183,6 +183,7 @@ export default function Transactions() {
             ...formData,
             user_id: user.id,
             company_id: companyId,
+            person_id: personId ?? null,
             amount: Number(formData.amount),
             category_id: formData.category_id || null,
             account_id: formData.account_id || null,

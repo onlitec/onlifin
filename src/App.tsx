@@ -15,7 +15,10 @@ import { UpdateNotification } from '@/components/pwa/UpdateNotification';
 import { PWAStatus } from '@/components/pwa/PWAStatus';
 import { CompanySelectorCompact } from '@/components/company';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
+import { PersonProvider } from '@/contexts/PersonContext';
 import routes from './routes';
+
+import { PersonSelector } from '@/components/person/PersonSelector';
 
 function App() {
   return (
@@ -29,7 +32,9 @@ function App() {
             <InstallPrompt />
             <RequireAuth whiteList={['/login']}>
               <CompanyProvider>
-                <MainLayout />
+                <PersonProvider>
+                  <MainLayout />
+                </PersonProvider>
               </CompanyProvider>
             </RequireAuth>
           </AuthProvider>
@@ -70,9 +75,18 @@ function MainLayout() {
           <div className="flex flex-1 items-center justify-between">
             <div className="flex items-center gap-4">
               <h2 className="text-lg font-semibold text-foreground">
-                {isPJ ? 'Onlifin PJ' : 'Onlifin PF'}
+                {isPJ ? (
+                  <div className="flex items-center gap-2">
+                    <span>Onlifin PJ</span>
+                    <CompanySelectorCompact />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span>Onlifin PF</span>
+                    <PersonSelector size="sm" className="h-8" />
+                  </div>
+                )}
               </h2>
-              <CompanySelectorCompact />
             </div>
             <ThemeToggle />
           </div>

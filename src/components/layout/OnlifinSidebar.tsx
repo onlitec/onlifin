@@ -68,6 +68,7 @@ const TRANSACTIONS_SUBMENU = [
 // Menu Pessoa Física (PF)
 const PF_MENU = [
     { title: 'Dashboard', icon: Home, path: '/pf' },
+    { title: 'Pessoas', icon: Users, path: '/pf/people' },
     { title: 'Contas', icon: Building2, path: '/pf/accounts' },
     { title: 'Cartões', icon: CreditCard, path: '/pf/cards' },
     {
