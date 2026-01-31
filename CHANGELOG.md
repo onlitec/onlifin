@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.17.0] - 2026-01-31
+
+### feat: implement person registration for PF (people management, contexts, filters)
+
+---
+
+
+
 ## [1.16.1] - 2026-01-31
 
 ### chore: sync docs and sidebar updates across branches
