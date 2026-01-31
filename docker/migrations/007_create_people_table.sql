@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS people (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Add is_system to categories (required for policy update below)
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_system BOOLEAN DEFAULT false;
+
 -- Add RLS to people table
 ALTER TABLE people ENABLE ROW LEVEL SECURITY;
 
