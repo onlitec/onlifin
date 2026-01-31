@@ -40,7 +40,7 @@ interface EnhancedStats extends DashboardStats {
 }
 
 export default function Dashboard() {
-  const { companyId, isPJ } = useFinanceScope();
+  const { companyId, isPJ, personId } = useFinanceScope();
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [enhancedStats, setEnhancedStats] = React.useState<EnhancedStats | null>(null);
   const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
@@ -55,7 +55,7 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     loadDashboardData();
-  }, [selectedMonth, selectedYear, companyId]);
+  }, [selectedMonth, selectedYear, companyId, personId]);
 
   const loadDashboardData = async () => {
     try {
@@ -68,12 +68,12 @@ export default function Dashboard() {
       const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-      // Carregar dados básicos incluindo previsão, filtrando pelo ID da URL (null para PF)
+      // Carregar dados básicos incluindo previsão, filtrando pelo ID da URL (null para PF) e personId
       const [dashboardStats, expenses, monthly, latestForecast] = await Promise.all([
-        transactionsApi.getDashboardStats(user.id, companyId),
-        transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth, companyId),
-        transactionsApi.getMonthlyData(user.id, 6, { companyId: companyId }),
-        forecastsApi.getLatest(user.id, companyId).catch(() => null)
+        transactionsApi.getDashboardStats(user.id, companyId, personId),
+        transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth, companyId, personId),
+        transactionsApi.getMonthlyData(user.id, 6, { companyId: companyId, personId: personId }),
+        forecastsApi.getLatest(user.id, companyId, personId).catch(() => null)
       ]);
 
       setStats(dashboardStats);
@@ -136,6 +136,13 @@ export default function Dashboard() {
     } else {
       transactionsQuery = transactionsQuery.is('company_id', null);
     }
+
+    if (personId) {
+      transactionsQuery = transactionsQuery.eq('person_id', personId);
+    } else if (personId === null) {
+      transactionsQuery = transactionsQuery.is('person_id', null);
+    }
+    // If personId is undefined (PJ or not applicable), do nothing (no filter on person_id)
 
     const { data: transactions } = await transactionsQuery;
 

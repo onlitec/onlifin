@@ -31,6 +31,7 @@ export interface Account {
   id: string;
   user_id: string;
   company_id: string | null;
+  person_id: string | null;
   name: string;
   bank: string | null;
   agency: string | null;
@@ -47,6 +48,7 @@ export interface Card {
   id: string;
   user_id: string;
   company_id: string | null;
+  person_id: string | null;
   account_id: string | null;
   name: string;
   card_limit: number;
@@ -73,6 +75,7 @@ export interface Transaction {
   id: string;
   user_id: string;
   company_id: string | null;
+  person_id: string | null;
   account_id: string | null;
   card_id: string | null;
   category_id: string | null;
@@ -90,6 +93,48 @@ export interface Transaction {
   is_reconciled: boolean;
   is_transfer: boolean;
   transfer_destination_account_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ... (skipping unchanged types)
+
+export interface BillToPay {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  person_id: string | null;
+  description: string;
+  amount: number;
+  due_date: string;
+  category_id: string | null;
+  status: BillStatus;
+  is_recurring: boolean;
+  recurrence_pattern: string | null;
+  account_id: string | null;
+  paid_date: string | null;
+  transaction_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillToReceive {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  person_id: string | null;
+  description: string;
+  amount: number;
+  due_date: string;
+  category_id: string | null;
+  status: BillStatus;
+  is_recurring: boolean;
+  recurrence_pattern: string | null;
+  account_id: string | null;
+  received_date: string | null;
+  transaction_id: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -163,6 +208,7 @@ export interface BillToPay {
   id: string;
   user_id: string;
   company_id: string | null;
+  person_id: string | null;
   description: string;
   amount: number;
   due_date: string;
@@ -182,6 +228,7 @@ export interface BillToReceive {
   id: string;
   user_id: string;
   company_id: string | null;
+  person_id: string | null;
   description: string;
   amount: number;
   due_date: string;

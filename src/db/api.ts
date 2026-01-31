@@ -103,7 +103,7 @@ export const profilesApi = {
 };
 
 export const accountsApi = {
-  async getAccounts(userId: string, companyId?: string | null): Promise<Account[]> {
+  async getAccounts(userId: string, companyId?: string | null, personId?: string | null): Promise<Account[]> {
     let query = supabase
       .from('accounts')
       .select('*')
@@ -115,6 +115,14 @@ export const accountsApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -187,7 +195,7 @@ export const accountsApi = {
 };
 
 export const cardsApi = {
-  async getCards(userId: string, companyId?: string | null): Promise<Card[]> {
+  async getCards(userId: string, companyId?: string | null, personId?: string | null): Promise<Card[]> {
     let query = supabase
       .from('cards')
       .select('*')
@@ -198,6 +206,14 @@ export const cardsApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -331,6 +347,7 @@ export const transactionsApi = {
     type?: string;
     categoryId?: string;
     companyId?: string | null;
+    personId?: string | null;
   }): Promise<TransactionWithDetails[]> {
     let query = supabase
       .from('transactions')
@@ -360,6 +377,14 @@ export const transactionsApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', filters.companyId);
+      }
+    }
+    // Filtrar por pessoa
+    if (filters?.personId !== undefined) {
+      if (filters.personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', filters.personId);
       }
     }
 
@@ -417,7 +442,7 @@ export const transactionsApi = {
     if (error) throw error;
   },
 
-  async getDashboardStats(userId: string, companyId?: string | null): Promise<DashboardStats> {
+  async getDashboardStats(userId: string, companyId?: string | null, personId?: string | null): Promise<DashboardStats> {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -440,6 +465,19 @@ export const transactionsApi = {
         accountsQuery = accountsQuery.eq('company_id', companyId);
         cardsQuery = cardsQuery.eq('company_id', companyId);
         transactionsQuery = transactionsQuery.eq('company_id', companyId);
+      }
+    }
+
+    // Filtrar por pessoa
+    if (personId !== undefined) {
+      if (personId === null) {
+        accountsQuery = accountsQuery.is('person_id', null);
+        cardsQuery = cardsQuery.is('person_id', null);
+        transactionsQuery = transactionsQuery.is('person_id', null);
+      } else {
+        accountsQuery = accountsQuery.eq('person_id', personId);
+        cardsQuery = cardsQuery.eq('person_id', personId);
+        transactionsQuery = transactionsQuery.eq('person_id', personId);
       }
     }
 
@@ -468,7 +506,7 @@ export const transactionsApi = {
     };
   },
 
-  async getCategoryExpenses(userId: string, startDate: string, endDate: string, companyId?: string | null): Promise<CategoryExpense[]> {
+  async getCategoryExpenses(userId: string, startDate: string, endDate: string, companyId?: string | null, personId?: string | null): Promise<CategoryExpense[]> {
     let query = supabase
       .from('transactions')
       .select(`
@@ -485,6 +523,14 @@ export const transactionsApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -511,7 +557,7 @@ export const transactionsApi = {
     }));
   },
 
-  async getMonthlyData(userId: string, months: number = 6, filters?: { companyId?: string | null }): Promise<MonthlyData[]> {
+  async getMonthlyData(userId: string, months: number = 6, filters?: { companyId?: string | null, personId?: string | null }): Promise<MonthlyData[]> {
     const result: MonthlyData[] = [];
     const now = new Date();
 
@@ -532,6 +578,14 @@ export const transactionsApi = {
           query = query.is('company_id', null);
         } else {
           query = query.eq('company_id', filters.companyId);
+        }
+      }
+
+      if (filters?.personId !== undefined) {
+        if (filters.personId === null) {
+          query = query.is('person_id', null);
+        } else {
+          query = query.eq('person_id', filters.personId);
         }
       }
 
@@ -783,7 +837,7 @@ export const importHistoryApi = {
 
 // Bills To Pay API
 export const billsToPayApi = {
-  async getAll(userId: string, companyId?: string | null): Promise<BillToPay[]> {
+  async getAll(userId: string, companyId?: string | null, personId?: string | null): Promise<BillToPay[]> {
     let query = supabase
       .from('bills_to_pay')
       .select('*')
@@ -795,6 +849,14 @@ export const billsToPayApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -836,7 +898,7 @@ export const billsToPayApi = {
     return Array.isArray(data) ? data : [];
   },
 
-  async getOverdue(userId: string, companyId?: string | null): Promise<BillToPay[]> {
+  async getOverdue(userId: string, companyId?: string | null, personId?: string | null): Promise<BillToPay[]> {
     let query = supabase
       .from('bills_to_pay')
       .select('*')
@@ -848,6 +910,14 @@ export const billsToPayApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -908,7 +978,7 @@ export const billsToPayApi = {
 
 // Bills To Receive API
 export const billsToReceiveApi = {
-  async getAll(userId: string, companyId?: string | null): Promise<BillToReceive[]> {
+  async getAll(userId: string, companyId?: string | null, personId?: string | null): Promise<BillToReceive[]> {
     let query = supabase
       .from('bills_to_receive')
       .select('*')
@@ -920,6 +990,14 @@ export const billsToReceiveApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -940,7 +1018,7 @@ export const billsToReceiveApi = {
     return data;
   },
 
-  async getPending(userId: string, companyId?: string | null): Promise<BillToReceive[]> {
+  async getPending(userId: string, companyId?: string | null, personId?: string | null): Promise<BillToReceive[]> {
     let query = supabase
       .from('bills_to_receive')
       .select('*')
@@ -955,13 +1033,21 @@ export const billsToReceiveApi = {
       }
     }
 
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
+      }
+    }
+
     const { data, error } = await query.order('due_date', { ascending: true });
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
   },
 
-  async getOverdue(userId: string, companyId?: string | null): Promise<BillToReceive[]> {
+  async getOverdue(userId: string, companyId?: string | null, personId?: string | null): Promise<BillToReceive[]> {
     let query = supabase
       .from('bills_to_receive')
       .select('*')
@@ -973,6 +1059,14 @@ export const billsToReceiveApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -1033,7 +1127,7 @@ export const billsToReceiveApi = {
 
 // Financial Forecasts API
 export const forecastsApi = {
-  async getLatest(userId: string, companyId?: string | null): Promise<FinancialForecast | null> {
+  async getLatest(userId: string, companyId?: string | null, personId?: string | null): Promise<FinancialForecast | null> {
     let query = supabase
       .from('financial_forecasts')
       .select('*')
@@ -1047,6 +1141,14 @@ export const forecastsApi = {
       }
     }
 
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
+      }
+    }
+
     const { data, error } = await query
       .order('calculation_date', { ascending: false })
       .limit(1)
@@ -1056,7 +1158,7 @@ export const forecastsApi = {
     return data;
   },
 
-  async getAll(userId: string, companyId?: string | null): Promise<FinancialForecast[]> {
+  async getAll(userId: string, companyId?: string | null, personId?: string | null): Promise<FinancialForecast[]> {
     let query = supabase
       .from('financial_forecasts')
       .select('*')
@@ -1067,6 +1169,14 @@ export const forecastsApi = {
         query = query.is('company_id', null);
       } else {
         query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
       }
     }
 
@@ -1087,12 +1197,13 @@ export const forecastsApi = {
     return data;
   },
 
-  async triggerGeneration(userId: string, companyId?: string | null): Promise<void> {
+  async triggerGeneration(userId: string, companyId?: string | null, personId?: string | null): Promise<void> {
     // Chama a Edge Function para gerar previsão
     const { error } = await supabase.functions.invoke('financial-forecast', {
       body: {
         user_id: userId,
-        company_id: companyId
+        company_id: companyId,
+        person_id: personId
       }
     });
 
