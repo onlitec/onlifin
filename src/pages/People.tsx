@@ -2,7 +2,6 @@
  * Página de gerenciamento de pessoas (PF)
  */
 
-import * as React from 'react';
 import { useState, useCallback } from 'react';
 import {
     User,
@@ -31,6 +30,12 @@ import { usePerson } from '@/contexts/PersonContext';
 import { PersonDialog } from '@/components/person/PersonDialog';
 import type { Person, CreatePersonDTO, UpdatePersonDTO } from '@/types/person';
 import { Badge } from '@/components/ui/badge';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function PeoplePage() {
     const { toast } = useToast();
@@ -40,7 +45,6 @@ export default function PeoplePage() {
         createPerson,
         updatePerson,
         deletePerson,
-        refreshPeople,
     } = usePerson();
 
     // Estado local
@@ -182,9 +186,29 @@ export default function PeoplePage() {
                                     <Button variant="ghost" size="icon" onClick={() => handleEditPerson(person)}>
                                         <Edit className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeletePerson(person)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-destructive hover:text-destructive"
+                                                        onClick={() => handleDeletePerson(person)}
+                                                        disabled={person.is_default}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </span>
+                                            </TooltipTrigger>
+                                            {person.is_default && (
+                                                <TooltipContent>
+                                                    <p>O membro principal não pode ser excluído.</p>
+                                                </TooltipContent>
+                                            )}
+                                        </Tooltip>
+                                    </TooltipProvider>
                                 </div>
                             </CardContent>
                         </Card>

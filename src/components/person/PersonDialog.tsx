@@ -148,6 +148,7 @@ export function PersonDialog({
                                         <Checkbox
                                             checked={field.value}
                                             onCheckedChange={field.onChange}
+                                            disabled={person?.is_default}
                                         />
                                     </FormControl>
                                     <div className="space-y-1 leading-none">
@@ -155,7 +156,9 @@ export function PersonDialog({
                                             Padrão
                                         </FormLabel>
                                         <p className="text-sm text-muted-foreground">
-                                            Definir como pessoa principal selecionada ao entrar.
+                                            {person?.is_default
+                                                ? "Este é o membro principal e não pode ser desmarcado."
+                                                : "Definir como pessoa principal selecionada ao entrar."}
                                         </p>
                                     </div>
                                 </FormItem>
