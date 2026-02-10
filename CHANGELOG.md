@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.19.0] - 2026-02-10
+
+### feat: implement settings page with backup/restore system, fix person selector UI and database migrations
+
+---
+
+
+
 ## [1.18.0] - 2026-02-10
 
 ### feat: implement person registration for PF (people management, contexts, filters)
