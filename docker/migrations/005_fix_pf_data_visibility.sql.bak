@@ -1,0 +1,119 @@
+-- Migration: Fix PF (Pessoa Física) data visibility after multi-company update
+-- Description: Creates default PF company for users and migrates legacy NULL company_id data
+-- Issue: #10
+-- Date: 2026-01-31
+
+BEGIN;
+
+-- Step 1: Create default PF company for each user that has data without company_id
+DO $$
+DECLARE
+    user_record RECORD;
+    new_company_id UUID;
+BEGIN
+    -- For each user with NULL company_id data
+    FOR user_record IN 
+        SELECT DISTINCT user_id 
+        FROM accounts 
+        WHERE company_id IS NULL
+        AND user_id IS NOT NULL
+    LOOP
+        -- Check if user already has a PF company
+        SELECT id INTO new_company_id
+        FROM companies
+        WHERE user_id = user_record.user_id
+        AND document_type = 'PF'
+        LIMIT 1;
+
+        -- If no PF company exists, create one
+        IF new_company_id IS NULL THEN
+            INSERT INTO companies (
+                user_id,
+                name,
+                document_type,
+                is_default,
+                is_active,
+                created_at,
+                updated_at
+            ) VALUES (
+                user_record.user_id,
+                'Pessoa Física',
+                'PF',
+                true,
+                true,
+                NOW(),
+                NOW()
+            )
+            RETURNING id INTO new_company_id;
+
+            RAISE NOTICE 'Created default PF company % for user %', new_company_id, user_record.user_id;
+        ELSE
+            RAISE NOTICE 'User % already has PF company %', user_record.user_id, new_company_id;
+        END IF;
+
+        -- Migrate accounts
+        UPDATE accounts 
+        SET company_id = new_company_id,
+            updated_at = NOW()
+        WHERE user_id = user_record.user_id 
+        AND company_id IS NULL;
+
+        -- Migrate transactions
+        UPDATE transactions 
+        SET company_id = new_company_id,
+            updated_at = NOW()
+        WHERE user_id = user_record.user_id 
+        AND company_id IS NULL;
+
+        -- Migrate cards
+        UPDATE cards 
+        SET company_id = new_company_id,
+            updated_at = NOW()
+        WHERE user_id = user_record.user_id 
+        AND company_id IS NULL;
+
+        -- Migrate bills_to_pay
+        UPDATE bills_to_pay 
+        SET company_id = new_company_id,
+            updated_at = NOW()
+        WHERE user_id = user_record.user_id 
+        AND company_id IS NULL;
+
+        -- Migrate bills_to_receive
+        UPDATE bills_to_receive 
+        SET company_id = new_company_id,
+            updated_at = NOW()
+        WHERE user_id = user_record.user_id 
+        AND company_id IS NULL;
+
+        RAISE NOTICE 'Migrated all data for user % to company %', user_record.user_id, new_company_id;
+    END LOOP;
+END $$;
+
+-- Step 2: Verify migration results
+DO $$
+DECLARE
+    orphan_accounts INTEGER;
+    orphan_transactions INTEGER;
+    total_companies INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO orphan_accounts FROM accounts WHERE company_id IS NULL;
+    SELECT COUNT(*) INTO orphan_transactions FROM transactions WHERE company_id IS NULL;
+    SELECT COUNT(*) INTO total_companies FROM companies WHERE document_type = 'PF';
+
+    RAISE NOTICE '=== Migration Results ===';
+    RAISE NOTICE 'PF Companies created: %', total_companies;
+    RAISE NOTICE 'Orphan accounts remaining: %', orphan_accounts;
+    RAISE NOTICE 'Orphan transactions remaining: %', orphan_transactions;
+    
+    IF orphan_accounts > 0 OR orphan_transactions > 0 THEN
+        RAISE WARNING 'Some data still has NULL company_id - manual review needed';
+    ELSE
+        RAISE NOTICE '✅ All PF data successfully migrated!';
+    END IF;
+END $$;
+
+COMMIT;
+
+-- Add helpful comment
+COMMENT ON TABLE companies IS 'Tabela de empresas (PJ) e pessoas físicas (PF) dos usuários. Cada usuário deve ter pelo menos uma empresa PF padrão.';

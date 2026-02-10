@@ -4,10 +4,10 @@
  * Dropdown para selecionar a pessoa ativa no contexto PF.
  */
 
-import * as React from 'react';
-import { User, ChevronDown, Plus, Check } from 'lucide-react';
-import { usePerson } from '@/contexts/PersonContext';
-import { Button } from '@/components/ui/button';
+import * as React from react;
+import { User, ChevronDown, Plus, Check } from lucide-react;
+import { usePerson } from @/contexts/PersonContext;
+import { Button } from @/components/ui/button;
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,21 +15,21 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+} from @/components/ui/dropdown-menu;
+import { Skeleton } from @/components/ui/skeleton;
+import { cn } from @/lib/utils;
+import { useNavigate } from react-router-dom;
 
 interface PersonSelectorProps {
     className?: string;
-    variant?: 'default' | 'outline' | 'ghost';
-    size?: 'default' | 'sm' | 'lg';
+    variant?: default | outline | ghost;
+    size?: default | sm | lg;
 }
 
 export function PersonSelector({
     className,
-    variant = 'outline',
-    size = 'default',
+    variant = outline,
+    size = default,
 }: PersonSelectorProps) {
     const {
         people,
@@ -46,7 +46,7 @@ export function PersonSelector({
         );
     }
 
-    const currentName = selectedPerson ? selectedPerson.name : 'Você (Principal)';
+    const currentName = selectedPerson ? selectedPerson.name : (people.find(p => p.is_default)?.name || Carregando...);
 
     return (
         <DropdownMenu>
@@ -68,23 +68,6 @@ export function PersonSelector({
 
             <DropdownMenuContent align="start" className="w-60">
                 <DropdownMenuLabel>Membros da Família</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                {/* Opção Padrão (Principal / Você) */}
-                <DropdownMenuItem
-                    className={cn(
-                        "flex items-center gap-2 cursor-pointer",
-                        selectedPerson === null && "bg-accent"
-                    )}
-                    onClick={() => selectPerson(null)}
-                >
-                    <User className="h-4 w-4 shrink-0 text-primary" />
-                    <span className="font-medium flex-1">Você (Principal)</span>
-                    {selectedPerson === null && (
-                        <Check className="h-4 w-4 text-primary" />
-                    )}
-                </DropdownMenuItem>
-
                 <DropdownMenuSeparator />
 
                 {people.map((person) => (
@@ -112,7 +95,7 @@ export function PersonSelector({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                     className="cursor-pointer"
-                    onClick={() => navigate('/pf/people')}
+                    onClick={() => navigate(/pf/people)}
                 >
                     <Plus className="h-4 w-4 mr-2" />
                     <span>Gerenciar Pessoas</span>
