@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.20.0] - 2026-02-10
+
+### feat: ensure default 'Titular' person exists as real editable record
+
+---
+
+
+
 ## [1.19.0] - 2026-02-10
 
 ### feat: implement settings page with backup/restore system, fix person selector UI and database migrations
