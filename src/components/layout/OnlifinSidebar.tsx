@@ -20,7 +20,8 @@ import {
     LogOut,
     Plus,
     Check,
-    ChevronRight
+    ChevronRight,
+    Database
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -99,6 +100,7 @@ const adminSubmenus = [
     { title: 'Assistente IA', icon: Bot, path: '/chat' },
     { title: 'Gestão de Usuários', icon: Users, path: '/user-management' },
     { title: 'Configuração IA', icon: Settings, path: '/ai-admin' },
+    { title: 'Backup e Restauro', icon: Database, path: '/settings' },
 ];
 
 export function OnlifinSidebar() {

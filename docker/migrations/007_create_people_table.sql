@@ -46,7 +46,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = accounts AND column_name = person_id
+        WHERE table_name = 'accounts' AND column_name = 'person_id'
     ) THEN
         ALTER TABLE accounts ADD COLUMN person_id UUID REFERENCES people(id) ON DELETE SET NULL;
         CREATE INDEX idx_accounts_person_id ON accounts(person_id);
@@ -58,7 +58,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = transactions AND column_name = person_id
+        WHERE table_name = 'transactions' AND column_name = 'person_id'
     ) THEN
         ALTER TABLE transactions ADD COLUMN person_id UUID REFERENCES people(id) ON DELETE SET NULL;
         CREATE INDEX idx_transactions_person_id ON transactions(person_id);
@@ -70,7 +70,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = cards AND column_name = person_id
+        WHERE table_name = 'cards' AND column_name = 'person_id'
     ) THEN
         ALTER TABLE cards ADD COLUMN person_id UUID REFERENCES people(id) ON DELETE SET NULL;
         CREATE INDEX idx_cards_person_id ON cards(person_id);
@@ -82,7 +82,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = categories AND column_name = person_id
+        WHERE table_name = 'categories' AND column_name = 'person_id'
     ) THEN
         ALTER TABLE categories ADD COLUMN person_id UUID REFERENCES people(id) ON DELETE SET NULL;
         CREATE INDEX idx_categories_person_id ON categories(person_id);
@@ -94,7 +94,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = bills_to_pay AND column_name = person_id
+        WHERE table_name = 'bills_to_pay' AND column_name = 'person_id'
     ) THEN
         ALTER TABLE bills_to_pay ADD COLUMN person_id UUID REFERENCES people(id) ON DELETE SET NULL;
         CREATE INDEX idx_bills_to_pay_person_id ON bills_to_pay(person_id);
@@ -106,7 +106,7 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = bills_to_receive AND column_name = person_id
+        WHERE table_name = 'bills_to_receive' AND column_name = 'person_id'
     ) THEN
         ALTER TABLE bills_to_receive ADD COLUMN person_id UUID REFERENCES people(id) ON DELETE SET NULL;
         CREATE INDEX idx_bills_to_receive_person_id ON bills_to_receive(person_id);

@@ -10,7 +10,7 @@ DECLARE
     t text;
     pol record;
 BEGIN
-    FOR t IN (SELECT unnest(ARRAY['accounts', 'transactions', 'cards', 'categories', 'people', 'profiles', 'companies', 'financial_forecasts', 'bills_to_pay', 'bills_to_receive', 'notifications', 'audit_logs', 'uploaded_statements'])) LOOP
+    FOR t IN (SELECT unnest(ARRAY['accounts', 'transactions', 'cards', 'categories', 'people', 'profiles', 'companies', 'financial_forecasts', 'bills_to_pay', 'bills_to_receive', 'notifications', 'audit_logs'])) LOOP
         EXECUTE format('ALTER TABLE %I DISABLE ROW LEVEL SECURITY;', t);
         FOR pol IN (SELECT policyname FROM pg_policies WHERE tablename = t AND schemaname = 'public') LOOP
             EXECUTE format('DROP POLICY IF EXISTS %I ON %I;', pol.policyname, t);
@@ -45,7 +45,7 @@ DECLARE
     has_company_id boolean;
     has_person_id boolean;
 BEGIN
-    FOR t IN (SELECT unnest(ARRAY['accounts', 'transactions', 'cards', 'categories', 'bills_to_pay', 'bills_to_receive', 'financial_forecasts', 'notifications', 'uploaded_statements'])) LOOP
+    FOR t IN (SELECT unnest(ARRAY['accounts', 'transactions', 'cards', 'categories', 'bills_to_pay', 'bills_to_receive', 'financial_forecasts', 'notifications'])) LOOP
         
         SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = t AND column_name = 'company_id') INTO has_company_id;
         SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = t AND column_name = 'person_id') INTO has_person_id;

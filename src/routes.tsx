@@ -22,6 +22,7 @@ import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 import ForceChangePassword from './pages/ForceChangePassword';
 import PWAInfo from './pages/PWAInfo';
+import SettingsPage from './pages/Settings';
 
 interface RouteConfig {
   name: string;
@@ -141,6 +142,12 @@ const routes: RouteConfig[] = [
         name: 'Configuração IA',
         path: '/ai-admin',
         element: <AIAdmin />,
+        visible: true
+      },
+      {
+        name: 'Backup e Restauro',
+        path: '/settings',
+        element: <SettingsPage />,
         visible: true
       }
     ]
