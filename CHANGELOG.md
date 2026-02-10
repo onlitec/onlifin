@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.18.0] - 2026-02-10
+
+### feat: implement person registration for PF (people management, contexts, filters)
+
+---
+
+
+
 ## [1.17.0] - 2026-01-31
 
 ### feat: implement person registration for PF (people management, contexts, filters)
