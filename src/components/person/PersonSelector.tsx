@@ -46,7 +46,7 @@ export function PersonSelector({
         );
     }
 
-    const currentName = selectedPerson ? selectedPerson.name : 'Você (Principal)';
+    const currentName = selectedPerson ? selectedPerson.name : (people.find(p => p.is_default)?.name || 'Carregando...');
 
     return (
         <DropdownMenu>
@@ -68,23 +68,6 @@ export function PersonSelector({
 
             <DropdownMenuContent align="start" className="w-60">
                 <DropdownMenuLabel>Membros da Família</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                {/* Opção Padrão (Principal / Você) */}
-                <DropdownMenuItem
-                    className={cn(
-                        "flex items-center gap-2 cursor-pointer",
-                        selectedPerson === null && "bg-accent"
-                    )}
-                    onClick={() => selectPerson(null)}
-                >
-                    <User className="h-4 w-4 shrink-0 text-primary" />
-                    <span className="font-medium flex-1">Você (Principal)</span>
-                    {selectedPerson === null && (
-                        <Check className="h-4 w-4 text-primary" />
-                    )}
-                </DropdownMenuItem>
-
                 <DropdownMenuSeparator />
 
                 {people.map((person) => (

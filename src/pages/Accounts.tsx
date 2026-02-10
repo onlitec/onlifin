@@ -31,11 +31,11 @@ export default function Accounts() {
   });
   const { toast } = useToast();
 
-  const { companyId, isPJ } = useFinanceScope();
+  const { companyId, isPJ, personId } = useFinanceScope();
 
   React.useEffect(() => {
     loadAccounts();
-  }, [companyId]);
+  }, [companyId, personId]);
 
   const loadAccounts = async () => {
     setIsLoading(true);
@@ -43,8 +43,8 @@ export default function Accounts() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Carregar contas - filtrando pelo ID da URL (null para PF)
-      const data = await accountsApi.getAccounts(user.id, companyId);
+      // Carregar contas - filtrando pelo ID da URL (null para PF) e personId
+      const data = await accountsApi.getAccounts(user.id, companyId, personId);
       setAccounts(data);
     } catch (error: any) {
       toast({
@@ -81,7 +81,8 @@ export default function Accounts() {
           ...accountData,
           balance: Number(formData.balance), // Also set current balance to initial on create
           user_id: user.id,
-          company_id: companyId // Associar ao ID da URL (null para PF)
+          company_id: companyId, // Associar ao ID da URL (null para PF)
+          person_id: personId // Associar à pessoa selecionada (PF)
         });
         toast({ title: 'Sucesso', description: 'Conta criada com sucesso' });
       }
