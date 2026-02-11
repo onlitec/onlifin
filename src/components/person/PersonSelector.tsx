@@ -4,7 +4,6 @@
  * Dropdown para selecionar a pessoa ativa no contexto PF.
  */
 
-import * as React from 'react';
 import { User, ChevronDown, Plus, Check } from 'lucide-react';
 import { usePerson } from '@/contexts/PersonContext';
 import { Button } from '@/components/ui/button';
@@ -69,24 +68,6 @@ export function PersonSelector({
             <DropdownMenuContent align="start" className="w-60">
                 <DropdownMenuLabel>Membros da Família</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                    className={cn(
-                        "flex items-center gap-2 cursor-pointer",
-                        !selectedPerson && "bg-accent"
-                    )}
-                    onClick={() => selectPerson(null)}
-                >
-                    <User className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="font-medium truncate flex-1">
-                        Titular (Principal)
-                    </span>
-                    {!selectedPerson && (
-                        <Check className="h-4 w-4 text-primary" />
-                    )}
-                </DropdownMenuItem>
-
-                {people.length > 0 && <DropdownMenuSeparator />}
 
                 {people.map((person) => (
                     <DropdownMenuItem
