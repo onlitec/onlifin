@@ -3,7 +3,6 @@
  */
 
 import {
-    Building2,
     MapPin,
     Phone,
     Mail,
@@ -90,14 +89,17 @@ export function CompanyCard({
             onClick={() => onSelect?.(company)}
         >
             <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
-                            <Building2 className="h-5 w-5 text-primary" />
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                        <div
+                            className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 text-white font-bold text-lg shadow-sm"
+                            style={{ backgroundColor: company.color || '#10b981' }}
+                        >
+                            {displayName.substring(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <CardTitle className="text-base truncate">
+                                <CardTitle className="text-lg font-bold truncate">
                                     {displayName}
                                 </CardTitle>
                                 {company.is_default && (
@@ -240,7 +242,7 @@ export function CompanyCard({
                     </>
                 )}
             </CardContent>
-        </Card>
+        </Card >
     );
 }
 

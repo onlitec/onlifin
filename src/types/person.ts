@@ -9,6 +9,7 @@ export interface Person {
     cpf?: string | null;
     email?: string | null;
     is_default: boolean;
+    color?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -18,6 +19,7 @@ export interface CreatePersonDTO {
     cpf?: string;
     email?: string;
     is_default?: boolean;
+    color?: string;
 }
 
 export interface UpdatePersonDTO {
@@ -25,6 +27,7 @@ export interface UpdatePersonDTO {
     cpf?: string;
     email?: string;
     is_default?: boolean;
+    color?: string;
 }
 
 export interface PersonContextState {

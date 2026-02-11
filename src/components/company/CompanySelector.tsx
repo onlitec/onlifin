@@ -5,7 +5,6 @@
  * Exibe nome fantasia ou razão social e CNPJ formatado.
  */
 
-import * as React from 'react';
 import { Building2, ChevronDown, Plus, Star, Check } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Button } from '@/components/ui/button';
@@ -82,7 +81,14 @@ export function CompanySelector({
                     className={cn("gap-2 justify-between min-w-[200px]", className)}
                 >
                     <div className="flex items-center gap-2 truncate">
-                        <Building2 className="h-4 w-4 shrink-0" />
+                        {selectedCompany?.color ? (
+                            <div
+                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
+                                style={{ backgroundColor: selectedCompany.color }}
+                            />
+                        ) : (
+                            <Building2 className="h-4 w-4 shrink-0" />
+                        )}
                         <span className="truncate">
                             {selectedCompany?.nome_fantasia || selectedCompany?.razao_social || 'Selecionar empresa'}
                         </span>
@@ -105,7 +111,10 @@ export function CompanySelector({
                         onClick={() => selectCompany(company.id)}
                     >
                         <div className="flex items-center gap-2 w-full">
-                            <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <div
+                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
+                                style={{ backgroundColor: company.color || '#10b981' }}
+                            />
                             <span className="font-medium truncate flex-1">
                                 {company.nome_fantasia || company.razao_social}
                             </span>
@@ -144,10 +153,8 @@ export function CompanySelector({
  */
 export function CompanySelectorCompact({
     className,
-    onAddCompany,
 }: {
     className?: string;
-    onAddCompany?: () => void;
 }) {
     const { companies, selectedCompany, isLoadingCompanies, selectCompany } = useCompany();
 

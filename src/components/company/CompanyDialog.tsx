@@ -59,6 +59,7 @@ const EMPTY_FORM: CreateCompanyDTO = {
     banco_padrao: '',
     agencia_padrao: '',
     conta_padrao: '',
+    color: '#10b981',
 };
 
 export function CompanyDialog({
@@ -101,6 +102,7 @@ export function CompanyDialog({
                 banco_padrao: company.banco_padrao || '',
                 agencia_padrao: company.agencia_padrao || '',
                 conta_padrao: company.conta_padrao || '',
+                color: company.color || '#10b981',
             });
             setErrors({});
         } else {
@@ -423,6 +425,36 @@ export function CompanyDialog({
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                                <Label>Cor do Perfil</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        '#10b981', // Green (Primary)
+                                        '#3b82f6', // Blue
+                                        '#8b5cf6', // Purple
+                                        '#ec4899', // Pink
+                                        '#ef4444', // Red
+                                        '#f59e0b', // Amber
+                                        '#6366f1', // Indigo
+                                        '#14b8a6', // Teal
+                                        '#0ea5e9', // Sky
+                                    ].map((color) => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            className={cn(
+                                                "h-8 w-8 rounded-full border-2 transition-all",
+                                                formData.color === color
+                                                    ? "border-primary scale-110 ring-2 ring-primary/20"
+                                                    : "border-transparent hover:scale-105"
+                                            )}
+                                            style={{ backgroundColor: color }}
+                                            onClick={() => handleChange('color' as any, color)}
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         </TabsContent>

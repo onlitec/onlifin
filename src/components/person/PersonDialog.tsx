@@ -21,6 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import type { Person, CreatePersonDTO, UpdatePersonDTO } from '@/types/person';
 
 const personSchema = z.object({
@@ -28,6 +29,7 @@ const personSchema = z.object({
     cpf: z.string().optional(),
     email: z.string().email('E-mail inválido').optional().or(z.literal('')),
     is_default: z.boolean().default(false),
+    color: z.string().optional(),
 });
 
 type PersonFormValues = z.infer<typeof personSchema>;
@@ -54,6 +56,7 @@ export function PersonDialog({
             cpf: '',
             email: '',
             is_default: false,
+            color: '#10b981',
         },
     });
 
@@ -65,6 +68,7 @@ export function PersonDialog({
                 cpf: person?.cpf || '',
                 email: person?.email || '',
                 is_default: person?.is_default || false,
+                color: person?.color || '#10b981',
             });
         }
     }, [open, person, form]);
@@ -161,6 +165,45 @@ export function PersonDialog({
                                                 : "Definir como pessoa principal selecionada ao entrar."}
                                         </p>
                                     </div>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="color"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <FormLabel>Cor do Perfil</FormLabel>
+                                    <FormControl>
+                                        <div className="flex flex-wrap gap-2">
+                                            {[
+                                                '#10b981', // Green (Primary)
+                                                '#3b82f6', // Blue
+                                                '#8b5cf6', // Purple
+                                                '#ec4899', // Pink
+                                                '#ef4444', // Red
+                                                '#f59e0b', // Amber
+                                                '#6366f1', // Indigo
+                                                '#14b8a6', // Teal
+                                                '#0ea5e9', // Sky
+                                            ].map((color) => (
+                                                <button
+                                                    key={color}
+                                                    type="button"
+                                                    className={cn(
+                                                        "h-8 w-8 rounded-full border-2 transition-all",
+                                                        field.value === color
+                                                            ? "border-primary scale-110 ring-2 ring-primary/20"
+                                                            : "border-transparent hover:scale-105"
+                                                    )}
+                                                    style={{ backgroundColor: color }}
+                                                    onClick={() => field.onChange(color)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />

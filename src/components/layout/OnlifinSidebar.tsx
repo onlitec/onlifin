@@ -55,6 +55,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from 'miaoda-auth-react';
 import { useCompany } from '@/contexts/CompanyContext';
+import { usePerson } from '@/contexts/PersonContext';
 import { APP_VERSION } from '@/config/version';
 
 // Configuração comum de submenus para Transações
@@ -109,6 +110,7 @@ export function OnlifinSidebar() {
     const { user, logout } = useAuth();
     const { state } = useSidebar();
     const { companies, selectedCompany, selectCompany } = useCompany();
+    const { selectedPerson } = usePerson();
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
     const [userMenuOpen, setUserMenuOpen] = React.useState(false);
     const [pfOpen, setPfOpen] = React.useState(true);
@@ -218,9 +220,18 @@ export function OnlifinSidebar() {
         <Sidebar collapsible="icon" className="border-r border-border">
             <SidebarHeader className="border-b border-border p-4">
                 <div className="flex items-center gap-2">
-                    <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                    <div
+                        className="flex size-8 items-center justify-center rounded-md text-primary-foreground shadow-sm transition-colors"
+                        style={{
+                            backgroundColor: location.pathname.startsWith('/pj')
+                                ? (selectedCompany?.color || 'var(--primary)')
+                                : (selectedPerson?.color || 'var(--primary)')
+                        }}
+                    >
                         <span className="text-lg font-bold">
-                            {selectedCompany?.nome_fantasia?.[0] || selectedCompany?.razao_social?.[0] || 'O'}
+                            {location.pathname.startsWith('/pj')
+                                ? (selectedCompany?.nome_fantasia?.[0] || selectedCompany?.razao_social?.[0] || 'O')
+                                : (selectedPerson?.name?.[0] || 'O')}
                         </span>
                     </div>
                     {state === 'expanded' && (
@@ -295,9 +306,15 @@ export function OnlifinSidebar() {
                                                     <div className="px-3 py-3 mb-4 bg-primary text-primary-foreground rounded-lg mx-2 cursor-pointer transition-all hover:brightness-110 shadow-md group">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-black uppercase tracking-tight truncate">
-                                                                    {selectedCompany?.nome_fantasia || selectedCompany?.razao_social || 'Selecionar Empresa'}
-                                                                </p>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div
+                                                                        className="h-2 w-2 rounded-full border border-white/40 shadow-sm"
+                                                                        style={{ backgroundColor: selectedCompany?.color || '#ffffff' }}
+                                                                    />
+                                                                    <p className="text-xs font-black uppercase tracking-tight truncate">
+                                                                        {selectedCompany?.nome_fantasia || selectedCompany?.razao_social || 'Selecionar Empresa'}
+                                                                    </p>
+                                                                </div>
                                                                 {selectedCompany && (
                                                                     <p className="text-[10px] opacity-80 truncate">{selectedCompany.cnpj}</p>
                                                                 )}
@@ -315,9 +332,15 @@ export function OnlifinSidebar() {
                                                             onClick={() => handleCompanyChange(company.id)}
                                                             className="flex items-center justify-between text-xs cursor-pointer"
                                                         >
-                                                            <div className="flex flex-col truncate pr-2">
-                                                                <span className="font-medium truncate">{company.nome_fantasia || company.razao_social}</span>
-                                                                <span className="text-[10px] text-muted-foreground">{company.cnpj}</span>
+                                                            <div className="flex items-center gap-2 truncate pr-2">
+                                                                <div
+                                                                    className="h-2 w-2 rounded-full border border-border shrink-0"
+                                                                    style={{ backgroundColor: company.color || '#10b981' }}
+                                                                />
+                                                                <div className="flex flex-col truncate">
+                                                                    <span className="font-medium truncate">{company.nome_fantasia || company.razao_social}</span>
+                                                                    <span className="text-[10px] text-muted-foreground">{company.cnpj}</span>
+                                                                </div>
                                                             </div>
                                                             {selectedCompany?.id === company.id && (
                                                                 <Check className="size-3 text-primary ml-auto" />

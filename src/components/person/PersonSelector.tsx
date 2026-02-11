@@ -56,7 +56,14 @@ export function PersonSelector({
                     className={cn("gap-2 justify-between min-w-[180px]", className)}
                 >
                     <div className="flex items-center gap-2 truncate">
-                        <User className="h-4 w-4 shrink-0" />
+                        {selectedPerson?.color ? (
+                            <div
+                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
+                                style={{ backgroundColor: selectedPerson.color }}
+                            />
+                        ) : (
+                            <User className="h-4 w-4 shrink-0" />
+                        )}
                         <span className="truncate">
                             {currentName}
                         </span>
@@ -78,7 +85,10 @@ export function PersonSelector({
                         )}
                         onClick={() => selectPerson(person.id)}
                     >
-                        <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div
+                            className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
+                            style={{ backgroundColor: person.color || '#10b981' }}
+                        />
                         <span className="font-medium truncate flex-1">
                             {person.name}
                         </span>

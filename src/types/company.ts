@@ -57,6 +57,7 @@ export interface Company {
     // Status
     is_active: boolean;
     is_default: boolean;
+    color?: string | null;
 
     // Configurações
     settings?: Record<string, unknown>;
@@ -89,6 +90,7 @@ export interface CreateCompanyDTO {
     agencia_padrao?: string;
     conta_padrao?: string;
     is_default?: boolean;
+    color?: string;
     settings?: Record<string, unknown>;
 }
 
@@ -115,6 +117,7 @@ export interface CompanySummary {
     nome_fantasia: string | null;
     is_default: boolean;
     is_active: boolean;
+    color: string | null;
 }
 
 // Dados de endereço separados (para formulários)

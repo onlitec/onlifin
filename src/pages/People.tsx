@@ -171,7 +171,11 @@ export default function PeoplePage() {
                     {filteredPeople.map((person) => (
                         <Card key={person.id}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                    <div
+                                        className="h-3 w-3 rounded-full border border-white/20 shadow-sm"
+                                        style={{ backgroundColor: person.color || '#10b981' }}
+                                    />
                                     {person.name}
                                 </CardTitle>
                                 {person.is_default && (
