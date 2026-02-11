@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.20.2] - 2026-02-11
+
+### fix(security): restrict people RLS and cleanup duplicate titulars
+
+---
+
+
+
 ## [1.20.1] - 2026-02-11
 
 ### fix: remove visual duplication of 'Titular' in PersonSelector
