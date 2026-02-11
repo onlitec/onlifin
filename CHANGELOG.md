@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.20.1] - 2026-02-11
+
+### fix: remove visual duplication of 'Titular' in PersonSelector
+
+---
+
+
+
 ## [1.20.0] - 2026-02-10
 
 ### feat: ensure default 'Titular' person exists as real editable record
