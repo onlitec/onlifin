@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, FileText, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { accountsApi, transactionsApi, categoriesApi } from '@/db/api';
 import { Account, Category } from '@/types/types';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 interface ParsedTransaction {
   date: string;
@@ -20,6 +21,7 @@ interface ParsedTransaction {
 }
 
 export default function Import() {
+  const { companyId, personId } = useFinanceScope();
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [selectedAccount, setSelectedAccount] = React.useState<string>('');
@@ -39,8 +41,8 @@ export default function Import() {
       if (!user) return;
 
       const [accountsData, categoriesData] = await Promise.all([
-        accountsApi.getAccounts(user.id),
-        categoriesApi.getCategories()
+        accountsApi.getAccounts(user.id, companyId, personId),
+        categoriesApi.getCategories(companyId)
       ]);
       setAccounts(accountsData);
       setCategories(categoriesData);
@@ -297,6 +299,8 @@ export default function Import() {
           is_reconciled: false,
           is_transfer: false,
           transfer_destination_account_id: null,
+          company_id: companyId,
+          person_id: personId || null,
           tags: ['importado']
         });
       }
@@ -484,8 +488,8 @@ export default function Import() {
                       <TableCell>{transaction.description}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${transaction.type === 'income'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
                           }`}>
                           {transaction.type === 'income' ? (
                             <>

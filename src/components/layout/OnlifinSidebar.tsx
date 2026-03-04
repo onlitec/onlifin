@@ -1,43 +1,21 @@
 import * as React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     Home,
     ArrowLeftRight,
     Building2,
     CreditCard,
-    Settings,
-    ChevronUp,
-    ChevronDown,
-    User,
     FileText,
-    RefreshCw,
-    Receipt,
-    DollarSign,
-    Users,
-    Bot,
-    Sliders,
-    Layers,
-    LogOut,
-    Plus,
-    Check,
-    ChevronRight,
-    Database
+    TrendingUp,
+    Settings,
+    ChevronDown,
+    LogOut
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
-    SidebarGroupContent,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -52,423 +30,147 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
 import { useAuth } from 'miaoda-auth-react';
-import { useCompany } from '@/contexts/CompanyContext';
-import { usePerson } from '@/contexts/PersonContext';
-import { APP_VERSION } from '@/config/version';
-
-// Configuração comum de submenus para Transações
-const TRANSACTIONS_SUBMENU = [
-    { title: 'Geral', icon: ArrowLeftRight, subPath: '/transactions' },
-    { title: 'Contas a Pagar', icon: Receipt, subPath: '/bills-to-pay' },
-    { title: 'Contas a Receber', icon: DollarSign, subPath: '/bills-to-receive' },
-    { title: 'Importar Extrato', icon: FileText, subPath: '/import-statements' },
-    { title: 'Conciliação', icon: RefreshCw, subPath: '/reconciliation' },
-];
-
-// Menu Pessoa Física (PF)
-const PF_MENU = [
-    { title: 'Dashboard', icon: Home, path: '/pf' },
-    { title: 'Pessoas', icon: Users, path: '/pf/people' },
-    { title: 'Contas', icon: Building2, path: '/pf/accounts' },
-    { title: 'Cartões', icon: CreditCard, path: '/pf/cards' },
-    {
-        title: 'Transações',
-        icon: ArrowLeftRight,
-        basePath: '/pf',
-        subItems: TRANSACTIONS_SUBMENU
-    },
-];
-
-// Menu Pessoa Jurídica (PJ) - Base
-const PJ_MENU_BASE = (companyId: string) => [
-    { title: 'Dashboard', icon: Home, path: `/pj/${companyId}` },
-    { title: 'Contas', icon: Building2, path: `/pj/${companyId}/accounts` },
-    { title: 'Cartões', icon: CreditCard, path: `/pj/${companyId}/cards` },
-    {
-        title: 'Transações',
-        icon: ArrowLeftRight,
-        basePath: `/pj/${companyId}`,
-        subItems: TRANSACTIONS_SUBMENU
-    },
-];
-
-// Admin submenus
-const adminSubmenus = [
-    { title: 'Geral', icon: Sliders, path: '/admin-general' },
-    { title: 'Categorias', icon: Layers, path: '/categories' },
-    { title: 'Assistente IA', icon: Bot, path: '/chat' },
-    { title: 'Gestão de Usuários', icon: Users, path: '/user-management' },
-    { title: 'Configuração IA', icon: Settings, path: '/ai-admin' },
-    { title: 'Backup e Restauro', icon: Database, path: '/settings' },
-];
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export function OnlifinSidebar() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { logout, user } = useAuth();
     const { state } = useSidebar();
-    const { companies, selectedCompany, selectCompany } = useCompany();
-    const { selectedPerson } = usePerson();
+    const { isPJ, companyId } = useFinanceScope();
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
-    const [userMenuOpen, setUserMenuOpen] = React.useState(false);
-    const [pfOpen, setPfOpen] = React.useState(true);
-    const [pjOpen, setPjOpen] = React.useState(true);
 
-    // Abrir menus automaticamente com base na rota
-    React.useEffect(() => {
-        const currentPath = location.pathname;
-        const newOpenMenus = { ...openMenus };
+    const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
-        if (currentPath.includes('/transactions') ||
-            currentPath.includes('/bills-') ||
-            currentPath.includes('/import-statements') ||
-            currentPath.includes('/reconciliation')) {
-            if (currentPath.startsWith('/pf')) newOpenMenus['pf-transactions'] = true;
-            if (currentPath.startsWith('/pj')) newOpenMenus['pj-transactions'] = true;
+    const menuItems = [
+        { title: 'Painel', icon: Home, path: prefix },
+        { title: 'Contas', icon: Building2, path: `${prefix}/accounts` },
+        { title: 'Cartões', icon: CreditCard, path: `${prefix}/cards` },
+        {
+            title: 'Transações', icon: ArrowLeftRight, path: `${prefix}/transactions`, subItems: [
+                { title: 'Listagem', path: `${prefix}/transactions` },
+                { title: 'Contas a Pagar', path: `${prefix}/bills-to-pay` },
+                { title: 'Contas a Receber', path: `${prefix}/bills-to-receive` }
+            ]
+        },
+        { title: 'Relatórios', icon: FileText, path: '/reports' },
+        { title: 'Previsão Financeira', icon: TrendingUp, path: '/forecast' },
+        {
+            title: 'Administração', icon: Settings, path: '/admin', subItems: [
+                { title: 'Geral', path: '/admin-general' },
+                { title: 'Categorias', path: '/categories' }
+            ]
         }
+    ];
 
-        if (adminSubmenus.some(item => currentPath === item.path)) {
-            newOpenMenus['admin'] = true;
+    const isActive = (path: string) => {
+        if (path === '/pf' || path === `/pj/${companyId}`) {
+            return location.pathname === path;
         }
-
-        setOpenMenus(newOpenMenus);
-    }, [location.pathname]);
-
-    const toggleMenu = (key: string) => {
-        setOpenMenus(prev => ({ ...prev, [key]: !prev[key] }));
+        return location.pathname.startsWith(path);
     };
 
-    const isActive = (path: string) => location.pathname === path;
-
-    const handleCompanyChange = (companyId: string) => {
-        selectCompany(companyId);
-        // Atualizar rota se estiver em uma página PJ
-        if (location.pathname.startsWith('/pj/')) {
-            const pathParts = location.pathname.split('/');
-            const restOfPath = pathParts.slice(3).join('/');
-            navigate(`/pj/${companyId}${restOfPath ? `/${restOfPath}` : ''}`);
-        }
-    };
-
-    const renderMenuItem = (item: any, basePath: string = '') => {
-        const fullPath = item.path || `${basePath}${item.subPath}`;
-
-        if (item.subItems) {
-            const menuKey = `${basePath.replace(/\//g, '-')}-${item.title.toLowerCase()}`;
-            const isOpen = openMenus[menuKey];
-            const isAnySubActive = item.subItems.some((sub: any) => isActive(`${item.basePath}${sub.subPath}`));
-
-            return (
-                <Collapsible
-                    key={menuKey}
-                    open={isOpen}
-                    onOpenChange={() => toggleMenu(menuKey)}
-                    className="group/collapsible"
-                >
-                    <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                                tooltip={item.title}
-                                isActive={isAnySubActive}
-                            >
-                                <item.icon className="size-4" />
-                                <span>{item.title}</span>
-                                <ChevronDown className={`ml-auto size-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                            </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                            <SidebarMenuSub>
-                                {item.subItems.map((subItem: any) => (
-                                    <SidebarMenuSubItem key={subItem.subPath}>
-                                        <SidebarMenuSubButton
-                                            asChild
-                                            isActive={isActive(`${item.basePath}${subItem.subPath}`)}
-                                        >
-                                            <Link to={`${item.basePath}${subItem.subPath}`}>
-                                                <subItem.icon className="size-4" />
-                                                <span>{subItem.title}</span>
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                ))}
-                            </SidebarMenuSub>
-                        </CollapsibleContent>
-                    </SidebarMenuItem>
-                </Collapsible>
-            );
-        }
-
-        return (
-            <SidebarMenuItem key={fullPath}>
-                <SidebarMenuButton
-                    asChild
-                    isActive={isActive(fullPath)}
-                    tooltip={item.title}
-                >
-                    <Link to={fullPath}>
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-        );
+    const toggleMenu = (title: string) => {
+        setOpenMenus(prev => ({ ...prev, [title]: !prev[title] }));
     };
 
     return (
-        <Sidebar collapsible="icon" className="border-r border-border">
-            <SidebarHeader className="border-b border-border p-4">
-                <div className="flex items-center gap-2">
-                    <div
-                        className="flex size-8 items-center justify-center rounded-md text-primary-foreground shadow-sm transition-colors"
-                        style={{
-                            backgroundColor: location.pathname.startsWith('/pj')
-                                ? (selectedCompany?.color || 'var(--primary)')
-                                : (selectedPerson?.color || 'var(--primary)')
-                        }}
-                    >
-                        <span className="text-lg font-bold">
-                            {location.pathname.startsWith('/pj')
-                                ? (selectedCompany?.nome_fantasia?.[0] || selectedCompany?.razao_social?.[0] || 'O')
-                                : (selectedPerson?.name?.[0] || 'O')}
-                        </span>
+        <Sidebar collapsible="icon" className="border-r-2 border-slate-300 bg-white">
+            <SidebarHeader className="h-20 flex items-center px-6 mb-2">
+                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate(prefix)}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg transition-transform group-hover:scale-105">
+                        <span className="text-xl font-bold">O</span>
                     </div>
                     {state === 'expanded' && (
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-foreground truncate max-w-[150px]">
-                                {location.pathname.startsWith('/pj') && selectedCompany
-                                    ? (selectedCompany.nome_fantasia || selectedCompany.razao_social)
-                                    : 'Onlifin'}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
-                                {location.pathname.startsWith('/pj') && selectedCompany
-                                    ? 'Pessoa Jurídica'
-                                    : 'Personal & Business'}
+                            <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">
+                                OnliFin
                             </span>
                         </div>
                     )}
                 </div>
             </SidebarHeader>
 
-            <SidebarContent>
-                {/* PESSOA FÍSICA */}
-                <Collapsible open={pfOpen} onOpenChange={setPfOpen}>
-                    <SidebarGroup>
-                        <CollapsibleTrigger asChild>
-                            <div className="px-2 py-2 flex items-center justify-between cursor-pointer group">
-                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-                                    Pessoa Física
-                                </span>
-                                {state === 'expanded' && (
-                                    <ChevronDown className={`size-3 text-muted-foreground transition-transform ${pfOpen ? 'rotate-180' : ''}`} />
-                                )}
-                            </div>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                            <SidebarGroupContent>
-                                <SidebarMenu>
-                                    {PF_MENU.map(item => renderMenuItem(item))}
-                                </SidebarMenu>
-                            </SidebarGroupContent>
-                        </CollapsibleContent>
-                    </SidebarGroup>
-                </Collapsible>
+            <SidebarContent className="px-3">
+                <SidebarGroup>
+                    <SidebarMenu className="gap-1.5">
+                        {menuItems.map((item) => {
+                            const isCurrentActive = isActive(item.path);
 
-                {/* PESSOA JURÍDICA */}
-                <Collapsible open={pjOpen} onOpenChange={setPjOpen}>
-                    <SidebarGroup>
-                        <div className="px-2 py-2 flex items-center justify-between">
-                            <CollapsibleTrigger asChild>
-                                <div className="flex items-center gap-1 cursor-pointer group">
-                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">
-                                        Pessoa Jurídica
-                                    </span>
-                                    {state === 'expanded' && (
-                                        <ChevronDown className={`size-3 text-muted-foreground transition-transform ${pjOpen ? 'rotate-180' : ''}`} />
-                                    )}
-                                </div>
-                            </CollapsibleTrigger>
-                            {state === 'expanded' && (
-                                <Link to="/companies" className="text-[10px] text-primary hover:underline px-2">
-                                    Gerenciar
-                                </Link>
-                            )}
-                        </div>
-                        <CollapsibleContent>
-                            <SidebarGroupContent>
-                                <SidebarMenu>
-                                    {companies.length > 0 ? (
-                                        <>
-                                            {/* Seletor de Empresa na Sidebar */}
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <div className="px-3 py-3 mb-4 bg-primary text-primary-foreground rounded-lg mx-2 cursor-pointer transition-all hover:brightness-110 shadow-md group">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div
-                                                                        className="h-2 w-2 rounded-full border border-white/40 shadow-sm"
-                                                                        style={{ backgroundColor: selectedCompany?.color || '#ffffff' }}
-                                                                    />
-                                                                    <p className="text-xs font-black uppercase tracking-tight truncate">
-                                                                        {selectedCompany?.nome_fantasia || selectedCompany?.razao_social || 'Selecionar Empresa'}
-                                                                    </p>
-                                                                </div>
-                                                                {selectedCompany && (
-                                                                    <p className="text-[10px] opacity-80 truncate">{selectedCompany.cnpj}</p>
-                                                                )}
-                                                            </div>
-                                                            <ChevronRight className="size-4 opacity-80 group-hover:opacity-100 transition-all ml-2" />
-                                                        </div>
-                                                    </div>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="start" className="w-[240px] z-[9999]">
-                                                    <DropdownMenuLabel className="text-xs">Minhas Empresas</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    {companies.map(company => (
-                                                        <DropdownMenuItem
-                                                            key={company.id}
-                                                            onClick={() => handleCompanyChange(company.id)}
-                                                            className="flex items-center justify-between text-xs cursor-pointer"
-                                                        >
-                                                            <div className="flex items-center gap-2 truncate pr-2">
-                                                                <div
-                                                                    className="h-2 w-2 rounded-full border border-border shrink-0"
-                                                                    style={{ backgroundColor: company.color || '#10b981' }}
-                                                                />
-                                                                <div className="flex flex-col truncate">
-                                                                    <span className="font-medium truncate">{company.nome_fantasia || company.razao_social}</span>
-                                                                    <span className="text-[10px] text-muted-foreground">{company.cnpj}</span>
-                                                                </div>
-                                                            </div>
-                                                            {selectedCompany?.id === company.id && (
-                                                                <Check className="size-3 text-primary ml-auto" />
-                                                            )}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem asChild>
-                                                        <Link to="/companies" className="flex items-center gap-2 cursor-pointer text-xs">
-                                                            <Plus className="size-3" />
-                                                            Adicionar Empresa
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-
-                                            {selectedCompany && PJ_MENU_BASE(selectedCompany.id).map(item => renderMenuItem(item))}
-                                        </>
-                                    ) : (
+                            if (item.subItems) {
+                                const isSubActive = item.subItems.some(sub => location.pathname === sub.path);
+                                return (
+                                    <Collapsible
+                                        key={item.title}
+                                        open={openMenus[item.title] || isSubActive}
+                                        onOpenChange={() => toggleMenu(item.title)}
+                                    >
                                         <SidebarMenuItem>
-                                            <SidebarMenuButton asChild tooltip="Selecionar Empresa">
-                                                <Link to="/companies">
-                                                    <Building2 className="size-4" />
-                                                    <span>Selecionar Empresa</span>
-                                                </Link>
-                                            </SidebarMenuButton>
+                                            <CollapsibleTrigger asChild>
+                                                <SidebarMenuButton
+                                                    tooltip={item.title}
+                                                    className={`h-11 rounded-xl transition-all ${isSubActive || openMenus[item.title] ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                                                >
+                                                    <item.icon className="h-5 w-5" />
+                                                    <span className="font-semibold text-sm">{item.title}</span>
+                                                    <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${openMenus[item.title] ? 'rotate-180' : ''}`} />
+                                                </SidebarMenuButton>
+                                            </CollapsibleTrigger>
+                                            <CollapsibleContent>
+                                                <SidebarMenuSub className="ml-4 pl-4 border-l border-slate-100 space-y-1 mt-1">
+                                                    {item.subItems.map((subItem) => (
+                                                        <SidebarMenuSubItem key={subItem.title}>
+                                                            <SidebarMenuSubButton asChild isActive={location.pathname === subItem.path}>
+                                                                <Link to={subItem.path} className="font-medium text-xs py-2 h-auto">
+                                                                    {subItem.title}
+                                                                </Link>
+                                                            </SidebarMenuSubButton>
+                                                        </SidebarMenuSubItem>
+                                                    ))}
+                                                </SidebarMenuSub>
+                                            </CollapsibleContent>
                                         </SidebarMenuItem>
-                                    )}
-                                </SidebarMenu>
-                            </SidebarGroupContent>
-                        </CollapsibleContent>
-                    </SidebarGroup>
-                </Collapsible>
+                                    </Collapsible>
+                                );
+                            }
 
-                {/* ADMIN */}
-                <SidebarGroup className="mt-auto">
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            <Collapsible
-                                open={openMenus['admin']}
-                                onOpenChange={() => toggleMenu('admin')}
-                                className="group/collapsible"
-                            >
-                                <SidebarMenuItem>
-                                    <CollapsibleTrigger asChild>
-                                        <SidebarMenuButton
-                                            tooltip="Ajustes e IA"
-                                            isActive={adminSubmenus.some(item => isActive(item.path))}
-                                        >
-                                            <Settings className="size-4" />
-                                            <span>Ajustes e IA</span>
-                                            <ChevronDown className={`ml-auto size-4 transition-transform ${openMenus['admin'] ? 'rotate-180' : ''}`} />
-                                        </SidebarMenuButton>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent>
-                                        <SidebarMenuSub>
-                                            {adminSubmenus.map((subItem) => (
-                                                <SidebarMenuSubItem key={subItem.path}>
-                                                    <SidebarMenuSubButton
-                                                        asChild
-                                                        isActive={isActive(subItem.path)}
-                                                    >
-                                                        <Link to={subItem.path}>
-                                                            <subItem.icon className="size-4" />
-                                                            <span>{subItem.title}</span>
-                                                        </Link>
-                                                    </SidebarMenuSubButton>
-                                                </SidebarMenuSubItem>
-                                            ))}
-                                        </SidebarMenuSub>
-                                    </CollapsibleContent>
+                            return (
+                                <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        tooltip={item.title}
+                                        className={`h-11 rounded-xl transition-all ${isCurrentActive ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                                    >
+                                        <Link to={item.path} className="flex items-center gap-3">
+                                            <item.icon className="h-5 w-5" />
+                                            <span className="font-bold text-sm">{item.title}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            </Collapsible>
-                        </SidebarMenu>
-                    </SidebarGroupContent>
+                            );
+                        })}
+                    </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-border relative">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            className="cursor-pointer w-full"
-                            onClick={() => setUserMenuOpen(!userMenuOpen)}
-                        >
-                            <User className="size-4" />
-                            <span className="flex-1 truncate text-left">
-                                {user?.email || 'Usuário'}
-                            </span>
-                            {userMenuOpen ? (
-                                <ChevronDown className="ml-auto size-4" />
-                            ) : (
-                                <ChevronUp className="ml-auto size-4" />
-                            )}
-                        </SidebarMenuButton>
-
-                        {userMenuOpen && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-popover border border-border rounded-lg shadow-lg p-2 z-[9999]">
-                                <Link
-                                    to="/user-management"
-                                    onClick={() => setUserMenuOpen(false)}
-                                >
-                                    <Button
-                                        variant="ghost"
-                                        className="w-full justify-start gap-2"
-                                    >
-                                        <User className="size-4" />
-                                        Perfil
-                                    </Button>
-                                </Link>
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => {
-                                        setUserMenuOpen(false);
-                                        logout();
-                                    }}
-                                >
-                                    <LogOut className="size-4" />
-                                    Sair
-                                </Button>
-                                <div className="text-xs text-muted-foreground text-center pt-2 border-t mt-1">
-                                    v{APP_VERSION}
-                                </div>
-                            </div>
-                        )}
-                    </SidebarMenuItem>
-                </SidebarMenu>
+            <SidebarFooter className="p-4 border-t-2 border-slate-300/40 mt-auto">
+                <div className="flex items-center gap-3 px-2">
+                    <Avatar className="h-10 w-10 border border-slate-200">
+                        <AvatarFallback className="bg-slate-100 text-blue-600 font-bold">AF</AvatarFallback>
+                    </Avatar>
+                    {state === 'expanded' && (
+                        <div className="flex-1 min-w-0 mr-2">
+                            <p className="text-sm font-bold text-slate-900 truncate">{user?.email?.split('@')[0] || 'alfreire'}</p>
+                            <p className="text-xs text-slate-500 font-medium truncate uppercase tracking-wider">Admin</p>
+                        </div>
+                    )}
+                    <Button variant="ghost" size="icon" className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => logout()}>
+                        <LogOut className="h-5 w-5" />
+                    </Button>
+                </div>
             </SidebarFooter>
         </Sidebar>
     );

@@ -143,17 +143,21 @@ export default function AIAssistant() {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-2xl shadow-2xl z-50 glass group transition-all duration-300 hover:scale-110 hover:shadow-primary/20"
           size="icon"
         >
-          <MessageCircle className="h-6 w-6" />
+          <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-pulse group-hover:bg-primary/40" />
+          <MessageCircle className="h-6 w-6 text-foreground relative z-10" />
         </Button>
       )}
 
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl flex flex-col z-50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 shrink-0">
-            <CardTitle className="text-lg">Assistente Financeiro IA</CardTitle>
+        <Card className="fixed bottom-6 right-6 w-[400px] h-[650px] shadow-2xl flex flex-col z-50 glass-card premium-card border-white/10 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 shrink-0 bg-primary/5 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="size-2 rounded-full bg-primary animate-pulse" />
+              <CardTitle className="text-sm font-black tracking-widest uppercase">Assistente IA</CardTitle>
+            </div>
             <div className="flex gap-1">
               <Button
                 variant="ghost"
@@ -161,6 +165,7 @@ export default function AIAssistant() {
                 onClick={handleNewConversation}
                 title="Nova conversa"
                 disabled={isLoading}
+                className="hover:bg-primary/20 rounded-xl"
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
@@ -169,57 +174,58 @@ export default function AIAssistant() {
                 size="icon"
                 onClick={handleClose}
                 title="Fechar"
+                className="hover:bg-destructive/20 rounded-xl"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+          <CardContent className="flex-1 flex flex-col p-0 min-h-0 bg-transparent">
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto px-4 py-4"
-              style={{ maxHeight: 'calc(600px - 140px)' }}
+              className="flex-1 overflow-y-auto px-6 py-6"
+              style={{ maxHeight: 'calc(650px - 140px)' }}
             >
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {messages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-lg px-4 py-2 ${msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground font-medium rounded-tr-none'
+                        : 'bg-white/5 border border-white/10 text-foreground font-medium rounded-tl-none backdrop-blur-sm'
                         }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg px-4 py-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex justify-start animate-pulse">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none px-4 py-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     </div>
                   </div>
                 )}
               </div>
             </div>
-            <div className="p-4 border-t shrink-0 bg-background">
-              <div className="flex gap-2">
+            <div className="p-4 border-t border-white/5 shrink-0 bg-white/5 backdrop-blur-3xl">
+              <div className="flex gap-2 bg-background/50 p-1 rounded-2xl border border-white/10 ring-offset-background focus-within:ring-2 focus-within:ring-primary/50 transition-all">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Digite sua mensagem..."
+                  placeholder="Pergunte qualquer coisa..."
                   disabled={isLoading}
-                  className="flex-1"
+                  className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm font-medium"
                 />
                 <Button
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
                   size="icon"
-                  className="shrink-0"
+                  className="shrink-0 rounded-xl shadow-lg bg-primary hover:scale-105 transition-transform"
                 >
                   <Send className="h-4 w-4" />
                 </Button>

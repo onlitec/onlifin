@@ -1,5 +1,4 @@
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, Clock } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
 
 interface BalanceCardsProps {
     totalBalance: number;
@@ -20,85 +19,76 @@ export function BalanceCards({
     totalBalance,
     monthlyIncome,
     monthlyExpenses,
-    savingsRate,
-    pendingToReceive = 0
+    savingsRate
 }: BalanceCardsProps) {
-    const savings = monthlyIncome - monthlyExpenses;
-
     const cards = [
         {
             title: 'Saldo Total',
             value: totalBalance,
-            subtitle: 'Saldo atual das contas',
+            subtitle: 'Todas as contas',
             icon: Wallet,
-            iconBg: 'bg-blue-500',
-            iconColor: 'text-white'
+            iconColor: 'text-slate-400',
+            valueColor: 'text-slate-900',
+            labelColor: 'text-slate-500'
         },
         {
-            title: 'Receitas Confirmadas',
+            title: 'Receitas do Mês',
             value: monthlyIncome,
-            subtitle: 'Receitas recebidas no mês',
+            subtitle: 'Entradas confirmadas',
             icon: TrendingUp,
-            iconBg: 'bg-green-500',
-            iconColor: 'text-white'
+            iconColor: 'text-emerald-500',
+            valueColor: 'text-emerald-600',
+            labelColor: 'text-emerald-500/80'
         },
         {
-            title: 'A Receber',
-            value: pendingToReceive,
-            subtitle: 'Contas pendentes',
-            icon: Clock,
-            iconBg: 'bg-amber-500',
-            iconColor: 'text-white'
-        },
-        {
-            title: 'Despesas',
+            title: 'Despesas do Mês',
             value: monthlyExpenses,
-            subtitle: 'Gastos do mês',
+            subtitle: 'Saídas confirmadas',
             icon: TrendingDown,
-            iconBg: 'bg-red-500',
-            iconColor: 'text-white'
+            iconColor: 'text-red-500',
+            valueColor: 'text-red-600',
+            labelColor: 'text-red-500/80'
         },
         {
-            title: 'Poupança',
-            value: savings,
-            subtitle: `Taxa: ${savingsRate.toFixed(1)}%`,
+            title: 'Taxa de Poupança',
+            value: savingsRate,
+            subtitle: 'Do total de receitas',
+            isPercentage: true,
             icon: PiggyBank,
-            iconBg: 'bg-purple-500',
-            iconColor: 'text-white'
+            iconColor: 'text-slate-400',
+            valueColor: 'text-slate-900',
+            labelColor: 'text-slate-400'
         }
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {cards.map((card, index) => {
                 const Icon = card.icon;
-                const isNegative = card.value < 0;
 
                 return (
-                    <Card
+                    <div
                         key={index}
-                        className="hover:shadow-md transition-shadow"
+                        className="premium-card p-8 flex flex-col justify-between min-h-[180px] shadow-sm group"
                     >
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-xs text-muted-foreground font-medium">{card.title}</span>
-                                <div className={`p-1.5 rounded-lg ${card.iconBg}`}>
-                                    <Icon className={`h-4 w-4 ${card.iconColor}`} />
-                                </div>
-                            </div>
-                            <div className="space-y-0.5">
-                                <h3 className={`text-xl font-bold ${isNegative ? 'text-red-500' : 'text-foreground'}`}>
-                                    {formatCurrency(card.value)}
-                                </h3>
-                                <p className="text-xs text-muted-foreground">
-                                    {card.subtitle}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        <div className="flex items-start justify-between mb-8">
+                            <span className="text-sm font-bold text-slate-500">
+                                {card.title}
+                            </span>
+                            <Icon className={`h-5 w-5 ${card.iconColor}`} />
+                        </div>
+
+                        <div className="space-y-1">
+                            <h3 className={`text-3xl font-bold tracking-tight ${card.valueColor}`}>
+                                {card.isPercentage ? `${card.value.toFixed(1)}%` : formatCurrency(card.value)}
+                            </h3>
+                            <p className="text-xs font-medium text-slate-400">
+                                {card.subtitle}
+                            </p>
+                        </div>
+                    </div>
                 );
             })}
         </div>
     );
 }
-

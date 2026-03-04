@@ -4,7 +4,7 @@
  * Dropdown para selecionar a pessoa ativa no contexto PF.
  */
 
-import { User, ChevronDown, Plus, Check } from 'lucide-react';
+import { User, ChevronDown, Plus } from 'lucide-react';
 import { usePerson } from '@/contexts/PersonContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,61 +53,60 @@ export function PersonSelector({
                 <Button
                     variant={variant}
                     size={size}
-                    className={cn("gap-2 justify-between min-w-[180px]", className)}
+                    className={cn("gap-2 justify-between min-w-[180px] glass-card shadow-lg hover:bg-white/10 transition-all border-white/10", className)}
                 >
                     <div className="flex items-center gap-2 truncate">
                         {selectedPerson?.color ? (
                             <div
-                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
+                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-[0_0_8px_rgba(var(--primary),0.5)]"
                                 style={{ backgroundColor: selectedPerson.color }}
                             />
                         ) : (
-                            <User className="h-4 w-4 shrink-0" />
+                            <User className="h-4 w-4 shrink-0 opacity-70" />
                         )}
-                        <span className="truncate">
+                        <span className="truncate font-black tracking-tighter uppercase text-[10px]">
                             {currentName}
                         </span>
                     </div>
-                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                    <ChevronDown className="h-3 w-3 shrink-0 opacity-30" />
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="start" className="w-60">
-                <DropdownMenuLabel>Membros da Família</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+            <DropdownMenuContent align="start" className="w-64 glass-card premium-card border-white/10 backdrop-blur-2xl p-2">
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 px-2">Family Members</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/5 mx--2" />
 
-                {people.map((person) => (
-                    <DropdownMenuItem
-                        key={person.id}
-                        className={cn(
-                            "flex items-center gap-2 cursor-pointer",
-                            selectedPerson?.id === person.id && "bg-accent"
-                        )}
-                        onClick={() => selectPerson(person.id)}
-                    >
-                        <div
-                            className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
-                            style={{ backgroundColor: person.color || '#10b981' }}
-                        />
-                        <span className="font-medium truncate flex-1">
-                            {person.name}
-                        </span>
-                        {/* {person.is_default && (
-                             <Badge variant="secondary" className="text-[10px] h-4">Padrão</Badge>
-                        )} */}
-                        {selectedPerson?.id === person.id && (
-                            <Check className="h-4 w-4 text-primary" />
-                        )}
-                    </DropdownMenuItem>
-                ))}
+                <div className="space-y-1 mt-1">
+                    {people.map((person) => (
+                        <DropdownMenuItem
+                            key={person.id}
+                            className={cn(
+                                "flex items-center gap-3 cursor-pointer rounded-xl transition-all duration-200 py-2.5 px-3 hover:bg-white/5",
+                                selectedPerson?.id === person.id && "bg-primary/10 border-white/5 shadow-inner"
+                            )}
+                            onClick={() => selectPerson(person.id)}
+                        >
+                            <div
+                                className="h-4 w-4 rounded-full shrink-0 border-2 border-white/10 shadow-lg transition-transform group-hover:scale-110"
+                                style={{ backgroundColor: person.color || '#10b981' }}
+                            />
+                            <span className="font-bold tracking-tight truncate flex-1 text-sm uppercase">
+                                {person.name}
+                            </span>
+                            {selectedPerson?.id === person.id && (
+                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                            )}
+                        </DropdownMenuItem>
+                    ))}
+                </div>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-white/5 mx--2 mt-2" />
                 <DropdownMenuItem
-                    className="cursor-pointer"
+                    className="cursor-pointer mt-1 rounded-xl py-2.5 px-3 hover:bg-primary/20 text-primary transition-colors font-bold uppercase text-[10px] tracking-widest"
                     onClick={() => navigate('/pf/people')}
                 >
                     <Plus className="h-4 w-4 mr-2" />
-                    <span>Gerenciar Pessoas</span>
+                    <span>Manage Family</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

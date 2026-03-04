@@ -14,7 +14,6 @@ const THEME_STORAGE_KEY = 'onlifin-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = React.useState<Theme>(() => {
-        // Check localStorage first
         if (typeof window !== 'undefined') {
             const stored = localStorage.getItem(THEME_STORAGE_KEY);
             if (stored === 'light' || stored === 'dark') {
@@ -25,7 +24,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 return 'dark';
             }
         }
-        return 'dark'; // Default to dark
+        return 'light'; // Default to light
     });
 
     React.useEffect(() => {

@@ -27,7 +27,7 @@ import SettingsPage from './pages/Settings';
 interface RouteConfig {
   name: string;
   path: string;
-  element: React.ReactNode;
+  element?: React.ReactNode;
   visible?: boolean;
   children?: RouteConfig[];
 }
@@ -47,7 +47,6 @@ const routes: RouteConfig[] = [
   {
     name: 'Pessoa Física',
     path: '/pf',
-    element: <Dashboard />,
     visible: true,
     children: [
       { name: 'Dashboard PF', path: '/pf', element: <Dashboard />, visible: true },
@@ -68,7 +67,6 @@ const routes: RouteConfig[] = [
   {
     name: 'Pessoa Jurídica',
     path: '/pj/:companyId',
-    element: <Dashboard />,
     visible: true,
     children: [
       { name: 'Dashboard PJ', path: '/pj/:companyId', element: <Dashboard />, visible: true },
@@ -111,8 +109,7 @@ const routes: RouteConfig[] = [
   {
     name: 'Admin',
     path: '/admin',
-    element: <UserManagement />,
-    visible: false, // Hidden from navigation - rendered manually in Header for admin users
+    visible: false,
     children: [
       {
         name: 'Geral',

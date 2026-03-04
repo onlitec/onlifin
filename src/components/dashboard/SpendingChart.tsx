@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface MonthlyData {
@@ -22,20 +21,26 @@ const formatCurrency = (value: number) => {
 const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
-                <p className="text-sm text-muted-foreground mb-2">{payload[0].payload.month}</p>
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-xs text-muted-foreground">Renda:</span>
-                        <span className="text-sm font-semibold text-green-500">
+            <div className="bg-white shadow-xl border border-slate-100 rounded-2xl p-4 min-w-[140px] space-y-3">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50 pb-2">
+                    {payload[0].payload.month}
+                </p>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="text-xs font-semibold text-slate-500">Receitas</span>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-600">
                             {formatCurrency(payload[0].value)}
                         </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                        <span className="text-xs text-muted-foreground">Despesa:</span>
-                        <span className="text-sm font-semibold text-red-500">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            <span className="text-xs font-semibold text-slate-500">Despesas</span>
+                        </div>
+                        <span className="text-xs font-bold text-red-600">
                             {formatCurrency(payload[1].value)}
                         </span>
                     </div>
@@ -48,69 +53,72 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function SpendingChart({ data }: SpendingChartProps) {
     return (
-        <Card className="h-full">
-            <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-semibold">Visão geral dos gastos</CardTitle>
-                    <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                            <span className="text-sm text-muted-foreground">Renda</span>
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                            <span className="text-sm text-muted-foreground">Despesa</span>
-                        </span>
+        <div className="glass-card premium-card p-10 h-full flex flex-col gap-8">
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-slate-900">Evolução Mensal</h3>
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Performance Fiscal</p>
+                </div>
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Receitas</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Despesas</span>
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            </div>
+
+            <div className="flex-1 w-full min-h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                             <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
                                 <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.15} />
                                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.2} vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                         <XAxis
                             dataKey="month"
                             axisLine={false}
                             tickLine={false}
-                            className="text-muted-foreground"
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                            dy={10}
+                            tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: '700' }}
+                            dy={15}
                         />
                         <YAxis
-                            hide
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: '700' }}
                         />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#e2e8f0' }} />
                         <Area
                             type="monotone"
                             dataKey="income"
                             stroke="#10b981"
-                            strokeWidth={2}
+                            strokeWidth={3}
                             fill="url(#incomeGradient)"
-                            dot={{ fill: '#10b981', r: 4, strokeWidth: 0 }}
-                            activeDot={{ r: 6, strokeWidth: 0 }}
+                            dot={{ fill: '#fff', r: 4, strokeWidth: 2, stroke: '#10b981' }}
+                            activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }}
                         />
                         <Area
                             type="monotone"
                             dataKey="expenses"
                             stroke="#ef4444"
-                            strokeWidth={2}
+                            strokeWidth={3}
                             fill="url(#expenseGradient)"
-                            dot={{ fill: '#ef4444', r: 4, strokeWidth: 0 }}
-                            activeDot={{ r: 6, strokeWidth: 0 }}
+                            dot={{ fill: '#fff', r: 4, strokeWidth: 2, stroke: '#ef4444' }}
+                            activeDot={{ r: 6, strokeWidth: 0, fill: '#ef4444' }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

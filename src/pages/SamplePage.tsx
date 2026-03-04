@@ -7,9 +7,9 @@ import PageMeta from "../components/common/PageMeta";
 export default function SamplePage() {
   return (
     <>
-      <PageMeta title="Home" description="Home Page Introduction" />
+      <PageMeta title="Início" description="Introdução da Página Inicial" />
       <div>
-        <h3>This is a sample page</h3>
+        <h3>Esta é uma página de exemplo</h3>
       </div>
     </>
   );

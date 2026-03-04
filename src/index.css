@@ -1,124 +1,74 @@
-/* stylelint-disable */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --radius: 0.5rem;
-    --background: 210 17% 98%;
-    --foreground: 210 24% 16%;
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 210 24% 16%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 24% 16%;
-    --primary: 145 63% 42%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 17% 95%;
-    --secondary-foreground: 210 24% 16%;
-    --muted: 210 17% 95%;
-    --muted-foreground: 210 10% 50%;
-    --accent: 145 63% 42%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 17% 90%;
-    --input: 210 17% 90%;
-    --ring: 210 24% 16%;
-    --chart-1: 145 63% 42%;
-    --chart-2: 210 24% 16%;
-    --chart-3: 200 18% 46%;
-    --chart-4: 145 50% 60%;
-    --chart-5: 210 40% 35%;
-    /* Light mode sidebar - use light colors */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 210 24% 16%;
-    --sidebar-primary: 145 63% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 17% 93%;
-    --sidebar-accent-foreground: 210 24% 16%;
-    --sidebar-border: 210 17% 90%;
-    --sidebar-ring: 145 63% 42%;
-    --success: 145 63% 42%;
-    --success-foreground: 0 0% 100%;
-    --income: 145 63% 42%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 30% 96%;
+    --secondary-foreground: 222 47% 11.2%;
+    --muted: 210 30% 96%;
+    --muted-foreground: 215 20% 45%;
+    --accent: 210 30% 96%;
+    --accent-foreground: 222 47% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 15% 75%;
+    --input: 214.3 15% 75%;
+    --ring: 221 83% 53%;
+    --radius: 1rem;
+
+    --border-strong: 214.3 15% 60%;
+
+    --income: 142 76% 36%;
     --expense: 0 84% 60%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 221.2 83.2% 53.3%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 214.3 15% 82%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    /* New Onlifin Layout Dark Theme - Base Colors */
     --background: 222 47% 11%;
-    /* #0f172a slate-900 */
     --foreground: 210 40% 98%;
-    /* #f1f5f9 slate-100 */
-    --card: 217 32% 24%;
-    /* #1e3a5f blue-900/darker */
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
-    /* #f1f5f9 slate-100 */
-    --popover: 217 32% 24%;
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-
-    /* Accent Colors */
-    --primary: 145 63% 42%;
-    /* Keep primary green */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 47% 18%;
-    /* #1e293b slate-800 */
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 215 19% 35%;
-    /* #475569 slate-600 */
-    --muted-foreground: 217 19% 56%;
-    /* #64748b slate-500 */
-    --accent: 217 91% 60%;
-    /* #3b82f6 blue-500 */
-    --accent-foreground: 0 0% 100%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
 
-    /* Status Colors */
-    --destructive: 0 84% 60%;
-    /* #ef4444 red-500 */
-    --destructive-foreground: 0 0% 100%;
-    --success: 145 63% 42%;
-    --success-foreground: 0 0% 100%;
-
-    /* Borders and Inputs */
-    --border: 215 25% 27%;
-    /* #334155 slate-700 */
-    --input: 215 25% 27%;
-    --ring: 145 63% 42%;
-
-    /* Chart Colors - New theme */
-    --chart-1: 145 63% 42%;
-    /* green - income */
-    --chart-2: 0 84% 60%;
-    /* red - expense */
-    --chart-3: 271 63% 62%;
-    /* purple - savings */
-    --chart-4: 217 91% 60%;
-    /* blue - info */
-    --chart-5: 38 100% 67%;
-    /* yellow - warning */
-
-    /* Sidebar - New theme */
-    --sidebar-background: 222 47% 18%;
-    /* #1e293b slate-800 */
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 145 63% 42%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 32% 28%;
-    /* Hover state */
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 25% 27%;
-    --sidebar-ring: 145 63% 42%;
-
-    /* Financial Colors */
-    --income: 145 63% 42%;
-    /* #10b981 green-500 */
-    --expense: 0 84% 60%;
-    /* #ef4444 red-500 */
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -128,24 +78,119 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Custom scrollbar for dark theme */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold tracking-tight text-foreground;
+  }
+}
+
+@layer components {
+
+  /* Premium SaaS System */
+  .glass {
+    @apply bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm;
   }
 
-  ::-webkit-scrollbar-track {
-    @apply bg-slate-800;
+  .glass-card {
+    @apply bg-white border border-slate-300 shadow-md transition-all duration-300;
   }
 
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slate-600 rounded;
+  .premium-card {
+    @apply rounded-[1.5rem] border border-slate-300 shadow-sm hover:shadow-xl hover:border-slate-400/50 transition-all duration-300 bg-white;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-500;
+  .section-container {
+    @apply bg-white border-2 border-slate-300 rounded-[2.5rem] p-10 shadow-lg relative overflow-hidden;
   }
+
+  .deep-shadow {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  }
+
+  .text-title {
+    @apply text-2xl font-bold tracking-tight text-slate-800;
+  }
+
+  .text-data {
+    @apply font-bold tabular-nums tracking-tight;
+  }
+
+  .btn-elite {
+    @apply bg-primary text-primary-foreground font-bold rounded-xl transition-all hover:brightness-110 active:scale-95 px-6 py-2 shadow-sm;
+  }
+
+  /* Status Tokens */
+  .status-dot {
+    @apply relative flex h-2 w-2 rounded-full;
+  }
+
+  .status-dot-pulse {
+    @apply absolute inline-flex h-full w-full animate-ping rounded-full opacity-75;
+  }
+
+  .status-dot-inner {
+    @apply relative inline-flex h-2 w-2 rounded-full;
+  }
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  /* Strong line utility */
+  .border-strong {
+    @apply border border-slate-400;
+  }
+
+  .border-prominent {
+    @apply border-2 border-slate-300 shadow-sm;
+  }
+}
+
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
 }

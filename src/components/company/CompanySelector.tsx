@@ -5,7 +5,7 @@
  * Exibe nome fantasia ou razão social e CNPJ formatado.
  */
 
-import { Building2, ChevronDown, Plus, Star, Check } from 'lucide-react';
+import { Building2, ChevronDown, Plus, Star } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,7 +54,7 @@ export function CompanySelector({
     // Loading state
     if (isLoadingCompanies) {
         return (
-            <Skeleton className={cn("h-10 w-48", className)} />
+            <Skeleton className={cn("h-10 w-48 rounded-xl", className)} />
         );
     }
 
@@ -63,10 +63,10 @@ export function CompanySelector({
         return (
             <Button
                 variant="outline"
-                className={cn("gap-2", className)}
+                className={cn("gap-2 rounded-xl glass-card border-white/10 hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-widest", className)}
                 onClick={onAddCompany}
             >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3 w-3" />
                 <span>Adicionar Empresa</span>
             </Button>
         );
@@ -78,68 +78,74 @@ export function CompanySelector({
                 <Button
                     variant={variant}
                     size={size}
-                    className={cn("gap-2 justify-between min-w-[200px]", className)}
+                    className={cn("gap-2 justify-between min-w-[200px] glass-card border-white/10 hover:bg-white/5 transition-all", className)}
                 >
                     <div className="flex items-center gap-2 truncate">
                         {selectedCompany?.color ? (
                             <div
-                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
+                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-[0_0_8px_rgba(var(--primary),0.5)]"
                                 style={{ backgroundColor: selectedCompany.color }}
                             />
                         ) : (
-                            <Building2 className="h-4 w-4 shrink-0" />
+                            <Building2 className="h-4 w-4 shrink-0 opacity-70 text-primary" />
                         )}
-                        <span className="truncate">
+                        <span className="truncate font-black tracking-tighter uppercase text-[10px]">
                             {selectedCompany?.nome_fantasia || selectedCompany?.razao_social || 'Selecionar empresa'}
                         </span>
                     </div>
-                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                    <ChevronDown className="h-3 w-3 shrink-0 opacity-30" />
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="start" className="w-72">
-                <DropdownMenuLabel>Empresas</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+            <DropdownMenuContent align="start" className="w-72 glass-card premium-card border-white/10 backdrop-blur-2xl p-2">
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 px-2">Portfolio</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/5 mx--2" />
 
-                {companies.map((company) => (
-                    <DropdownMenuItem
-                        key={company.id}
-                        className={cn(
-                            "flex flex-col items-start gap-1 cursor-pointer",
-                            selectedCompany?.id === company.id && "bg-accent"
-                        )}
-                        onClick={() => selectCompany(company.id)}
-                    >
-                        <div className="flex items-center gap-2 w-full">
-                            <div
-                                className="h-3 w-3 rounded-full shrink-0 border border-white/20 shadow-sm"
-                                style={{ backgroundColor: company.color || '#10b981' }}
-                            />
-                            <span className="font-medium truncate flex-1">
-                                {company.nome_fantasia || company.razao_social}
-                            </span>
-                            {company.is_default && (
-                                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                <div className="space-y-1 mt-1">
+                    {companies.map((company) => (
+                        <DropdownMenuItem
+                            key={company.id}
+                            className={cn(
+                                "flex flex-col items-start gap-0.5 cursor-pointer rounded-xl transition-all duration-200 py-2.5 px-3 hover:bg-white/5 group",
+                                selectedCompany?.id === company.id && "bg-primary/10 border-white/5 shadow-inner"
                             )}
-                            {selectedCompany?.id === company.id && (
-                                <Check className="h-4 w-4 text-primary" />
-                            )}
-                        </div>
-                        <span className="text-xs text-muted-foreground ml-6">
-                            {formatCNPJShort(company.cnpj)}
-                        </span>
-                    </DropdownMenuItem>
-                ))}
+                            onClick={() => selectCompany(company.id)}
+                        >
+                            <div className="flex items-center gap-3 w-full">
+                                <div
+                                    className="h-4 w-4 rounded-full shrink-0 border-2 border-white/10 shadow-lg transition-transform group-hover:scale-110"
+                                    style={{ backgroundColor: company.color || '#10b981' }}
+                                />
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="font-bold tracking-tight truncate text-sm uppercase">
+                                            {company.nome_fantasia || company.razao_social}
+                                        </span>
+                                        {company.is_default && (
+                                            <Star className="h-3 w-3 fill-primary/40 text-primary/40" />
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-tighter block mt-0.5">
+                                        {formatCNPJShort(company.cnpj)}
+                                    </span>
+                                </div>
+                                {selectedCompany?.id === company.id && (
+                                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                )}
+                            </div>
+                        </DropdownMenuItem>
+                    ))}
+                </div>
 
                 {showAddButton && (
                     <>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator className="bg-white/5 mx--2 mt-2" />
                         <DropdownMenuItem
-                            className="cursor-pointer"
+                            className="cursor-pointer mt-1 rounded-xl py-2.5 px-3 hover:bg-primary/20 text-primary transition-colors font-bold uppercase text-[10px] tracking-widest"
                             onClick={onAddCompany}
                         >
                             <Plus className="h-4 w-4 mr-2" />
-                            <span>Adicionar nova empresa</span>
+                            <span>Empower New Business</span>
                         </DropdownMenuItem>
                     </>
                 )}
@@ -159,7 +165,7 @@ export function CompanySelectorCompact({
     const { companies, selectedCompany, isLoadingCompanies, selectCompany } = useCompany();
 
     if (isLoadingCompanies) {
-        return <Skeleton className={cn("h-8 w-8", className)} />;
+        return <Skeleton className={cn("h-8 w-8 rounded-lg", className)} />;
     }
 
     if (companies.length === 0) {
@@ -172,57 +178,69 @@ export function CompanySelectorCompact({
                 <Button
                     variant="ghost"
                     size="icon"
-                    className={cn("h-8 w-8", className)}
+                    className={cn("h-8 w-8 glass-card border-white/5 hover:bg-white/10 transition-all rounded-lg group", className)}
                     title={selectedCompany?.nome_fantasia || selectedCompany?.razao_social}
                 >
-                    <Building2 className="h-4 w-4" />
+                    <Building2 className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                    Empresa ativa
-                </DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-[300px] glass-card premium-card border-white/10 backdrop-blur-2xl p-2">
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 px-2">Active Entity</DropdownMenuLabel>
 
                 {selectedCompany && (
-                    <div className="px-2 py-1.5 mb-2">
-                        <p className="font-medium text-sm truncate">
-                            {selectedCompany.nome_fantasia || selectedCompany.razao_social}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                            {formatCNPJShort(selectedCompany.cnpj)}
-                        </p>
+                    <div className="px-3 py-3 mb-2 bg-primary/10 rounded-xl border border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div
+                                className="size-4 rounded-full border-2 border-white/10 shadow-lg"
+                                style={{ backgroundColor: selectedCompany.color || '#10b981' }}
+                            />
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-sm uppercase tracking-tight truncate leading-none">
+                                    {selectedCompany.nome_fantasia || selectedCompany.razao_social}
+                                </p>
+                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">
+                                    {formatCNPJShort(selectedCompany.cnpj)}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                    Trocar empresa
-                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/5 mx--2" />
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground py-2 px-2 mt-1">Swith Environment</DropdownMenuLabel>
 
-                {companies
-                    .filter(c => c.id !== selectedCompany?.id)
-                    .slice(0, 5)
-                    .map((company) => (
-                        <DropdownMenuItem
-                            key={company.id}
-                            className="cursor-pointer"
-                            onClick={() => selectCompany(company.id)}
-                        >
-                            <span className="truncate">
-                                {company.nome_fantasia || company.razao_social}
-                            </span>
-                            {company.is_default && (
-                                <Badge variant="secondary" className="ml-auto text-xs">
-                                    Padrão
-                                </Badge>
-                            )}
-                        </DropdownMenuItem>
-                    ))}
+                <div className="space-y-1">
+                    {companies
+                        .filter(c => c.id !== selectedCompany?.id)
+                        .slice(0, 5)
+                        .map((company) => (
+                            <DropdownMenuItem
+                                key={company.id}
+                                className="cursor-pointer rounded-xl py-2.5 px-3 hover:bg-white/5 group transition-all"
+                                onClick={() => selectCompany(company.id)}
+                            >
+                                <div className="flex items-center gap-3 w-full">
+                                    <div
+                                        className="size-3 rounded-full opacity-60 group-hover:opacity-100 transition-opacity"
+                                        style={{ backgroundColor: company.color || '#10b981' }}
+                                    />
+                                    <span className="truncate font-bold text-xs uppercase tracking-tight flex-1">
+                                        {company.nome_fantasia || company.razao_social}
+                                    </span>
+                                    {company.is_default && (
+                                        <Badge variant="secondary" className="bg-primary/20 text-primary text-[8px] font-black uppercase border-0">
+                                            Default
+                                        </Badge>
+                                    )}
+                                </div>
+                            </DropdownMenuItem>
+                        ))}
+                </div>
 
                 {companies.length > 6 && (
-                    <DropdownMenuItem className="text-muted-foreground text-xs">
-                        +{companies.length - 6} empresas
+                    <DropdownMenuItem className="text-muted-foreground/50 text-[10px] font-black uppercase tracking-widest justify-center py-2">
+                        +{companies.length - 6} More Entities
                     </DropdownMenuItem>
                 )}
             </DropdownMenuContent>

@@ -125,10 +125,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                 ))
               ) : (
                 <input
-                  placeholder="Please select options..."
+                  placeholder="Selecione as opções..."
                   className="w-full h-full p-1 pr-2 text-sm bg-transparent border-0 outline-hidden appearance-none placeholder:text-gray-800 focus:border-0 focus:outline-hidden focus:ring-0 dark:placeholder:text-white/90"
                   readOnly
-                  value="Please select options..."
+                  value="Selecione as opções..."
                 />
               )}
             </div>
@@ -172,11 +172,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                   onClick={() => handleSelect(option.value)}
                 >
                   <div
-                    className={`relative flex w-full items-center p-2 pl-2 ${
-                      selectedOptions.includes(option.value)
+                    className={`relative flex w-full items-center p-2 pl-2 ${selectedOptions.includes(option.value)
                         ? "bg-primary/10"
                         : ""
-                    }`}
+                      }`}
                   >
                     <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
                       {option.label}

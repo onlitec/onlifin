@@ -2,7 +2,6 @@ import * as React from 'react';
 import { supabase } from '@/db/client';
 import { billsToPayApi, accountsApi, categoriesApi } from '@/db/api';
 import type { BillToPay, Account, Category } from '@/types/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,11 +25,13 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark } from 'lucide-react';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
+import { cn } from '@/lib/utils';
 
 export default function BillsToPay() {
   const { toast } = useToast();
   const [userId, setUserId] = React.useState<string | null>(null);
   const [bills, setBills] = React.useState<BillToPay[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -57,7 +58,7 @@ export default function BillsToPay() {
     initUser();
   }, []);
 
-  const { companyId, isPJ } = useFinanceScope();
+  const { companyId, personId, isPJ } = useFinanceScope();
 
   React.useEffect(() => {
     if (userId) {
@@ -66,6 +67,7 @@ export default function BillsToPay() {
   }, [userId, companyId]);
 
   const loadData = async () => {
+    setLoading(true);
     try {
       const [billsData, accountsData, categoriesData] = await Promise.all([
         billsToPayApi.getAll(userId!, companyId),
@@ -82,6 +84,8 @@ export default function BillsToPay() {
         description: 'Não foi possível carregar os dados',
         variant: 'destructive'
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,7 +133,8 @@ export default function BillsToPay() {
     try {
       const billData = {
         user_id: userId!,
-        company_id: companyId, // Associar ao ID da URL
+        company_id: isPJ ? companyId : null,
+        person_id: !isPJ ? (personId || null) : null,
         description: formData.description,
         amount: Number.parseFloat(formData.amount),
         due_date: formData.due_date,
@@ -234,250 +239,288 @@ export default function BillsToPay() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-8 animate-in fade-in duration-700">
       {/* Header */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
-        <div>
-          <h1 className="text-3xl xl:text-4xl font-bold tracking-tight">
-            Contas a Pagar {isPJ ? 'PJ' : 'PF'}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 pb-2">
+        <div className="space-y-1">
+          <h1 className="text-3xl xl:text-5xl font-black tracking-tighter uppercase">
+            Contas a Pagar <span className="text-primary/50">{isPJ ? 'Empresarial' : 'Pessoal'}</span>
           </h1>
-          <p className="text-muted-foreground mt-1">Gerencie suas despesas {isPJ ? 'empresariais' : 'pessoais'} e compromissos financeiros</p>
+          <p className="text-muted-foreground font-medium uppercase text-xs tracking-[0.2em] opacity-70">
+            Controle suas obrigações financeiras com precisão
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button size="lg" className="w-full xl:w-auto">
+            <Button variant="outline" size="lg" className="w-full xl:w-auto glass border-primary/20 hover:bg-primary/20 text-primary font-black uppercase tracking-widest px-8 h-14 rounded-2xl shadow-xl shadow-primary/10 transition-all hover:scale-105 active:scale-95">
               <Plus className="mr-2 h-5 w-5" />
-              Nova Conta
+              Lançar Nova Conta
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingBill ? 'Editar Conta' : 'Nova Conta a Pagar'}</DialogTitle>
-              <DialogDescription>
-                Registre suas despesas e compromissos financeiros
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição *</Label>
-                <Input
-                  id="description"
-                  placeholder="Ex: Aluguel, Conta de luz..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+          <DialogContent className="max-w-2xl glass-card premium-card border-white/10 backdrop-blur-3xl overflow-hidden rounded-3xl p-0">
+            <div className="p-8 space-y-6">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-black tracking-tighter uppercase">
+                  {editingBill ? 'Modificar Obrigação' : 'Novo Compromisso Financeiro'}
+                </DialogTitle>
+                <DialogDescription className="text-xs uppercase tracking-widest font-bold opacity-60">
+                  Precisão em cada registro define a soberania financeira
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Valor *</Label>
+                  <Label htmlFor="description" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Descrição da Obrigação</Label>
                   <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    id="description"
+                    className="glass-card border-white/5 h-12 rounded-xl px-4 font-medium"
+                    placeholder="Ex: Aluguel do Escritório..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     required
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="amount" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Valor do Capital</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-50" />
+                      <Input
+                        id="amount"
+                        type="number"
+                        step="0.01"
+                        className="glass-card border-white/5 h-12 rounded-xl pl-10 pr-4 font-black text-lg"
+                        placeholder="0.00"
+                        value={formData.amount}
+                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="due_date" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Data de Vencimento</Label>
+                    <Input
+                      id="due_date"
+                      type="date"
+                      className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
+                      value={formData.due_date}
+                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Domínio/Categoria</Label>
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                    >
+                      <SelectTrigger className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold">
+                        <SelectValue placeholder="Selecionar Domínio..." />
+                      </SelectTrigger>
+                      <SelectContent className="glass-card premium-card border-white/10">
+                        <SelectItem value="none">Indefinido</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.icon} {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="account" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Fonte de Recursos</Label>
+                    <Select
+                      value={formData.account_id}
+                      onValueChange={(value) => setFormData({ ...formData, account_id: value })}
+                    >
+                      <SelectTrigger className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold">
+                        <SelectValue placeholder="Selecionar Conta..." />
+                      </SelectTrigger>
+                      <SelectContent className="glass-card premium-card border-white/10">
+                        <SelectItem value="none">Fonte Indefinida</SelectItem>
+                        {accounts.map((acc) => (
+                          <SelectItem key={acc.id} value={acc.id}>
+                            {acc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="due_date">Data de Vencimento *</Label>
-                  <Input
-                    id="due_date"
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                    required
+                  <Label htmlFor="notes" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Inteligência Estratégica/Notas</Label>
+                  <Textarea
+                    id="notes"
+                    className="glass-card border-white/5 rounded-xl px-4 py-3 font-medium min-h-[100px]"
+                    placeholder="Contexto adicional para esta obrigação..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    rows={3}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select
-                    value={formData.category_id}
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem categoria</SelectItem>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="ghost" className="rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest" onClick={() => setIsDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button variant="outline" type="submit" className="glass border-primary/20 text-primary font-black uppercase tracking-widest px-8 h-12 rounded-xl">
+                    {editingBill ? 'Salvar Alterações' : 'Confirmar Registro'}
+                  </Button>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="account">Conta</Label>
-                  <Select
-                    value={formData.account_id}
-                    onValueChange={(value) => setFormData({ ...formData, account_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem conta</SelectItem>
-                      {accounts.map((acc) => (
-                        <SelectItem key={acc.id} value={acc.id}>
-                          {acc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Informações adicionais..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  {editingBill ? 'Atualizar' : 'Criar'} Conta
-                </Button>
-              </div>
-            </form>
+              </form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-        <Card className="border-2 border-yellow-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-            <AlertCircle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-500">{pendingBills.length}</div>
-            <p className="text-xs text-muted-foreground">
-              R$ {pendingBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-card premium-card border-yellow-400 p-8 rounded-3xl space-y-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <AlertCircle className="h-24 w-24 text-yellow-500 -mr-8 -mt-8" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-600">Passivo: Pendente</span>
+          <p className="text-3xl font-black tracking-tighter">
+            R$ {pendingBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">
+            <span>{pendingBills.length} Itens ativos</span>
+          </div>
+        </div>
 
-        <Card className="border-2 border-red-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-500">{overdueBills.length}</div>
-            <p className="text-xs text-muted-foreground">
-              R$ {overdueBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="glass-card premium-card border-red-400 p-8 rounded-3xl space-y-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <AlertCircle className="h-24 w-24 text-red-500 -mr-8 -mt-8" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Risco: Atrasado</span>
+          <p className="text-3xl font-black tracking-tighter text-red-500">
+            R$ {overdueBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">
+            <span>{overdueBills.length} Itens críticos</span>
+          </div>
+        </div>
 
-        <Card className="border-2 border-green-500">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pagas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500">{paidBills.length}</div>
-            <p className="text-xs text-muted-foreground">
-              R$ {paidBills.reduce((sum, b) => sum + b.amount, 0).toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="glass-card premium-card border-emerald-400 p-8 rounded-3xl space-y-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <CheckCircle className="h-24 w-24 text-green-500 -mr-8 -mt-8" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Tesouraria: Liquidado</span>
+          <p className="text-3xl font-black tracking-tighter text-green-500">
+            R$ {paidBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">
+            <span>{paidBills.length} Itens processados</span>
+          </div>
+        </div>
       </div>
 
-      {/* Bills List */}
-      <div className="rounded-lg border-2 border-white/40 bg-card overflow-hidden">
-        {bills.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10">
-            <DollarSign className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-base font-medium mb-1">Nenhuma conta cadastrada</p>
-            <p className="text-sm text-muted-foreground">
-              Comece adicionando suas contas a pagar
+      {/* Bills List List */}
+      <div className="glass-card premium-card border-slate-300 rounded-3xl overflow-hidden shadow-2xl">
+        {loading ? (
+          <div className="p-12 space-y-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-6 animate-pulse">
+                <div className="w-14 h-14 bg-white/5 rounded-2xl" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-white/10 rounded w-1/3" />
+                  <div className="h-2 bg-white/5 rounded w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : bills.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 px-4 bg-white/[0.02]">
+            <div className="relative group mb-6">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transition-all group-hover:bg-primary/30" />
+              <Landmark className="h-16 w-16 text-primary relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
+            </div>
+            <p className="text-xl font-black uppercase tracking-tighter mb-2">Zero Compromissos Fiscais</p>
+            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
+              Seu horizonte financeiro está atualmente livre de obrigações pendentes.
             </p>
           </div>
         ) : (
-          bills.map((bill) => (
-            <div key={bill.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors border-b border-white/20 last:border-b-0">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="p-1.5 rounded-full bg-expense/10">
-                  <DollarSign className="h-4 w-4 text-expense" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm truncate">{bill.description}</p>
-                    {getStatusBadge(bill.status)}
+          <div className="divide-y divide-white/5">
+            {bills.map((bill) => (
+              <div key={bill.id} className="flex items-center justify-between p-6 hover:bg-white/[0.03] transition-all duration-300 group">
+                <div className="flex items-center gap-6 flex-1 min-w-0">
+                  <div className={cn(
+                    "p-4 rounded-2xl transition-all shadow-lg",
+                    bill.status === 'paid' ? "bg-green-500/10 text-green-500" :
+                      bill.status === 'overdue' ? "bg-red-500/10 text-red-500" :
+                        "bg-primary/10 text-primary"
+                  )}>
+                    <DollarSign className="h-6 w-6" />
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(bill.due_date)}
-                    </span>
-                    {bill.account_id && (
-                      <span className="flex items-center gap-1">
-                        <Landmark className="h-3 w-3" />
-                        {accounts.find(a => a.id === bill.account_id)?.name || 'Conta'}
-                      </span>
-                    )}
-                    <span className="font-medium text-expense">
-                      R$ {bill.amount.toFixed(2)}
-                    </span>
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      <p className="font-black text-lg tracking-tighter uppercase leading-none">{bill.description}</p>
+                      {getStatusBadge(bill.status)}
+                    </div>
+                    <div className="flex items-center gap-6 flex-wrap">
+                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                        <Calendar className="h-3 w-3" />
+                        Vencimento <span>{formatDate(bill.due_date)}</span>
+                      </div>
+                      {bill.account_id && (
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                          <Landmark className="h-3 w-3" />
+                          {accounts.find(a => a.id === bill.account_id)?.name || 'Conta'}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-30 text-muted-foreground">Capital</span>
+                        <span className="font-black text-lg tracking-tight text-expense">
+                          R$ {bill.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-1">
-                {bill.status === 'pending' && (
+                <div className="flex gap-2 items-center opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                  {bill.status === 'pending' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-12 w-12 rounded-xl bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:scale-110 transition-all"
+                      onClick={() => handleMarkAsPaid(bill)}
+                      title="Pagar Agora"
+                    >
+                      <CheckCircle className="h-5 w-5" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleMarkAsPaid(bill)}
-                    title="Marcar como paga"
+                    className="h-12 w-12 rounded-xl bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground hover:scale-110 transition-all"
+                    onClick={() => openEditDialog(bill)}
+                    title="Ajustar Lógica"
                   >
-                    <CheckCircle className="h-3.5 w-3.5" />
+                    <Pencil className="h-5 w-5" />
                   </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => openEditDialog(bill)}
-                  title="Editar"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => handleDelete(bill)}
-                  title="Excluir"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-12 w-12 rounded-xl bg-red-500/5 text-red-500/40 hover:bg-red-500/20 hover:text-red-500 hover:scale-110 transition-all"
+                    onClick={() => handleDelete(bill)}
+                    title="Excluir Registro"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>

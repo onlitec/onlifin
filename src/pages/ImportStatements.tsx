@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles, History, X, Pencil, Activity } from 'lucide-react';
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import type { Category, Account, Transaction } from '@/types/types';
-import { accountsApi } from '@/db/api';
+import { accountsApi, categoriesApi } from '@/db/api';
 import { categorizeTransactionsWithAI } from '@/services/ollamaService';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 
