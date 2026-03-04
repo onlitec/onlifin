@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.21.0] - 2026-03-04
+
+### feat: tradução completa e correção de contraste nos botões da interface
+
+---
+
+
+
 ## [1.20.2] - 2026-02-11
 
 ### fix(security): restrict people RLS and cleanup duplicate titulars
