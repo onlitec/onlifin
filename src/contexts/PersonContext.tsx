@@ -171,24 +171,31 @@ export function PersonProvider({ children }: PersonProviderProps) {
     const deletePerson = useCallback(async (id: string): Promise<void> => {
         try {
             const personToDelete = people.find(p => p.id === id);
+            const wasDefault = personToDelete?.is_default;
+
             await personService.delete(id);
 
-            const updatedPeople = people.filter(p => p.id !== id);
+            // Recarregar do servidor
+            const updatedPeople = await personService.getAll();
 
-            // Se deletou o padrão e ainda existem pessoas, promover a primeira a padrão
-            if (personToDelete?.is_default && updatedPeople.length > 0) {
-                const newDefault = updatedPeople[0];
-                await personService.update(newDefault.id, { is_default: true });
-                newDefault.is_default = true;
-                setPeople([...updatedPeople]);
-            } else {
-                setPeople(updatedPeople);
+            // Se deletou o padrão e ainda existem pessoas, promover a primeira a padrão no DB
+            if (wasDefault && updatedPeople.length > 0) {
+                const alreadyHasDefault = updatedPeople.some(p => p.is_default);
+                if (!alreadyHasDefault) {
+                    const newDefaultId = updatedPeople[0].id;
+                    await personService.update(newDefaultId, { is_default: true });
+                }
             }
 
+            // Atualizar estado e seleção
+            await refreshPeople();
+
             if (selectedPerson?.id === id) {
-                setSelectedPerson(updatedPeople.length > 0 ? updatedPeople[0] : null);
-                if (updatedPeople.length > 0) {
-                    localStorage.setItem(SELECTED_PERSON_KEY, updatedPeople[0].id);
+                const refreshedPeople = await personService.getAll();
+                const newSelected = refreshedPeople.find(p => p.is_default) || refreshedPeople[0] || null;
+                setSelectedPerson(newSelected);
+                if (newSelected) {
+                    localStorage.setItem(SELECTED_PERSON_KEY, newSelected.id);
                 } else {
                     localStorage.removeItem(SELECTED_PERSON_KEY);
                 }
@@ -197,7 +204,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
             console.error('Erro ao excluir pessoa:', err);
             throw err;
         }
-    }, [people, selectedPerson]);
+    }, [people, refreshPeople, selectedPerson]);
 
 
     const value: PersonContextType = {

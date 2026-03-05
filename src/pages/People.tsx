@@ -101,12 +101,13 @@ export default function PeoplePage() {
             await deletePerson(deletingPerson.id);
             toast({
                 title: 'Pessoa excluída',
-                description: `${deletingPerson.name} foi removida.`,
+                description: `${deletingPerson.name} foi removida com sucesso.`,
             });
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Erro detalhado ao excluir:', error);
             toast({
-                title: 'Erro ao excluir',
-                description: error instanceof Error ? error.message : 'Não foi possível excluir.',
+                title: 'Não foi possível excluir',
+                description: error.message || 'O banco de dados impediu a exclusão. Verifique se existem vínculos pendentes.',
                 variant: 'destructive',
             });
         } finally {
