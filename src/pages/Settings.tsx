@@ -13,14 +13,54 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { backupService, BackupData } from '@/services/backupService';
+import { profileService, ProfileSettings } from '@/services/profileService';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 
 export default function Settings() {
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
+    const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
+    const [settings, setSettings] = React.useState<ProfileSettings>({});
     const [importProgress, setImportProgress] = React.useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+
+    React.useEffect(() => {
+        loadSettings();
+    }, []);
+
+    const loadSettings = async () => {
+        try {
+            const profile = await profileService.getProfile();
+            if (profile?.settings) {
+                setSettings(profile.settings);
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    };
+
+    const handleUpdateSetting = async (key: keyof ProfileSettings, value: any) => {
+        setIsUpdatingSettings(true);
+        try {
+            const newSettings = { [key]: value };
+            await profileService.updateSettings(newSettings);
+            setSettings(prev => ({ ...prev, ...newSettings }));
+            toast({
+                title: 'Configuração Salva',
+                description: 'Suas preferências foram atualizadas.',
+            });
+        } catch (error: any) {
+            toast({
+                title: 'Erro ao Salvar',
+                description: error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsUpdatingSettings(false);
+        }
+    };
 
     const handleExport = async () => {
         setIsExporting(true);
@@ -196,23 +236,58 @@ export default function Settings() {
                 </Card>
             </div>
 
-            <Card className="border-muted">
-                <CardHeader>
-                    <CardTitle className="text-xl">Status do Sistema e Segurança</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
-                        <div className="flex items-center gap-3">
-                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                            <div>
-                                <p className="font-medium">Integridade dos Dados</p>
-                                <p className="text-xs text-muted-foreground">Sincronizado com o banco de dados oficial</p>
+            <div className="grid gap-6 md:grid-cols-2">
+                {/* Interface Preferences */}
+                <Card className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <ShieldCheck className="h-5 w-5 text-purple-500" />
+                            Preferências de Interface
+                        </CardTitle>
+                        <CardDescription>
+                            Personalize como o sistema exibe informações para você.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50">
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold leading-none">Ocultar Membro "Titular"</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Remove o perfil padrão do sistema caso existam outros membros.
+                                </p>
                             </div>
+                            <Switch
+                                checked={settings.hide_titular}
+                                onCheckedChange={(val) => handleUpdateSetting('hide_titular', val)}
+                                disabled={isUpdatingSettings}
+                            />
                         </div>
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    </div>
-                </CardContent>
-            </Card>
+
+                        <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/10 text-xs">
+                            <AlertCircle className="h-4 w-4 text-purple-500 inline mr-2 mb-1" />
+                            Esta opção facilita o uso se você gerencia apenas familiares ou perfis específicos, eliminando o "Titular" genérico das listas.
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-muted bg-muted/20">
+                    <CardHeader>
+                        <CardTitle className="text-xl">Status do Sistema</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                        <div className="flex items-center justify-between p-4 rounded-lg bg-white/50 border">
+                            <div className="flex items-center gap-3">
+                                <div className="h-2 w-2 rounded-full bg-green-500" />
+                                <div>
+                                    <p className="font-medium text-sm">Integridade dos Dados</p>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Sincronizado</p>
+                                </div>
+                            </div>
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

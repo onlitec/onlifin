@@ -24,11 +24,13 @@ import type { Transaction, Account, Category } from '@/types/types';
 import { cn } from '@/lib/utils';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import ReceiptScanner from '@/components/transactions/ReceiptScanner';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Transactions() {
   const { toast } = useToast();
   const { companyId, personId } = useFinanceScope();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -39,6 +41,7 @@ export default function Transactions() {
 
   // Filtros
   const [filterType, setFilterType] = React.useState<string>('all');
+  const [filterAccountId, setFilterAccountId] = React.useState<string>(searchParams.get('account_id') || 'all');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterDateStart, setFilterDateStart] = React.useState('');
   const [filterDateEnd, setFilterDateEnd] = React.useState('');
@@ -60,12 +63,11 @@ export default function Transactions() {
 
   React.useEffect(() => {
     loadData();
-  }, [filterType, filterDateStart, filterDateEnd, companyId, personId, user]); // Added user to dependency array
+  }, [filterType, filterAccountId, filterDateStart, filterDateEnd, companyId, personId, user]);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
-      // const { data: { user } } = await supabase.auth.getUser(); // Removed this line, using user from useAuth
       if (!user) return;
 
       const [txList, accList, catList] = await Promise.all([
@@ -74,7 +76,8 @@ export default function Transactions() {
           startDate: filterDateStart || undefined,
           endDate: filterDateEnd || undefined,
           companyId,
-          personId
+          personId,
+          accountId: filterAccountId === 'all' ? undefined : filterAccountId
         }),
         accountsApi.getAccounts(user.id, companyId, personId),
         categoriesApi.getCategories(companyId)
@@ -258,6 +261,21 @@ export default function Transactions() {
           </div>
 
           <div className="space-y-2">
+            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Conta</Label>
+            <Select value={filterAccountId} onValueChange={setFilterAccountId}>
+              <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 font-bold">
+                <SelectValue placeholder="Todas Contas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Contas</SelectItem>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Início</Label>
             <Input
               type="date"
@@ -281,7 +299,13 @@ export default function Transactions() {
             <Button
               variant="ghost"
               className="text-slate-400 hover:text-slate-900 w-full rounded-xl font-bold h-11"
-              onClick={() => { setFilterType('all'); setSearchTerm(''); setFilterDateStart(''); setFilterDateEnd(''); }}
+              onClick={() => {
+                setFilterType('all');
+                setFilterAccountId('all');
+                setSearchTerm('');
+                setFilterDateStart('');
+                setFilterDateEnd('');
+              }}
             >
               <History className="mr-2 h-4 w-4" />
               Limpar
@@ -308,19 +332,34 @@ export default function Transactions() {
             </div>
           </div>
         ) : (
-          <div className="divide-y divide-slate-200">
+          <div className="space-y-4">
             {filteredTransactions.map((tx) => {
               const account = accounts.find(a => a.id === tx.account_id);
               const category = categories.find(c => c.id === tx.category_id);
 
               return (
-                <div key={tx.id} className="group flex items-center justify-between p-6 hover:bg-slate-100/50 transition-colors animate-in fade-in duration-500">
-                  <div className="flex items-center gap-6 flex-1 min-w-0">
+                <div
+                  key={tx.id}
+                  className={cn(
+                    "group flex items-center justify-between p-6 bg-white hover:bg-slate-50/50 transition-all animate-in fade-in duration-500 rounded-3xl border-2 shadow-sm relative overflow-hidden",
+                    tx.type === 'income' ? "border-emerald-100 hover:border-emerald-200" :
+                      tx.type === 'expense' ? "border-red-100 hover:border-red-200" :
+                        "border-blue-100 hover:border-blue-200"
+                  )}
+                >
+                  {/* Accent Bar */}
+                  <div className={cn(
+                    "absolute left-0 top-0 bottom-0 w-1.5",
+                    tx.type === 'income' ? "bg-emerald-500" :
+                      tx.type === 'expense' ? "bg-red-500" : "bg-blue-500"
+                  )} />
+
+                  <div className="flex items-start gap-6 flex-1 min-w-0 pl-2">
                     <div className={cn(
-                      "p-3.5 rounded-2xl shrink-0 transition-transform group-hover:scale-105",
-                      tx.type === 'income' ? "bg-emerald-50 text-emerald-600" :
-                        tx.type === 'expense' ? "bg-red-50 text-red-600" :
-                          "bg-blue-50 text-blue-600"
+                      "p-3.5 rounded-2xl shrink-0 transition-transform group-hover:scale-105 mt-1",
+                      tx.type === 'income' ? "bg-emerald-50 text-emerald-600 shadow-[0_0_15px_-5px_#10b98133]" :
+                        tx.type === 'expense' ? "bg-red-50 text-red-600 shadow-[0_0_15px_-5px_#ef444433]" :
+                          "bg-blue-50 text-blue-600 shadow-[0_0_15px_-5px_#3b82f633]"
                     )}>
                       {tx.type === 'income' ? <TrendingUp className="h-6 w-6" /> :
                         tx.type === 'expense' ? <TrendingDown className="h-6 w-6" /> :
@@ -328,11 +367,11 @@ export default function Transactions() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <p className="font-bold text-slate-900 text-lg tracking-tight leading-none truncate max-w-[400px]">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
+                        <p className="font-bold text-slate-900 text-lg tracking-tight leading-snug break-words">
                           {tx.description}
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 shrink-0">
                           {tx.is_recurring && (
                             <span className="text-[10px] font-bold uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">Recorrente</span>
                           )}
@@ -343,22 +382,22 @@ export default function Transactions() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span className="text-[11px] font-semibold text-slate-400">{formatDate(tx.date)}</span>
-                        <span className="h-3 w-[1px] bg-slate-200" />
+                        <span className="h-3 w-[1px] bg-slate-200 hidden sm:block" />
                         <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{account?.name || 'Carteira'}</span>
                         {category && (
                           <>
-                            <span className="h-3 w-[1px] bg-slate-200" />
+                            <span className="h-3 w-[1px] bg-slate-200 hidden sm:block" />
                             <span className="text-[11px] font-semibold text-slate-400 capitalize">{category.icon} {category.name}</span>
                           </>
                         )}
                       </div>
                     </div>
 
-                    <div className="text-right px-8 min-w-[200px]">
+                    <div className="text-right px-4 sm:px-8 min-w-[140px] mt-1">
                       <p className={cn(
-                        "text-2xl font-bold tracking-tight",
+                        "text-xl sm:text-2xl font-bold tracking-tight",
                         tx.type === 'income' ? 'text-emerald-600' : tx.type === 'expense' ? 'text-red-600' : 'text-slate-600'
                       )}>
                         {tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : ''}
@@ -367,7 +406,7 @@ export default function Transactions() {
                     </div>
                   </div>
 
-                  <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
+                  <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="ghost"
                       size="icon"

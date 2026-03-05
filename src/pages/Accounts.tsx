@@ -341,85 +341,159 @@ export default function Accounts() {
         </div>
       </div>
 
-      {/* Lista de Contas */}
-      <div className="glass-card premium-card border-slate-300 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Sumário de Ativos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-card premium-card border-slate-300 bg-white rounded-3xl p-8 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+            <DollarSign className="h-24 w-24 text-primary" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70 mb-2">Patrimônio Líquido Total</p>
+          <h2 className="text-4xl font-black tracking-tighter text-slate-900">
+            {formatCurrency(accounts.reduce((acc, curr) => acc + curr.balance, 0))}
+          </h2>
+          <div className="mt-4 flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Saldos Consolidados</span>
+          </div>
+        </div>
+
+        <div className="glass-card premium-card border-slate-300 bg-white rounded-3xl p-8 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+            <TrendingUp className="h-24 w-24 text-emerald-500" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600/70 mb-2">Ativos Positivos</p>
+          <h2 className="text-4xl font-black tracking-tighter text-emerald-600">
+            {formatCurrency(accounts.filter(a => a.balance > 0).reduce((acc, curr) => acc + curr.balance, 0))}
+          </h2>
+          <p className="text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-widest">
+            {accounts.filter(a => a.balance > 0).length} Contas no azul
+          </p>
+        </div>
+
+        <div className="glass-card premium-card border-slate-300 bg-white rounded-3xl p-8 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+            <TrendingDown className="h-24 w-24 text-red-500" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600/70 mb-2">Passivos / Descobertos</p>
+          <h2 className="text-4xl font-black tracking-tighter text-red-600">
+            {formatCurrency(accounts.filter(a => a.balance < 0).reduce((acc, curr) => acc + curr.balance, 0))}
+          </h2>
+          <p className="text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-widest">
+            {accounts.filter(a => a.balance < 0).length} Contas em débito
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
         {accounts.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 px-4 bg-white/[0.02]">
-            <div className="relative group mb-6">
-              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transition-all group-hover:bg-primary/30" />
-              <Building2 className="h-16 w-16 text-primary relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
+          <div className="col-span-full glass-card premium-card border-slate-300 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="flex flex-col items-center justify-center py-24 px-4 bg-white/[0.02]">
+              <div className="relative group mb-6">
+                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transition-all group-hover:bg-primary/30" />
+                <Building2 className="h-16 w-16 text-primary relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
+              </div>
+              <p className="text-xl font-black uppercase tracking-tighter mb-2 text-slate-900">Sem Contas Registradas</p>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
+                Inicie sua jornada financeira consolidando seus primeiros ativos.
+              </p>
             </div>
-            <p className="text-xl font-black uppercase tracking-tighter mb-2">Sem Contas</p>
-            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
-              Nenhum repositório financeiro foi registrado ainda.
-            </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
-            {accounts.map((account) => (
-              <div key={account.id} className="flex items-center justify-between p-6 hover:bg-white/[0.03] transition-all duration-300 group">
-                <div className="flex items-center gap-6 flex-1 min-w-0">
-                  {/* Ícone do Banco */}
-                  <div className="p-4 rounded-2xl bg-white/5 shrink-0 border border-white/5 shadow-lg group-hover:border-primary/20 transition-all group-hover:scale-105 group-hover:bg-white/[0.08]">
-                    <img
-                      src={account.icon ? getBankById(account.icon)?.icon || getDefaultBankIcon() : getDefaultBankIcon()}
-                      alt={account.bank || 'Bank'}
-                      className="w-10 h-10 object-contain invert-[0.3]"
-                    />
+          accounts.map((account) => {
+            const bankColor = account.icon ? getBankById(account.icon)?.color || '#1e293b' : '#1e293b';
+
+            return (
+              <div
+                key={account.id}
+                className="group relative h-72 glass-card premium-card border-slate-200 bg-white rounded-[2.5rem] p-8 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden"
+              >
+                {/* Bank Context Gradient */}
+                <div
+                  className="absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 blur-3xl"
+                  style={{ backgroundColor: bankColor }}
+                />
+
+                <div className="relative h-full flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500"
+                        style={{ boxShadow: `0 10px 20px -10px ${bankColor}33` }}
+                      >
+                        <img
+                          src={account.icon ? getBankById(account.icon)?.icon || getDefaultBankIcon() : getDefaultBankIcon()}
+                          alt={account.bank || 'Bank'}
+                          className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                        />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="font-black text-lg tracking-tight uppercase leading-none text-slate-900 group-hover:text-primary transition-colors">
+                          {account.name}
+                        </p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {account.bank || 'Instituição não informada'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1.5 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-xl bg-slate-50 text-slate-400 hover:bg-primary/10 hover:text-primary"
+                        onClick={() => openEditDialog(account)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-xl bg-red-50 text-red-300 hover:bg-red-500 hover:text-white"
+                        onClick={() => handleDelete(account.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
 
-                  {/* Informações da Conta */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center gap-3">
-                      <p className="font-black text-xl tracking-tighter uppercase leading-none">{account.name}</p>
-                      {account.bank && (
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 bg-white/5 px-2 py-0.5 rounded-full">{account.bank}</span>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block ml-1">Saldo em Conta</span>
+                    <div className="flex items-baseline gap-1">
+                      <p className={cn(
+                        "text-4xl font-black tracking-tighter",
+                        account.balance >= 0 ? "text-emerald-600" : "text-red-500"
+                      )}>
+                        {formatCurrency(account.balance)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                    <div className="flex flex-col">
+                      {account.agency && account.account_number ? (
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                          Ag {account.agency} • Cc {account.account_number}
+                        </p>
+                      ) : (
+                        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest italic">
+                          Dados Bancários Omissos
+                        </p>
                       )}
                     </div>
-                    {account.agency && account.account_number && (
-                      <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest leading-none">
-                        AG {account.agency} // CC {account.account_number}
-                      </p>
-                    )}
-                  </div>
 
-                  {/* Saldo */}
-                  <div className="text-right shrink-0 px-8">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30 block mb-1">Capital Disponível</span>
-                    <p className={cn(
-                      "text-2xl font-black tracking-tighter flex items-center gap-2 justify-end",
-                      account.balance >= 0 ? 'text-income' : 'text-expense'
-                    )}>
-                      {account.balance >= 0 ? <TrendingUp className="h-5 w-5 opacity-50" /> : <TrendingDown className="h-5 w-5 opacity-50" />}
-                      {formatCurrency(account.balance)}
-                    </p>
+                    <Button
+                      variant="ghost"
+                      className="px-4 h-9 rounded-xl bg-primary/5 hover:bg-primary hover:text-white text-primary text-[10px] font-black uppercase tracking-widest group/btn transition-all"
+                      onClick={() => window.location.href = `/transactions?account_id=${account.id}`}
+                    >
+                      Ver Extrato
+                      <TrendingUp className="ml-2 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                    </Button>
                   </div>
-                </div>
-
-                {/* Botões de Ação */}
-                <div className="flex gap-2 items-center opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-12 w-12 rounded-xl bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground hover:scale-110 transition-all"
-                    onClick={() => openEditDialog(account)}
-                    title="Editar Parâmetros"
-                  >
-                    <Pencil className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-12 w-12 rounded-xl bg-red-500/5 text-red-500/40 hover:bg-red-500/20 hover:text-red-500 hover:scale-110 transition-all"
-                    onClick={() => handleDelete(account.id)}
-                    title="Remover Registro"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })
         )}
       </div>
     </div>

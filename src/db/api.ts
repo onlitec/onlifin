@@ -348,6 +348,7 @@ export const transactionsApi = {
     categoryId?: string;
     companyId?: string | null;
     personId?: string | null;
+    accountId?: string;
   }): Promise<TransactionWithDetails[]> {
     let query = supabase
       .from('transactions')
@@ -370,6 +371,9 @@ export const transactionsApi = {
     }
     if (filters?.categoryId) {
       query = query.eq('category_id', filters.categoryId);
+    }
+    if (filters?.accountId) {
+      query = query.eq('account_id', filters.accountId);
     }
     // Filtrar por empresa
     if (filters?.companyId !== undefined) {

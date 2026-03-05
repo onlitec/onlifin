@@ -1011,9 +1011,9 @@ export default function ImportStatements() {
                       <TableCell>{transaction.date}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium">{transaction.description}</span>
+                          <span className="font-medium break-words max-w-[500px]">{transaction.description}</span>
                           {hasMatch && (
-                            <span className="text-[10px] text-yellow-600 flex items-center gap-1 mt-1 bg-yellow-50 w-fit px-1 rounded border border-yellow-200">
+                            <span className="text-[10px] text-yellow-600 flex items-center gap-1 mt-1 bg-yellow-50 w-fit px-1 rounded border border-yellow-200 break-words">
                               <History className="h-3 w-3" />
                               Já existe: {matchingTx?.description} {(matchingTx as any)?.category?.name ? `[${(matchingTx as any).category.name}]` : ''}
                             </span>

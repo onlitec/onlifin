@@ -1,0 +1,75 @@
+/**
+ * Serviço de gerenciamento de perfil e configurações
+ */
+
+import { supabase } from '@/db/client';
+
+export interface ProfileSettings {
+    hide_titular?: boolean;
+    [key: string]: any;
+}
+
+export interface Profile {
+    id: string;
+    username: string;
+    full_name: string | null;
+    role: string;
+    settings: ProfileSettings;
+    default_company_id: string | null;
+}
+
+export const profileService = {
+    /**
+     * Busca o perfil do usuário atual
+     */
+    async getProfile(): Promise<Profile | null> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (error) {
+            console.error('Erro ao buscar perfil:', error);
+            throw new Error('Não foi possível carregar o perfil');
+        }
+
+        return data;
+    },
+
+    /**
+     * Atualiza as configurações do perfil
+     */
+    async updateSettings(settings: Partial<ProfileSettings>): Promise<Profile> {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Usuário não autenticado');
+
+        // Buscar configurações atuais primeiro para fazer merge
+        const currentProfile = await this.getProfile();
+        const currentSettings = currentProfile?.settings || {};
+
+        const newSettings = {
+            ...currentSettings,
+            ...settings
+        };
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .update({
+                settings: newSettings
+            })
+            .eq('id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Erro ao atualizar configurações:', error);
+            throw new Error('Não foi possível salvar as configurações');
+        }
+
+        return data;
+    }
+};

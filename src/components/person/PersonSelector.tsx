@@ -34,7 +34,8 @@ export function PersonSelector({
         people,
         selectedPerson,
         isLoadingPeople,
-        selectPerson
+        selectPerson,
+        settings
     } = usePerson();
     const navigate = useNavigate();
 
@@ -45,7 +46,7 @@ export function PersonSelector({
         );
     }
 
-    const currentName = selectedPerson ? selectedPerson.name : (people.find(p => p.is_default)?.name || 'Titular');
+    const currentName = selectedPerson ? selectedPerson.name : (people.find(p => p.is_default)?.name || (settings.hide_titular && people.length > 0 ? people[0].name : 'Titular'));
 
     return (
         <DropdownMenu>
@@ -77,6 +78,24 @@ export function PersonSelector({
                 <DropdownMenuSeparator className="bg-white/5 mx--2" />
 
                 <div className="space-y-1 mt-1">
+                    {!settings.hide_titular && (
+                        <DropdownMenuItem
+                            className={cn(
+                                "flex items-center gap-3 cursor-pointer rounded-xl transition-all duration-200 py-2.5 px-3 hover:bg-white/5",
+                                !selectedPerson && "bg-primary/10 border-white/5 shadow-inner"
+                            )}
+                            onClick={() => selectPerson(null)}
+                        >
+                            <User className="h-4 w-4 shrink-0 opacity-70" />
+                            <span className="font-bold tracking-tight truncate flex-1 text-sm uppercase">
+                                Principal (Geral)
+                            </span>
+                            {!selectedPerson && (
+                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                            )}
+                        </DropdownMenuItem>
+                    )}
+
                     {people.map((person) => (
                         <DropdownMenuItem
                             key={person.id}

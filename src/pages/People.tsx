@@ -200,7 +200,6 @@ export default function PeoplePage() {
                                                         size="icon"
                                                         className="text-destructive hover:text-destructive"
                                                         onClick={() => handleDeletePerson(person)}
-                                                        disabled={person.is_default}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>

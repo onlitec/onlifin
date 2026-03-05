@@ -8,6 +8,7 @@
 import * as React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { personService } from '@/services/personService';
+import { profileService, ProfileSettings } from '@/services/profileService';
 import type {
     Person,
     CreatePersonDTO,
@@ -20,7 +21,7 @@ import { useFinanceScope } from '@/hooks/useFinanceScope';
 const SELECTED_PERSON_KEY = 'onlifin_selected_person_id';
 
 // Criar o contexto com valor inicial undefined
-const PersonContext = createContext<PersonContextType | undefined>(undefined);
+const PersonContext = createContext<PersonContextType & { settings: ProfileSettings }>({} as any);
 
 interface PersonProviderProps {
     children: ReactNode;
@@ -32,6 +33,7 @@ interface PersonProviderProps {
 export function PersonProvider({ children }: PersonProviderProps) {
     const [people, setPeople] = useState<Person[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+    const [settings, setSettings] = useState<ProfileSettings>({});
     const [isLoadingPeople, setIsLoadingPeople] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { isPJ } = useFinanceScope();
@@ -44,31 +46,35 @@ export function PersonProvider({ children }: PersonProviderProps) {
         setError(null);
 
         try {
-            const data = await personService.getAll();
-            setPeople(data);
+            const [peopleData, profile] = await Promise.all([
+                personService.getAll(),
+                profileService.getProfile()
+            ]);
+
+            setPeople(peopleData);
+            const userSettings = profile?.settings || {};
+            setSettings(userSettings);
 
             // Recuperar pessoa selecionada do localStorage
             const savedPersonId = localStorage.getItem(SELECTED_PERSON_KEY);
 
             if (savedPersonId) {
-                const savedPerson = data.find(p => p.id === savedPersonId);
+                const savedPerson = peopleData.find(p => p.id === savedPersonId);
                 if (savedPerson) {
                     setSelectedPerson(savedPerson);
                     return;
                 }
             }
 
-            // Se não tiver salvo, tenta selecionar o default ou null (usuário principal)
-            // Na verdade, se data for vazio, ou se quisermos o "Usuário Principal" como null/none
-            // vamos deixar selectedPerson como null por padrão (representando o dono da conta)
-            // SE houverem pessoas cadastradas E uma delas for default, selecionamos.
-
-            const defaultPerson = data.find(p => p.is_default);
+            const defaultPerson = peopleData.find(p => p.is_default);
             if (defaultPerson) {
                 setSelectedPerson(defaultPerson);
                 localStorage.setItem(SELECTED_PERSON_KEY, defaultPerson.id);
+            } else if (userSettings.hide_titular && peopleData.length > 0) {
+                // Se deve esconder o titular e temos pessoas, seleciona a primeira como fallback
+                setSelectedPerson(peopleData[0]);
+                localStorage.setItem(SELECTED_PERSON_KEY, peopleData[0].id);
             } else {
-                // Se não tem default explícito, e não tinha nada salvo, fica null (Principal)
                 setSelectedPerson(null);
             }
 
@@ -178,9 +184,10 @@ export function PersonProvider({ children }: PersonProviderProps) {
     }, [selectedPerson]);
 
 
-    const value: PersonContextType = {
+    const value: PersonContextType & { settings: ProfileSettings } = {
         people,
         selectedPerson,
+        settings,
         isLoadingPeople,
         error,
         selectPerson,
