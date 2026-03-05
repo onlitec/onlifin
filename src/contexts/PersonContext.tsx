@@ -206,6 +206,15 @@ export function PersonProvider({ children }: PersonProviderProps) {
         }
     }, [people, refreshPeople, selectedPerson]);
 
+    const updateSettings = useCallback(async (newSettings: Partial<ProfileSettings>): Promise<void> => {
+        try {
+            const updatedProfile = await profileService.updateSettings(newSettings);
+            setSettings(updatedProfile.settings);
+        } catch (err) {
+            console.error('Erro ao atualizar configurações:', err);
+            throw err;
+        }
+    }, []);
 
     const value: PersonContextType = {
         people,
@@ -217,7 +226,8 @@ export function PersonProvider({ children }: PersonProviderProps) {
         refreshPeople,
         createPerson,
         updatePerson,
-        deletePerson
+        deletePerson,
+        updateSettings
     };
 
     return (

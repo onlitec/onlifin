@@ -46,7 +46,9 @@ export function PersonSelector({
         );
     }
 
-    const currentName = selectedPerson ? selectedPerson.name : (people.find(p => p.is_default)?.name || (settings.hide_titular && people.length > 0 ? people[0].name : 'Titular'));
+    const currentName = selectedPerson
+        ? selectedPerson.name
+        : (!settings.hide_titular ? 'Principal (Geral)' : (people.find(p => p.is_default)?.name || 'Titular'));
 
     return (
         <DropdownMenu>

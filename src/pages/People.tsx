@@ -45,6 +45,8 @@ export default function PeoplePage() {
         createPerson,
         updatePerson,
         deletePerson,
+        updateSettings,
+        settings
     } = usePerson();
 
     // Estado local
@@ -98,11 +100,20 @@ export default function PeoplePage() {
         if (!deletingPerson) return;
 
         try {
-            await deletePerson(deletingPerson.id);
-            toast({
-                title: 'Pessoa excluída',
-                description: `${deletingPerson.name} foi removida com sucesso.`,
-            });
+            // Se for a pessoa virtual Principal (Geral)
+            if (deletingPerson.id === 'titular-virtual') {
+                await updateSettings({ hide_titular: true });
+                toast({
+                    title: 'Opção desabilitada',
+                    description: 'A visualização Geral foi removida do seletor.',
+                });
+            } else {
+                await deletePerson(deletingPerson.id);
+                toast({
+                    title: 'Pessoa excluída',
+                    description: `${deletingPerson.name} foi removida com sucesso.`,
+                });
+            }
         } catch (error: any) {
             console.error('Erro detalhado ao excluir:', error);
             toast({
@@ -113,7 +124,7 @@ export default function PeoplePage() {
         } finally {
             setDeletingPerson(null);
         }
-    }, [deletePerson, deletingPerson, toast]);
+    }, [deletePerson, deletingPerson, toast, updateSettings]);
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -169,6 +180,45 @@ export default function PeoplePage() {
                 </Card>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Card Virtual para Principal (Geral) */}
+                    {!settings.hide_titular && (
+                        <Card className="border-primary/20 bg-primary/5">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                    <User className="h-3 w-3 text-primary" />
+                                    PRINCIPAL (GERAL)
+                                </CardTitle>
+                                <Badge variant="default" className="bg-primary/20 text-primary border-none text-[10px]">SISTEMA</Badge>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-xs text-muted-foreground mb-4">
+                                    Visualização consolidada de todos os membros.
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-destructive hover:text-destructive"
+                                                        onClick={() => setDeletingPerson({ id: 'titular-virtual', name: 'Principal (Geral)', is_default: false } as any)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Remover esta opção do seletor.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {filteredPeople.map((person) => (
                         <Card key={person.id}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -46,6 +46,7 @@ export interface PersonContextActions {
     createPerson: (data: CreatePersonDTO) => Promise<Person>;
     updatePerson: (id: string, data: UpdatePersonDTO) => Promise<Person>;
     deletePerson: (id: string) => Promise<void>;
+    updateSettings: (settings: Partial<ProfileSettings>) => Promise<void>;
 }
 
 export interface PersonContextType extends PersonContextState, PersonContextActions { }
