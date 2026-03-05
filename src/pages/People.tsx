@@ -200,16 +200,21 @@ export default function PeoplePage() {
                                                         size="icon"
                                                         className="text-destructive hover:text-destructive"
                                                         onClick={() => handleDeletePerson(person)}
+                                                        disabled={people.length <= 1}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </span>
                                             </TooltipTrigger>
-                                            {person.is_default && (
-                                                <TooltipContent>
-                                                    <p>O membro principal não pode ser excluído.</p>
-                                                </TooltipContent>
-                                            )}
+                                            <TooltipContent>
+                                                {people.length <= 1 ? (
+                                                    <p>É necessário pelo menos um membro na família.</p>
+                                                ) : person.is_default ? (
+                                                    <p>Ao excluir o membro principal, outro será promovido automaticamente.</p>
+                                                ) : (
+                                                    <p>Excluir membro.</p>
+                                                )}
+                                            </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </div>

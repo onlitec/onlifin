@@ -1,3 +1,5 @@
+import { ProfileSettings } from '@/services/profileService';
+
 /**
  * Types relacionados a Pessoas (PF) e sistema de membros da família
  */
@@ -34,6 +36,7 @@ export interface PersonContextState {
     people: Person[];
     selectedPerson: Person | null;
     isLoadingPeople: boolean;
+    settings: ProfileSettings;
     error: string | null;
 }
 

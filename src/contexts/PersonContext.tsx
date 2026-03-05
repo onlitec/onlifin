@@ -21,7 +21,7 @@ import { useFinanceScope } from '@/hooks/useFinanceScope';
 const SELECTED_PERSON_KEY = 'onlifin_selected_person_id';
 
 // Criar o contexto com valor inicial undefined
-const PersonContext = createContext<PersonContextType & { settings: ProfileSettings }>({} as any);
+const PersonContext = createContext<PersonContextType>({} as any);
 
 interface PersonProviderProps {
     children: ReactNode;
@@ -170,21 +170,37 @@ export function PersonProvider({ children }: PersonProviderProps) {
      */
     const deletePerson = useCallback(async (id: string): Promise<void> => {
         try {
+            const personToDelete = people.find(p => p.id === id);
             await personService.delete(id);
-            setPeople(prev => prev.filter(p => p.id !== id));
+
+            const updatedPeople = people.filter(p => p.id !== id);
+
+            // Se deletou o padrão e ainda existem pessoas, promover a primeira a padrão
+            if (personToDelete?.is_default && updatedPeople.length > 0) {
+                const newDefault = updatedPeople[0];
+                await personService.update(newDefault.id, { is_default: true });
+                newDefault.is_default = true;
+                setPeople([...updatedPeople]);
+            } else {
+                setPeople(updatedPeople);
+            }
 
             if (selectedPerson?.id === id) {
-                setSelectedPerson(null);
-                localStorage.removeItem(SELECTED_PERSON_KEY);
+                setSelectedPerson(updatedPeople.length > 0 ? updatedPeople[0] : null);
+                if (updatedPeople.length > 0) {
+                    localStorage.setItem(SELECTED_PERSON_KEY, updatedPeople[0].id);
+                } else {
+                    localStorage.removeItem(SELECTED_PERSON_KEY);
+                }
             }
         } catch (err) {
             console.error('Erro ao excluir pessoa:', err);
             throw err;
         }
-    }, [selectedPerson]);
+    }, [people, selectedPerson]);
 
 
-    const value: PersonContextType & { settings: ProfileSettings } = {
+    const value: PersonContextType = {
         people,
         selectedPerson,
         settings,
