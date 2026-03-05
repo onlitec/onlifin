@@ -280,20 +280,20 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="glass-card premium-card p-10 flex flex-col justify-between">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="glass-card premium-card p-6 flex flex-col justify-between">
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Resumo de Contas</h3>
               <p className="text-xs text-slate-400">Status das contas a pagar</p>
             </div>
 
-            <div className="bg-slate-100/80 p-8 rounded-2xl border border-slate-200 flex items-center justify-between my-8">
+            <div className="bg-slate-100/80 p-6 rounded-2xl border border-slate-200 flex items-center justify-between my-6">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Total a Pagar</span>
-                <h4 className="text-4xl font-bold text-red-500 tracking-tight">{formatCurrency(100)}</h4>
+                <h4 className="text-2xl font-bold text-red-500 tracking-tight">{formatCurrency(100)}</h4>
               </div>
               <div className="p-3 bg-red-100/80 rounded-lg border border-red-200">
-                <Wallet className="h-6 w-6 text-red-600" />
+                <Wallet className="h-5 w-5 text-red-600" />
               </div>
             </div>
 
@@ -330,17 +330,16 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-
-          <div className="glass-card premium-card p-10 flex flex-col">
-            <div className="space-y-2 mb-8">
+          <div className="glass-card premium-card p-6 flex flex-col">
+            <div className="space-y-2 mb-6">
               <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Distribuição por Status</h3>
               <p className="text-xs text-slate-400">Valores das contas a pagar</p>
             </div>
             <div className="flex-1 flex items-center justify-center relative">
               {/* Simplified Donut Chart Representation for UI Matching */}
-              <div className="h-64 w-64 rounded-full border-[30px] border-amber-500 flex items-center justify-center">
+              <div className="h-48 w-48 rounded-full border-[20px] border-amber-500 flex items-center justify-center">
                 <div className="text-center">
-                  <span className="text-3xl font-bold text-slate-900">100%</span>
+                  <span className="text-2xl font-bold text-slate-900">100%</span>
                   <p className="text-[10px] text-slate-400 uppercase font-black">Pendentes</p>
                 </div>
               </div>

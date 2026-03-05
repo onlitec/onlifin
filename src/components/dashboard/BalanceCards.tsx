@@ -69,17 +69,17 @@ export function BalanceCards({
                 return (
                     <div
                         key={index}
-                        className="premium-card p-8 flex flex-col justify-between min-h-[180px] shadow-sm group"
+                        className="premium-card p-6 flex flex-col justify-between min-h-[140px] shadow-sm group"
                     >
-                        <div className="flex items-start justify-between mb-8">
-                            <span className="text-sm font-bold text-slate-500">
+                        <div className="flex items-start justify-between mb-4">
+                            <span className="text-sm font-semibold text-slate-500">
                                 {card.title}
                             </span>
-                            <Icon className={`h-5 w-5 ${card.iconColor}`} />
+                            <Icon className={`h-4 w-4 ${card.iconColor}`} />
                         </div>
 
                         <div className="space-y-1">
-                            <h3 className={`text-3xl font-bold tracking-tight ${card.valueColor}`}>
+                            <h3 className={`text-2xl font-bold tracking-tight ${card.valueColor}`}>
                                 {card.isPercentage ? `${card.value.toFixed(1)}%` : formatCurrency(card.value)}
                             </h3>
                             <p className="text-xs font-medium text-slate-400">

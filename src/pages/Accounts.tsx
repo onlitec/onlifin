@@ -181,7 +181,7 @@ export default function Accounts() {
       {/* Header Section */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 pb-2">
         <div className="space-y-1">
-          <h1 className="text-3xl xl:text-5xl font-black tracking-tighter uppercase">
+          <h1 className="text-2xl xl:text-3xl font-black tracking-tighter uppercase">
             Contas <span className="text-primary/50">{isPJ ? 'Corporativas' : 'Pessoais'}</span>
           </h1>
           <p className="text-muted-foreground font-medium uppercase text-xs tracking-[0.2em] opacity-70">
@@ -193,7 +193,7 @@ export default function Accounts() {
             variant="ghost"
             onClick={handleRecalculateBalances}
             disabled={isRecalculating}
-            className="glass border-white/5 text-[10px] uppercase font-black tracking-widest px-6 h-12 rounded-xl group transition-all hover:bg-white/5"
+            className="glass border-white/5 text-[10px] uppercase font-black tracking-widest px-4 h-9 rounded-lg group transition-all hover:bg-white/5"
           >
             {isRecalculating ? (
               <>
@@ -212,8 +212,8 @@ export default function Accounts() {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="lg" className="glass border-primary/20 hover:bg-primary/20 text-primary font-black uppercase tracking-widest px-8 h-14 rounded-2xl shadow-xl shadow-primary/10 transition-all hover:scale-105 active:scale-95">
-                <Plus className="mr-2 h-5 w-5" />
+              <Button variant="outline" size="default" className="glass border-primary/20 hover:bg-primary/20 text-primary font-black uppercase tracking-widest px-6 h-10 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95">
+                <Plus className="mr-2 h-4 w-4" />
                 Inicializar Conta
               </Button>
             </DialogTrigger>
@@ -314,10 +314,10 @@ export default function Accounts() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="md:col-span-2 lg:col-span-2">
-          <Alert className="glass-card premium-card border-slate-300 bg-white rounded-3xl p-6">
+          <Alert className="glass-card premium-card border-slate-300 bg-white rounded-2xl p-4">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-primary/10 rounded-2xl">
-                <Info className="h-6 w-6 text-primary" />
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <Info className="h-5 w-5 text-primary" />
               </div>
               <AlertDescription className="space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Dinâmica de Liquidez</p>
@@ -343,12 +343,12 @@ export default function Accounts() {
 
       {/* Sumário de Ativos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card premium-card border-slate-300 bg-white rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-            <DollarSign className="h-24 w-24 text-primary" />
+        <div className="glass-card premium-card border-slate-300 bg-white rounded-2xl p-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+            <DollarSign className="h-16 w-16 text-primary" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70 mb-2">Patrimônio Líquido Total</p>
-          <h2 className="text-4xl font-black tracking-tighter text-slate-900">
+          <h2 className="text-2xl font-black tracking-tighter text-slate-900">
             {formatCurrency(accounts.reduce((acc, curr) => acc + curr.balance, 0))}
           </h2>
           <div className="mt-4 flex items-center gap-2">
@@ -357,12 +357,12 @@ export default function Accounts() {
           </div>
         </div>
 
-        <div className="glass-card premium-card border-slate-300 bg-white rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp className="h-24 w-24 text-emerald-500" />
+        <div className="glass-card premium-card border-slate-300 bg-white rounded-2xl p-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+            <TrendingUp className="h-16 w-16 text-emerald-500" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600/70 mb-2">Ativos Positivos</p>
-          <h2 className="text-4xl font-black tracking-tighter text-emerald-600">
+          <h2 className="text-2xl font-black tracking-tighter text-emerald-600">
             {formatCurrency(accounts.filter(a => a.balance > 0).reduce((acc, curr) => acc + curr.balance, 0))}
           </h2>
           <p className="text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-widest">
@@ -370,12 +370,12 @@ export default function Accounts() {
           </p>
         </div>
 
-        <div className="glass-card premium-card border-slate-300 bg-white rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingDown className="h-24 w-24 text-red-500" />
+        <div className="glass-card premium-card border-slate-300 bg-white rounded-2xl p-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+            <TrendingDown className="h-16 w-16 text-red-500" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600/70 mb-2">Passivos / Descobertos</p>
-          <h2 className="text-4xl font-black tracking-tighter text-red-600">
+          <h2 className="text-2xl font-black tracking-tighter text-red-600">
             {formatCurrency(accounts.filter(a => a.balance < 0).reduce((acc, curr) => acc + curr.balance, 0))}
           </h2>
           <p className="text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-widest">
@@ -384,16 +384,16 @@ export default function Accounts() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
         {accounts.length === 0 && !isLoading ? (
-          <div className="col-span-full glass-card premium-card border-slate-300 rounded-3xl overflow-hidden shadow-2xl">
-            <div className="flex flex-col items-center justify-center py-24 px-4 bg-white/[0.02]">
-              <div className="relative group mb-6">
-                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transition-all group-hover:bg-primary/30" />
-                <Building2 className="h-16 w-16 text-primary relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
+          <div className="col-span-full glass-card premium-card border-slate-300 rounded-2xl overflow-hidden shadow-lg">
+            <div className="flex flex-col items-center justify-center py-16 px-4 bg-white/[0.02]">
+              <div className="relative group mb-4">
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full transition-all group-hover:bg-primary/30" />
+                <Building2 className="h-12 w-12 text-primary relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
               </div>
-              <p className="text-xl font-black uppercase tracking-tighter mb-2 text-slate-900">Sem Contas Registradas</p>
-              <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
+              <p className="text-lg font-black uppercase tracking-tighter mb-2 text-slate-900">Sem Contas Registradas</p>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
                 Inicie sua jornada financeira consolidando seus primeiros ativos.
               </p>
             </div>
@@ -405,29 +405,29 @@ export default function Accounts() {
             return (
               <div
                 key={account.id}
-                className="group relative h-72 glass-card premium-card border-slate-200 bg-white rounded-[2.5rem] p-8 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden"
+                className="group relative h-48 glass-card premium-card border-slate-200 bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col justify-between"
               >
                 {/* Bank Context Gradient */}
                 <div
-                  className="absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 blur-3xl"
+                  className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500 blur-2xl"
                   style={{ backgroundColor: bankColor }}
                 />
 
                 <div className="relative h-full flex flex-col justify-between">
                   <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <div
-                        className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner group-hover:scale-110 transition-transform duration-500"
-                        style={{ boxShadow: `0 10px 20px -10px ${bankColor}33` }}
+                        className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 shadow-sm group-hover:scale-105 transition-transform duration-300"
+                        style={{ boxShadow: `0 4px 10px -5px ${bankColor}33` }}
                       >
                         <img
                           src={account.icon ? getBankById(account.icon)?.icon || getDefaultBankIcon() : getDefaultBankIcon()}
                           alt={account.bank || 'Bank'}
-                          className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                          className="w-6 h-6 object-contain opacity-80 group-hover:opacity-100 transition-opacity"
                         />
                       </div>
                       <div className="space-y-0.5">
-                        <p className="font-black text-lg tracking-tight uppercase leading-none text-slate-900 group-hover:text-primary transition-colors">
+                        <p className="font-black text-base tracking-tight uppercase leading-none text-slate-900 group-hover:text-primary transition-colors">
                           {account.name}
                         </p>
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -455,35 +455,22 @@ export default function Accounts() {
                       </Button>
                     </div>
                   </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block ml-1">Saldo em Conta</span>
-                    <div className="flex items-baseline gap-1">
-                      <p className={cn(
-                        "text-4xl font-black tracking-tighter",
+                  <div className="mt-4 pt-4 border-t border-slate-100/50 flex flex-col items-center justify-between sm:flex-row">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+                        Saldo Atual
+                      </p>
+                      <h3 className={cn(
+                        "text-2xl font-black tracking-tighter",
                         account.balance >= 0 ? "text-emerald-600" : "text-red-500"
                       )}>
                         {formatCurrency(account.balance)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <div className="flex flex-col">
-                      {account.agency && account.account_number ? (
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                          Ag {account.agency} • Cc {account.account_number}
-                        </p>
-                      ) : (
-                        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest italic">
-                          Dados Bancários Omissos
-                        </p>
-                      )}
+                      </h3>
                     </div>
 
                     <Button
                       variant="ghost"
-                      className="px-4 h-9 rounded-xl bg-primary/5 hover:bg-primary hover:text-white text-primary text-[10px] font-black uppercase tracking-widest group/btn transition-all"
+                      className="mt-2 sm:mt-0 px-4 h-9 rounded-xl bg-primary/5 hover:bg-primary hover:text-white text-primary text-[10px] font-black uppercase tracking-widest group/btn transition-all"
                       onClick={() => window.location.href = `/transactions?account_id=${account.id}`}
                     >
                       Ver Extrato

@@ -100,19 +100,19 @@
   }
 
   .glass-card {
-    @apply bg-white border border-slate-300 shadow-md transition-all duration-300;
+    @apply bg-white border border-slate-200 shadow-sm transition-all duration-300;
   }
 
   .premium-card {
-    @apply rounded-[1.5rem] border border-slate-300 shadow-sm hover:shadow-xl hover:border-slate-400/50 transition-all duration-300 bg-white;
+    @apply rounded-[1rem] border border-slate-200 shadow-sm hover:shadow hover:border-slate-300 transition-all duration-300 bg-white;
   }
 
   .section-container {
-    @apply bg-white border-2 border-slate-300 rounded-[2.5rem] p-10 shadow-lg relative overflow-hidden;
+    @apply bg-white border border-slate-200 rounded-[1rem] p-6 shadow-sm relative overflow-hidden;
   }
 
   .deep-shadow {
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
 
   .text-title {

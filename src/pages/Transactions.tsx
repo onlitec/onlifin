@@ -204,11 +204,11 @@ export default function Transactions() {
   );
 
   return (
-    <div className="p-8 lg:p-12 max-w-[1600px] mx-auto space-y-10 animate-slide-up">
+    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-8 animate-in fade-in duration-700">
       {/* Page Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 uppercase mb-1">Transações</h1>
+          <h1 className="text-2xl xl:text-3xl font-black tracking-tight text-slate-900 uppercase mb-1">Transações</h1>
           <p className="text-slate-500 font-medium">Histórico financeiro completo e gestão de fluxo</p>
         </div>
         <div className="flex gap-3">
@@ -220,10 +220,10 @@ export default function Transactions() {
             Escanear
           </Button>
           <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-8 rounded-xl shadow-md transition-all active:scale-95"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 px-6 rounded-xl shadow-sm transition-all active:scale-95"
             onClick={() => { resetForm(); setEditingId(null); setIsFormOpen(true); }}
           >
-            <Plus className="mr-2 h-5 w-5" />
+            <Plus className="mr-2 h-4 w-4" />
             Nova Transação
           </Button>
         </div>
