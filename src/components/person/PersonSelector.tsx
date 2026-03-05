@@ -46,9 +46,11 @@ export function PersonSelector({
         );
     }
 
+    const titularName = settings.titular_name || 'Principal (Geral)';
+
     const currentName = selectedPerson
         ? selectedPerson.name
-        : (!settings.hide_titular ? 'Principal (Geral)' : (people.find(p => p.is_default)?.name || 'Titular'));
+        : (!settings.hide_titular ? titularName : (people.find(p => p.is_default)?.name || 'Titular'));
 
     return (
         <DropdownMenu>
@@ -90,7 +92,7 @@ export function PersonSelector({
                         >
                             <User className="h-4 w-4 shrink-0 opacity-70" />
                             <span className="font-bold tracking-tight truncate flex-1 text-sm uppercase">
-                                Principal (Geral)
+                                {titularName}
                             </span>
                             {!selectedPerson && (
                                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />

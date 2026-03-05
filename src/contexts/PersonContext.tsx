@@ -33,7 +33,10 @@ interface PersonProviderProps {
 export function PersonProvider({ children }: PersonProviderProps) {
     const [people, setPeople] = useState<Person[]>([]);
     const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
-    const [settings, setSettings] = useState<ProfileSettings>({});
+    const [settings, setSettings] = useState<ProfileSettings>(() => {
+        const saved = localStorage.getItem('onlifin_profile_settings');
+        return saved ? JSON.parse(saved) : {};
+    });
     const [isLoadingPeople, setIsLoadingPeople] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { isPJ } = useFinanceScope();
@@ -87,12 +90,22 @@ export function PersonProvider({ children }: PersonProviderProps) {
     }, []);
 
     /**
-     * Carrega pessoas ao montar
+     * Carrega pessoas e configurações ao montar
      */
     useEffect(() => {
-        // Só carrega se NÃO for PJ (ou carrega sempre? melhor carregar sempre para ter disponível se trocar)
-        // Mas se estiver em PJ, talvez não precise. Por enquanto carrega sempre.
-        loadPeople();
+        const init = async () => {
+            await loadPeople();
+            try {
+                const profile = await profileService.getProfile();
+                if (profile?.settings) {
+                    setSettings(profile.settings);
+                    localStorage.setItem('onlifin_profile_settings', JSON.stringify(profile.settings));
+                }
+            } catch (err) {
+                console.warn('Usando configurações locais (offline ou erro no servidor)');
+            }
+        };
+        init();
     }, [loadPeople]);
 
     /**
@@ -207,14 +220,22 @@ export function PersonProvider({ children }: PersonProviderProps) {
     }, [people, refreshPeople, selectedPerson]);
 
     const updateSettings = useCallback(async (newSettings: Partial<ProfileSettings>): Promise<void> => {
+        // Atualiza local imediatamente para uma UI responsiva
+        const mergedSettings = { ...settings, ...newSettings };
+        setSettings(mergedSettings);
+        localStorage.setItem('onlifin_profile_settings', JSON.stringify(mergedSettings));
+
         try {
             const updatedProfile = await profileService.updateSettings(newSettings);
-            setSettings(updatedProfile.settings);
+            if (updatedProfile?.settings) {
+                setSettings(updatedProfile.settings);
+                localStorage.setItem('onlifin_profile_settings', JSON.stringify(updatedProfile.settings));
+            }
         } catch (err) {
-            console.error('Erro ao atualizar configurações:', err);
-            throw err;
+            console.error('Erro ao salvar no servidor, mantendo local:', err);
+            // Non-blocking: we keep the local state even if server fails
         }
-    }, []);
+    }, [settings]);
 
     const value: PersonContextType = {
         people,

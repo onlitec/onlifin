@@ -186,7 +186,7 @@ export default function PeoplePage() {
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                                     <User className="h-3 w-3 text-primary" />
-                                    PRINCIPAL (GERAL)
+                                    {settings.titular_name || 'PRINCIPAL (GERAL)'}
                                 </CardTitle>
                                 <Badge variant="default" className="bg-primary/20 text-primary border-none text-[10px]">SISTEMA</Badge>
                             </CardHeader>
@@ -195,6 +195,16 @@ export default function PeoplePage() {
                                     Visualização consolidada de todos os membros.
                                 </div>
                                 <div className="flex justify-end gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                            const newName = prompt('Novo nome para a visualização principal:', settings.titular_name || 'Principal (Geral)');
+                                            if (newName) updateSettings({ titular_name: newName });
+                                        }}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
