@@ -440,6 +440,8 @@ export class BillTransactionService {
         nextDueDate.setMonth(nextDueDate.getMonth() + 1);
       } else if (bill.recurrence_pattern === 'weekly') {
         nextDueDate.setDate(nextDueDate.getDate() + 7);
+      } else if (bill.recurrence_pattern === 'fortnightly') {
+        nextDueDate.setDate(nextDueDate.getDate() + 14);
       } else if (bill.recurrence_pattern === 'yearly') {
         nextDueDate.setFullYear(nextDueDate.getFullYear() + 1);
       } else {

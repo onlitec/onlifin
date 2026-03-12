@@ -172,6 +172,8 @@ export default function BillsToPay() {
             dueDate.setMonth(dueDate.getMonth() + i);
           } else if (formData.frequency === 'weekly') {
             dueDate.setDate(dueDate.getDate() + (i * 7));
+          } else if (formData.frequency === 'fortnightly') {
+            dueDate.setDate(dueDate.getDate() + (i * 14));
           } else if (formData.frequency === 'yearly') {
             dueDate.setFullYear(dueDate.getFullYear() + i);
           }
@@ -452,6 +454,7 @@ export default function BillsToPay() {
                         </SelectTrigger>
                         <SelectContent className="glass-card premium-card border-white/10">
                           <SelectItem value="weekly">Semanal</SelectItem>
+                          <SelectItem value="fortnightly">Quinzinal</SelectItem>
                           <SelectItem value="monthly">Mensal</SelectItem>
                           <SelectItem value="yearly">Anual</SelectItem>
                         </SelectContent>
