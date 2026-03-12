@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.23.1] - 2026-03-12
+
+### chore: remove non-essential files from remote
+
+---
+
+
+
 ## [1.23.0] - 2026-03-12
 
 ### feat: Added virtual card for Principal (Geral) and fixed selector button label
