@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.27.0] - 2026-03-12
+
+### feat: improve dialog scroll and add fortnightly logic
+
+---
+
+
+
 ## [1.26.0] - 2026-03-12
 
 ### feat: add fortnightly frequency and bump version to 1.26.0
