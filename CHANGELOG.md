@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.24.0] - 2026-03-12
+
+### feat: implement installments and recurring bills logic for payable and receivable accounts
+
+---
+
+
+
 ## [1.23.3] - 2026-03-12
 
 ### fix: account navigation, consolidated filter and deployment sync (v1.23.5)
