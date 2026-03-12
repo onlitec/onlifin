@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,6 +110,7 @@ function extractKeywordFromDescription(description: string): string {
 }
 
 export default function ImportStatements() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [fileContent, setFileContent] = React.useState('');
   const [textContent, setTextContent] = React.useState('');
@@ -772,7 +774,10 @@ export default function ImportStatements() {
               <Button onClick={resetImport} variant="outline">
                 Importar Mais Transações
               </Button>
-              <Button onClick={() => window.location.href = '/transactions'}>
+              <Button onClick={() => {
+                const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
+                navigate(`${prefix}/transactions`);
+              }}>
                 Ver Transações
               </Button>
             </div>

@@ -56,8 +56,9 @@ export function OnlifinSidebar() {
                 { title: 'Contas a Receber', path: `${prefix}/bills-to-receive` }
             ]
         },
-        { title: 'Relatórios', icon: FileText, path: '/reports' },
         { title: 'Previsão Financeira', icon: TrendingUp, path: '/forecast' },
+        { title: 'Empresas', icon: Building2, path: '/companies' },
+        { title: 'Relatórios', icon: FileText, path: '/reports' },
         {
             title: 'Administração', icon: Settings, path: '/admin', subItems: [
                 { title: 'Geral', path: '/admin-general' },

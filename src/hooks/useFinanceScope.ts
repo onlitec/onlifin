@@ -27,13 +27,13 @@ export function useFinanceScope() {
 
     // companyId para chamadas de API:
     // - Para PJ: o ID da URL
-    // - Para PF: null explicitly
-    const currentCompanyId = isPJ ? (companyId || null) : null;
+    // - Para PF: undefined (não filtra por empresa)
+    const currentCompanyId = isPJ ? (companyId || null) : undefined;
 
     // personId para chamadas de API (apenas relevante para PF):
     // - Para PJ: undefined (não filtra por pessoa)
-    // - Para PF: selectedPerson.id ou null (se Main)
-    const currentPersonId = isPF ? (selectedPerson?.id || null) : undefined;
+    // - Para PF: selectedPerson.id ou undefined (se Main - mostra todos)
+    const currentPersonId = isPF ? (selectedPerson?.id || undefined) : undefined;
 
     return {
         isPF,

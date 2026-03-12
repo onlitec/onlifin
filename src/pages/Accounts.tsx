@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { accountsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { useFinanceScope } from '@/hooks/useFinanceScope';
 import type { Account } from '@/types/types';
 
 export default function Accounts() {
+  const navigate = useNavigate();
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isRecalculating, setIsRecalculating] = React.useState(false);
@@ -471,7 +473,10 @@ export default function Accounts() {
                     <Button
                       variant="ghost"
                       className="mt-2 sm:mt-0 px-4 h-9 rounded-xl bg-primary/5 hover:bg-primary hover:text-white text-primary text-[10px] font-black uppercase tracking-widest group/btn transition-all"
-                      onClick={() => window.location.href = `/transactions?account_id=${account.id}`}
+                      onClick={() => {
+                        const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
+                        navigate(`${prefix}/transactions?account_id=${account.id}`);
+                      }}
                     >
                       Ver Extrato
                       <TrendingUp className="ml-2 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />

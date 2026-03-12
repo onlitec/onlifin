@@ -86,11 +86,8 @@ function MainLayout() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 mr-4">
-              {isPJ ? (
-                <CompanySelectorCompact />
-              ) : (
-                <PersonSelector size="sm" className="h-9 border-slate-200 rounded-xl font-bold" />
-              )}
+              {!isPJ && <PersonSelector size="sm" className="h-9 border-slate-200 rounded-xl font-bold" />}
+              <CompanySelectorCompact />
             </div>
 
             <div className="flex items-center gap-2 pr-4 border-r border-slate-100">
