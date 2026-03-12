@@ -1,15 +1,10 @@
 import * as React from 'react';
 import { supabase } from '@/db/client';
-import { transactionsApi, forecastsApi, billsToReceiveApi } from '@/db/api';
+import { transactionsApi, billsToReceiveApi } from '@/db/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Calendar,
-  Bot,
-  Wallet
-} from 'lucide-react';
-import type { DashboardStats, CategoryExpense, MonthlyData, FinancialForecast } from '@/types/types';
+import type { DashboardStats, CategoryExpense, MonthlyData } from '@/types/types';
 
 import { BalanceCards } from '@/components/dashboard/BalanceCards';
 import { CategoryBreakdown } from '@/components/dashboard/CategoryBreakdown';
@@ -28,11 +23,8 @@ export default function Dashboard() {
   const [enhancedStats, setEnhancedStats] = React.useState<EnhancedStats | null>(null);
   const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
   const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
-  const [forecast, setForecast] = React.useState<FinancialForecast | null>(null);
   const [pendingToReceive, setPendingToReceive] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
-
-  // Estado para mês/ano selecionado
   const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth().toString());
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
 
@@ -51,17 +43,15 @@ export default function Dashboard() {
       const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-      const [dashboardStats, expenses, monthly, latestForecast] = await Promise.all([
-        transactionsApi.getDashboardStats(user.id, companyId, personId),
+      const [dashboardStats, expenses, monthly] = await Promise.all([
+        transactionsApi.getDashboardStats(user.id, companyId, personId, month, year),
         transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth, companyId, personId),
-        transactionsApi.getMonthlyData(user.id, 6, { companyId: companyId, personId: personId }),
-        forecastsApi.getLatest(user.id, companyId, personId).catch(() => null)
+        transactionsApi.getMonthlyData(user.id, 6, { companyId, personId, month, year })
       ]);
 
       setStats(dashboardStats);
       setCategoryExpenses(expenses);
       setMonthlyData(monthly);
-      setForecast(latestForecast);
 
       try {
         const pendingBills = await billsToReceiveApi.getPending(user.id);
@@ -139,13 +129,6 @@ export default function Dashboard() {
     });
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
   const months = [
     { value: '0', label: 'Janeiro' },
     { value: '1', label: 'Fevereiro' },
@@ -186,29 +169,29 @@ export default function Dashboard() {
   const currentMonthLabel = months.find(m => m.value === selectedMonth)?.label;
 
   return (
-    <div className="p-8 lg:p-12 space-y-10 max-w-[1600px] mx-auto animate-slide-up">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto animate-slide-up bg-slate-50/30 min-h-screen">
       {/* Page Header */}
-      <header className="space-y-6">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 uppercase">
+          <h1 className="text-xl font-black tracking-[0.05em] text-slate-900 uppercase">
             Painel Financeiro
           </h1>
-          <p className="text-slate-500 font-medium">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             {currentMonthLabel} de {selectedYear}
           </p>
         </div>
 
-        {/* Filters Bar */}
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Mês</span>
+        {/* Filters Bar - Refactored for compactness */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Mês</span>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[180px] bg-white border-slate-300 rounded-xl h-11 text-sm font-semibold shadow-sm">
+              <SelectTrigger className="w-[110px] bg-white border-slate-200 rounded-lg h-8 text-[11px] font-bold shadow-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {months.map(month => (
-                  <SelectItem key={month.value} value={month.value} className="font-medium">
+                  <SelectItem key={month.value} value={month.value} className="text-xs font-bold">
                     {month.label}
                   </SelectItem>
                 ))}
@@ -216,15 +199,15 @@ export default function Dashboard() {
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Ano</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Ano</span>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[120px] bg-white border-slate-300 rounded-xl h-11 text-sm font-semibold shadow-sm">
+              <SelectTrigger className="w-[85px] bg-white border-slate-200 rounded-lg h-8 text-[11px] font-bold shadow-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {years.map(year => (
-                  <SelectItem key={year.value} value={year.value} className="font-medium">
+                  <SelectItem key={year.value} value={year.value} className="text-xs font-bold">
                     {year.label}
                   </SelectItem>
                 ))}
@@ -232,23 +215,22 @@ export default function Dashboard() {
             </Select>
           </div>
 
-          <div className="pt-5">
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-8 rounded-xl shadow-sm transition-all"
-              onClick={() => {
-                const now = new Date();
-                setSelectedMonth(now.getMonth().toString());
-                setSelectedYear(now.getFullYear().toString());
-              }}
-            >
-              Mês Atual
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-8 px-4 rounded-lg shadow-sm transition-all"
+            onClick={() => {
+              const now = new Date();
+              setSelectedMonth(now.getMonth().toString());
+              setSelectedYear(now.getFullYear().toString());
+            }}
+          >
+            Mês Atual
+          </Button>
         </div>
       </header>
 
       {/* Primary Stats */}
-      <section className="space-y-6">
+      <section className="space-y-4">
         <BalanceCards
           totalBalance={stats?.totalBalance || 0}
           monthlyIncome={enhancedStats?.monthlyIncome || 0}
@@ -259,7 +241,7 @@ export default function Dashboard() {
       </section>
 
       {/* Main Insights Grid */}
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 pb-8">
         <div className="lg:col-span-2">
           <SpendingChart data={monthlyData} />
         </div>
@@ -267,109 +249,6 @@ export default function Dashboard() {
           <CategoryBreakdown categories={categoryExpenses} />
         </div>
       </div>
-
-      {/* Featured Section: Contas a Pagar (Simulated based on image layout) */}
-      <section className="section-container space-y-8">
-        <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4">
-          <div className="bg-red-500/10 p-2.5 rounded-xl border border-red-200/50">
-            <Calendar className="h-6 w-6 text-red-500" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">Contas a Pagar</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestão de Vencimentos</p>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="glass-card premium-card p-6 flex flex-col justify-between">
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Resumo de Contas</h3>
-              <p className="text-xs text-slate-400">Status das contas a pagar</p>
-            </div>
-
-            <div className="bg-slate-100/80 p-6 rounded-2xl border border-slate-200 flex items-center justify-between my-6">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Total a Pagar</span>
-                <h4 className="text-2xl font-bold text-red-500 tracking-tight">{formatCurrency(100)}</h4>
-              </div>
-              <div className="p-3 bg-red-100/80 rounded-lg border border-red-200">
-                <Wallet className="h-5 w-5 text-red-600" />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                  <span className="text-sm font-semibold text-slate-600">Pendentes</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900">{formatCurrency(100)}</p>
-                  <p className="text-[10px] text-slate-400">1 conta</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                  <span className="text-sm font-semibold text-slate-600">Vencidas</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900">{formatCurrency(0)}</p>
-                  <p className="text-[10px] text-slate-400">0 contas</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  <span className="text-sm font-semibold text-slate-600">Pagas</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900">{formatCurrency(0)}</p>
-                  <p className="text-[10px] text-slate-400">0 contas</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="glass-card premium-card p-6 flex flex-col">
-            <div className="space-y-2 mb-6">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Distribuição por Status</h3>
-              <p className="text-xs text-slate-400">Valores das contas a pagar</p>
-            </div>
-            <div className="flex-1 flex items-center justify-center relative">
-              {/* Simplified Donut Chart Representation for UI Matching */}
-              <div className="h-48 w-48 rounded-full border-[20px] border-amber-500 flex items-center justify-center">
-                <div className="text-center">
-                  <span className="text-2xl font-bold text-slate-900">100%</span>
-                  <p className="text-[10px] text-slate-400 uppercase font-black">Pendentes</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Inteligência Artificial */}
-      {forecast && forecast.insights && (
-        <section className="glass-card premium-card p-12 bg-blue-50/80 border-blue-200 flex items-start gap-8">
-          <div className="p-4 bg-white rounded-2xl shadow-md border border-blue-200">
-            <Bot className="h-8 w-8 text-blue-600 shadow-blue-200" />
-          </div>
-          <div className="space-y-4 flex-1">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 uppercase">Auditoria Inteligente</h2>
-              <p className="text-xs text-slate-500 font-medium">Insights da IA para sua saúde financeira</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {forecast.insights.slice(0, 4).map((insight, idx) => (
-                <div key={idx} className="bg-white/50 p-4 rounded-xl border border-blue-100 flex items-center gap-3 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
-                  <div className="h-2 w-2 rounded-full bg-blue-500" />
-                  <p className="text-xs font-bold text-slate-700 leading-relaxed">{insight}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
     </div>
   );
 }

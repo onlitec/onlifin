@@ -143,7 +143,7 @@ export default function BillsToReceive() {
     try {
       const billData = {
         user_id: userId!,
-        company_id: isPJ ? companyId : null,
+        company_id: (isPJ ? companyId : null) ?? null,
         person_id: !isPJ ? (personId || null) : null,
         description: formData.description,
         amount: Number.parseFloat(formData.amount),
@@ -249,14 +249,14 @@ export default function BillsToReceive() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-8 animate-in fade-in duration-700">
+    <div className="w-full max-w-[1600px] mx-auto p-4 lg:p-6 space-y-6 animate-slide-up bg-slate-50/30 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 pb-2">
-        <div className="space-y-1">
-          <h1 className="text-3xl xl:text-5xl font-black tracking-tighter uppercase">
-            Capital de Entrada <span className="text-blue-500/50">{isPJ ? 'Empresarial' : 'Pessoal'}</span>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h1 className="text-xl font-black tracking-[0.05em] text-slate-900 uppercase">
+            Capital de Entrada <span className="text-blue-500/70">{isPJ ? 'Empresarial' : 'Pessoal'}</span>
           </h1>
-          <p className="text-muted-foreground font-medium uppercase text-xs tracking-[0.2em] opacity-70">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Monitore seus fluxos financeiros de entrada e receitas esperadas
           </p>
         </div>
@@ -265,8 +265,8 @@ export default function BillsToReceive() {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="lg" className="w-full xl:w-auto glass border-blue-500/20 hover:bg-blue-500/20 text-blue-500 font-black uppercase tracking-widest px-8 h-14 rounded-2xl shadow-xl shadow-blue-500/10 transition-all hover:scale-105 active:scale-95">
-              <Plus className="mr-2 h-5 w-5" />
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95">
+              <Plus className="mr-2 h-4 w-4" />
               Registrar Receita
             </Button>
           </DialogTrigger>
@@ -391,45 +391,43 @@ export default function BillsToReceive() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card premium-card border-yellow-400 p-8 rounded-3xl space-y-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <AlertCircle className="h-24 w-24 text-yellow-500 -mr-8 -mt-8" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white border border-slate-200 p-4 rounded-2xl relative overflow-hidden group shadow-sm">
+          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+            <AlertCircle className="h-16 w-16 text-yellow-500 -mr-4 -mt-4" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-600">Status de Espera: Pendente</span>
-          <p className="text-3xl font-black tracking-tighter">
+          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1">Expectativa: Pendente</span>
+          <p className="text-xl font-black tracking-tight text-slate-900">
             R$ {pendingBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">
-            <span>{pendingBills.length} Itens de expectativa</span>
+          <div className="mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 inline-block px-2 py-0.5 rounded">
+            {pendingBills.length} Lançamentos
           </div>
         </div>
 
-        <div className="glass-card premium-card border-red-400 p-8 rounded-3xl space-y-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <AlertCircle className="h-24 w-24 text-red-500 -mr-8 -mt-8" />
+        <div className="bg-white border border-slate-200 p-4 rounded-2xl relative overflow-hidden group shadow-sm">
+          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+            <AlertCircle className="h-16 w-16 text-red-500 -mr-4 -mt-4" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Risco: Liquidez Atrasada</span>
-          <p className="text-3xl font-black tracking-tighter text-red-500">
+          <span className="text-[9px] font-black uppercase tracking-widest text-red-500 block mb-1">Risco: Em Atraso</span>
+          <p className="text-xl font-black tracking-tight text-red-500">
             R$ {overdueBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">
-            <span>{overdueBills.length} Itens fora de sincronia</span>
+          <div className="mt-2 text-[9px] font-bold text-red-400 uppercase tracking-widest bg-red-50 inline-block px-2 py-0.5 rounded">
+            {overdueBills.length} Pendências
           </div>
         </div>
 
-        <div className="glass-card premium-card border-emerald-400 p-8 rounded-3xl space-y-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <CheckCircle className="h-24 w-24 text-green-500 -mr-8 -mt-8" />
+        <div className="bg-white border border-slate-200 p-4 rounded-2xl relative overflow-hidden group shadow-sm">
+          <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+            <CheckCircle className="h-16 w-16 text-emerald-500 -mr-4 -mt-4" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Liquidez: Capital Assegurado</span>
-          <p className="text-3xl font-black tracking-tighter text-green-500">
+          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 block mb-1">Realizado: Confirmado</span>
+          <p className="text-xl font-black tracking-tight text-emerald-600">
             R$ {paidBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">
-            <span>{paidBills.length} Entrada confirmada</span>
+          <div className="mt-2 text-[9px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-50 inline-block px-2 py-0.5 rounded">
+            {paidBills.length} Efetuados
           </div>
         </div>
       </div>

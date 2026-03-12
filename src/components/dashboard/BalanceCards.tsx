@@ -62,27 +62,33 @@ export function BalanceCards({
     ];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {cards.map((card, index) => {
                 const Icon = card.icon;
 
                 return (
                     <div
                         key={index}
-                        className="premium-card p-6 flex flex-col justify-between min-h-[140px] shadow-sm group"
+                        className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between min-h-[130px] shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
                     >
-                        <div className="flex items-start justify-between mb-4">
-                            <span className="text-sm font-semibold text-slate-500">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">
                                 {card.title}
                             </span>
-                            <Icon className={`h-4 w-4 ${card.iconColor}`} />
+                            <div className="p-1 rounded-lg bg-slate-50 border border-slate-100/50 group-hover:scale-110 transition-transform">
+                                <Icon className={`h-3 w-3 ${card.iconColor}`} />
+                            </div>
                         </div>
 
-                        <div className="space-y-1">
-                            <h3 className={`text-2xl font-bold tracking-tight ${card.valueColor}`}>
+                        <div className="my-2">
+                            <h3 className={`text-2xl font-black tracking-tight ${card.valueColor}`}>
                                 {card.isPercentage ? `${card.value.toFixed(1)}%` : formatCurrency(card.value)}
                             </h3>
-                            <p className="text-xs font-medium text-slate-400">
+                        </div>
+
+                        <div className="flex items-center gap-1.5 mt-auto">
+                            <div className={`h-1 w-1 rounded-full ${card.iconColor.replace('text-', 'bg-')} animate-pulse`} />
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
                                 {card.subtitle}
                             </p>
                         </div>

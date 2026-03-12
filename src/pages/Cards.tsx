@@ -153,14 +153,14 @@ export default function Cards() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-8 animate-in fade-in duration-700">
+    <div className="w-full max-w-[1600px] mx-auto p-4 lg:p-6 space-y-6 animate-slide-up bg-slate-50/30 min-h-screen">
       {/* Header Section */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 pb-2">
-        <div className="space-y-1">
-          <h1 className="text-3xl xl:text-5xl font-black tracking-tighter uppercase">
-            Cartões <span className="text-primary/50">{isPJ ? 'Corporativos' : 'Pessoais'}</span>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h1 className="text-xl font-black tracking-[0.05em] text-slate-900 uppercase">
+            Cartões <span className="text-primary/70">{isPJ ? 'Corporativos' : 'Pessoais'}</span>
           </h1>
-          <p className="text-muted-foreground font-medium uppercase text-xs tracking-[0.2em] opacity-70">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Gestão de crédito e ciclos de faturamento
           </p>
         </div>
@@ -169,8 +169,8 @@ export default function Cards() {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="lg" className="w-full xl:w-auto glass border-primary/20 hover:bg-primary/20 text-primary font-black uppercase tracking-widest px-8 h-14 rounded-2xl shadow-xl shadow-primary/10 transition-all hover:scale-105 active:scale-95">
-              <Plus className="mr-2 h-5 w-5" />
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95">
+              <Plus className="mr-2 h-4 w-4" />
               Novo Cartão
             </Button>
           </DialogTrigger>
@@ -289,52 +289,51 @@ export default function Cards() {
       </div>
 
       {/* Lista de Cartões */}
-      <div className="glass-card premium-card border-slate-300 rounded-3xl overflow-hidden shadow-2xl">
+      <div className="grid gap-4">
         {cards.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 px-4 bg-white/[0.02]">
-            <div className="relative group mb-6">
-              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transition-all group-hover:bg-primary/30" />
-              <CreditCard className="h-16 w-16 text-primary relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
+          <div className="bg-white border border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center shadow-sm">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4">
+              <CreditCard className="h-8 w-8 text-slate-400 opacity-50" />
             </div>
-            <p className="text-xl font-black uppercase tracking-tighter mb-2">Sem Cartões Registrados</p>
-            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
+            <p className="text-sm font-black uppercase tracking-widest text-slate-800 mb-1">Sem Cartões Registrados</p>
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest text-center max-w-xs">
               Adicione seus cartões de crédito para monitorar limites e faturas.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="space-y-4">
             {cards.map((card) => (
-              <div key={card.id} className="flex items-center justify-between p-6 hover:bg-white/[0.03] transition-all duration-300 group">
-                <div className="flex items-center gap-6 flex-1 min-w-0">
+              <div key={card.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                <div className="flex items-center gap-4 flex-1 min-w-0 w-full sm:w-auto">
                   {/* Ícone da Bandeira */}
-                  <div className="p-4 rounded-2xl bg-white/5 shrink-0 border border-white/5 shadow-lg group-hover:border-primary/20 transition-all group-hover:scale-105 group-hover:bg-white/[0.08]">
+                  <div className="w-16 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     <img
                       src={card.icon ? getCardBrandById(card.icon)?.icon || getDefaultCardIcon() : getDefaultCardIcon()}
                       alt={card.brand || 'Bandeira'}
-                      className="h-8 w-12 object-contain"
+                      className="h-6 w-10 object-contain"
                     />
                   </div>
 
                   {/* Informações do Cartão */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center gap-3">
-                      <p className="font-black text-xl tracking-tighter uppercase leading-none">{card.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-black text-sm tracking-tight text-slate-900 uppercase truncate">{card.name}</p>
                       {card.account_id && (
-                        <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
                           <Wallet className="h-2 w-2" />
                           {accounts.find(a => a.id === card.account_id)?.name}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                       {card.closing_day && (
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                        <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-slate-400">
                           <Calendar className="h-3 w-3" />
                           Fechamento: Dia {card.closing_day}
                         </div>
                       )}
                       {card.due_day && (
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 border-l border-white/10 pl-6">
+                        <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-slate-400 pl-4 border-l border-slate-100">
                           <Landmark className="h-3 w-3" />
                           Vencimento: Dia {card.due_day}
                         </div>
@@ -343,33 +342,41 @@ export default function Cards() {
                   </div>
 
                   {/* Limite */}
-                  <div className="text-right shrink-0 px-8">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30 block mb-1">Limite Total</span>
-                    <p className="text-2xl font-black tracking-tighter text-slate-900">
+                  <div className="text-right shrink-0 px-6 border-l border-slate-100 hidden md:block">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">Limite Total</span>
+                    <p className="text-lg font-black tracking-tight text-slate-900">
                       {formatCurrency(card.card_limit)}
                     </p>
                   </div>
                 </div>
 
+                {/* Mobile View Limite */}
+                <div className="flex items-center justify-between w-full mt-4 pt-4 border-t border-slate-50 md:hidden">
+                    <div className="text-left">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">Limite Total</span>
+                        <p className="text-base font-black tracking-tight text-slate-900">
+                            {formatCurrency(card.card_limit)}
+                        </p>
+                    </div>
+                </div>
+
                 {/* Botões de Ação */}
-                <div className="flex gap-2 items-center opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                <div className="flex gap-2 items-center mt-4 sm:mt-0 sm:ml-4">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-12 w-12 rounded-xl bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground hover:scale-110 transition-all"
+                    className="h-9 w-9 rounded-lg bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-all"
                     onClick={() => openEditDialog(card)}
-                    title="Editar Parâmetros"
                   >
-                    <Pencil className="h-5 w-5" />
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-12 w-12 rounded-xl bg-red-500/5 text-red-500/40 hover:bg-red-500/20 hover:text-red-500 hover:scale-110 transition-all"
+                    className="h-9 w-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-all"
                     onClick={() => handleDelete(card.id)}
-                    title="Remover Registro"
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

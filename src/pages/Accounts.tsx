@@ -7,11 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, Info, DollarSign } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BankIconSelector } from '@/components/ui/bank-icon-selector';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getBankById, getDefaultBankIcon } from '@/config/banks';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import type { Account } from '@/types/types';
@@ -84,7 +90,7 @@ export default function Accounts() {
           ...accountData,
           balance: Number(formData.balance), // Also set current balance to initial on create
           user_id: user.id,
-          company_id: companyId, // Associar ao ID da URL (null para PF)
+          company_id: companyId ?? null, // Associar ao ID da URL (null para PF)
           person_id: personId ?? null // Associar à pessoa selecionada (PF)
         });
         toast({ title: 'Sucesso', description: 'Conta criada com sucesso' });
@@ -179,32 +185,33 @@ export default function Accounts() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-8 animate-in fade-in duration-700">
+    <TooltipProvider delayDuration={0}>
+      <div className="w-full max-w-[1600px] mx-auto p-4 lg:p-6 space-y-6 animate-slide-up bg-slate-50/30 min-h-screen">
       {/* Header Section */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 pb-2">
-        <div className="space-y-1">
-          <h1 className="text-2xl xl:text-3xl font-black tracking-tighter uppercase">
-            Contas <span className="text-primary/50">{isPJ ? 'Corporativas' : 'Pessoais'}</span>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h1 className="text-xl font-black tracking-[0.05em] text-slate-900 uppercase">
+            Contas <span className="text-primary/70">{isPJ ? 'Corporativas' : 'Pessoais'}</span>
           </h1>
-          <p className="text-muted-foreground font-medium uppercase text-xs tracking-[0.2em] opacity-70">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Gestão estratégica de ativos e controle de liquidez
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={handleRecalculateBalances}
             disabled={isRecalculating}
-            className="glass border-white/5 text-[10px] uppercase font-black tracking-widest px-4 h-9 rounded-lg group transition-all hover:bg-white/5"
+            className="bg-white border-slate-200 text-slate-600 font-bold text-[10px] uppercase tracking-widest h-9 px-4 rounded-lg shadow-sm transition-all"
           >
             {isRecalculating ? (
               <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin text-primary" />
+                <RefreshCw className="mr-2 h-3 w-3 animate-spin" />
                 Recalculando...
               </>
             ) : (
               <>
-                <RefreshCw className="mr-2 h-4 w-4 text-primary opacity-50 group-hover:opacity-100 transition-opacity" />
+                <RefreshCw className="mr-2 h-3 w-3" />
                 Recalcular Ativos
               </>
             )}
@@ -214,7 +221,7 @@ export default function Accounts() {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="default" className="glass border-primary/20 hover:bg-primary/20 text-primary font-black uppercase tracking-widest px-6 h-10 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95">
                 <Plus className="mr-2 h-4 w-4" />
                 Inicializar Conta
               </Button>
@@ -314,34 +321,7 @@ export default function Accounts() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="md:col-span-2 lg:col-span-2">
-          <Alert className="glass-card premium-card border-slate-300 bg-white rounded-2xl p-4">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <Info className="h-5 w-5 text-primary" />
-              </div>
-              <AlertDescription className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Dinâmica de Liquidez</p>
-                <div className="flex flex-wrap items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-green-500/10 rounded-lg">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                    </div>
-                    <span className="text-xs uppercase font-black tracking-widest opacity-80 decoration-green-500 underline decoration-2 underline-offset-4">Entrada de Ativos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-red-500/10 rounded-lg">
-                      <TrendingDown className="h-4 w-4 text-red-500" />
-                    </div>
-                    <span className="text-xs uppercase font-black tracking-widest opacity-80 decoration-red-500 underline decoration-2 underline-offset-4">Saída de Capital</span>
-                  </div>
-                </div>
-              </AlertDescription>
-            </div>
-          </Alert>
-        </div>
-      </div>
+
 
       {/* Sumário de Ativos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -361,7 +341,14 @@ export default function Accounts() {
 
         <div className="glass-card premium-card border-slate-300 bg-white rounded-2xl p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp className="h-16 w-16 text-emerald-500" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TrendingUp className="h-16 w-16 text-emerald-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="bg-emerald-600 text-white border-0 font-bold">
+                <p>Entrada de Ativos: Receitas e depósitos que aumentam o saldo.</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600/70 mb-2">Ativos Positivos</p>
           <h2 className="text-2xl font-black tracking-tighter text-emerald-600">
@@ -374,7 +361,14 @@ export default function Accounts() {
 
         <div className="glass-card premium-card border-slate-300 bg-white rounded-2xl p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingDown className="h-16 w-16 text-red-500" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TrendingDown className="h-16 w-16 text-red-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="bg-red-600 text-white border-0 font-bold">
+                <p>Saída de Capital: Despesas e pagamentos que reduzem o saldo.</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600/70 mb-2">Passivos / Descobertos</p>
           <h2 className="text-2xl font-black tracking-tighter text-red-600">
@@ -488,6 +482,7 @@ export default function Accounts() {
           })
         )}
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

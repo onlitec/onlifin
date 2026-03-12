@@ -49,15 +49,15 @@ export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
     }));
 
     return (
-        <div className="glass-card premium-card p-10 h-full flex flex-col gap-8">
-            <div className="space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">Gastos por Categoria</h3>
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Distribuição Mensal</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 lg:p-6 h-full flex flex-col gap-4 shadow-sm">
+            <div className="space-y-0.5">
+                <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase">Gastos por Categoria</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Distribuição Mensal</p>
             </div>
 
             <div className="flex-1 flex flex-col justify-center">
-                <div className="flex flex-col items-center gap-10">
-                    <div className="relative flex-shrink-0" style={{ width: 160, height: 160 }}>
+                <div className="flex flex-col items-center gap-6">
+                    <div className="relative flex-shrink-0" style={{ width: 140, height: 140 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
@@ -95,16 +95,16 @@ export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
                         </div>
                     </div>
 
-                    <div className="w-full space-y-5">
+                    <div className="w-full space-y-3">
                         {topCategories.map((cat) => {
                             const percentage = total > 0 ? (cat.amount / total) * 100 : 0;
                             const config = CATEGORY_CONFIG[cat.category] || DEFAULT_CONFIG;
                             const Icon = config.icon;
 
                             return (
-                                <div key={cat.category} className="group flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 shadow-sm">
-                                        <Icon className="w-5 h-5 text-slate-700" />
+                                <div key={cat.category} className="group flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 shadow-sm">
+                                        <Icon className="w-4 h-4 text-slate-700" />
                                     </div>
 
                                     <div className="flex-1 min-w-0">

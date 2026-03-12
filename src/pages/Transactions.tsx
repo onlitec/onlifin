@@ -112,7 +112,7 @@ export default function Transactions() {
         account_id: formData.account_id || null,
         category_id: formData.category_id || null,
         user_id: user.id,
-        company_id: companyId,
+        company_id: companyId ?? null,
         person_id: personId || null,
         card_id: null,
         tags: null,
@@ -204,23 +204,28 @@ export default function Transactions() {
   );
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-8 animate-in fade-in duration-700">
+    <div className="w-full max-w-[1600px] mx-auto p-4 lg:p-6 space-y-6 animate-slide-up bg-slate-50/30 min-h-screen">
       {/* Page Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-2xl xl:text-3xl font-black tracking-tight text-slate-900 uppercase mb-1">Transações</h1>
-          <p className="text-slate-500 font-medium">Histórico financeiro completo e gestão de fluxo</p>
+          <h1 className="text-xl font-black tracking-[0.05em] text-slate-900 uppercase">
+            Transações
+          </h1>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+            Histórico financeiro completo e gestão de fluxo
+          </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 w-full lg:w-auto">
           <Button
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold h-11 px-6 rounded-xl border-slate-200"
+            variant="outline"
+            className="bg-white border-slate-200 text-slate-600 font-bold text-[10px] uppercase tracking-widest h-9 px-4 rounded-lg shadow-sm transition-all"
             onClick={() => setShowReceiptScanner(true)}
           >
-            <Camera className="mr-2 h-5 w-5" />
+            <Camera className="mr-2 h-4 w-4" />
             Escanear
           </Button>
           <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 px-6 rounded-xl shadow-sm transition-all active:scale-95"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95"
             onClick={() => { resetForm(); setEditingId(null); setIsFormOpen(true); }}
           >
             <Plus className="mr-2 h-4 w-4" />

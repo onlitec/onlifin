@@ -53,25 +53,25 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function SpendingChart({ data }: SpendingChartProps) {
     return (
-        <div className="glass-card premium-card p-10 h-full flex flex-col gap-8">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 lg:p-6 h-full flex flex-col gap-4 shadow-sm">
             <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                    <h3 className="text-lg font-bold text-slate-900">Evolução Mensal</h3>
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">Performance Fiscal</p>
+                <div className="space-y-0.5">
+                    <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase">Evolução Mensal</h3>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Performance Fiscal</p>
                 </div>
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Receitas</span>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Receitas</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Despesas</span>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-red-500" />
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Despesas</span>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 w-full min-h-[300px]">
+            <div className="flex-1 w-full min-h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>

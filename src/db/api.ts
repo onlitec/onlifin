@@ -446,10 +446,13 @@ export const transactionsApi = {
     if (error) throw error;
   },
 
-  async getDashboardStats(userId: string, companyId?: string | null, personId?: string | null): Promise<DashboardStats> {
+  async getDashboardStats(userId: string, companyId?: string | null, personId?: string | null, month?: number, year?: number): Promise<DashboardStats> {
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const targetMonth = month !== undefined ? month : now.getMonth();
+    const targetYear = year !== undefined ? year : now.getFullYear();
+
+    const firstDayOfMonth = new Date(targetYear, targetMonth, 1).toISOString().split('T')[0];
+    const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0).toISOString().split('T')[0];
 
     // Build queries with company filtering
     let accountsQuery = supabase.from('accounts').select('balance').eq('user_id', userId);
@@ -561,12 +564,15 @@ export const transactionsApi = {
     }));
   },
 
-  async getMonthlyData(userId: string, months: number = 6, filters?: { companyId?: string | null, personId?: string | null }): Promise<MonthlyData[]> {
+  async getMonthlyData(userId: string, months: number = 6, filters?: { companyId?: string | null, personId?: string | null, month?: number, year?: number }): Promise<MonthlyData[]> {
     const result: MonthlyData[] = [];
     const now = new Date();
+    const refDate = (filters?.month !== undefined && filters?.year !== undefined)
+      ? new Date(filters.year, filters.month, 1)
+      : now;
 
     for (let i = months - 1; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(refDate.getFullYear(), refDate.getMonth() - i, 1);
       const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
       const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
 
