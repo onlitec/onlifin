@@ -948,6 +948,16 @@ export const billsToPayApi = {
     return data;
   },
 
+  async createMany(bills: Omit<BillToPay, 'id' | 'created_at' | 'updated_at'>[]): Promise<BillToPay[]> {
+    const { data, error } = await supabase
+      .from('bills_to_pay')
+      .insert(bills)
+      .select();
+
+    if (error) throw error;
+    return data || [];
+  },
+
   async update(id: string, updates: Partial<BillToPay>): Promise<BillToPay | null> {
     const { data, error } = await supabase
       .from('bills_to_pay')
@@ -1095,6 +1105,16 @@ export const billsToReceiveApi = {
 
     if (error) throw error;
     return data;
+  },
+
+  async createMany(bills: Omit<BillToReceive, 'id' | 'created_at' | 'updated_at'>[]): Promise<BillToReceive[]> {
+    const { data, error } = await supabase
+      .from('bills_to_receive')
+      .insert(bills)
+      .select();
+
+    if (error) throw error;
+    return data || [];
   },
 
   async update(id: string, updates: Partial<BillToReceive>): Promise<BillToReceive | null> {

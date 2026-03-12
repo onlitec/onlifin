@@ -99,6 +99,10 @@ export interface Transaction {
 
 // ... (skipping unchanged types)
 
+export type BillStatus = 'pending' | 'paid' | 'overdue' | 'received';
+export type NotificationType = 'alert' | 'info' | 'warning' | 'success';
+export type NotificationSeverity = 'low' | 'medium' | 'high';
+
 export interface BillToPay {
   id: string;
   user_id: string;
@@ -117,6 +121,11 @@ export interface BillToPay {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  is_installment?: boolean;
+  installment_number?: number | null;
+  total_installments?: number | null;
+  parent_bill_id?: string | null;
+  next_occurrence_generated?: boolean;
 }
 
 export interface BillToReceive {
@@ -137,6 +146,11 @@ export interface BillToReceive {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  is_installment?: boolean;
+  installment_number?: number | null;
+  total_installments?: number | null;
+  parent_bill_id?: string | null;
+  next_occurrence_generated?: boolean;
 }
 
 export interface AIConfiguration {
@@ -199,50 +213,7 @@ export interface MonthlyData {
   expenses: number;
 }
 
-// Bills and Forecasts Types
-export type BillStatus = 'pending' | 'paid' | 'overdue' | 'received';
-export type NotificationType = 'alert' | 'info' | 'warning' | 'success';
-export type NotificationSeverity = 'low' | 'medium' | 'high';
-
-export interface BillToPay {
-  id: string;
-  user_id: string;
-  company_id: string | null;
-  person_id: string | null;
-  description: string;
-  amount: number;
-  due_date: string;
-  category_id: string | null;
-  status: BillStatus;
-  is_recurring: boolean;
-  recurrence_pattern: string | null;
-  account_id: string | null;
-  paid_date: string | null;
-  transaction_id: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface BillToReceive {
-  id: string;
-  user_id: string;
-  company_id: string | null;
-  person_id: string | null;
-  description: string;
-  amount: number;
-  due_date: string;
-  category_id: string | null;
-  status: BillStatus;
-  is_recurring: boolean;
-  recurrence_pattern: string | null;
-  account_id: string | null;
-  received_date: string | null;
-  transaction_id: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Forecasts Types
 
 export interface ForecastAlert {
   tipo: string;

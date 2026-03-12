@@ -2,6 +2,7 @@ import * as React from 'react';
 import { supabase } from '@/db/client';
 
 import { billsToReceiveApi, accountsApi, categoriesApi } from '@/db/api';
+import { BillTransactionService } from '@/services/billTransactionService';
 import type { BillToReceive, Account, Category } from '@/types/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +47,10 @@ export default function BillsToReceive() {
     account_id: '',
     is_recurring: false,
     recurrence_pattern: '',
-    notes: ''
+    notes: '',
+    launch_type: 'single', // 'single', 'fixed', 'installments'
+    installments_count: '1',
+    frequency: 'monthly' // 'weekly', 'monthly', 'yearly'
   });
 
   React.useEffect(() => {
@@ -99,7 +103,10 @@ export default function BillsToReceive() {
       account_id: '',
       is_recurring: false,
       recurrence_pattern: '',
-      notes: ''
+      notes: '',
+      launch_type: 'single',
+      installments_count: '1',
+      frequency: 'monthly'
     });
     setEditingBill(null);
   };
@@ -114,7 +121,10 @@ export default function BillsToReceive() {
       account_id: bill.account_id || '',
       is_recurring: bill.is_recurring,
       recurrence_pattern: bill.recurrence_pattern || '',
-      notes: bill.notes || ''
+      notes: bill.notes || '',
+      launch_type: bill.is_installment ? 'installments' : (bill.is_recurring ? 'fixed' : 'single'),
+      installments_count: bill.total_installments?.toString() || '1',
+      frequency: bill.recurrence_pattern || 'monthly'
     });
     setIsDialogOpen(true);
   };
@@ -141,34 +151,87 @@ export default function BillsToReceive() {
     }
 
     try {
-      const billData = {
-        user_id: userId!,
-        company_id: (isPJ ? companyId : null) ?? null,
-        person_id: !isPJ ? (personId || null) : null,
-        description: formData.description,
-        amount: Number.parseFloat(formData.amount),
-        due_date: formData.due_date,
-        category_id: (formData.category_id && formData.category_id !== 'none') ? formData.category_id : null,
-        account_id: (formData.account_id && formData.account_id !== 'none') ? formData.account_id : null,
-        is_recurring: formData.is_recurring,
-        recurrence_pattern: formData.recurrence_pattern || null,
-        notes: formData.notes || null,
-        status: 'pending' as const,
-        received_date: null,
-        transaction_id: null
-      };
-
       if (editingBill) {
+        const billData = {
+          user_id: userId!,
+          company_id: (isPJ ? companyId : null) ?? null,
+          person_id: !isPJ ? (personId || null) : null,
+          description: formData.description,
+          amount: Number.parseFloat(formData.amount),
+          due_date: formData.due_date,
+          category_id: (formData.category_id && formData.category_id !== 'none') ? formData.category_id : null,
+          account_id: (formData.account_id && formData.account_id !== 'none') ? formData.account_id : null,
+          is_recurring: formData.launch_type === 'fixed',
+          recurrence_pattern: formData.launch_type === 'fixed' ? formData.frequency : null,
+          notes: formData.notes || null,
+          status: 'pending' as const
+        };
         await billsToReceiveApi.update(editingBill.id, billData);
         toast({
           title: 'Sucesso',
-          description: 'Conta atualizada com sucesso!'
+          description: 'Receita atualizada com sucesso!'
+        });
+      } else if (formData.launch_type === 'installments') {
+        const count = Math.max(1, parseInt(formData.installments_count) || 1);
+        const bills = [];
+        const baseDate = new Date(formData.due_date + 'T12:00:00');
+
+        for (let i = 0; i < count; i++) {
+          const dueDate = new Date(baseDate);
+          if (formData.frequency === 'monthly') {
+            dueDate.setMonth(dueDate.getMonth() + i);
+          } else if (formData.frequency === 'weekly') {
+            dueDate.setDate(dueDate.getDate() + (i * 7));
+          } else if (formData.frequency === 'yearly') {
+            dueDate.setFullYear(dueDate.getFullYear() + i);
+          }
+
+          bills.push({
+            user_id: userId!,
+            company_id: (isPJ ? companyId : null) ?? null,
+            person_id: !isPJ ? (personId || null) : null,
+            description: `${formData.description} (${i + 1}/${count})`,
+            amount: Number.parseFloat(formData.amount),
+            due_date: dueDate.toISOString().split('T')[0],
+            category_id: (formData.category_id && formData.category_id !== 'none') ? formData.category_id : null,
+            account_id: (formData.account_id && formData.account_id !== 'none') ? formData.account_id : null,
+            is_recurring: false,
+            recurrence_pattern: null,
+            notes: formData.notes || null,
+            status: 'pending' as const,
+            is_installment: true,
+            installment_number: i + 1,
+            total_installments: count,
+            received_date: null,
+            transaction_id: null
+          });
+        }
+        await billsToReceiveApi.createMany(bills);
+        toast({
+          title: 'Sucesso',
+          description: `${count} parcelas de receita criadas com sucesso!`
         });
       } else {
+        const billData = {
+          user_id: userId!,
+          company_id: (isPJ ? companyId : null) ?? null,
+          person_id: !isPJ ? (personId || null) : null,
+          description: formData.description,
+          amount: Number.parseFloat(formData.amount),
+          due_date: formData.due_date,
+          category_id: (formData.category_id && formData.category_id !== 'none') ? formData.category_id : null,
+          account_id: (formData.account_id && formData.account_id !== 'none') ? formData.account_id : null,
+          is_recurring: formData.launch_type === 'fixed',
+          recurrence_pattern: formData.launch_type === 'fixed' ? formData.frequency : null,
+          notes: formData.notes || null,
+          status: 'pending' as const,
+          received_date: null,
+          transaction_id: null
+        };
         await billsToReceiveApi.create(billData);
         toast({
           title: 'Sucesso',
-          description: 'Conta criada com sucesso!'
+          description: 'Receita registrada com sucesso!'
         });
       }
 
@@ -187,7 +250,10 @@ export default function BillsToReceive() {
 
   const handleMarkAsReceived = async (bill: BillToReceive) => {
     try {
-      await billsToReceiveApi.markAsReceived(bill.id, new Date().toISOString().split('T')[0]);
+      await BillTransactionService.createTransactionFromBillToReceive({
+        billId: bill.id,
+        userId: userId!,
+      });
       toast({
         title: 'Sucesso',
         description: 'Conta marcada como recebida!'
@@ -366,15 +432,67 @@ export default function BillsToReceive() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Tipo de Lançamento</Label>
+                    <Select
+                      value={formData.launch_type}
+                      onValueChange={(value) => setFormData({ ...formData, launch_type: value })}
+                    >
+                      <SelectTrigger className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold">
+                        <SelectValue placeholder="Tipo..." />
+                      </SelectTrigger>
+                      <SelectContent className="glass-card premium-card border-white/10">
+                        <SelectItem value="single">Único</SelectItem>
+                        <SelectItem value="fixed">Fixo (Recorrente)</SelectItem>
+                        <SelectItem value="installments">Parcelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {(formData.launch_type === 'fixed' || formData.launch_type === 'installments') && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-left-2 transition-all">
+                      <Label className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Frequência</Label>
+                      <Select
+                        value={formData.frequency}
+                        onValueChange={(value) => setFormData({ ...formData, frequency: value })}
+                      >
+                        <SelectTrigger className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold">
+                          <SelectValue placeholder="Frequência..." />
+                        </SelectTrigger>
+                        <SelectContent className="glass-card premium-card border-white/10">
+                          <SelectItem value="weekly">Semanal</SelectItem>
+                          <SelectItem value="monthly">Mensal</SelectItem>
+                          <SelectItem value="yearly">Anual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {formData.launch_type === 'installments' && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-left-2 transition-all">
+                      <Label className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Nº de Parcelas</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
+                        value={formData.installments_count}
+                        onChange={(e) => setFormData({ ...formData, installments_count: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="notes" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Business Intelligence/Notas</Label>
                   <Textarea
                     id="notes"
-                    className="glass-card border-white/5 rounded-xl px-4 py-3 font-medium min-h-[100px]"
+                    className="glass-card border-white/5 rounded-xl px-4 py-3 font-medium min-h-[80px]"
                     placeholder="Detalhes adicionais sobre esta entrada..."
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
+                    rows={2}
                   />
                 </div>
 
