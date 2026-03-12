@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.25.1] - 2026-03-12
+
+### chore: bump version to 1.25.2
+
+---
+
+
+
 ## [1.25.0] - 2026-03-12
 
 ### feat: enhance bills UI with badges and fix installment logic
