@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.23.0] - 2026-03-12
+
+### feat: Added virtual card for Principal (Geral) and fixed selector button label
+
+---
+
+
+
 ## [1.21.0] - 2026-03-04
 
 ### feat: tradução completa e correção de contraste nos botões da interface
