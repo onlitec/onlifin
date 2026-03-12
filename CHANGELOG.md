@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.25.0] - 2026-03-12
+
+### feat: enhance bills UI with badges and fix installment logic
+
+---
+
+
+
 ## [1.24.0] - 2026-03-12
 
 ### feat: implement installments and recurring bills logic for payable and receivable accounts
