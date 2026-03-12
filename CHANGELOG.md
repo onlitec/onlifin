@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.26.0] - 2026-03-12
+
+### feat: add fortnightly frequency and bump version to 1.26.0
+
+---
+
+
+
 ## [1.25.1] - 2026-03-12
 
 ### chore: bump version to 1.25.2
