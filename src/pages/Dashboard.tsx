@@ -54,7 +54,7 @@ export default function Dashboard() {
       setMonthlyData(monthly);
 
       try {
-        const pendingBills = await billsToReceiveApi.getPending(user.id);
+        const pendingBills = await billsToReceiveApi.getPending(user.id, companyId, personId);
         const totalPending = pendingBills.reduce((sum, bill) => sum + bill.amount, 0);
         setPendingToReceive(totalPending);
       } catch (err) {

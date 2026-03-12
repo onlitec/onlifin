@@ -68,14 +68,14 @@ export default function BillsToPay() {
     if (userId) {
       loadData();
     }
-  }, [userId, companyId]);
+  }, [userId, companyId, personId]);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [billsData, accountsData, categoriesData] = await Promise.all([
-        billsToPayApi.getAll(userId!, companyId),
-        accountsApi.getAccounts(userId!, companyId),
+        billsToPayApi.getAll(userId!, companyId, personId),
+        accountsApi.getAccounts(userId!, companyId, personId),
         categoriesApi.getCategories(companyId)
       ]);
       setBills(billsData);
