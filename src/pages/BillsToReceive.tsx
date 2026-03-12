@@ -589,6 +589,14 @@ export default function BillsToReceive() {
                     <div className="flex items-center gap-3">
                       <p className="font-black text-lg tracking-tighter uppercase leading-none">{bill.description}</p>
                       {getStatusBadge(bill.status)}
+                      {bill.is_recurring && !bill.is_installment && (
+                        <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20 text-[9px] font-black uppercase tracking-tighter">Fixo</Badge>
+                      )}
+                      {bill.is_installment && (
+                        <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[9px] font-black uppercase tracking-tighter">
+                          Parcela {bill.installment_number}/{bill.total_installments}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-6 flex-wrap">
                       <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
