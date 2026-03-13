@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.27.2] - 2026-03-13
+
+### fix(dashboard): fix company filtering mismatch and Alessandro's data visibility
+
+---
+
+
+
 ## [1.27.1] - 2026-03-12
 
 ### fix: restore personId filtering across dashboard and bills
