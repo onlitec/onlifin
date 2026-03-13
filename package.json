@@ -1,6 +1,6 @@
 {
   "name": "onlifin",
-  "version": "1.30.0",
+  "version": "1.31.0",
   "type": "module",
   "scripts": {
     "dev": "echo 'Do not use this command, only use lint to check'",

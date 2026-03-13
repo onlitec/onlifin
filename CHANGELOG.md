@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.31.0] - 2026-03-13
+
+### feat: data isolation protection and port cleanup (v1.31.0)
+
+---
+
+
+
 ## [1.30.0] - 2026-03-13
 
 ### feat: implement corporate finance (PJ) logic, sticky navigation and person isolation
