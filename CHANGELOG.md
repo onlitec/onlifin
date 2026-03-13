@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.27.3] - 2026-03-13
+
+### chore(audit): fix identified issues and cleanup legacy files
+
+---
+
+
+
 ## [1.27.2] - 2026-03-13
 
 ### fix(dashboard): fix company filtering mismatch and Alessandro's data visibility
