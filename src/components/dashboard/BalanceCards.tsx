@@ -19,7 +19,8 @@ export function BalanceCards({
     totalBalance,
     monthlyIncome,
     monthlyExpenses,
-    savingsRate
+    savingsRate,
+    pendingToReceive = 0
 }: BalanceCardsProps) {
     const cards = [
         {
@@ -38,7 +39,8 @@ export function BalanceCards({
             icon: TrendingUp,
             iconColor: 'text-emerald-500',
             valueColor: 'text-emerald-600',
-            labelColor: 'text-emerald-500/80'
+            labelColor: 'text-emerald-500/80',
+            extraInfo: pendingToReceive > 0 ? `Previsto: ${formatCurrency(pendingToReceive)}` : null
         },
         {
             title: 'Despesas do Mês',
@@ -84,6 +86,11 @@ export function BalanceCards({
                             <h3 className={`text-2xl font-black tracking-tight ${card.valueColor}`}>
                                 {card.isPercentage ? `${card.value.toFixed(1)}%` : formatCurrency(card.value)}
                             </h3>
+                            {card.extraInfo && (
+                                <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                                    {card.extraInfo}
+                                </p>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-1.5 mt-auto">

@@ -11,7 +11,6 @@ import { Plus, Pencil, Trash2, CreditCard, Landmark, Calendar, DollarSign, Walle
 import { CardBrandSelector } from '@/components/ui/card-brand-selector';
 import { getCardBrandById, getDefaultCardIcon } from '@/config/banks';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
-import { cn } from '@/lib/utils';
 import type { Card as CardType, Account } from '@/types/types';
 
 export default function Cards() {
@@ -43,7 +42,7 @@ export default function Cards() {
       if (!user) return;
 
       const [cardsData, accountsData] = await Promise.all([
-        cardsApi.getCards(user.id, companyId),
+        cardsApi.getCards(user.id, companyId, personId),
         accountsApi.getAccounts(user.id, companyId, personId)
       ]);
 
@@ -86,8 +85,8 @@ export default function Cards() {
           ...cardData,
           icon: formData.icon || null,
           user_id: user.id,
-          company_id: companyId,
-          person_id: personId || null
+          company_id: companyId ?? null,
+          person_id: personId ?? null
         });
         toast({ title: 'Sucesso', description: 'Cartão criado com sucesso' });
       }
