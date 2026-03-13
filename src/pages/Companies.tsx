@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Building2,
     Plus,
@@ -16,6 +17,7 @@ import {
     ArrowDownRight,
     AlertTriangle
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,7 +58,9 @@ const formatCurrency = (value: number): string => {
 };
 
 export default function CompaniesPage() {
+    const navigate = useNavigate();
     const { toast } = useToast();
+
     const {
         companies,
         selectedCompany,
@@ -155,11 +159,13 @@ export default function CompaniesPage() {
 
     const handleSelectCompany = useCallback((company: Company) => {
         selectCompany(company.id);
+        navigate(`/pj/${company.id}`);
         toast({
             title: 'Empresa selecionada',
             description: `Você está visualizando ${company.nome_fantasia || company.razao_social}`,
         });
-    }, [selectCompany, toast]);
+    }, [selectCompany, toast, navigate]);
+
 
     const handleSaveCompany = useCallback(async (data: CreateCompanyDTO | UpdateCompanyDTO) => {
         if (editingCompany) {

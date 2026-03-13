@@ -9,7 +9,8 @@ import {
     TrendingUp,
     Settings,
     ChevronDown,
-    LogOut
+    LogOut,
+    Users
 } from 'lucide-react';
 import {
     Sidebar,
@@ -53,12 +54,15 @@ export function OnlifinSidebar() {
             title: 'Transações', icon: ArrowLeftRight, path: `${prefix}/transactions`, subItems: [
                 { title: 'Listagem', path: `${prefix}/transactions` },
                 { title: 'Contas a Pagar', path: `${prefix}/bills-to-pay` },
-                { title: 'Contas a Receber', path: `${prefix}/bills-to-receive` }
+                { title: 'Contas a Receber', path: `${prefix}/bills-to-receive` },
+                { title: 'Importar Extrato', path: `${prefix}/import-statements` },
+                { title: 'Conciliação', path: `${prefix}/reconciliation` }
             ]
         },
-        { title: 'Previsão Financeira', icon: TrendingUp, path: '/forecast' },
+        { title: 'Pessoas', icon: Users, path: `${prefix}/people` },
+        { title: 'Previsão Financeira', icon: TrendingUp, path: `${prefix}/forecast` },
         { title: 'Empresas', icon: Building2, path: '/companies' },
-        { title: 'Relatórios', icon: FileText, path: '/reports' },
+        { title: 'Relatórios', icon: FileText, path: `${prefix}/reports` },
         {
             title: 'Administração', icon: Settings, path: '/admin', subItems: [
                 { title: 'Geral', path: '/admin-general' },

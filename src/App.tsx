@@ -16,7 +16,10 @@ import { CompanySelectorCompact } from '@/components/company';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { PersonProvider } from '@/contexts/PersonContext';
 import routes from './routes';
-import { Search, Bell, User as UserIcon } from 'lucide-react';
+import { Search, Bell, Building2, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useCompany } from '@/contexts/CompanyContext';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -65,8 +68,25 @@ function MainLayout() {
   };
 
   const allRoutes = flattenRoutes(routes);
-  const { isPJ } = useFinanceScope();
+  const { isPJ, isPF } = useFinanceScope();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { selectedCompany, companies } = useCompany();
+
+  const toggleToPJ = () => {
+    if (isPJ) return;
+    const targetCompanyId = selectedCompany?.id || companies[0]?.id;
+    if (targetCompanyId) {
+      navigate(`/pj/${targetCompanyId}`);
+    } else {
+      navigate('/companies');
+    }
+  };
+
+  const toggleToPF = () => {
+    if (isPF) return;
+    navigate('/pf');
+  };
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -85,9 +105,39 @@ function MainLayout() {
           </div>
 
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 mr-4">
+              <Button
+                variant={isPF ? "default" : "ghost"}
+                size="sm"
+                onClick={toggleToPF}
+                className={cn(
+                  "h-8 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
+                  isPF ? "bg-white text-blue-600 shadow-sm hover:bg-white" : "text-slate-500 hover:text-slate-900"
+                )}
+              >
+                <User className="h-3 w-3 mr-2" />
+                Pessoa Física
+              </Button>
+              <Button
+                variant={isPJ ? "default" : "ghost"}
+                size="sm"
+                onClick={toggleToPJ}
+                className={cn(
+                  "h-8 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all text-nowrap",
+                  isPJ ? "bg-white text-blue-600 shadow-sm hover:bg-white" : "text-slate-500 hover:text-slate-900"
+                )}
+              >
+                <Building2 className="h-3 w-3 mr-2" />
+                Empresa
+              </Button>
+            </div>
+
             <div className="flex items-center gap-3 mr-4">
-              {!isPJ && <PersonSelector size="sm" className="h-9 border-slate-200 rounded-xl font-bold" />}
-              <CompanySelectorCompact />
+              {!isPJ ? (
+                <PersonSelector size="sm" className="h-9 border-slate-200 rounded-xl font-bold" />
+              ) : (
+                <CompanySelectorCompact />
+              )}
             </div>
 
             <div className="flex items-center gap-2 pr-4 border-r border-slate-100">

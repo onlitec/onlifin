@@ -58,6 +58,8 @@ const routes: RouteConfig[] = [
       { name: 'Importar Extrato PF', path: '/pf/import-statements', element: <ImportStatements />, visible: true },
       { name: 'Conciliação PF', path: '/pf/reconciliation', element: <Reconciliation />, visible: true },
       { name: 'Pessoas PF', path: '/pf/people', element: <People />, visible: true },
+      { name: 'Relatórios PF', path: '/pf/reports', element: <Reports />, visible: true },
+      { name: 'Previsão Financeira PF', path: '/pf/forecast', element: <ForecastDashboard />, visible: true },
     ]
   },
 
@@ -77,6 +79,9 @@ const routes: RouteConfig[] = [
       { name: 'Contas a Receber PJ', path: '/pj/:companyId/bills-to-receive', element: <BillsToReceive />, visible: true },
       { name: 'Importar Extrato PJ', path: '/pj/:companyId/import-statements', element: <ImportStatements />, visible: true },
       { name: 'Conciliação PJ', path: '/pj/:companyId/reconciliation', element: <Reconciliation />, visible: true },
+      { name: 'Pessoas PJ', path: '/pj/:companyId/people', element: <People />, visible: true },
+      { name: 'Relatórios PJ', path: '/pj/:companyId/reports', element: <Reports />, visible: true },
+      { name: 'Previsão Financeira PJ', path: '/pj/:companyId/forecast', element: <ForecastDashboard />, visible: true },
     ]
   },
 
@@ -88,18 +93,7 @@ const routes: RouteConfig[] = [
     visible: true
   },
 
-  {
-    name: 'Relatórios',
-    path: '/reports',
-    element: <Reports />,
-    visible: true
-  },
-  {
-    name: 'Previsão Financeira',
-    path: '/forecast',
-    element: <ForecastDashboard />,
-    visible: true
-  },
+
   {
     name: 'PWA',
     path: '/pwa-info',

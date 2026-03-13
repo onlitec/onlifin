@@ -6,6 +6,7 @@
  */
 
 import { Building2, ChevronDown, Plus, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCompany } from '@/contexts/CompanyContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,8 +49,14 @@ export function CompanySelector({
         companies,
         selectedCompany,
         isLoadingCompanies,
-        selectCompany
+        selectCompany: baseSelectCompany
     } = useCompany();
+    const navigate = useNavigate();
+
+    const selectCompany = (id: string) => {
+        baseSelectCompany(id);
+        navigate(`/pj/${id}`);
+    };
 
     // Loading state
     if (isLoadingCompanies) {

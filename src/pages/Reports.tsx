@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Download, FileText, Calendar } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { CategoryExpense, MonthlyData } from '@/types/types';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function Reports() {
   const [startDate, setStartDate] = React.useState(() => {
@@ -22,11 +23,12 @@ export default function Reports() {
   const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
   const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const { companyId, personId } = useFinanceScope();
   const { toast } = useToast();
 
   React.useEffect(() => {
     loadReportData();
-  }, [startDate, endDate, reportType]);
+  }, [startDate, endDate, reportType, companyId, personId]);
 
   const loadReportData = async () => {
     setIsLoading(true);
@@ -35,10 +37,10 @@ export default function Reports() {
       if (!user) return;
 
       if (reportType === 'category') {
-        const expenses = await transactionsApi.getCategoryExpenses(user.id, startDate, endDate);
+        const expenses = await transactionsApi.getCategoryExpenses(user.id, startDate, endDate, companyId, personId);
         setCategoryExpenses(expenses);
       } else if (reportType === 'monthly') {
-        const monthly = await transactionsApi.getMonthlyData(user.id, 12);
+        const monthly = await transactionsApi.getMonthlyData(user.id, 12, { companyId, personId });
         setMonthlyData(monthly);
       }
     } catch (error: any) {

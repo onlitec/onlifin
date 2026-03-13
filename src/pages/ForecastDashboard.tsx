@@ -29,8 +29,10 @@ import {
   DollarSign,
   Lightbulb
 } from 'lucide-react';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function ForecastDashboard() {
+  const { companyId, personId } = useFinanceScope();
   const { toast } = useToast();
   const [userId, setUserId] = React.useState<string | null>(null);
   const [forecast, setForecast] = React.useState<FinancialForecast | null>(null);
@@ -51,12 +53,12 @@ export default function ForecastDashboard() {
     if (userId) {
       loadForecast();
     }
-  }, [userId]);
+  }, [userId, companyId, personId]);
 
   const loadForecast = async () => {
     try {
       setLoading(true);
-      const data = await forecastsApi.getLatest(userId!);
+      const data = await forecastsApi.getLatest(userId!, companyId, personId);
       setForecast(data);
     } catch (error) {
       console.error('Erro ao carregar previsão:', error);
@@ -73,7 +75,7 @@ export default function ForecastDashboard() {
   const handleGenerateForecast = async () => {
     try {
       setGenerating(true);
-      await forecastsApi.triggerGeneration(userId!);
+      await forecastsApi.triggerGeneration(userId!, companyId, personId);
       toast({
         title: 'Sucesso',
         description: 'Previsão financeira gerada com sucesso!',

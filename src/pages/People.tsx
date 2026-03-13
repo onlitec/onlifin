@@ -26,6 +26,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { usePerson } from '@/contexts/PersonContext';
 import { PersonDialog } from '@/components/person/PersonDialog';
 import type { Person, CreatePersonDTO, UpdatePersonDTO } from '@/types/person';
@@ -38,6 +39,7 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function PeoplePage() {
+    const { isPJ } = useFinanceScope();
     const { toast } = useToast();
     const {
         people,
@@ -133,10 +135,12 @@ export default function PeoplePage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                         <Users className="h-8 w-8" />
-                        Membros da Família
+                        {isPJ ? 'Pessoas da Empresa' : 'Membros da Família'}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Gerencie as pessoas que fazem parte das suas finanças pessoais.
+                        {isPJ
+                          ? 'Gerencie os sócios, funcionários e contatos associados a esta empresa.'
+                          : 'Gerencie as pessoas que fazem parte das suas finanças pessoais.'}
                     </p>
                 </div>
 

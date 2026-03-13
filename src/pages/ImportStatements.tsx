@@ -795,6 +795,7 @@ export default function ImportStatements() {
 
       const transactionsToInsert = transactionsToEdit.map(t => ({
         user_id: user.id,
+        company_id: companyId,
         type: t.type,
         amount: t.amount,
         date: t.date,
