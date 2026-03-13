@@ -90,10 +90,12 @@ export default function Dashboard() {
       .gte('date', firstDay)
       .lte('date', lastDay);
 
-    if (companyId) {
-      transactionsQuery = transactionsQuery.eq('company_id', companyId);
-    } else {
-      transactionsQuery = transactionsQuery.is('company_id', null);
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        transactionsQuery = transactionsQuery.is('company_id', null);
+      } else {
+        transactionsQuery = transactionsQuery.eq('company_id', companyId);
+      }
     }
 
     if (personId) {
@@ -106,11 +108,11 @@ export default function Dashboard() {
 
     const monthlyIncome = transactions
       ?.filter((t: any) => t.type === 'income' && !t.is_transfer)
-      .reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0;
 
     const monthlyExpenses = transactions
       ?.filter((t: any) => t.type === 'expense' && !t.is_transfer)
-      .reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0;
 
     const savingsRate = monthlyIncome > 0
       ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100
