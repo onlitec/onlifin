@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.28.0] - 2026-03-13
+
+### feat(dashboard+admin): add smart insights and audit log viewer
+
+---
+
+
+
 ## [1.27.3] - 2026-03-13
 
 ### chore(audit): fix identified issues and cleanup legacy files
