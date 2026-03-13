@@ -12,11 +12,22 @@ import type {
 export const personService = {
     /**
      * Busca todas as pessoas do usuário
+     * @param companyId - Opcional: ID da empresa para filtrar (null para PF)
      */
-    async getAll(): Promise<Person[]> {
-        const { data, error } = await supabase
+    async getAll(companyId?: string | null): Promise<Person[]> {
+        let query = supabase
             .from('people')
-            .select('*')
+            .select('*');
+
+        if (companyId !== undefined) {
+            if (companyId === null) {
+                query = query.is('company_id', null);
+            } else {
+                query = query.eq('company_id', companyId);
+            }
+        }
+
+        const { data, error } = await query
             .order('is_default', { ascending: false })
             .order('name', { ascending: true });
 
@@ -31,7 +42,7 @@ export const personService = {
     /**
      * Cria uma nova pessoa
      */
-    async create(data: CreatePersonDTO): Promise<Person> {
+    async create(data: CreatePersonDTO & { company_id?: string | null }): Promise<Person> {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             throw new Error('Usuário não autenticado');

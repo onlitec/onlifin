@@ -71,13 +71,12 @@ function MainLayout() {
   const { isPJ, isPF } = useFinanceScope();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { selectedCompany, companies } = useCompany();
+
+  const { selectedCompany } = useCompany();
 
   const toggleToPJ = () => {
-    if (isPJ) return;
-    const targetCompanyId = selectedCompany?.id || companies[0]?.id;
-    if (targetCompanyId) {
-      navigate(`/pj/${targetCompanyId}`);
+    if (selectedCompany) {
+      navigate(`/pj/${selectedCompany.id}`);
     } else {
       navigate('/companies');
     }

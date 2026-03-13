@@ -5,7 +5,6 @@
  * incluindo a pessoa atualmente selecionada e operações CRUD.
  */
 
-import * as React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { personService } from '@/services/personService';
 import { profileService, ProfileSettings } from '@/services/profileService';
@@ -39,7 +38,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
     });
     const [isLoadingPeople, setIsLoadingPeople] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { isPJ } = useFinanceScope();
+    const { companyId } = useFinanceScope();
 
     /**
      * Carrega todas as pessoas do usuário
@@ -50,7 +49,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
 
         try {
             const [peopleData, profile] = await Promise.all([
-                personService.getAll(),
+                personService.getAll(companyId),
                 profileService.getProfile()
             ]);
 
@@ -87,7 +86,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
         } finally {
             setIsLoadingPeople(false);
         }
-    }, []);
+    }, [companyId]);
 
     /**
      * Carrega pessoas e configurações ao montar
@@ -142,7 +141,10 @@ export function PersonProvider({ children }: PersonProviderProps) {
      */
     const createPerson = useCallback(async (data: CreatePersonDTO): Promise<Person> => {
         try {
-            const newPerson = await personService.create(data);
+            const newPerson = await personService.create({
+                ...data,
+                company_id: companyId
+            });
             setPeople(prev => [newPerson, ...prev]);
 
             // Se for marcado como default, seleciona
@@ -158,7 +160,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
             console.error('Erro ao criar pessoa:', err);
             throw err;
         }
-    }, [selectPerson]);
+    }, [selectPerson, companyId]);
 
     /**
      * Atualiza
@@ -189,7 +191,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
             await personService.delete(id);
 
             // Recarregar do servidor
-            const updatedPeople = await personService.getAll();
+            const updatedPeople = await personService.getAll(companyId);
 
             // Se deletou o padrão e ainda existem pessoas, promover a primeira a padrão no DB
             if (wasDefault && updatedPeople.length > 0) {
@@ -204,7 +206,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
             await refreshPeople();
 
             if (selectedPerson?.id === id) {
-                const refreshedPeople = await personService.getAll();
+                const refreshedPeople = await personService.getAll(companyId);
                 const newSelected = refreshedPeople.find(p => p.is_default) || refreshedPeople[0] || null;
                 setSelectedPerson(newSelected);
                 if (newSelected) {
@@ -217,7 +219,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
             console.error('Erro ao excluir pessoa:', err);
             throw err;
         }
-    }, [people, refreshPeople, selectedPerson]);
+    }, [people, refreshPeople, selectedPerson, companyId]);
 
     const updateSettings = useCallback(async (newSettings: Partial<ProfileSettings>): Promise<void> => {
         // Atualiza local imediatamente para uma UI responsiva

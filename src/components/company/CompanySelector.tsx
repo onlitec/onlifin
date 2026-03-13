@@ -170,6 +170,11 @@ export function CompanySelectorCompact({
     className?: string;
 }) {
     const { companies, selectedCompany, isLoadingCompanies, selectCompany } = useCompany();
+    const navigate = useNavigate();
+    const handleSelect = (id: string) => {
+        selectCompany(id);
+        navigate(`/pj/${id}`);
+    };
 
     if (isLoadingCompanies) {
         return <Skeleton className={cn("h-8 w-8 rounded-lg", className)} />;
@@ -225,7 +230,7 @@ export function CompanySelectorCompact({
                             <DropdownMenuItem
                                 key={company.id}
                                 className="cursor-pointer rounded-xl py-2.5 px-3 hover:bg-white/5 group transition-all"
-                                onClick={() => selectCompany(company.id)}
+                                onClick={() => handleSelect(company.id)}
                             >
                                 <div className="flex items-center gap-3 w-full">
                                     <div
