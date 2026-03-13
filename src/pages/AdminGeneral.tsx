@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import {
-    Settings,
-    Trash2,
     Database,
     AlertTriangle,
     CreditCard,
@@ -15,8 +13,15 @@ import {
     FolderOpen,
     MessageSquare,
     FileUp,
-    Loader2
+    Loader2,
+    Activity,
+    PlusCircle,
+    Trash2,
+    Trash
 } from 'lucide-react';
+import { adminApi } from '@/db/api';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
     Dialog,
     DialogContent,
@@ -48,11 +53,30 @@ export default function AdminGeneral() {
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
     const [confirmText, setConfirmText] = React.useState('');
+    const [auditLogs, setAuditLogs] = React.useState<any[]>([]);
     const { toast } = useToast();
 
     React.useEffect(() => {
-        loadDataCounts();
+        loadData();
     }, []);
+
+    const loadData = async () => {
+        setIsLoading(true);
+        await Promise.all([
+            loadDataCounts(),
+            loadAuditLogs()
+        ]);
+        setIsLoading(false);
+    };
+
+    const loadAuditLogs = async () => {
+        try {
+            const logs = await adminApi.getAuditLogs(10);
+            setAuditLogs(logs);
+        } catch (error) {
+            console.error('Erro ao logs:', error);
+        }
+    };
 
     const loadDataCounts = async () => {
         setIsLoading(true);
@@ -246,6 +270,73 @@ export default function AdminGeneral() {
                                 Apagar Dados
                             </Button>
                         </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Audit Logs Card */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Activity className="h-5 w-5" />
+                        Auditoria de Sistema
+                    </CardTitle>
+                    <CardDescription>
+                        Registros recentes de atividades administrativas e operacionais
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {auditLogs.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl">
+                                Nenhuma atividade registrada no momento.
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border overflow-hidden">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-muted/50 border-b">
+                                        <tr className="text-left font-black uppercase text-[10px] tracking-widest text-slate-500">
+                                            <th className="p-4">Evento</th>
+                                            <th className="p-4">Entidade</th>
+                                            <th className="p-4">Usuário</th>
+                                            <th className="p-4 text-right">Data/Hora</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {auditLogs.map((log) => (
+                                            <tr key={log.id} className="hover:bg-muted/20 transition-colors">
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        {log.action === 'INSERT' && <PlusCircle className="h-3 w-3 text-emerald-500" />}
+                                                        {log.action === 'UPDATE' && <Activity className="h-3 w-3 text-blue-500" />}
+                                                        {log.action === 'DELETE' && <Trash className="h-3 w-3 text-red-500" />}
+                                                        <span className="font-bold uppercase text-[11px] tracking-tighter">
+                                                            {log.action === 'INSERT' ? 'Criação' : log.action === 'UPDATE' ? 'Alteração' : 'Exclusão'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-xs font-medium text-slate-600">
+                                                    {log.entity_type}
+                                                </td>
+                                                <td className="p-4 text-xs">
+                                                    {log.profiles?.username || 'Sistema'}
+                                                </td>
+                                                <td className="p-4 text-right text-[10px] font-bold text-slate-400">
+                                                    {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        <Button 
+                            variant="link" 
+                            className="w-full text-xs uppercase font-black tracking-widest opacity-50"
+                            onClick={() => toast({ title: "Funcionalidade em desenvolvimento", description: "A visualização completa dos logs estará disponível em breve." })}
+                        >
+                            Ver Log Completo
+                        </Button>
                     </div>
                 </CardContent>
             </Card>

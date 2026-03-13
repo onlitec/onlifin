@@ -9,6 +9,7 @@ import type { DashboardStats, CategoryExpense, MonthlyData } from '@/types/types
 import { BalanceCards } from '@/components/dashboard/BalanceCards';
 import { CategoryBreakdown } from '@/components/dashboard/CategoryBreakdown';
 import { SpendingChart } from '@/components/dashboard/SpendingChart';
+import { InsightsCards } from '@/components/dashboard/InsightsCards';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 interface EnhancedStats extends DashboardStats {
@@ -239,6 +240,12 @@ export default function Dashboard() {
           monthlyExpenses={enhancedStats?.monthlyExpenses || 0}
           savingsRate={enhancedStats?.savingsRate || 0}
           pendingToReceive={pendingToReceive}
+        />
+        
+        <InsightsCards
+          averageDailyExpense={enhancedStats?.averageDailyExpense || 0}
+          projectedMonthEnd={enhancedStats?.projectedMonthEnd || 0}
+          savingsRate={enhancedStats?.savingsRate || 0}
         />
       </section>
 

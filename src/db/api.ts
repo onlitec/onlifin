@@ -1308,3 +1308,43 @@ export const notificationsApi = {
     if (error) throw error;
   }
 };
+
+export const adminApi = {
+  async getAuditLogs(limit = 50): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select(`
+        *,
+        profiles:user_id (username)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getPlatformStats(): Promise<any> {
+    const [
+      { count: transactions },
+      { count: accounts },
+      { count: cards },
+      { count: categories },
+      { count: users }
+    ] = await Promise.all([
+      supabase.from('transactions').select('*', { count: 'exact', head: true }),
+      supabase.from('accounts').select('*', { count: 'exact', head: true }),
+      supabase.from('cards').select('*', { count: 'exact', head: true }),
+      supabase.from('categories').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('*', { count: 'exact', head: true })
+    ]);
+
+    return {
+      transactions: transactions || 0,
+      accounts: accounts || 0,
+      cards: cards || 0,
+      categories: categories || 0,
+      users: users || 0
+    };
+  }
+};
