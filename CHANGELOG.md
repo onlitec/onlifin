@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.29.0] - 2026-03-13
+
+### feat: complete implementation of Corporate Finance (PJ) system
+
+---
+
+
+
 ## [1.28.0] - 2026-03-13
 
 ### feat(dashboard+admin): add smart insights and audit log viewer
