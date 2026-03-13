@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.30.0] - 2026-03-13
+
+### feat: implement corporate finance (PJ) logic, sticky navigation and person isolation
+
+---
+
+
+
 ## [1.29.0] - 2026-03-13
 
 ### feat: complete implementation of Corporate Finance (PJ) system
