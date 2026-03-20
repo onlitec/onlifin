@@ -75,6 +75,7 @@ export function OnlifinSidebar() {
         { title: 'Previsão Financeira', icon: TrendingUp, path: `${prefix}/forecast` },
         { title: 'Empresas', icon: Building2, path: '/companies' },
         { title: 'Relatórios', icon: FileText, path: `${prefix}/reports` },
+        { title: 'Configurações', icon: Settings, path: '/settings' },
         ...(isAdmin ? [{
             title: 'Administração', icon: Settings, path: '/admin', subItems: [
                 { title: 'Geral', path: '/admin-general' },

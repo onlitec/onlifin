@@ -31,8 +31,7 @@ const ADMIN_PATHS = new Set([
   '/categories',
   '/chat',
   '/user-management',
-  '/ai-admin',
-  '/settings'
+  '/ai-admin'
 ]);
 
 function App() {
