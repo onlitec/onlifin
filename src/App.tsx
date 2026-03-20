@@ -26,6 +26,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PersonSelector } from '@/components/person/PersonSelector';
 
 const PUBLIC_PATHS = new Set(['/login', '/change-password']);
+const ADMIN_PATHS = new Set([
+  '/admin-general',
+  '/categories',
+  '/chat',
+  '/user-management',
+  '/ai-admin',
+  '/settings'
+]);
 
 function App() {
   const publicRoutes = routes.filter((route) => PUBLIC_PATHS.has(route.path));
@@ -61,6 +69,17 @@ function App() {
       </ThemeProvider>
     </Router>
   );
+}
+
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+
+  if (userRole !== 'admin') {
+    return <Navigate to="/pf" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function MainLayout() {
@@ -188,7 +207,7 @@ function MainLayout() {
               <Route
                 key={index}
                 path={route.path}
-                element={route.element}
+                element={ADMIN_PATHS.has(route.path) ? <RequireAdmin>{route.element}</RequireAdmin> : route.element}
               />
             ))}
             <Route path="*" element={<Navigate to="/" replace />} />

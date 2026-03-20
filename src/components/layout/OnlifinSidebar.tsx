@@ -46,6 +46,7 @@ export function OnlifinSidebar() {
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
     const userLabel = user?.email?.split('@')[0] || 'usuario';
     const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+    const isAdmin = userRole === 'admin';
     const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
     const userInitials = userLabel
         .split(/[._\s-]+/)
@@ -74,12 +75,12 @@ export function OnlifinSidebar() {
         { title: 'Previsão Financeira', icon: TrendingUp, path: `${prefix}/forecast` },
         { title: 'Empresas', icon: Building2, path: '/companies' },
         { title: 'Relatórios', icon: FileText, path: `${prefix}/reports` },
-        {
+        ...(isAdmin ? [{
             title: 'Administração', icon: Settings, path: '/admin', subItems: [
                 { title: 'Geral', path: '/admin-general' },
                 { title: 'Categorias', path: '/categories' }
             ]
-        }
+        }] : [])
     ];
 
     const isActive = (path: string) => {

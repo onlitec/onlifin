@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,6 +31,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useAuth } from 'miaoda-auth-react';
 
 interface DataCounts {
     transactions: number;
@@ -41,6 +43,7 @@ interface DataCounts {
 }
 
 export default function AdminGeneral() {
+    const { user } = useAuth();
     const [counts, setCounts] = React.useState<DataCounts>({
         transactions: 0,
         accounts: 0,
@@ -55,10 +58,13 @@ export default function AdminGeneral() {
     const [confirmText, setConfirmText] = React.useState('');
     const [auditLogs, setAuditLogs] = React.useState<any[]>([]);
     const { toast } = useToast();
+    const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+    const isAdmin = userRole === 'admin';
 
     React.useEffect(() => {
+        if (!isAdmin) return;
         loadData();
-    }, []);
+    }, [isAdmin]);
 
     const loadData = async () => {
         setIsLoading(true);
@@ -185,6 +191,10 @@ export default function AdminGeneral() {
         { label: 'Logs de IA', count: counts.ai_chat_logs, icon: MessageSquare, color: 'text-cyan-500' },
         { label: 'Importações', count: counts.import_history, icon: FileUp, color: 'text-pink-500' }
     ];
+
+    if (!isAdmin) {
+        return <Navigate to="/pf" replace />;
+    }
 
     return (
         <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
