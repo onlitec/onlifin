@@ -15,7 +15,11 @@ import type {
   BillToPay,
   BillToReceive,
   FinancialForecast,
-  Notification
+  Notification,
+  Debt,
+  DebtPayment,
+  DebtAgreement,
+  DebtAbatement
 } from '@/types/types';
 
 export const profilesApi = {
@@ -1306,6 +1310,166 @@ export const notificationsApi = {
       .eq('id', id);
 
     if (error) throw error;
+  }
+};
+
+export const debtsApi = {
+  async getAll(userId: string, companyId?: string | null, personId?: string | null): Promise<Debt[]> {
+    let query = supabase
+      .from('debts')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (companyId !== undefined) {
+      if (companyId === null) {
+        query = query.is('company_id', null);
+      } else {
+        query = query.eq('company_id', companyId);
+      }
+    }
+
+    if (personId !== undefined) {
+      if (personId === null) {
+        query = query.is('person_id', null);
+      } else {
+        query = query.eq('person_id', personId);
+      }
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async create(debt: Omit<Debt, 'id' | 'created_at' | 'updated_at'>): Promise<Debt | null> {
+    const { data, error } = await supabase
+      .from('debts')
+      .insert(debt)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: Partial<Debt>): Promise<Debt | null> {
+    const { data, error } = await supabase
+      .from('debts')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('debts')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+};
+
+export const debtPaymentsApi = {
+  async getByDebt(debtId: string): Promise<DebtPayment[]> {
+    const { data, error } = await supabase
+      .from('debt_payments')
+      .select('*')
+      .eq('debt_id', debtId)
+      .order('payment_date', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async register(
+    debtId: string,
+    amount: number,
+    method: DebtPayment['method'],
+    reference?: string | null,
+    notes?: string | null
+  ): Promise<unknown> {
+    const { data, error } = await supabase.rpc('process_debt_payment', {
+      p_debt_id: debtId,
+      p_amount: amount,
+      p_method: method,
+      p_reference: reference ?? null,
+      p_notes: notes ?? null
+    });
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+export const debtAgreementsApi = {
+  async getByDebt(debtId: string): Promise<DebtAgreement[]> {
+    const { data, error } = await supabase
+      .from('debt_agreements')
+      .select('*')
+      .eq('debt_id', debtId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async create(agreement: Omit<DebtAgreement, 'id' | 'created_at' | 'updated_at'>): Promise<DebtAgreement | null> {
+    const { data, error } = await supabase
+      .from('debt_agreements')
+      .insert(agreement)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: Partial<DebtAgreement>): Promise<DebtAgreement | null> {
+    const { data, error } = await supabase
+      .from('debt_agreements')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+export const debtAbatementsApi = {
+  async getByDebt(debtId: string): Promise<DebtAbatement[]> {
+    const { data, error } = await supabase
+      .from('debt_abatements')
+      .select('*')
+      .eq('debt_id', debtId)
+      .order('applied_at', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async apply(
+    debtId: string,
+    type: DebtAbatement['abatement_type'],
+    amount: number,
+    reason: string
+  ): Promise<unknown> {
+    const { data, error } = await supabase.rpc('apply_debt_abatement', {
+      p_debt_id: debtId,
+      p_type: type,
+      p_amount: amount,
+      p_reason: reason
+    });
+
+    if (error) throw error;
+    return data;
   }
 };
 

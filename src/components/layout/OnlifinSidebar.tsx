@@ -10,7 +10,8 @@ import {
     Settings,
     ChevronDown,
     LogOut,
-    Users
+    Users,
+    DollarSign
 } from 'lucide-react';
 import {
     Sidebar,
@@ -43,6 +44,15 @@ export function OnlifinSidebar() {
     const { state } = useSidebar();
     const { isPJ, companyId } = useFinanceScope();
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
+    const userLabel = user?.email?.split('@')[0] || 'usuario';
+    const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+    const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
+    const userInitials = userLabel
+        .split(/[._\s-]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() || '')
+        .join('') || 'ON';
 
     const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
@@ -60,6 +70,7 @@ export function OnlifinSidebar() {
             ]
         },
         { title: 'Pessoas', icon: Users, path: `${prefix}/people` },
+        { title: 'Dívidas', icon: DollarSign, path: `${prefix}/debts` },
         { title: 'Previsão Financeira', icon: TrendingUp, path: `${prefix}/forecast` },
         { title: 'Empresas', icon: Building2, path: '/companies' },
         { title: 'Relatórios', icon: FileText, path: `${prefix}/reports` },
@@ -164,12 +175,12 @@ export function OnlifinSidebar() {
             <SidebarFooter className="p-4 border-t-2 border-slate-300/40 mt-auto">
                 <div className="flex items-center gap-3 px-2">
                     <Avatar className="h-10 w-10 border border-slate-200">
-                        <AvatarFallback className="bg-slate-100 text-blue-600 font-bold">AF</AvatarFallback>
+                        <AvatarFallback className="bg-slate-100 text-blue-600 font-bold">{userInitials}</AvatarFallback>
                     </Avatar>
                     {state === 'expanded' && (
                         <div className="flex-1 min-w-0 mr-2">
-                            <p className="text-sm font-bold text-slate-900 truncate">{user?.email?.split('@')[0] || 'alfreire'}</p>
-                            <p className="text-xs text-slate-500 font-medium truncate uppercase tracking-wider">Admin</p>
+                            <p className="text-sm font-bold text-slate-900 truncate">{userLabel}</p>
+                            <p className="text-xs text-slate-500 font-medium truncate uppercase tracking-wider">{userRoleLabel}</p>
                         </div>
                     )}
                     <Button variant="ghost" size="icon" className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => logout()}>

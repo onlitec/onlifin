@@ -28,6 +28,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_category_corrections_updated_at ON category_corrections;
 CREATE TRIGGER update_category_corrections_updated_at BEFORE UPDATE ON category_corrections
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

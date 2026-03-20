@@ -46,6 +46,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_background_import_jobs_updated_at ON background_import_jobs;
 CREATE TRIGGER update_background_import_jobs_updated_at BEFORE UPDATE ON background_import_jobs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

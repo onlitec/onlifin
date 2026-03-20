@@ -14,6 +14,7 @@ import ForecastDashboard from './pages/ForecastDashboard';
 import BillsToPay from './pages/BillsToPay';
 import BillsToReceive from './pages/BillsToReceive';
 import People from './pages/People';
+import Debts from './pages/Debts';
 
 
 import AIAdmin from './pages/AIAdmin';
@@ -58,6 +59,7 @@ const routes: RouteConfig[] = [
       { name: 'Importar Extrato PF', path: '/pf/import-statements', element: <ImportStatements />, visible: true },
       { name: 'Conciliação PF', path: '/pf/reconciliation', element: <Reconciliation />, visible: true },
       { name: 'Pessoas PF', path: '/pf/people', element: <People />, visible: true },
+      { name: 'Dívidas PF', path: '/pf/debts', element: <Debts />, visible: true },
       { name: 'Relatórios PF', path: '/pf/reports', element: <Reports />, visible: true },
       { name: 'Previsão Financeira PF', path: '/pf/forecast', element: <ForecastDashboard />, visible: true },
     ]
@@ -80,6 +82,7 @@ const routes: RouteConfig[] = [
       { name: 'Importar Extrato PJ', path: '/pj/:companyId/import-statements', element: <ImportStatements />, visible: true },
       { name: 'Conciliação PJ', path: '/pj/:companyId/reconciliation', element: <Reconciliation />, visible: true },
       { name: 'Pessoas PJ', path: '/pj/:companyId/people', element: <People />, visible: true },
+      { name: 'Dívidas PJ', path: '/pj/:companyId/debts', element: <Debts />, visible: true },
       { name: 'Relatórios PJ', path: '/pj/:companyId/reports', element: <Reports />, visible: true },
       { name: 'Previsão Financeira PJ', path: '/pj/:companyId/forecast', element: <ForecastDashboard />, visible: true },
     ]

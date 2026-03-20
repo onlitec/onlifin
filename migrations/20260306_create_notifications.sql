@@ -79,9 +79,11 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_notifications_updated_at ON notifications;
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_alert_preferences_updated_at ON alert_preferences;
 CREATE TRIGGER update_alert_preferences_updated_at BEFORE UPDATE ON alert_preferences
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

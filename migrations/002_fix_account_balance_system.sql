@@ -321,11 +321,25 @@ CREATE TRIGGER trigger_update_balance_on_initial_balance_change
   EXECUTE FUNCTION update_balance_on_initial_balance_change();
 
 -- Trigger for bills_to_pay
-DROP TRIGGER IF EXISTS trigger_handle_bill_payment ON bills_to_pay;
-CREATE TRIGGER trigger_handle_bill_payment
-  BEFORE UPDATE ON bills_to_pay
-  FOR EACH ROW
-  EXECUTE FUNCTION handle_bill_payment();
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'bills_to_pay'
+      AND column_name IN ('transaction_id', 'account_id', 'category_id', 'paid_date')
+    GROUP BY table_name
+    HAVING COUNT(*) = 4
+  ) THEN
+    DROP TRIGGER IF EXISTS trigger_handle_bill_payment ON bills_to_pay;
+    CREATE TRIGGER trigger_handle_bill_payment
+      BEFORE UPDATE ON bills_to_pay
+      FOR EACH ROW
+      EXECUTE FUNCTION handle_bill_payment();
+  ELSE
+    RAISE NOTICE 'Skipping trigger_handle_bill_payment: legacy bills_to_pay schema does not have required columns';
+  END IF;
+END $$;
 
 DROP TRIGGER IF EXISTS trigger_delete_bill_to_pay_transaction ON bills_to_pay;
 CREATE TRIGGER trigger_delete_bill_to_pay_transaction
@@ -334,11 +348,25 @@ CREATE TRIGGER trigger_delete_bill_to_pay_transaction
   EXECUTE FUNCTION delete_associated_transaction();
 
 -- Trigger for bills_to_receive
-DROP TRIGGER IF EXISTS trigger_handle_bill_receipt ON bills_to_receive;
-CREATE TRIGGER trigger_handle_bill_receipt
-  BEFORE UPDATE ON bills_to_receive
-  FOR EACH ROW
-  EXECUTE FUNCTION handle_bill_receipt();
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'bills_to_receive'
+      AND column_name IN ('transaction_id', 'account_id', 'category_id', 'received_date')
+    GROUP BY table_name
+    HAVING COUNT(*) = 4
+  ) THEN
+    DROP TRIGGER IF EXISTS trigger_handle_bill_receipt ON bills_to_receive;
+    CREATE TRIGGER trigger_handle_bill_receipt
+      BEFORE UPDATE ON bills_to_receive
+      FOR EACH ROW
+      EXECUTE FUNCTION handle_bill_receipt();
+  ELSE
+    RAISE NOTICE 'Skipping trigger_handle_bill_receipt: legacy bills_to_receive schema does not have required columns';
+  END IF;
+END $$;
 
 DROP TRIGGER IF EXISTS trigger_delete_bill_to_receive_transaction ON bills_to_receive;
 CREATE TRIGGER trigger_delete_bill_to_receive_transaction
@@ -357,28 +385,50 @@ DECLARE
     v_transaction_id UUID;
 BEGIN
     -- Fix Bills to Pay
-    FOR bill_row IN 
-        SELECT * FROM bills_to_pay 
-        WHERE status = 'paid' AND transaction_id IS NULL AND account_id IS NOT NULL
-    LOOP
-        INSERT INTO transactions (user_id, account_id, category_id, type, amount, date, description, is_reconciled)
-        VALUES (bill_row.user_id, bill_row.account_id, bill_row.category_id, 'expense', bill_row.amount, COALESCE(bill_row.paid_date, bill_row.due_date), bill_row.description, true)
-        RETURNING id INTO v_transaction_id;
-        
-        UPDATE bills_to_pay SET transaction_id = v_transaction_id WHERE id = bill_row.id;
-    END LOOP;
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'bills_to_pay'
+          AND column_name IN ('transaction_id', 'account_id', 'category_id', 'paid_date')
+        GROUP BY table_name
+        HAVING COUNT(*) = 4
+    ) THEN
+        FOR bill_row IN 
+            SELECT * FROM bills_to_pay 
+            WHERE status = 'paid' AND transaction_id IS NULL AND account_id IS NOT NULL
+        LOOP
+            INSERT INTO transactions (user_id, account_id, category_id, type, amount, date, description, is_reconciled)
+            VALUES (bill_row.user_id, bill_row.account_id, bill_row.category_id, 'expense', bill_row.amount, COALESCE(bill_row.paid_date, bill_row.due_date), bill_row.description, true)
+            RETURNING id INTO v_transaction_id;
+            
+            UPDATE bills_to_pay SET transaction_id = v_transaction_id WHERE id = bill_row.id;
+        END LOOP;
+    ELSE
+        RAISE NOTICE 'Skipping paid bills backfill: legacy bills_to_pay schema does not have required columns';
+    END IF;
 
     -- Fix Bills to Receive
-    FOR bill_row IN 
-        SELECT * FROM bills_to_receive 
-        WHERE status = 'received' AND transaction_id IS NULL AND account_id IS NOT NULL
-    LOOP
-        INSERT INTO transactions (user_id, account_id, category_id, type, amount, date, description, is_reconciled)
-        VALUES (bill_row.user_id, bill_row.account_id, bill_row.category_id, 'income', bill_row.amount, COALESCE(bill_row.received_date, bill_row.due_date), bill_row.description, true)
-        RETURNING id INTO v_transaction_id;
-        
-        UPDATE bills_to_receive SET transaction_id = v_transaction_id WHERE id = bill_row.id;
-    END LOOP;
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'bills_to_receive'
+          AND column_name IN ('transaction_id', 'account_id', 'category_id', 'received_date')
+        GROUP BY table_name
+        HAVING COUNT(*) = 4
+    ) THEN
+        FOR bill_row IN 
+            SELECT * FROM bills_to_receive 
+            WHERE status = 'received' AND transaction_id IS NULL AND account_id IS NOT NULL
+        LOOP
+            INSERT INTO transactions (user_id, account_id, category_id, type, amount, date, description, is_reconciled)
+            VALUES (bill_row.user_id, bill_row.account_id, bill_row.category_id, 'income', bill_row.amount, COALESCE(bill_row.received_date, bill_row.due_date), bill_row.description, true)
+            RETURNING id INTO v_transaction_id;
+            
+            UPDATE bills_to_receive SET transaction_id = v_transaction_id WHERE id = bill_row.id;
+        END LOOP;
+    ELSE
+        RAISE NOTICE 'Skipping received bills backfill: legacy bills_to_receive schema does not have required columns';
+    END IF;
     
     RAISE NOTICE 'Existing paid/received bills fixed';
 END;

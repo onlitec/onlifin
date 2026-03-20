@@ -102,6 +102,81 @@ export interface Transaction {
 export type BillStatus = 'pending' | 'paid' | 'overdue' | 'received';
 export type NotificationType = 'alert' | 'info' | 'warning' | 'success';
 export type NotificationSeverity = 'low' | 'medium' | 'high';
+export type DebtStatus = 'PENDENTE' | 'VENCIDO' | 'RENEGOCIADO' | 'PAGO' | 'CANCELADO';
+export type DebtInterestType = 'SIMPLES' | 'COMPOSTO';
+export type DebtPaymentMethod =
+  | 'PIX'
+  | 'BOLETO'
+  | 'CARTAO_CREDITO'
+  | 'CARTAO_DEBITO'
+  | 'TRANSFERENCIA'
+  | 'DINHEIRO'
+  | 'DEBITO_AUTOMATICO'
+  | 'OUTRO';
+export type DebtAgreementStatus = 'ATIVO' | 'CONCLUIDO' | 'CANCELADO' | 'INADIMPLENTE';
+export type DebtAbatementType = 'JUROS' | 'MULTA' | 'AMBOS' | 'VALOR_PRINCIPAL';
+
+export interface Debt {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  person_id: string | null;
+  description: string;
+  creditor: string;
+  original_amount: number;
+  current_balance: number;
+  interest_rate: number;
+  interest_type: DebtInterestType;
+  penalty_rate: number;
+  due_date: string;
+  status: DebtStatus;
+  category: string | null;
+  notes: string | null;
+  total_paid: number;
+  total_abated: number;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface DebtPayment {
+  id: string;
+  debt_id: string;
+  user_id: string;
+  amount: number;
+  payment_date: string;
+  method: DebtPaymentMethod;
+  reference: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface DebtAgreement {
+  id: string;
+  debt_id: string;
+  user_id: string;
+  balance_at_agreement: number;
+  agreed_amount: number;
+  discount_applied: number;
+  installments: number;
+  installment_value: number;
+  new_interest_rate: number;
+  start_date: string;
+  end_date: string | null;
+  status: DebtAgreementStatus;
+  terms: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface DebtAbatement {
+  id: string;
+  debt_id: string;
+  user_id: string;
+  abatement_type: DebtAbatementType;
+  amount: number;
+  reason: string;
+  applied_at: string;
+}
 
 export interface BillToPay {
   id: string;

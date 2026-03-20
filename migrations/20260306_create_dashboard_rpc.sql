@@ -155,7 +155,18 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user_company_person_date ON transact
 CREATE INDEX IF NOT EXISTS idx_transactions_user_type_date ON transactions(user_id, type, date);
 CREATE INDEX IF NOT EXISTS idx_bills_user_status_due_date ON bills_to_pay(user_id, status, due_date);
 CREATE INDEX IF NOT EXISTS idx_bills_receive_user_status_due_date ON bills_to_receive(user_id, status, due_date);
-CREATE INDEX IF NOT EXISTS idx_notifications_user_read_created ON notifications(user_id, is_read, created_at);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'notifications'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_notifications_user_read_created
+            ON notifications(user_id, is_read, created_at);
+    END IF;
+END $$;
 
 -- Comentários
 COMMENT ON FUNCTION get_dashboard_data IS 'Função otimizada para buscar todos os dados do dashboard em uma única chamada';

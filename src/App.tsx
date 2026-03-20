@@ -25,7 +25,11 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PersonSelector } from '@/components/person/PersonSelector';
 
+const PUBLIC_PATHS = new Set(['/login', '/change-password']);
+
 function App() {
+  const publicRoutes = routes.filter((route) => PUBLIC_PATHS.has(route.path));
+
   return (
     <Router>
       <ThemeProvider>
@@ -35,13 +39,23 @@ function App() {
             <PWAStatus />
             <UpdateNotification />
             <InstallPrompt />
-            <RequireAuth whiteList={['/login']}>
-              <CompanyProvider>
-                <PersonProvider>
-                  <MainLayout />
-                </PersonProvider>
-              </CompanyProvider>
-            </RequireAuth>
+            <Routes>
+              {publicRoutes.map((route, index) => (
+                <Route key={index} path={route.path} element={route.element} />
+              ))}
+              <Route
+                path="/*"
+                element={
+                  <RequireAuth>
+                    <CompanyProvider>
+                      <PersonProvider>
+                        <MainLayout />
+                      </PersonProvider>
+                    </CompanyProvider>
+                  </RequireAuth>
+                }
+              />
+            </Routes>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
@@ -53,7 +67,7 @@ function MainLayout() {
   const flattenRoutes = (routeList: typeof routes) => {
     const flattened: any[] = [];
     routeList.forEach(route => {
-      if (route.element) {
+      if (route.element && !PUBLIC_PATHS.has(route.path)) {
         flattened.push(route);
       }
       if (route.children) {
@@ -71,6 +85,15 @@ function MainLayout() {
   const { isPJ, isPF } = useFinanceScope();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const userLabel = user?.email?.split('@')[0] || 'usuario';
+  const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+  const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
+  const userInitials = userLabel
+    .split(/[._\s-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'ON';
 
   const { selectedCompany } = useCompany();
 
@@ -149,12 +172,12 @@ function MainLayout() {
 
             <div className="flex items-center gap-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-slate-900 leading-none mb-1">{user?.email?.split('@')[0] || 'alfreire'}</p>
-                <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Admin</p>
+                <p className="text-sm font-bold text-slate-900 leading-none mb-1">{userLabel}</p>
+                <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{userRoleLabel}</p>
               </div>
               <Avatar className="h-10 w-10 border-2 border-slate-100 shadow-sm">
                 <AvatarImage src="" />
-                <AvatarFallback className="bg-primary text-white font-bold">AF</AvatarFallback>
+                <AvatarFallback className="bg-primary text-white font-bold">{userInitials}</AvatarFallback>
               </Avatar>
             </div>
           </div>
