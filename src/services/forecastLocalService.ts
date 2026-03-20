@@ -131,17 +131,21 @@ Responda APENAS em JSON no formato exato:
         try {
             // Voltando para "user" role pois o qwen0.5b as vezes ignora pure system messages
             const aiResponse = await chatWithOllama([{ role: 'user', content: promptText }]);
-            console.log("Ollama Response for Forecast:", aiResponse);
-            
-            // Clean markdown
-            let cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-            const aiData = JSON.parse(cleaned);
+            if (!aiResponse) {
+                console.warn('Forecast executado sem IA local; usando apenas projeção matemática.');
+            } else {
+                console.log("Ollama Response for Forecast:", aiResponse);
 
-            if (aiData.insights && Array.isArray(aiData.insights)) {
-                aiInsights = aiData.insights.slice(0, 4);
-            }
-            if (aiData.alerts && Array.isArray(aiData.alerts)) {
-                aiAlerts = aiData.alerts.slice(0, 3);
+            // Clean markdown
+                let cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                const aiData = JSON.parse(cleaned);
+
+                if (aiData.insights && Array.isArray(aiData.insights)) {
+                    aiInsights = aiData.insights.slice(0, 4);
+                }
+                if (aiData.alerts && Array.isArray(aiData.alerts)) {
+                    aiAlerts = aiData.alerts.slice(0, 3);
+                }
             }
         } catch (e) {
             console.error("Erro na Análise de IA:", e);

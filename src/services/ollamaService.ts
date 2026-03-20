@@ -23,6 +23,33 @@ interface OllamaChatResponse {
     done: boolean;
 }
 
+let cachedModelAvailability: boolean | null = null;
+
+async function isOllamaModelAvailable(): Promise<boolean> {
+    if (cachedModelAvailability !== null) {
+        return cachedModelAvailability;
+    }
+
+    try {
+        const response = await fetch('/ollama/api/tags');
+        if (!response.ok) {
+            cachedModelAvailability = false;
+            return false;
+        }
+
+        const data = await response.json();
+        const models = Array.isArray(data?.models) ? data.models : [];
+        cachedModelAvailability = models.some((model: any) => {
+            const name = String(model?.name || '');
+            return name === OLLAMA_MODEL || name.startsWith(`${OLLAMA_MODEL}:`) || name.startsWith(OLLAMA_MODEL.split(':')[0]);
+        });
+        return cachedModelAvailability;
+    } catch {
+        cachedModelAvailability = false;
+        return false;
+    }
+}
+
 // Regras de palavras-chave padrão (fallback quando não há regras no banco)
 // IMPORTANTE: Os nomes das categorias devem corresponder às categorias do banco de dados
 const DEFAULT_KEYWORD_RULES = [
@@ -98,6 +125,12 @@ const DEFAULT_KEYWORD_RULES = [
 export async function chatWithOllama(
     messages: OllamaMessage[]
 ): Promise<string> {
+    const modelAvailable = await isOllamaModelAvailable();
+    if (!modelAvailable) {
+        console.warn(`Modelo Ollama indisponível: ${OLLAMA_MODEL}. Usando fallback local.`);
+        return '';
+    }
+
     const requestBody: OllamaChatRequest = {
         model: OLLAMA_MODEL,
         messages,

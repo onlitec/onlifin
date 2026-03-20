@@ -21,6 +21,7 @@ import type {
   DebtAgreement,
   DebtAbatement
 } from '@/types/types';
+import { forecastLocalService } from '@/services/forecastLocalService';
 
 export const profilesApi = {
   async getProfile(userId: string): Promise<Profile | null> {
@@ -1232,16 +1233,17 @@ export const forecastsApi = {
   },
 
   async triggerGeneration(userId: string, companyId?: string | null, personId?: string | null): Promise<void> {
-    // Chama a Edge Function para gerar previsão
-    const { error } = await supabase.functions.invoke('financial-forecast', {
-      body: {
-        user_id: userId,
-        company_id: companyId,
-        person_id: personId
-      }
-    });
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 90);
 
-    if (error) throw error;
+    await forecastLocalService.generateForecast({
+      userId,
+      companyId,
+      personId,
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    });
   }
 };
 
