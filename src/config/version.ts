@@ -3,4 +3,4 @@
 // ===========================================
 // Esta versão é atualizada automaticamente pelo GitHub Action
 
-export const APP_VERSION = "1.32.5";
+export const APP_VERSION = "1.32.6";
