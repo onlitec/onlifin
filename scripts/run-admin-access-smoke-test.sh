@@ -241,6 +241,18 @@ function log(message) {
   process.stdout.write(`${message}\n`);
 }
 
+async function assertNotOnPath(page, deniedPath, message) {
+  try {
+    await page.waitForURL((url) => !url.pathname.endsWith(deniedPath), { timeout: 10000 });
+  } catch (error) {
+    // The assertion below reports the effective route if the redirect never happens.
+  }
+
+  if (new URL(page.url()).pathname.endsWith(deniedPath)) {
+    throw new Error(message);
+  }
+}
+
 async function login(page, email, password) {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('textbox', { name: 'Usuário ou E-mail' }).waitFor({ state: 'visible', timeout: 20000 });
@@ -278,14 +290,16 @@ async function validateAccountAdmin(browser) {
   await expectVisible(page, 'Admin da Conta', 'Rotulo de Admin da Conta nao apareceu.');
 
   await page.goto(`${baseUrl}/settings`, { waitUntil: 'domcontentloaded' });
-  try {
-    await page.waitForURL((url) => !url.pathname.endsWith('/settings'), { timeout: 10000 });
-  } catch (error) {
-    // The next assertion reports the effective route if the redirect never happens.
-  }
-  if (page.url().includes('/settings')) {
-    throw new Error('Admin da Conta nao deveria permanecer em /settings.');
-  }
+  await assertNotOnPath(page, '/settings', 'Admin da Conta nao deveria permanecer em /settings.');
+
+  await page.goto(`${baseUrl}/admin-notifications`, { waitUntil: 'domcontentloaded' });
+  await assertNotOnPath(page, '/admin-notifications', 'Admin da Conta nao deveria acessar /admin-notifications.');
+
+  await page.goto(`${baseUrl}/user-management`, { waitUntil: 'domcontentloaded' });
+  await assertNotOnPath(page, '/user-management', 'Admin da Conta nao deveria acessar /user-management.');
+
+  await page.goto(`${baseUrl}/ai-admin`, { waitUntil: 'domcontentloaded' });
+  await assertNotOnPath(page, '/ai-admin', 'Admin da Conta nao deveria acessar /ai-admin.');
 
   await page.goto(`${baseUrl}/admin-general`, { waitUntil: 'domcontentloaded' });
   await expectVisible(page, 'Administracao da Conta', 'Painel seguro de Administração da Conta nao abriu.');
@@ -307,6 +321,15 @@ async function validatePlatformAdmin(browser) {
   }
 
   await expectVisible(page, 'Atalhos das configurações administrativas da plataforma.', 'Tela Configurações nao abriu para Admin da Plataforma.');
+
+  await page.goto(`${baseUrl}/admin-notifications`, { waitUntil: 'domcontentloaded' });
+  await expectVisible(page, 'Processar fila agora', 'Admin da Plataforma nao abriu /admin-notifications.');
+
+  await page.goto(`${baseUrl}/user-management`, { waitUntil: 'domcontentloaded' });
+  await expectVisible(page, 'Gestão de Usuários', 'Admin da Plataforma nao abriu /user-management.');
+
+  await page.goto(`${baseUrl}/ai-admin`, { waitUntil: 'domcontentloaded' });
+  await expectVisible(page, 'Administração de IA', 'Admin da Plataforma nao abriu /ai-admin.');
   await context.close();
 }
 

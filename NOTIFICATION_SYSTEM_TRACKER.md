@@ -111,6 +111,7 @@ Restante:
     - `Admin da Conta` ve `Administracao` e nao acessa `Configuracoes`
     - `Admin da Plataforma` ve `Administracao` e `Configuracoes`
   - [x] smoke test reutilizavel da segregacao administrativa validado no ambiente publicado
+  - [x] bloqueio direto de rotas globais (`/settings`, `/admin-notifications`, `/user-management`, `/ai-admin`) validado para `Admin da Conta`
   - [ ] teste administrativo por e-mail com SMTP real
   - [ ] teste administrativo por WhatsApp com provider real
   - [x] reenfileiramento de falhas validado pela UI publicada
