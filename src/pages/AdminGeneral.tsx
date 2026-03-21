@@ -1,28 +1,36 @@
 import * as React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from 'miaoda-auth-react';
 import { supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import {
-    Database,
-    AlertTriangle,
-    CreditCard,
-    Wallet,
-    Receipt,
-    FolderOpen,
-    MessageSquare,
-    FileUp,
-    Loader2,
-    Activity,
-    PlusCircle,
-    Trash2,
-    Trash
-} from 'lucide-react';
+import { useAuthProfile } from '@/contexts/AuthProfileContext';
 import { adminApi } from '@/db/api';
+import { canAccessAdministration, canAccessPlatformSettings, getAccessRoleLabel } from '@/lib/access';
+import { getCurrentPlanInfo, getCurrentPlanUsage, getPlanSourceLabel } from '@/services/planService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+    Activity,
+    AlertTriangle,
+    Building2,
+    CreditCard,
+    Database,
+    FileUp,
+    FolderOpen,
+    Loader2,
+    MessageSquare,
+    PlusCircle,
+    Receipt,
+    Settings2,
+    ShieldCheck,
+    Trash,
+    Trash2,
+    Users,
+    Wallet
+} from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -31,7 +39,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { useAuth } from 'miaoda-auth-react';
 
 interface DataCounts {
     transactions: number;
@@ -42,8 +49,22 @@ interface DataCounts {
     import_history: number;
 }
 
+interface AccountAdminSummary {
+    planName: string;
+    planSource: string;
+    peopleCount: number;
+    peopleLimit: number;
+    companiesCount: number;
+    companiesLimit: number;
+    tenantId: string | null;
+    isConfigured: boolean;
+}
+
 export default function AdminGeneral() {
+    const navigate = useNavigate();
     const { user } = useAuth();
+    const { profile } = useAuthProfile();
+    const { toast } = useToast();
     const [counts, setCounts] = React.useState<DataCounts>({
         transactions: 0,
         accounts: 0,
@@ -52,27 +73,70 @@ export default function AdminGeneral() {
         ai_chat_logs: 0,
         import_history: 0
     });
+    const [accountSummary, setAccountSummary] = React.useState<AccountAdminSummary | null>(null);
     const [isLoading, setIsLoading] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
     const [confirmText, setConfirmText] = React.useState('');
     const [auditLogs, setAuditLogs] = React.useState<any[]>([]);
-    const { toast } = useToast();
-    const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
-    const isAdmin = userRole === 'admin';
+
+    const canManageAdministration = canAccessAdministration(profile, user as any);
+    const isPlatformAdmin = canAccessPlatformSettings(profile, user as any);
+    const accessRoleLabel = getAccessRoleLabel(profile, user as any);
 
     React.useEffect(() => {
-        if (!isAdmin) return;
-        loadData();
-    }, [isAdmin]);
+        if (!canManageAdministration) {
+            return;
+        }
 
-    const loadData = async () => {
+        if (isPlatformAdmin) {
+            void loadPlatformData();
+            return;
+        }
+
+        void loadAccountSummary();
+    }, [canManageAdministration, isPlatformAdmin]);
+
+    const loadPlatformData = async () => {
         setIsLoading(true);
-        await Promise.all([
-            loadDataCounts(),
-            loadAuditLogs()
-        ]);
-        setIsLoading(false);
+        try {
+            await Promise.all([
+                loadDataCounts(),
+                loadAuditLogs()
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const loadAccountSummary = async () => {
+        setIsLoading(true);
+        try {
+            const [planInfo, usage] = await Promise.all([
+                getCurrentPlanInfo(),
+                getCurrentPlanUsage(),
+            ]);
+
+            setAccountSummary({
+                planName: planInfo.plan.name,
+                planSource: getPlanSourceLabel(planInfo.source),
+                peopleCount: usage.peopleCount,
+                peopleLimit: planInfo.plan.limits.managedPeople,
+                companiesCount: usage.companiesCount,
+                companiesLimit: planInfo.plan.limits.companies,
+                tenantId: profile?.tenant_id || planInfo.tenantId || null,
+                isConfigured: planInfo.isConfigured,
+            });
+        } catch (error: any) {
+            console.error('Erro ao carregar resumo da conta:', error);
+            toast({
+                title: 'Erro',
+                description: error.message || 'Nao foi possivel carregar os dados da conta.',
+                variant: 'destructive'
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const loadAuditLogs = async () => {
@@ -80,12 +144,11 @@ export default function AdminGeneral() {
             const logs = await adminApi.getAuditLogs(10);
             setAuditLogs(logs);
         } catch (error) {
-            console.error('Erro ao logs:', error);
+            console.error('Erro ao carregar logs:', error);
         }
     };
 
     const loadDataCounts = async () => {
-        setIsLoading(true);
         try {
             const [
                 { count: transactionsCount },
@@ -118,15 +181,13 @@ export default function AdminGeneral() {
                 description: error.message || 'Erro ao carregar dados',
                 variant: 'destructive'
             });
-        } finally {
-            setIsLoading(false);
         }
     };
 
     const handleDeleteAllData = async () => {
         if (confirmText !== 'CONFIRMAR') {
             toast({
-                title: 'Confirmação inválida',
+                title: 'Confirmacao invalida',
                 description: 'Digite CONFIRMAR para prosseguir',
                 variant: 'destructive'
             });
@@ -135,28 +196,21 @@ export default function AdminGeneral() {
 
         setIsDeleting(true);
         try {
-            // Delete in order respecting foreign keys
-            // 1. ai_chat_logs (depends on profiles)
             const { error: aiError } = await supabase.from('ai_chat_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             if (aiError) throw new Error(`Erro ao apagar logs de IA: ${aiError.message}`);
 
-            // 2. import_history (depends on profiles)
             const { error: importError } = await supabase.from('import_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            if (importError) throw new Error(`Erro ao apagar histórico de importação: ${importError.message}`);
+            if (importError) throw new Error(`Erro ao apagar historico de importacao: ${importError.message}`);
 
-            // 3. transactions (depends on profiles, accounts, cards, categories)
             const { error: transError } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            if (transError) throw new Error(`Erro ao apagar transações: ${transError.message}`);
+            if (transError) throw new Error(`Erro ao apagar transacoes: ${transError.message}`);
 
-            // 4. cards (depends on profiles, accounts)
             const { error: cardsError } = await supabase.from('cards').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            if (cardsError) throw new Error(`Erro ao apagar cartões: ${cardsError.message}`);
+            if (cardsError) throw new Error(`Erro ao apagar cartoes: ${cardsError.message}`);
 
-            // 5. accounts (depends on profiles)
             const { error: accountsError } = await supabase.from('accounts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             if (accountsError) throw new Error(`Erro ao apagar contas: ${accountsError.message}`);
 
-            // 6. categories (depends on profiles) - only user categories, not system ones
             const { error: catError } = await supabase.from('categories').delete().not('user_id', 'is', null);
             if (catError) throw new Error(`Erro ao apagar categorias: ${catError.message}`);
 
@@ -167,7 +221,7 @@ export default function AdminGeneral() {
 
             setShowDeleteDialog(false);
             setConfirmText('');
-            loadDataCounts();
+            await loadPlatformData();
         } catch (error: any) {
             console.error('Erro ao apagar dados:', error);
             toast({
@@ -184,25 +238,167 @@ export default function AdminGeneral() {
         counts.categories + counts.ai_chat_logs + counts.import_history;
 
     const dataItems = [
-        { label: 'Transações', count: counts.transactions, icon: Receipt, color: 'text-blue-500' },
+        { label: 'Transacoes', count: counts.transactions, icon: Receipt, color: 'text-blue-500' },
         { label: 'Contas', count: counts.accounts, icon: Wallet, color: 'text-green-500' },
-        { label: 'Cartões', count: counts.cards, icon: CreditCard, color: 'text-purple-500' },
+        { label: 'Cartoes', count: counts.cards, icon: CreditCard, color: 'text-purple-500' },
         { label: 'Categorias', count: counts.categories, icon: FolderOpen, color: 'text-orange-500' },
         { label: 'Logs de IA', count: counts.ai_chat_logs, icon: MessageSquare, color: 'text-cyan-500' },
-        { label: 'Importações', count: counts.import_history, icon: FileUp, color: 'text-pink-500' }
+        { label: 'Importacoes', count: counts.import_history, icon: FileUp, color: 'text-pink-500' }
     ];
 
-    if (!isAdmin) {
+    if (!canManageAdministration) {
         return <Navigate to="/pf" replace />;
+    }
+
+    if (!isPlatformAdmin) {
+        return (
+            <div className="w-full max-w-[1200px] mx-auto p-6 space-y-6">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-3xl font-bold">Administracao da Conta</h1>
+                    <p className="text-muted-foreground">
+                        Painel administrativo do tenant para o responsavel pela conta criada no site de marketing.
+                    </p>
+                </div>
+
+                <Card className="border-blue-200 bg-blue-50/40">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <ShieldCheck className="h-5 w-5 text-blue-600" />
+                            Escopo de Acesso
+                        </CardTitle>
+                        <CardDescription>
+                            Este painel permite administrar a sua conta sem expor configuracoes globais da plataforma.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-3">
+                        <div className="rounded-lg border bg-white p-4">
+                            <p className="text-xs font-medium text-muted-foreground">Perfil de acesso</p>
+                            <p className="mt-1 text-lg font-semibold">{accessRoleLabel}</p>
+                        </div>
+                        <div className="rounded-lg border bg-white p-4">
+                            <p className="text-xs font-medium text-muted-foreground">Tenant</p>
+                            <p className="mt-1 text-sm font-semibold break-all">{accountSummary?.tenantId || profile?.tenant_id || 'Nao vinculado'}</p>
+                        </div>
+                        <div className="rounded-lg border bg-white p-4">
+                            <p className="text-xs font-medium text-muted-foreground">Configuracoes globais</p>
+                            <p className="mt-1 text-sm font-semibold">Restritas ao admin da plataforma</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-blue-600" />
+                            Resumo Comercial da Conta
+                        </CardTitle>
+                        <CardDescription>
+                            Limites e consumo atuais do plano vinculado ao seu tenant.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? (
+                            <div className="flex items-center justify-center py-10">
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : accountSummary ? (
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                <div className="rounded-lg border p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">Plano</p>
+                                    <p className="mt-1 text-lg font-semibold">{accountSummary.planName}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">{accountSummary.planSource}</p>
+                                </div>
+                                <div className="rounded-lg border p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">Pessoas</p>
+                                    <p className="mt-1 text-lg font-semibold">
+                                        {accountSummary.peopleCount} / {accountSummary.peopleLimit}
+                                    </p>
+                                </div>
+                                <div className="rounded-lg border p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">CNPJs</p>
+                                    <p className="mt-1 text-lg font-semibold">
+                                        {accountSummary.companiesCount} / {accountSummary.companiesLimit}
+                                    </p>
+                                </div>
+                                <div className="rounded-lg border p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">Status da configuracao</p>
+                                    <p className="mt-1 text-lg font-semibold">
+                                        {accountSummary.isConfigured ? 'Configurado' : 'Fallback de compatibilidade'}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
+                                Nao foi possivel carregar o resumo administrativo da conta.
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Settings2 className="h-5 w-5 text-blue-600" />
+                            Acoes Disponiveis
+                        </CardTitle>
+                        <CardDescription>
+                            Navegacao segura para recursos da sua conta, sem acesso aos controles globais da instancia.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-3">
+                        <Button
+                            variant="outline"
+                            className="h-auto min-h-24 flex-col items-start gap-2 px-4 py-4 text-left"
+                            onClick={() => navigate('/companies')}
+                        >
+                            <div className="flex items-center gap-2 text-slate-900">
+                                <Building2 className="h-4 w-4 text-blue-600" />
+                                <span className="font-bold">Empresas</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-normal">
+                                Gerenciar CNPJs e contexto juridico da sua conta.
+                            </span>
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="h-auto min-h-24 flex-col items-start gap-2 px-4 py-4 text-left"
+                            onClick={() => navigate('/pf/people')}
+                        >
+                            <div className="flex items-center gap-2 text-slate-900">
+                                <Users className="h-4 w-4 text-blue-600" />
+                                <span className="font-bold">Pessoas</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-normal">
+                                Acompanhar pessoas vinculadas ao plano e ao titular da conta.
+                            </span>
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="h-auto min-h-24 flex-col items-start gap-2 px-4 py-4 text-left"
+                            onClick={() => navigate('/pf/reports')}
+                        >
+                            <div className="flex items-center gap-2 text-slate-900">
+                                <Database className="h-4 w-4 text-blue-600" />
+                                <span className="font-bold">Relatorios</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-normal">
+                                Revisar indicadores e dados da sua conta sem acessar a administracao da plataforma.
+                            </span>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     return (
         <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Configurações Gerais</h1>
+                <h1 className="text-3xl font-bold">Configuracoes Gerais</h1>
             </div>
 
-            {/* Data Summary Card */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -239,7 +435,7 @@ export default function AdminGeneral() {
                                 </div>
                                 <Button
                                     variant="outline"
-                                    onClick={loadDataCounts}
+                                    onClick={() => void loadPlatformData()}
                                     disabled={isLoading}
                                 >
                                     Atualizar
@@ -250,7 +446,6 @@ export default function AdminGeneral() {
                 </CardContent>
             </Card>
 
-            {/* Danger Zone Card */}
             <Card className="border-red-500/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-red-500">
@@ -258,7 +453,7 @@ export default function AdminGeneral() {
                         Zona de Perigo
                     </CardTitle>
                     <CardDescription>
-                        Ações irreversíveis que afetam permanentemente os dados da plataforma
+                        Acoes irreversiveis que afetam permanentemente os dados da plataforma
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -267,8 +462,8 @@ export default function AdminGeneral() {
                             <div className="space-y-1">
                                 <p className="font-medium">Apagar Todos os Dados</p>
                                 <p className="text-sm text-muted-foreground">
-                                    Remove permanentemente todas as transações, contas, cartões, categorias personalizadas,
-                                    logs de IA e histórico de importação. Os perfis de usuários serão mantidos.
+                                    Remove permanentemente todas as transacoes, contas, cartoes, categorias personalizadas,
+                                    logs de IA e historico de importacao. Os perfis de usuarios serao mantidos.
                                 </p>
                             </div>
                             <Button
@@ -284,7 +479,6 @@ export default function AdminGeneral() {
                 </CardContent>
             </Card>
 
-            {/* Audit Logs Card */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -308,7 +502,7 @@ export default function AdminGeneral() {
                                         <tr className="text-left font-black uppercase text-[10px] tracking-widest text-slate-500">
                                             <th className="p-4">Evento</th>
                                             <th className="p-4">Entidade</th>
-                                            <th className="p-4">Usuário</th>
+                                            <th className="p-4">Usuario</th>
                                             <th className="p-4 text-right">Data/Hora</th>
                                         </tr>
                                     </thead>
@@ -321,7 +515,7 @@ export default function AdminGeneral() {
                                                         {log.action === 'UPDATE' && <Activity className="h-3 w-3 text-blue-500" />}
                                                         {log.action === 'DELETE' && <Trash className="h-3 w-3 text-red-500" />}
                                                         <span className="font-bold uppercase text-[11px] tracking-tighter">
-                                                            {log.action === 'INSERT' ? 'Criação' : log.action === 'UPDATE' ? 'Alteração' : 'Exclusão'}
+                                                            {log.action === 'INSERT' ? 'Criacao' : log.action === 'UPDATE' ? 'Alteracao' : 'Exclusao'}
                                                         </span>
                                                     </div>
                                                 </td>
@@ -332,7 +526,7 @@ export default function AdminGeneral() {
                                                     {log.profiles?.username || 'Sistema'}
                                                 </td>
                                                 <td className="p-4 text-right text-[10px] font-bold text-slate-400">
-                                                    {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                                                    {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
                                                 </td>
                                             </tr>
                                         ))}
@@ -340,10 +534,10 @@ export default function AdminGeneral() {
                                 </table>
                             </div>
                         )}
-                        <Button 
-                            variant="link" 
+                        <Button
+                            variant="link"
                             className="w-full text-xs uppercase font-black tracking-widest opacity-50"
-                            onClick={() => toast({ title: "Funcionalidade em desenvolvimento", description: "A visualização completa dos logs estará disponível em breve." })}
+                            onClick={() => toast({ title: 'Funcionalidade em desenvolvimento', description: 'A visualizacao completa dos logs estara disponivel em breve.' })}
                         >
                             Ver Log Completo
                         </Button>
@@ -351,34 +545,33 @@ export default function AdminGeneral() {
                 </CardContent>
             </Card>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-red-500">
                             <AlertTriangle className="h-5 w-5" />
-                            Confirmar Exclusão
+                            Confirmar Exclusao
                         </DialogTitle>
                         <DialogDescription className="space-y-2">
                             <p>
-                                Você está prestes a apagar <strong>{totalRecords.toLocaleString('pt-BR')} registros</strong> da plataforma.
+                                Voce esta prestes a apagar <strong>{totalRecords.toLocaleString('pt-BR')} registros</strong> da plataforma.
                             </p>
                             <p className="text-red-500 font-medium">
-                                Esta ação é IRREVERSÍVEL e não pode ser desfeita!
+                                Esta acao e IRREVERSIVEL e nao pode ser desfeita.
                             </p>
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
                         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                            <p className="text-sm font-medium mb-2">Serão apagados:</p>
+                            <p className="text-sm font-medium mb-2">Serao apagados:</p>
                             <ul className="text-sm text-muted-foreground space-y-1">
-                                <li>• {counts.transactions} transações</li>
-                                <li>• {counts.accounts} contas</li>
-                                <li>• {counts.cards} cartões</li>
-                                <li>• {counts.categories} categorias</li>
-                                <li>• {counts.ai_chat_logs} logs de IA</li>
-                                <li>• {counts.import_history} históricos de importação</li>
+                                <li>{counts.transactions} transacoes</li>
+                                <li>{counts.accounts} contas</li>
+                                <li>{counts.cards} cartoes</li>
+                                <li>{counts.categories} categorias</li>
+                                <li>{counts.ai_chat_logs} logs de IA</li>
+                                <li>{counts.import_history} historicos de importacao</li>
                             </ul>
                         </div>
 
@@ -388,7 +581,7 @@ export default function AdminGeneral() {
                             </p>
                             <Input
                                 value={confirmText}
-                                onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+                                onChange={(event) => setConfirmText(event.target.value.toUpperCase())}
                                 placeholder="Digite CONFIRMAR"
                                 className="font-mono"
                             />
@@ -408,7 +601,7 @@ export default function AdminGeneral() {
                         </Button>
                         <Button
                             variant="destructive"
-                            onClick={handleDeleteAllData}
+                            onClick={() => void handleDeleteAllData()}
                             disabled={confirmText !== 'CONFIRMAR' || isDeleting}
                         >
                             {isDeleting ? (

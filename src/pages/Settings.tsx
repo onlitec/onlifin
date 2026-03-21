@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from 'miaoda-auth-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,10 +24,13 @@ import { getCurrentPlanInfo, getCurrentPlanUsage, getPlanSourceLabel } from '@/s
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { AlertSettings } from '@/components/admin/AlertSettings';
+import { useAuthProfile } from '@/contexts/AuthProfileContext';
+import { canAccessAdministration, canAccessPlatformSettings } from '@/lib/access';
 
 export default function Settings() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { profile } = useAuthProfile();
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
     const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
@@ -44,8 +47,8 @@ export default function Settings() {
     const [importProgress, setImportProgress] = React.useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const { toast } = useToast();
-    const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
-    const isAdmin = userRole === 'admin';
+    const isPlatformAdmin = canAccessPlatformSettings(profile, user as any);
+    const canManageAdministration = canAccessAdministration(profile, user as any);
     const hasPrimaryPerson = Boolean(settings.owner_person_id);
 
     React.useEffect(() => {
@@ -191,6 +194,10 @@ export default function Settings() {
         reader.readAsText(file);
     };
 
+    if (!isPlatformAdmin) {
+        return <Navigate to={canManageAdministration ? '/admin-general' : '/pf'} replace />;
+    }
+
     return (
         <div className="w-full max-w-[1200px] mx-auto p-6 space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col gap-1">
@@ -200,76 +207,74 @@ export default function Settings() {
                 </p>
             </div>
 
-            {isAdmin && (
-                <Card className="border-blue-200 bg-blue-50/40">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Settings2 className="h-5 w-5 text-blue-600" />
-                            Administração
-                        </CardTitle>
-                        <CardDescription>
-                            Atalhos das configurações administrativas da plataforma.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 md:grid-cols-4">
-                        <Button
-                            variant="outline"
-                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
-                            onClick={() => navigate('/user-management')}
-                        >
-                            <div className="flex items-center gap-2 text-slate-900">
-                                <Users className="h-4 w-4 text-blue-600" />
-                                <span className="font-bold">Gestão de Usuários</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-normal">
-                                Criar, editar, resetar senha e acompanhar status dos usuários.
-                            </span>
-                        </Button>
+            <Card className="border-blue-200 bg-blue-50/40">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Settings2 className="h-5 w-5 text-blue-600" />
+                        Administração
+                    </CardTitle>
+                    <CardDescription>
+                        Atalhos das configurações administrativas da plataforma.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-4">
+                    <Button
+                        variant="outline"
+                        className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                        onClick={() => navigate('/user-management')}
+                    >
+                        <div className="flex items-center gap-2 text-slate-900">
+                            <Users className="h-4 w-4 text-blue-600" />
+                            <span className="font-bold">Gestão de Usuários</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-normal">
+                            Criar, editar, resetar senha e acompanhar status dos usuários.
+                        </span>
+                    </Button>
 
-                        <Button
-                            variant="outline"
-                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
-                            onClick={() => navigate('/ai-admin')}
-                        >
-                            <div className="flex items-center gap-2 text-slate-900">
-                                <Bot className="h-4 w-4 text-blue-600" />
-                                <span className="font-bold">Configuração IA</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-normal">
-                                Ajustar modelo, permissões e parâmetros operacionais da IA.
-                            </span>
-                        </Button>
+                    <Button
+                        variant="outline"
+                        className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                        onClick={() => navigate('/ai-admin')}
+                    >
+                        <div className="flex items-center gap-2 text-slate-900">
+                            <Bot className="h-4 w-4 text-blue-600" />
+                            <span className="font-bold">Configuração IA</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-normal">
+                            Ajustar modelo, permissões e parâmetros operacionais da IA.
+                        </span>
+                    </Button>
 
-                        <Button
-                            variant="outline"
-                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
-                            onClick={() => navigate('/admin-notifications')}
-                        >
-                            <div className="flex items-center gap-2 text-slate-900">
-                                <BellRing className="h-4 w-4 text-blue-600" />
-                                <span className="font-bold">Notificações</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-normal">
-                                Configurar canais, templates, testes e entregas do sistema.
-                            </span>
-                        </Button>
+                    <Button
+                        variant="outline"
+                        className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                        onClick={() => navigate('/admin-notifications')}
+                    >
+                        <div className="flex items-center gap-2 text-slate-900">
+                            <BellRing className="h-4 w-4 text-blue-600" />
+                            <span className="font-bold">Notificações</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-normal">
+                            Configurar canais, templates, testes e entregas do sistema.
+                        </span>
+                    </Button>
 
-                        <Button
-                            variant="outline"
-                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
-                            onClick={() => navigate('/admin-general')}
-                        >
-                            <div className="flex items-center gap-2 text-slate-900">
-                                <Settings2 className="h-4 w-4 text-blue-600" />
-                                <span className="font-bold">Painel Geral</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-normal">
-                                Ver logs, manutenção e controles globais da instância.
-                            </span>
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
+                    <Button
+                        variant="outline"
+                        className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                        onClick={() => navigate('/admin-general')}
+                    >
+                        <div className="flex items-center gap-2 text-slate-900">
+                            <Settings2 className="h-4 w-4 text-blue-600" />
+                            <span className="font-bold">Painel Geral</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-normal">
+                            Ver logs, manutenção e controles globais da instância.
+                        </span>
+                    </Button>
+                </CardContent>
+            </Card>
 
             <Card className="border-slate-200">
                 <CardHeader>

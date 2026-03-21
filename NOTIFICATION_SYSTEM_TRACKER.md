@@ -1,6 +1,6 @@
 # Notification System Tracker
 
-Ultima atualizacao: 2026-03-21 20:58 UTC
+Ultima atualizacao: 2026-03-21 22:41 UTC
 
 Legenda:
 - `[x]` Concluido
@@ -9,7 +9,7 @@ Legenda:
 
 ## Status Geral
 
-Implementacao de codigo estimada: `96%`
+Implementacao de codigo estimada: `98%`
 
 Passos grandes restantes para finalizar no ambiente: `2`
 
@@ -32,6 +32,7 @@ Restante:
 - [x] Respeito ao switch mestre `is_active`
 - [x] Bypass controlado para testes administrativos mesmo com sistema pausado
 - [x] Resolucao correta de papel admin via claim JWT `app_role`
+- [x] Separacao entre admin da conta e admin da plataforma nas claims JWT (`account_admin`, `tenant_id`)
 - [x] Health do worker detalha chaves de ambiente faltantes por canal
 - [x] Worker de notificacoes criado
 - [x] Geracao automatica de notificacoes para contas a pagar/receber
@@ -41,6 +42,10 @@ Restante:
 
 ### Frontend admin
 - [x] Tela `AdminNotifications` criada e roteada
+- [x] Guardas de rota separadas para `Administração` x `Configurações`
+- [x] Sidebar diferencia `Admin da Conta` de `Admin da Plataforma`
+- [x] `Administração > Geral` adaptada para admin da conta sem expor controles globais
+- [x] `Configurações` restrita a admins da plataforma
 - [x] Gestao global de canais e defaults
 - [x] Estado efetivo dos canais externos visivel na UI (ligado x credencial real)
 - [x] UI publicada mostra variaveis faltantes do worker para SMTP/WhatsApp
@@ -59,6 +64,7 @@ Restante:
 - [x] `Dockerfile.postgres` atualizado para incluir migrations de notificacao em banco novo
 - [x] `init-coolify-db.sh` atualizado para aplicar o pacote de migrations de notificacao
 - [x] Script unico para aplicar o pacote de migrations manualmente (`scripts/apply-notification-migrations.sh`)
+- [x] Script manual de migrations atualizado para incluir a separacao `account_admin`
 - [x] Script de diagnostico do deploy criado (`scripts/check-notification-deploy-readiness.sh`)
 - [x] Script de configuracao assistida de credenciais criado (`scripts/configure-notification-channel-env.sh`)
 - [x] Script de smoke test externo criado (`scripts/run-notification-channel-smoke-test.sh`)
@@ -68,6 +74,8 @@ Restante:
 - [x] `notification-worker` publicado e reiniciado no ambiente atual
 - [x] Correcao de claims JWT administrativas aplicada no banco real
 - [x] Frontend republicado com preservacao da aba ativa no polling
+- [x] Migration de separacao `admin da conta` x `admin da plataforma` aplicada no banco real
+- [x] Frontend republicado com as novas guardas de acesso e menu por perfil
 
 ## Pendente
 
@@ -98,6 +106,9 @@ Restante:
   - [x] ciclo de falha da fila validado sem SMTP configurado
   - [x] sistema ativo/inativo validado pela UI publicada
   - [x] teste administrativo por toast na UI publicada
+  - [x] segregacao de acesso validada na UI publicada:
+    - `Admin da Conta` ve `Administracao` e nao acessa `Configuracoes`
+    - `Admin da Plataforma` ve `Administracao` e `Configuracoes`
   - [ ] teste administrativo por e-mail com SMTP real
   - [ ] teste administrativo por WhatsApp com provider real
   - [x] reenfileiramento de falhas validado pela UI publicada
@@ -107,7 +118,8 @@ Restante:
 
 - O principal bloco restante nao e mais de implementacao local; agora depende de credenciais reais de entrega e validacao externa dos canais.
 - Nesta sessao foi possivel usar `sudo docker`, aplicar migrations, publicar frontend/worker e validar o fluxo pelo banco, pelo health do worker e pela UI autenticada publicada.
-- Foi criado um admin temporario de validacao (`notifadmin.validate@miaoda.com`) apenas para executar os testes autenticados desta rodada.
+- A separacao entre `admin da conta` e `admin da plataforma` foi aplicada no banco, propagada no JWT e validada em runtime na UI publicada.
+- Os usuarios temporarios de validacao desta rodada foram removidos do ambiente ao final dos testes.
 - Durante a validacao publicada apareceram dois bugs reais e ambos foram corrigidos:
   - policy admin quebrada por `current_app_role()` ignorar a claim JWT `app_role`;
   - aba ativa de `AdminNotifications` sendo perdida durante o polling em background.

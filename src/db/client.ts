@@ -58,10 +58,14 @@ function buildSessionFromToken(token: string): LocalSession | null {
         role: payload.app_role || 'user',
         app_metadata: {
             role: payload.app_role,
+            account_admin: payload.account_admin,
+            tenant_id: payload.tenant_id,
             status: payload.status,
             force_password_change: payload.force_password_change
         },
         user_metadata: {
+            account_admin: payload.account_admin,
+            tenant_id: payload.tenant_id,
             status: payload.status,
             force_password_change: payload.force_password_change
         },

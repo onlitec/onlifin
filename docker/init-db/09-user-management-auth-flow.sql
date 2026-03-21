@@ -29,6 +29,8 @@ DECLARE
     v_role text;
     v_status text;
     v_force_password_change boolean;
+    v_account_admin boolean;
+    v_tenant_id uuid;
     v_jwt_secret text;
     v_result text;
 BEGIN
@@ -65,11 +67,18 @@ BEGIN
     SELECT
         p.role::text,
         COALESCE(p.status, 'active'),
-        COALESCE(p.force_password_change, false)
+        COALESCE(p.force_password_change, false),
+        p.tenant_id,
+        CASE
+            WHEN lower(coalesce(p.settings ->> 'account_admin', 'false')) IN ('true', '1', 't', 'yes', 'y', 'on') THEN true
+            ELSE false
+        END
     INTO
         v_role,
         v_status,
-        v_force_password_change
+        v_force_password_change,
+        v_tenant_id,
+        v_account_admin
     FROM public.profiles p
     WHERE p.id = v_user_id;
 
@@ -105,6 +114,8 @@ BEGIN
             'user_id', v_user_id,
             'email', v_real_email,
             'app_role', v_role,
+            'account_admin', v_account_admin,
+            'tenant_id', v_tenant_id,
             'status', v_status,
             'force_password_change', v_force_password_change,
             'exp', extract(epoch from now())::integer + 86400

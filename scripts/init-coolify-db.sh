@@ -125,6 +125,10 @@ if [ -f "$SCRIPT_DIR/../migrations/20260321_fix_current_app_role_claims.sql" ]; 
     run_sql "$SCRIPT_DIR/../migrations/20260321_fix_current_app_role_claims.sql" "Corrigindo leitura de papel admin nas claims JWT"
 fi
 
+if [ -f "$SCRIPT_DIR/../migrations/20260321_account_admin_access_controls.sql" ]; then
+    run_sql "$SCRIPT_DIR/../migrations/20260321_account_admin_access_controls.sql" "Separando admin da conta de admin da plataforma"
+fi
+
 echo ""
 echo -e "${GREEN}✅ Banco de dados inicializado com sucesso!${NC}"
 echo ""

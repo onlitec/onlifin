@@ -36,6 +36,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { useAuthProfile } from '@/contexts/AuthProfileContext';
+import {
+    canAccessAdministration,
+    canAccessPlatformSettings,
+    getAccessRoleLabel,
+} from '@/lib/access';
 
 export function OnlifinSidebar() {
     const location = useLocation();
@@ -46,14 +51,9 @@ export function OnlifinSidebar() {
     const { isPJ, companyId } = useFinanceScope();
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
     const userLabel = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'usuario';
-    const userRole = (
-        profile?.role ||
-        (user as any)?.app_metadata?.role ||
-        (user as any)?.role ||
-        'user'
-    ).toString();
-    const isAdmin = userRole === 'admin';
-    const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
+    const canManageAdministration = canAccessAdministration(profile, user as any);
+    const canManagePlatformSettings = canAccessPlatformSettings(profile, user as any);
+    const userRoleLabel = getAccessRoleLabel(profile, user as any);
     const userInitials = userLabel
         .split(/[._\s-]+/)
         .filter(Boolean)
@@ -81,22 +81,22 @@ export function OnlifinSidebar() {
         { title: 'Previsão Financeira', icon: TrendingUp, path: `${prefix}/forecast` },
         { title: 'Empresas', icon: Building2, path: '/companies' },
         { title: 'Relatórios', icon: FileText, path: `${prefix}/reports` },
-        {
+        ...(canManagePlatformSettings ? [{
             title: 'Configurações', icon: Settings, path: '/settings', subItems: [
                 { title: 'Preferências e Backup', path: '/settings' },
-                ...(isAdmin
-                    ? [
-                        { title: 'Gestão de Usuários', path: '/user-management' },
-                        { title: 'Configuração IA', path: '/ai-admin' }
-                    ]
-                    : [])
+                { title: 'Gestão de Usuários', path: '/user-management' },
+                { title: 'Configuração IA', path: '/ai-admin' }
             ]
-        },
-        ...(isAdmin ? [{
+        }] : []),
+        ...(canManageAdministration ? [{
             title: 'Administração', icon: Settings, path: '/admin-general', subItems: [
                 { title: 'Geral', path: '/admin-general' },
-                { title: 'Notificações', path: '/admin-notifications' },
-                { title: 'Categorias', path: '/categories' }
+                ...(canManagePlatformSettings
+                    ? [
+                        { title: 'Notificações', path: '/admin-notifications' },
+                        { title: 'Categorias', path: '/categories' }
+                    ]
+                    : [])
             ]
         }] : [])
     ];

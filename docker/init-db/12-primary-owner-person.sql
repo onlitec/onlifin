@@ -91,7 +91,8 @@ BEGIN
         || jsonb_build_object(
             'plan_code', v_resolved_plan_code,
             'owner_person_id', v_owner_person_id,
-            'hide_titular', true
+            'hide_titular', true,
+            'account_admin', true
         )
     WHERE id = v_user_id;
 

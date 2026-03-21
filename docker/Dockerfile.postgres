@@ -27,6 +27,7 @@ COPY migrations/20260321_notification_queue_admin_actions.sql /docker-entrypoint
 COPY migrations/20260321_notification_worker_commands.sql /docker-entrypoint-initdb.d/15-notification-worker-commands.sql
 COPY migrations/20260321_notification_admin_read_access.sql /docker-entrypoint-initdb.d/16-notification-admin-read-access.sql
 COPY migrations/20260321_fix_current_app_role_claims.sql /docker-entrypoint-initdb.d/17-fix-current-app-role-claims.sql
+COPY migrations/20260321_account_admin_access_controls.sql /docker-entrypoint-initdb.d/18-account-admin-access-controls.sql
 
 # Configurações padrão
 ENV POSTGRES_DB=onlifin

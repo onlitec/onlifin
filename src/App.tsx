@@ -26,19 +26,28 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PersonSelector } from '@/components/person/PersonSelector';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import {
+  canAccessAdministration,
+  canAccessPlatformSettings,
+  getAccessRoleLabel,
+} from '@/lib/access';
 
 const AIAssistant = React.lazy(() => import('@/components/AIAssistant'));
 
 const LOGIN_PATH = '/login';
 const CHANGE_PASSWORD_PATH = '/change-password';
 const PUBLIC_PATHS = new Set([LOGIN_PATH]);
-const ADMIN_PATHS = new Set([
+const ACCOUNT_ADMIN_PATHS = new Set([
   '/admin-general',
+]);
+
+const PLATFORM_ADMIN_PATHS = new Set([
   '/admin-notifications',
   '/categories',
   '/chat',
   '/user-management',
-  '/ai-admin'
+  '/ai-admin',
+  '/settings',
 ]);
 
 function RouteLoader() {
@@ -145,15 +154,9 @@ function ProfileAccessGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function RequireAdmin({ children }: { children: React.ReactNode }) {
+function RequireAdministration({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { profile, isLoading } = useAuthProfile();
-  const userRole = (
-    profile?.role ||
-    (user as any)?.app_metadata?.role ||
-    (user as any)?.role ||
-    'user'
-  ).toString();
 
   if (isLoading) {
     return (
@@ -163,7 +166,26 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (userRole !== 'admin') {
+  if (!canAccessAdministration(profile, user as any)) {
+    return <Navigate to="/pf" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function RequirePlatformAdmin({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const { profile, isLoading } = useAuthProfile();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!canAccessPlatformSettings(profile, user as any)) {
     return <Navigate to="/pf" replace />;
   }
 
@@ -208,7 +230,7 @@ function MainLayoutShell({ allRoutes }: { allRoutes: Array<{ path: string; eleme
     (user as any)?.role ||
     'user'
   ).toString();
-  const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
+  const userRoleLabel = getAccessRoleLabel(profile, user as any);
   const userLabel = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'usuario';
   const userInitials = userLabel
     .split(/[._\s-]+/)
@@ -311,11 +333,17 @@ function MainLayoutShell({ allRoutes }: { allRoutes: Array<{ path: string; eleme
               <Route
                 key={index}
                 path={route.path}
-                element={ADMIN_PATHS.has(route.path)
+                element={PLATFORM_ADMIN_PATHS.has(route.path)
                   ? (
-                    <RequireAdmin>
+                    <RequirePlatformAdmin>
                       {route.element}
-                    </RequireAdmin>
+                    </RequirePlatformAdmin>
+                  )
+                  : ACCOUNT_ADMIN_PATHS.has(route.path)
+                    ? (
+                    <RequireAdministration>
+                      {route.element}
+                    </RequireAdministration>
                   )
                   : route.element}
               />

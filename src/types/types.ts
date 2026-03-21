@@ -9,6 +9,8 @@ export interface Profile {
   username: string;
   full_name: string | null;
   email: string | null;
+  tenant_id?: string | null;
+  subscription_plan_id?: string | null;
   phone: string | null;
   whatsapp: string | null;
   document: string | null; // CPF/CNPJ
@@ -23,6 +25,7 @@ export interface Profile {
   force_password_change?: boolean;
   last_login_at: string | null;
   admin_notes: string | null;
+  settings?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string | null;
 }
