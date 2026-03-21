@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.33.0] - 2026-03-21
+
+### feat: finalize notification system operations
+
+---
+
+
+
 ## [1.32.6] - 2026-03-20
 
 ### fix: restore recurring schedules API schema
