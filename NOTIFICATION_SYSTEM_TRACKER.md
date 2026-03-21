@@ -1,6 +1,6 @@
 # Notification System Tracker
 
-Ultima atualizacao: 2026-03-21 22:41 UTC
+Ultima atualizacao: 2026-03-21 22:55 UTC
 
 Legenda:
 - `[x]` Concluido
@@ -68,6 +68,7 @@ Restante:
 - [x] Script de diagnostico do deploy criado (`scripts/check-notification-deploy-readiness.sh`)
 - [x] Script de configuracao assistida de credenciais criado (`scripts/configure-notification-channel-env.sh`)
 - [x] Script de smoke test externo criado (`scripts/run-notification-channel-smoke-test.sh`)
+- [x] Script de smoke test da segregacao administrativa criado (`scripts/run-admin-access-smoke-test.sh`)
 - [x] Script orquestrador final criado (`scripts/finalize-notification-system.sh`)
 - [x] Migrations aplicadas no banco real com sucesso
 - [x] Frontend publicado no `onlifin-app` com bundle atualizado
@@ -109,6 +110,7 @@ Restante:
   - [x] segregacao de acesso validada na UI publicada:
     - `Admin da Conta` ve `Administracao` e nao acessa `Configuracoes`
     - `Admin da Plataforma` ve `Administracao` e `Configuracoes`
+  - [x] smoke test reutilizavel da segregacao administrativa validado no ambiente publicado
   - [ ] teste administrativo por e-mail com SMTP real
   - [ ] teste administrativo por WhatsApp com provider real
   - [x] reenfileiramento de falhas validado pela UI publicada
