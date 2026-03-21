@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.34.1] - 2026-03-21
+
+### chore: add admin access smoke test
+
+---
+
+
+
 ## [1.34.0] - 2026-03-21
 
 ### feat: separate account and platform admin access
