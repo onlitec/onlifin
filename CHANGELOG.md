@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.34.0] - 2026-03-21
+
+### feat: separate account and platform admin access
+
+---
+
+
+
 ## [1.33.0] - 2026-03-21
 
 ### feat: finalize notification system operations
