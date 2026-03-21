@@ -93,8 +93,9 @@ export function OnlifinSidebar() {
             ]
         },
         ...(isAdmin ? [{
-            title: 'Administração', icon: Settings, path: '/admin', subItems: [
+            title: 'Administração', icon: Settings, path: '/admin-general', subItems: [
                 { title: 'Geral', path: '/admin-general' },
+                { title: 'Notificações', path: '/admin-notifications' },
                 { title: 'Categorias', path: '/categories' }
             ]
         }] : [])

@@ -4,18 +4,24 @@ import type { BillToPay, BillToReceive } from '@/types/types';
 
 export class AlertScheduler {
   // Verificar contas a pagar próximas do vencimento
-  static async checkBillsToPayDueSoon(): Promise<void> {
+  static async checkBillsToPayDueSoon(userId?: string): Promise<void> {
     try {
       const today = new Date();
       const threeDaysFromNow = new Date(today);
       threeDaysFromNow.setDate(today.getDate() + 3);
 
-      const { data: bills, error } = await supabase
+      let query = supabase
         .from('bills_to_pay')
         .select('*')
         .eq('status', 'pending')
         .lte('due_date', threeDaysFromNow.toISOString().split('T')[0])
         .gte('due_date', today.toISOString().split('T')[0]);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: bills, error } = await query;
 
       if (error) throw error;
       if (!bills) return;
@@ -42,15 +48,21 @@ export class AlertScheduler {
   }
 
   // Verificar contas a pagar vencidas
-  static async checkOverdueBillsToPay(): Promise<void> {
+  static async checkOverdueBillsToPay(userId?: string): Promise<void> {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      const { data: bills, error } = await supabase
+      let query = supabase
         .from('bills_to_pay')
         .select('*')
         .eq('status', 'pending')
         .lt('due_date', today);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: bills, error } = await query;
 
       if (error) throw error;
       if (!bills) return;
@@ -69,18 +81,24 @@ export class AlertScheduler {
   }
 
   // Verificar contas a receber próximas do vencimento
-  static async checkBillsToReceiveDueSoon(): Promise<void> {
+  static async checkBillsToReceiveDueSoon(userId?: string): Promise<void> {
     try {
       const today = new Date();
       const threeDaysFromNow = new Date(today);
       threeDaysFromNow.setDate(today.getDate() + 3);
 
-      const { data: bills, error } = await supabase
+      let query = supabase
         .from('bills_to_receive')
         .select('*')
         .eq('status', 'pending')
         .lte('due_date', threeDaysFromNow.toISOString().split('T')[0])
         .gte('due_date', today.toISOString().split('T')[0]);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: bills, error } = await query;
 
       if (error) throw error;
       if (!bills) return;
@@ -144,13 +162,13 @@ export class AlertScheduler {
   }
 
   // Executar todas as verificações
-  static async runAllChecks(): Promise<void> {
+  static async runAllChecks(userId?: string): Promise<void> {
     console.log('Iniciando verificação de alertas...');
     
     await Promise.all([
-      this.checkBillsToPayDueSoon(),
-      this.checkOverdueBillsToPay(),
-      this.checkBillsToReceiveDueSoon()
+      this.checkBillsToPayDueSoon(userId),
+      this.checkOverdueBillsToPay(userId),
+      this.checkBillsToReceiveDueSoon(userId)
     ]);
     
     console.log('Verificação de alertas concluída.');
@@ -177,15 +195,21 @@ export class AlertScheduler {
   }
 
   // Verificar contas pagas recentemente (para alertas de confirmação)
-  static async checkRecentlyPaidBills(): Promise<void> {
+  static async checkRecentlyPaidBills(userId?: string): Promise<void> {
     try {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-      const { data: bills, error } = await supabase
+      let query = supabase
         .from('bills_to_pay')
         .select('*')
         .eq('status', 'paid')
         .gte('paid_date', oneHourAgo);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: bills, error } = await query;
 
       if (error) throw error;
       if (!bills) return;
@@ -204,15 +228,21 @@ export class AlertScheduler {
   }
 
   // Verificar contas recebidas recentemente
-  static async checkRecentlyReceivedBills(): Promise<void> {
+  static async checkRecentlyReceivedBills(userId?: string): Promise<void> {
     try {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-      const { data: bills, error } = await supabase
+      let query = supabase
         .from('bills_to_receive')
         .select('*')
         .eq('status', 'received')
         .gte('received_date', oneHourAgo);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: bills, error } = await query;
 
       if (error) throw error;
       if (!bills) return;
@@ -277,15 +307,15 @@ export class AlertScheduler {
   }
 
   // Executar verificação completa (incluindo pagamentos/recebimentos)
-  static async runFullCheck(): Promise<void> {
+  static async runFullCheck(userId?: string): Promise<void> {
     console.log('Iniciando verificação completa de alertas...');
     
     await Promise.all([
-      this.checkBillsToPayDueSoon(),
-      this.checkOverdueBillsToPay(),
-      this.checkBillsToReceiveDueSoon(),
-      this.checkRecentlyPaidBills(),
-      this.checkRecentlyReceivedBills()
+      this.checkBillsToPayDueSoon(userId),
+      this.checkOverdueBillsToPay(userId),
+      this.checkBillsToReceiveDueSoon(userId),
+      this.checkRecentlyPaidBills(userId),
+      this.checkRecentlyReceivedBills(userId)
     ]);
     
     console.log('Verificação completa de alertas concluída.');

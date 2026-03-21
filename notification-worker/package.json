@@ -1,0 +1,14 @@
+{
+  "name": "onlifin-notification-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "axios": "^1.13.1",
+    "nodemailer": "^6.10.1",
+    "pg": "^8.16.3"
+  }
+}

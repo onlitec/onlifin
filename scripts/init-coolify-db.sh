@@ -105,6 +105,26 @@ if [ -f "$SQL_DIR/03-seed-data.sql" ]; then
     run_sql "$SQL_DIR/03-seed-data.sql" "Inserindo dados iniciais"
 fi
 
+if [ -f "$SCRIPT_DIR/../migrations/20260321_notification_management_system.sql" ]; then
+    run_sql "$SCRIPT_DIR/../migrations/20260321_notification_management_system.sql" "Aplicando sistema de notificações"
+fi
+
+if [ -f "$SCRIPT_DIR/../migrations/20260321_notification_queue_admin_actions.sql" ]; then
+    run_sql "$SCRIPT_DIR/../migrations/20260321_notification_queue_admin_actions.sql" "Aplicando ações administrativas da fila de notificações"
+fi
+
+if [ -f "$SCRIPT_DIR/../migrations/20260321_notification_worker_commands.sql" ]; then
+    run_sql "$SCRIPT_DIR/../migrations/20260321_notification_worker_commands.sql" "Aplicando comandos manuais do notification worker"
+fi
+
+if [ -f "$SCRIPT_DIR/../migrations/20260321_notification_admin_read_access.sql" ]; then
+    run_sql "$SCRIPT_DIR/../migrations/20260321_notification_admin_read_access.sql" "Aplicando leitura administrativa de notificações"
+fi
+
+if [ -f "$SCRIPT_DIR/../migrations/20260321_fix_current_app_role_claims.sql" ]; then
+    run_sql "$SCRIPT_DIR/../migrations/20260321_fix_current_app_role_claims.sql" "Corrigindo leitura de papel admin nas claims JWT"
+fi
+
 echo ""
 echo -e "${GREEN}✅ Banco de dados inicializado com sucesso!${NC}"
 echo ""

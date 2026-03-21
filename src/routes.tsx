@@ -17,6 +17,7 @@ const People = React.lazy(() => import('./pages/People'));
 const Debts = React.lazy(() => import('./pages/Debts'));
 const AIAdmin = React.lazy(() => import('./pages/AIAdmin'));
 const AdminGeneral = React.lazy(() => import('./pages/AdminGeneral'));
+const AdminNotifications = React.lazy(() => import('./pages/AdminNotifications'));
 const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const Login = React.lazy(() => import('./pages/Login'));
 const ForceChangePassword = React.lazy(() => import('./pages/ForceChangePassword'));
@@ -104,6 +105,7 @@ const routes: RouteConfig[] = [
   {
     name: 'Admin',
     path: '/admin',
+    element: <Navigate to="/admin-general" replace />,
     visible: false,
     children: [
       {
@@ -116,6 +118,12 @@ const routes: RouteConfig[] = [
         name: 'Categorias',
         path: '/categories',
         element: <Categories />,
+        visible: true
+      },
+      {
+        name: 'Notificações',
+        path: '/admin-notifications',
+        element: <AdminNotifications />,
         visible: true
       },
       {

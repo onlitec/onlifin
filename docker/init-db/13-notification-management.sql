@@ -1,0 +1,7 @@
+-- ===========================================
+-- 13 - Gestao completa de notificacoes
+-- ===========================================
+-- A estrutura principal e aplicada pela migration
+-- 20260321_notification_management_system.sql no runner padrao.
+-- Este arquivo existe apenas para manter a cadeia init-db consistente
+-- em ambientes legados que ainda consomem este diretório.

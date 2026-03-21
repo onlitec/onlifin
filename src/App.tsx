@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PersonSelector } from '@/components/person/PersonSelector';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const AIAssistant = React.lazy(() => import('@/components/AIAssistant'));
 
@@ -33,6 +34,7 @@ const CHANGE_PASSWORD_PATH = '/change-password';
 const PUBLIC_PATHS = new Set([LOGIN_PATH]);
 const ADMIN_PATHS = new Set([
   '/admin-general',
+  '/admin-notifications',
   '/categories',
   '/chat',
   '/user-management',
@@ -284,10 +286,11 @@ function MainLayoutShell({ allRoutes }: { allRoutes: Array<{ path: string; eleme
 
             <div className="flex items-center gap-2 pr-4 border-r border-slate-100">
               <ThemeToggle />
-              <Button variant="ghost" size="icon" className="text-slate-500 rounded-xl relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-2.5 right-2.5 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
-              </Button>
+              {user?.id ? <NotificationBell userId={user.id} /> : (
+                <Button variant="ghost" size="icon" className="text-slate-500 rounded-xl">
+                  <Bell className="h-5 w-5" />
+                </Button>
+              )}
             </div>
 
             <div className="flex items-center gap-3 pl-2">

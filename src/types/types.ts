@@ -318,11 +318,127 @@ export interface Notification {
   user_id: string;
   title: string;
   message: string;
+  event_key: string;
   type: NotificationType;
   severity: NotificationSeverity | null;
   is_read: boolean;
   related_forecast_id: string | null;
   related_bill_id: string | null;
+  related_bill_to_receive_id?: string | null;
+  related_transaction_id?: string | null;
+  person_id?: string | null;
+  metadata?: Record<string, unknown>;
   action_url: string | null;
+  updated_at?: string;
   created_at: string;
+}
+
+export interface AlertPreferences {
+  id: string;
+  user_id: string;
+  days_before_due: number;
+  days_before_overdue: number;
+  alert_due_soon: boolean;
+  alert_overdue: boolean;
+  alert_paid: boolean;
+  alert_received: boolean;
+  system_critical_notifications: boolean;
+  toast_notifications: boolean;
+  database_notifications: boolean;
+  email_notifications: boolean;
+  whatsapp_notifications: boolean;
+  push_notifications: boolean;
+  quiet_hours_start: string;
+  quiet_hours_end: string;
+  weekend_notifications: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationSettings {
+  id: string;
+  settings_key: string;
+  is_active: boolean;
+  toast_enabled: boolean;
+  database_enabled: boolean;
+  email_enabled: boolean;
+  whatsapp_enabled: boolean;
+  allow_user_channel_overrides: boolean;
+  days_before_due_default: number;
+  days_before_overdue_default: number;
+  quiet_hours_start_default: string;
+  quiet_hours_end_default: string;
+  weekend_notifications_default: boolean;
+  alert_due_soon_default: boolean;
+  alert_overdue_default: boolean;
+  alert_paid_default: boolean;
+  alert_received_default: boolean;
+  system_critical_default: boolean;
+  email_from_name: string | null;
+  email_from_address: string | null;
+  email_test_destination: string | null;
+  whatsapp_test_destination: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationTemplate {
+  id: string;
+  event_key: string;
+  channel: 'toast' | 'email' | 'whatsapp';
+  title_template: string;
+  subject_template: string | null;
+  body_template: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationDeliveryQueueItem {
+  id: string;
+  notification_id: string | null;
+  user_id: string;
+  channel: 'email' | 'whatsapp';
+  destination: string;
+  subject: string | null;
+  content: string;
+  template_id: string | null;
+  payload: Record<string, unknown>;
+  status: 'pending' | 'processing' | 'retrying' | 'sent' | 'failed';
+  attempts: number;
+  max_attempts: number;
+  next_attempt_at: string;
+  last_error: string | null;
+  provider_response: Record<string, unknown>;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationDelivery {
+  id: string;
+  queue_id: string | null;
+  notification_id: string | null;
+  user_id: string | null;
+  channel: 'email' | 'whatsapp';
+  destination: string;
+  provider: string;
+  status: 'sent' | 'failed';
+  error_message: string | null;
+  provider_response: Record<string, unknown>;
+  attempted_at: string;
+}
+
+export interface NotificationWorkerCommand {
+  id: string;
+  command: 'process_queue' | 'generate_notifications';
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  requested_by: string | null;
+  payload: Record<string, unknown>;
+  result: Record<string, unknown>;
+  error_message: string | null;
+  requested_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  updated_at: string;
 }

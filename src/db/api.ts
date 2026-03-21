@@ -16,6 +16,12 @@ import type {
   BillToReceive,
   FinancialForecast,
   Notification,
+  AlertPreferences,
+  NotificationSettings,
+  NotificationTemplate,
+  NotificationDeliveryQueueItem,
+  NotificationDelivery,
+  NotificationWorkerCommand,
   Debt,
   DebtPayment,
   DebtAgreement,
@@ -84,6 +90,22 @@ export const profilesApi = {
 
     if (error) throw error;
     return data;
+  },
+
+  async getProfilesByIds(userIds: string[]): Promise<Profile[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    const uniqueIds = Array.from(new Set(userIds));
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', uniqueIds);
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
   },
 
   async getAllProfiles(): Promise<Profile[]> {
@@ -1304,12 +1326,29 @@ export const forecastsApi = {
 
 // Notifications API
 export const notificationsApi = {
-  async getAll(userId: string): Promise<Notification[]> {
-    const { data, error } = await supabase
+  async getAll(userId: string, limit?: number): Promise<Notification[]> {
+    let query = supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getRecentAdmin(limit = 50): Promise<Notification[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
     return Array.isArray(data) ? data : [];
@@ -1367,6 +1406,255 @@ export const notificationsApi = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  async create(notification: Omit<Notification, 'id' | 'created_at' | 'updated_at'>): Promise<Notification | null> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert(notification)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+export const alertPreferencesApi = {
+  async getPreferences(userId: string): Promise<AlertPreferences | null> {
+    const { data, error } = await supabase
+      .from('alert_preferences')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async createDefaultPreferences(userId: string): Promise<AlertPreferences | null> {
+    const globalSettings = await notificationSettingsApi.getGlobal().catch(() => null);
+    const payload = {
+      user_id: userId,
+      days_before_due: globalSettings?.days_before_due_default ?? 3,
+      days_before_overdue: globalSettings?.days_before_overdue_default ?? 1,
+      alert_due_soon: globalSettings?.alert_due_soon_default ?? true,
+      alert_overdue: globalSettings?.alert_overdue_default ?? true,
+      alert_paid: globalSettings?.alert_paid_default ?? true,
+      alert_received: globalSettings?.alert_received_default ?? true,
+      system_critical_notifications: globalSettings?.system_critical_default ?? true,
+      toast_notifications: true,
+      database_notifications: true,
+      email_notifications: false,
+      whatsapp_notifications: false,
+      push_notifications: false,
+      quiet_hours_start: globalSettings?.quiet_hours_start_default ?? '22:00:00',
+      quiet_hours_end: globalSettings?.quiet_hours_end_default ?? '08:00:00',
+      weekend_notifications: globalSettings?.weekend_notifications_default ?? true
+    };
+
+    const { data, error } = await supabase
+      .from('alert_preferences')
+      .insert(payload)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePreferences(userId: string, preferences: Partial<AlertPreferences>): Promise<AlertPreferences | null> {
+    const { data, error } = await supabase
+      .from('alert_preferences')
+      .update({ ...preferences, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+export const notificationSettingsApi = {
+  async getGlobal(): Promise<NotificationSettings | null> {
+    const { data, error } = await supabase
+      .from('notification_settings')
+      .select('*')
+      .eq('settings_key', 'global')
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async upsertGlobal(settings: Partial<NotificationSettings>): Promise<NotificationSettings | null> {
+    const current = await this.getGlobal();
+    const payload = {
+      ...(current || {}),
+      ...settings,
+      settings_key: 'global',
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('notification_settings')
+      .upsert(payload, { onConflict: 'settings_key' })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+export const notificationTemplatesApi = {
+  async getAll(): Promise<NotificationTemplate[]> {
+    const { data, error } = await supabase
+      .from('notification_templates')
+      .select('*')
+      .order('event_key')
+      .order('channel');
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async upsert(template: Omit<NotificationTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<NotificationTemplate | null> {
+    const { data, error } = await supabase
+      .from('notification_templates')
+      .upsert({
+        ...template,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'event_key,channel' })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: Partial<NotificationTemplate>): Promise<NotificationTemplate | null> {
+    const { data, error } = await supabase
+      .from('notification_templates')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+export const notificationQueueApi = {
+  async enqueue(item: Omit<NotificationDeliveryQueueItem, 'id' | 'attempts' | 'created_at' | 'updated_at' | 'sent_at'>): Promise<NotificationDeliveryQueueItem | null> {
+    const { data, error } = await supabase
+      .from('notification_delivery_queue')
+      .insert(item)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getRecent(limit = 50): Promise<NotificationDeliveryQueueItem[]> {
+    const { data, error } = await supabase
+      .from('notification_delivery_queue')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async retry(id: string): Promise<NotificationDeliveryQueueItem | null> {
+    const { data, error } = await supabase
+      .from('notification_delivery_queue')
+      .update({
+        status: 'pending',
+        attempts: 0,
+        next_attempt_at: new Date().toISOString(),
+        last_error: null,
+        sent_at: null,
+        provider_response: {},
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async retryFailed(): Promise<number> {
+    const { data, error } = await supabase
+      .from('notification_delivery_queue')
+      .update({
+        status: 'pending',
+        attempts: 0,
+        next_attempt_at: new Date().toISOString(),
+        last_error: null,
+        sent_at: null,
+        provider_response: {},
+        updated_at: new Date().toISOString()
+      })
+      .eq('status', 'failed')
+      .select('id');
+
+    if (error) throw error;
+    return Array.isArray(data) ? data.length : 0;
+  }
+};
+
+export const notificationDeliveriesApi = {
+  async getRecent(limit = 50): Promise<NotificationDelivery[]> {
+    const { data, error } = await supabase
+      .from('notification_deliveries')
+      .select('*')
+      .order('attempted_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+};
+
+export const notificationWorkerCommandsApi = {
+  async getRecent(limit = 20): Promise<NotificationWorkerCommand[]> {
+    const { data, error } = await supabase
+      .from('notification_worker_commands')
+      .select('*')
+      .order('requested_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async enqueue(
+    command: NotificationWorkerCommand['command'],
+    payload: Record<string, unknown> = {},
+    requestedBy?: string | null
+  ): Promise<NotificationWorkerCommand | null> {
+    const { data, error } = await supabase
+      .from('notification_worker_commands')
+      .insert({
+        command,
+        payload,
+        requested_by: requestedBy || null,
+        status: 'pending',
+        result: {},
+        error_message: null
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
   }
 };
 

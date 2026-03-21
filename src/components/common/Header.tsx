@@ -160,6 +160,7 @@ export default function Header() {
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${location.pathname === '/admin' ||
                       location.pathname === '/ai-admin' ||
                       location.pathname === '/user-management' ||
+                      location.pathname === '/admin-notifications' ||
                       location.pathname === '/categories' ||
                       location.pathname === '/chat'
                       ? 'bg-primary text-primary-foreground'
@@ -177,6 +178,12 @@ export default function Header() {
                       className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                     >
                       Geral
+                    </Link>
+                    <Link
+                      to="/admin-notifications"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      Notificações
                     </Link>
                     <Link
                       to="/categories"
@@ -227,7 +234,7 @@ export default function Header() {
                     {profile.role === 'admin' && (
                       <>
                         <button
-                          onClick={() => navigate('/admin')}
+                          onClick={() => navigate('/admin-general')}
                           className="w-full flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-left"
                         >
                           <Settings className="mr-2 h-4 w-4" />

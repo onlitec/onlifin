@@ -22,6 +22,11 @@ COPY docker/init-db/05-postgrest-rpc.sql /docker-entrypoint-initdb.d/
 COPY docker/init-db/06-jwt-generation.sql /docker-entrypoint-initdb.d/
 COPY docker/init-db/07-user-management-enhancements.sql /docker-entrypoint-initdb.d/
 COPY supabase/migrations/00012_fix_rpc_login.sql /docker-entrypoint-initdb.d/08-fix-rpc-login.sql
+COPY migrations/20260321_notification_management_system.sql /docker-entrypoint-initdb.d/13-notification-management.sql
+COPY migrations/20260321_notification_queue_admin_actions.sql /docker-entrypoint-initdb.d/14-notification-queue-admin-actions.sql
+COPY migrations/20260321_notification_worker_commands.sql /docker-entrypoint-initdb.d/15-notification-worker-commands.sql
+COPY migrations/20260321_notification_admin_read_access.sql /docker-entrypoint-initdb.d/16-notification-admin-read-access.sql
+COPY migrations/20260321_fix_current_app_role_claims.sql /docker-entrypoint-initdb.d/17-fix-current-app-role-claims.sql
 
 # Configurações padrão
 ENV POSTGRES_DB=onlifin

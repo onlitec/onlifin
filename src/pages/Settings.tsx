@@ -15,13 +15,15 @@ import {
     ShieldCheck,
     Users,
     Bot,
-    Settings2
+    Settings2,
+    BellRing
 } from 'lucide-react';
 import { backupService, BackupData } from '@/services/backupService';
 import { profileService, ProfileSettings } from '@/services/profileService';
 import { getCurrentPlanInfo, getCurrentPlanUsage, getPlanSourceLabel } from '@/services/planService';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
+import { AlertSettings } from '@/components/admin/AlertSettings';
 
 export default function Settings() {
     const navigate = useNavigate();
@@ -209,7 +211,7 @@ export default function Settings() {
                             Atalhos das configurações administrativas da plataforma.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-4 md:grid-cols-3">
+                    <CardContent className="grid gap-4 md:grid-cols-4">
                         <Button
                             variant="outline"
                             className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
@@ -235,6 +237,20 @@ export default function Settings() {
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-normal">
                                 Ajustar modelo, permissões e parâmetros operacionais da IA.
+                            </span>
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                            onClick={() => navigate('/admin-notifications')}
+                        >
+                            <div className="flex items-center gap-2 text-slate-900">
+                                <BellRing className="h-4 w-4 text-blue-600" />
+                                <span className="font-bold">Notificações</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-normal">
+                                Configurar canais, templates, testes e entregas do sistema.
                             </span>
                         </Button>
 
@@ -301,6 +317,23 @@ export default function Settings() {
                     )}
                 </CardContent>
             </Card>
+
+            {user?.id && (
+                <Card className="border-slate-200">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <BellRing className="h-5 w-5 text-blue-500" />
+                            Notificações
+                        </CardTitle>
+                        <CardDescription>
+                            Ajuste seus canais e preferências individuais de notificações.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AlertSettings userId={user.id} />
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Export Card */}
