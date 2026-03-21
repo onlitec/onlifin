@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.34.2] - 2026-03-21
+
+### test: expand admin access smoke coverage
+
+---
+
+
+
 ## [1.34.1] - 2026-03-21
 
 ### chore: add admin access smoke test
