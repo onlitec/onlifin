@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 import { categoriesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -102,8 +102,7 @@ export default function Categories() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       if (editingCategory) {
         await categoriesApi.updateCategory(editingCategory.id, formData);
@@ -173,8 +172,7 @@ export default function Categories() {
   const handleCreateStarterCategories = async () => {
     setIsSeedingStarterCategories(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const existingKeys = new Set(
         categories.map((category) => `${category.type}:${category.name.trim().toLowerCase()}`)

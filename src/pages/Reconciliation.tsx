@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,8 +43,7 @@ export default function Reconciliation() {
 
   const loadAccounts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const data = await accountsApi.getAccounts(user.id, companyId);
       setAccounts(data);
@@ -73,8 +72,7 @@ export default function Reconciliation() {
   const loadTransactions = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const data = await transactionsApi.getTransactions(user.id, { companyId: companyId });
       const filtered = data.filter(t => t.account_id === selectedAccount);
@@ -181,8 +179,7 @@ export default function Reconciliation() {
   const handleSaveCategories = async () => {
     setIsSavingCategories(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      await requireCurrentUser();
 
       // Filter transactions that have a category selected (excluding 'none')
       const transactionsToUpdate = Object.entries(categorySelections).filter(

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,8 +37,7 @@ export default function Import() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const [accountsData, categoriesData] = await Promise.all([
         accountsApi.getAccounts(user.id, companyId, personId),
@@ -269,8 +268,7 @@ export default function Import() {
 
     setIsImporting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       // Get default category for each type
       const expenseCategory = categories.find(c => c.name === 'Outros' && c.type === 'expense');

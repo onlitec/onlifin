@@ -34,7 +34,18 @@ export function PersonProvider({ children }: PersonProviderProps) {
     const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
     const [settings, setSettings] = useState<ProfileSettings>(() => {
         const saved = localStorage.getItem('onlifin_profile_settings');
-        return saved ? JSON.parse(saved) : {};
+
+        if (!saved) {
+            return {};
+        }
+
+        try {
+            return JSON.parse(saved) as ProfileSettings;
+        } catch (error) {
+            console.warn('Configurações locais inválidas, limpando cache do perfil.', error);
+            localStorage.removeItem('onlifin_profile_settings');
+            return {};
+        }
     });
     const [isLoadingPeople, setIsLoadingPeople] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -72,6 +83,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
 
             setPeople(peopleData);
             setSettings(userSettings);
+            localStorage.setItem('onlifin_profile_settings', JSON.stringify(userSettings));
 
             // Recuperar pessoa selecionada do localStorage
             const savedPersonId = localStorage.getItem(SELECTED_PERSON_KEY);
@@ -108,19 +120,7 @@ export function PersonProvider({ children }: PersonProviderProps) {
      * Carrega pessoas e configurações ao montar
      */
     useEffect(() => {
-        const init = async () => {
-            await loadPeople();
-            try {
-                const profile = await profileService.getProfile();
-                if (profile?.settings) {
-                    setSettings(profile.settings);
-                    localStorage.setItem('onlifin_profile_settings', JSON.stringify(profile.settings));
-                }
-            } catch (err) {
-                console.warn('Usando configurações locais (offline ou erro no servidor)');
-            }
-        };
-        init();
+        void loadPeople();
     }, [loadPeople]);
 
     /**

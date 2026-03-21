@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -38,8 +38,7 @@ export function AIMetrics({ userId }: AIMetricsProps) {
   const loadMetrics = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       // Buscar transações categorizadas por IA
       const { data: transactions } = await supabase

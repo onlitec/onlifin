@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -45,8 +45,7 @@ export function CategoryCorrection({
     let saved = 0;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       for (const [transactionId, categoryId] of Object.entries(corrections)) {
         const transaction = transactions.find(t => t.id === transactionId);

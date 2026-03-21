@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import * as React from 'react';
 import { AuthProvider, RequireAuth, useAuth } from 'miaoda-auth-react';
 import { supabase } from '@/db/client';
-import { profilesApi } from '@/db/api';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { OnlifinSidebar } from '@/components/layout/OnlifinSidebar';
@@ -10,13 +9,13 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { CompanyProvider } from '@/contexts/CompanyContext';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import AIAssistant from '@/components/AIAssistant';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { UpdateNotification } from '@/components/pwa/UpdateNotification';
 import { PWAStatus } from '@/components/pwa/PWAStatus';
 import { CompanySelectorCompact } from '@/components/company';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { PersonProvider } from '@/contexts/PersonContext';
+import { AuthProfileProvider, useAuthProfile } from '@/contexts/AuthProfileContext';
 import routes from './routes';
 import { Search, Bell, Building2, User, Loader2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -26,7 +25,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PersonSelector } from '@/components/person/PersonSelector';
-import type { Profile } from '@/types/types';
+
+const AIAssistant = React.lazy(() => import('@/components/AIAssistant'));
 
 const LOGIN_PATH = '/login';
 const CHANGE_PASSWORD_PATH = '/change-password';
@@ -38,6 +38,22 @@ const ADMIN_PATHS = new Set([
   '/user-management',
   '/ai-admin'
 ]);
+
+function RouteLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+function withSuspense(element: React.ReactNode) {
+  return (
+    <React.Suspense fallback={<RouteLoader />}>
+      {element}
+    </React.Suspense>
+  );
+}
 
 function App() {
   const loginRoute = routes.find((route) => route.path === LOGIN_PATH);
@@ -53,32 +69,36 @@ function App() {
             <UpdateNotification />
             <InstallPrompt />
             <Routes>
-              {loginRoute && <Route path={loginRoute.path} element={loginRoute.element} />}
+              {loginRoute && <Route path={loginRoute.path} element={withSuspense(loginRoute.element)} />}
               {changePasswordRoute && (
                 <Route
                   path={changePasswordRoute.path}
-                  element={
+                  element={withSuspense(
                     <RequireAuth>
-                      <ProfileAccessGuard>
-                        {changePasswordRoute.element}
-                      </ProfileAccessGuard>
+                      <AuthProfileProvider>
+                        <ProfileAccessGuard>
+                          {changePasswordRoute.element}
+                        </ProfileAccessGuard>
+                      </AuthProfileProvider>
                     </RequireAuth>
-                  }
+                  )}
                 />
               )}
               <Route
                 path="/*"
-                element={
+                element={withSuspense(
                   <RequireAuth>
-                    <ProfileAccessGuard>
-                      <CompanyProvider>
-                        <PersonProvider>
-                          <MainLayout />
-                        </PersonProvider>
-                      </CompanyProvider>
-                    </ProfileAccessGuard>
+                    <AuthProfileProvider>
+                      <ProfileAccessGuard>
+                        <CompanyProvider>
+                          <PersonProvider>
+                            <MainLayout />
+                          </PersonProvider>
+                        </CompanyProvider>
+                      </ProfileAccessGuard>
+                    </AuthProfileProvider>
                   </RequireAuth>
-                }
+                )}
               />
             </Routes>
           </AuthProvider>
@@ -89,48 +109,8 @@ function App() {
 }
 
 function ProfileAccessGuard({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
   const location = useLocation();
-  const [profile, setProfile] = React.useState<Profile | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    let isMounted = true;
-
-    const loadProfile = async () => {
-      if (!user?.id) {
-        if (isMounted) {
-          setProfile(null);
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      setIsLoading(true);
-
-      try {
-        const nextProfile = await profilesApi.getProfile(user.id);
-        if (isMounted) {
-          setProfile(nextProfile);
-        }
-      } catch (error) {
-        console.error('Falha ao carregar perfil autenticado:', error);
-        if (isMounted) {
-          setProfile(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
+  const { profile, isLoading } = useAuthProfile();
 
   React.useEffect(() => {
     if (profile?.status && profile.status !== 'active') {
@@ -165,7 +145,21 @@ function ProfileAccessGuard({ children }: { children: React.ReactNode }) {
 
 function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+  const { profile, isLoading } = useAuthProfile();
+  const userRole = (
+    profile?.role ||
+    (user as any)?.app_metadata?.role ||
+    (user as any)?.role ||
+    'user'
+  ).toString();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (userRole !== 'admin') {
     return <Navigate to="/pf" replace />;
@@ -195,9 +189,14 @@ function MainLayout() {
   const allRoutes = flattenRoutes(routes);
   const { isPJ, isPF } = useFinanceScope();
   const { user } = useAuth();
+  const { profile } = useAuthProfile();
   const navigate = useNavigate();
-  const [profile, setProfile] = React.useState<Profile | null>(null);
-  const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+  const userRole = (
+    profile?.role ||
+    (user as any)?.app_metadata?.role ||
+    (user as any)?.role ||
+    'user'
+  ).toString();
   const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
   const userLabel = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'usuario';
   const userInitials = userLabel
@@ -221,34 +220,6 @@ function MainLayout() {
     if (isPF) return;
     navigate('/pf');
   };
-
-  React.useEffect(() => {
-    let isMounted = true;
-
-    const loadProfile = async () => {
-      if (!user?.id) {
-        if (isMounted) {
-          setProfile(null);
-        }
-        return;
-      }
-
-      try {
-        const nextProfile = await profilesApi.getProfile(user.id);
-        if (isMounted) {
-          setProfile(nextProfile);
-        }
-      } catch (error) {
-        console.error('Falha ao carregar perfil do layout principal:', error);
-      }
-    };
-
-    void loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -328,13 +299,21 @@ function MainLayout() {
               <Route
                 key={index}
                 path={route.path}
-                element={ADMIN_PATHS.has(route.path) ? <RequireAdmin>{route.element}</RequireAdmin> : route.element}
+                element={ADMIN_PATHS.has(route.path)
+                  ? (
+                    <RequireAdmin>
+                      {route.element}
+                    </RequireAdmin>
+                  )
+                  : route.element}
               />
             ))}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
-        <AIAssistant />
+        <React.Suspense fallback={null}>
+          <AIAssistant />
+        </React.Suspense>
       </div>
     </SidebarProvider>
   );

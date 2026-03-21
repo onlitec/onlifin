@@ -1,11 +1,11 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 import { transactionsApi, accountsApi, categoriesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from 'miaoda-auth-react';
 import {
@@ -121,8 +121,7 @@ export default function Transactions() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const payload: Omit<Transaction, 'id' | 'created_at' | 'updated_at'> = {
         description: formData.description,
@@ -508,14 +507,14 @@ export default function Transactions() {
       }}>
         <DialogContent className="max-w-2xl glass-card premium-card border-slate-300 backdrop-blur-3xl overflow-hidden rounded-3xl p-0 shadow-2xl">
           <div className="p-10 space-y-8">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black tracking-tighter uppercase text-slate-900">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-2xl font-black tracking-tighter uppercase text-slate-900">
                 {editingId ? 'Editar Transação' : 'Nova Movimentação'}
-              </h2>
-              <p className="text-xs uppercase tracking-widest font-bold text-slate-500">
+              </DialogTitle>
+              <DialogDescription className="text-xs uppercase tracking-widest font-bold text-slate-500">
                 Gestão analítica de fluxo de capital
-              </p>
-            </div>
+              </DialogDescription>
+            </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
@@ -655,6 +654,12 @@ export default function Transactions() {
 
       <Dialog open={showReceiptScanner} onOpenChange={setShowReceiptScanner}>
         <DialogContent className="max-w-2xl glass-card premium-card border-slate-300 rounded-3xl p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Escanear comprovante</DialogTitle>
+            <DialogDescription>
+              Capture dados do comprovante para preencher uma nova transação.
+            </DialogDescription>
+          </DialogHeader>
           <ReceiptScanner
             onDataExtracted={(data) => {
               setFormData(prev => ({

@@ -117,9 +117,6 @@ export default function CompaniesPage() {
                 setPlanName(planInfo.plan.name);
                 setPlanSource(getPlanSourceLabel(planInfo.source));
 
-                if (usage.companiesCount !== companies.length) {
-                    console.warn('Contagem de empresas do plano divergente da lista atual', usage.companiesCount, companies.length);
-                }
             } catch (error) {
                 console.error('Erro ao carregar contexto de plano:', error);
             } finally {

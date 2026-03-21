@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { getCurrentUser } from '@/db/client';
 
 import { billsToReceiveApi, accountsApi, categoriesApi } from '@/db/api';
 import { BillTransactionService } from '@/services/billTransactionService';
@@ -57,7 +57,7 @@ export default function BillsToReceive() {
 
   React.useEffect(() => {
     const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (user) {
         setUserId(user.id);
       }

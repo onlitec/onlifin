@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 import { accountsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 // Card components removed - using list layout now
@@ -64,8 +64,7 @@ export default function Accounts() {
   const loadAccounts = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       // Carregar contas - filtrando pelo ID da URL (null para PF) e personId
       const data = await accountsApi.getAccounts(user.id, companyId, personId);
@@ -84,8 +83,7 @@ export default function Accounts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const accountData = {
         name: formData.name,
@@ -193,8 +191,7 @@ export default function Accounts() {
   const handleRecalculateBalances = async () => {
     setIsRecalculating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const results = await accountsApi.recalculateAllAccountBalances(user.id);
 

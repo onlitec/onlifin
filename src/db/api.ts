@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { getCurrentUser, supabase } from './client';
 import type {
   Profile,
   Account,
@@ -272,7 +272,7 @@ export const cardsApi = {
 
 export const categoriesApi = {
   async getCategories(companyId?: string | null): Promise<Category[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     let query = supabase
       .from('categories')

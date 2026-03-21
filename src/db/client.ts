@@ -34,6 +34,14 @@ interface LocalSession {
     expires_at?: number;
 }
 
+let cachedSession: LocalSession | null | undefined;
+let cachedUser: LocalUser | null | undefined;
+
+function setCachedAuthState(session: LocalSession | null) {
+    cachedSession = session;
+    cachedUser = session?.user || null;
+}
+
 function buildSessionFromToken(token: string): LocalSession | null {
     if (!token || token.split('.').length !== 3) {
         return null;
@@ -70,9 +78,16 @@ function buildSessionFromToken(token: string): LocalSession | null {
 
 // Carregar sessão do localStorage
 function loadSession(): LocalSession | null {
+    if (cachedSession !== undefined) {
+        return cachedSession;
+    }
+
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (!stored) return null;
+        if (!stored) {
+            setCachedAuthState(null);
+            return null;
+        }
 
         const session = JSON.parse(stored);
 
@@ -82,18 +97,23 @@ function loadSession(): LocalSession | null {
             if (session.expires_at && session.expires_at < Math.floor(Date.now() / 1000)) {
                 console.warn('⚠️ Sessão expirada em:', new Date(session.expires_at * 1000).toLocaleString());
                 localStorage.removeItem(STORAGE_KEY);
+                setCachedAuthState(null);
                 return null;
             }
+            setCachedAuthState(session);
             return session;
         } else {
             console.warn('⚠️ Token inválido detectado, limpando sessão...');
             localStorage.removeItem(STORAGE_KEY);
+            setCachedAuthState(null);
             return null;
         }
     } catch (e) {
         console.error('Erro ao carregar sessão:', e);
         localStorage.removeItem(STORAGE_KEY);
+        setCachedAuthState(null);
     }
+    setCachedAuthState(null);
     return null;
 }
 
@@ -120,6 +140,8 @@ function syncGlobalHeaders(token: string | null) {
 
 // Salvar sessão no localStorage
 function saveSession(session: LocalSession | null) {
+    setCachedAuthState(session);
+
     if (session) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
         syncGlobalHeaders(session.access_token);
@@ -138,6 +160,29 @@ function saveSession(session: LocalSession | null) {
             onlifinClient.auth.signOut();
         }
     }
+}
+
+export async function getCurrentSession(): Promise<LocalSession | null> {
+    return loadSession();
+}
+
+export async function getCurrentUser(): Promise<LocalUser | null> {
+    if (cachedUser !== undefined) {
+        return cachedUser;
+    }
+
+    const session = loadSession();
+    return session?.user || null;
+}
+
+export async function requireCurrentUser(): Promise<LocalUser> {
+    const user = await getCurrentUser();
+
+    if (!user) {
+        throw new Error('Usuário não autenticado');
+    }
+
+    return user;
 }
 
 // Decodificar JWT (simples, apenas para ler payload)

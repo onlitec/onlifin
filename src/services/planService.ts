@@ -1,5 +1,5 @@
 import { DEFAULT_PLAN_CODE, getPlanDefinition, type PlanCode, type PlanDefinition } from '@/config/plans';
-import { supabase } from '@/db/client';
+import { getCurrentUser, requireCurrentUser, supabase } from '@/db/client';
 
 type PlanSource = 'profile_settings' | 'tenant_record' | 'auth_metadata' | 'legacy_default';
 
@@ -40,7 +40,7 @@ function coercePlanCode(value: unknown): PlanCode | null {
 }
 
 async function getCurrentProfilePlanRow(): Promise<ProfilePlanRow | null> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
         return null;
     }
@@ -80,7 +80,7 @@ async function getTenantPlanCode(tenantId: string | null | undefined): Promise<P
 }
 
 async function persistResolvedPlanCode(planCode: PlanCode, profile: ProfilePlanRow | null): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
         return;
     }
@@ -101,7 +101,7 @@ async function persistResolvedPlanCode(planCode: PlanCode, profile: ProfilePlanR
 }
 
 export async function getCurrentPlanInfo(): Promise<CurrentPlanInfo> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     const metadataPlanCode = coercePlanCode(
         (user as any)?.app_metadata?.plan_code ||
@@ -160,10 +160,7 @@ export async function getCurrentPlanInfo(): Promise<CurrentPlanInfo> {
 }
 
 export async function getCurrentPlanUsage(): Promise<PlanUsageSnapshot> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        throw new Error('Usuario nao autenticado');
-    }
+    const user = await requireCurrentUser();
 
     const [
         { count: peopleCount, error: peopleError },

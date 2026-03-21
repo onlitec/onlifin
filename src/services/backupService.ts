@@ -3,7 +3,7 @@
  * Lida com a exportação e importação de dados da plataforma Onlifin
  */
 
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 
 export interface BackupData {
     version: string;
@@ -38,8 +38,7 @@ export const backupService = {
      * Exporta todos os dados do usuário atual
      */
     async exportBackup(): Promise<BackupData> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Usuário não autenticado');
+        const user = await requireCurrentUser();
 
         const backup: BackupData = {
             version: '1.0',
@@ -86,8 +85,7 @@ export const backupService = {
      * Importa dados de um objeto de backup
      */
     async importBackup(backup: BackupData): Promise<{ success: boolean; errors: string[] }> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Usuário não autenticado');
+        const user = await requireCurrentUser();
 
         const errors: string[] = [];
 

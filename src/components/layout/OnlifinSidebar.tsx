@@ -33,22 +33,26 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useAuth } from 'miaoda-auth-react';
-import { profilesApi } from '@/db/api';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
-import type { Profile } from '@/types/types';
+import { useAuthProfile } from '@/contexts/AuthProfileContext';
 
 export function OnlifinSidebar() {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuth();
+    const { profile } = useAuthProfile();
     const { state } = useSidebar();
     const { isPJ, companyId } = useFinanceScope();
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
-    const [profile, setProfile] = React.useState<Profile | null>(null);
     const userLabel = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'usuario';
-    const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+    const userRole = (
+        profile?.role ||
+        (user as any)?.app_metadata?.role ||
+        (user as any)?.role ||
+        'user'
+    ).toString();
     const isAdmin = userRole === 'admin';
     const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
     const userInitials = userLabel
@@ -107,34 +111,6 @@ export function OnlifinSidebar() {
     const toggleMenu = (title: string) => {
         setOpenMenus(prev => ({ ...prev, [title]: !prev[title] }));
     };
-
-    React.useEffect(() => {
-        let isMounted = true;
-
-        const loadProfile = async () => {
-            if (!user?.id) {
-                if (isMounted) {
-                    setProfile(null);
-                }
-                return;
-            }
-
-            try {
-                const nextProfile = await profilesApi.getProfile(user.id);
-                if (isMounted) {
-                    setProfile(nextProfile);
-                }
-            } catch (error) {
-                console.error('Falha ao carregar perfil no sidebar:', error);
-            }
-        };
-
-        void loadProfile();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [user?.id]);
 
     return (
         <Sidebar collapsible="icon" className="border-r-2 border-slate-300 bg-white">

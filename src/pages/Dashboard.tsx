@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useAuth } from 'miaoda-auth-react';
 import { supabase } from '@/db/client';
 import { transactionsApi, billsToReceiveApi, accountsApi, cardsApi } from '@/db/api';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,10 +10,15 @@ import { useNavigate } from 'react-router-dom';
 import { Building2, CreditCard, Plus, Wallet } from 'lucide-react';
 
 import { BalanceCards } from '@/components/dashboard/BalanceCards';
-import { CategoryBreakdown } from '@/components/dashboard/CategoryBreakdown';
-import { SpendingChart } from '@/components/dashboard/SpendingChart';
 import { InsightsCards } from '@/components/dashboard/InsightsCards';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
+
+const CategoryBreakdown = React.lazy(() =>
+  import('@/components/dashboard/CategoryBreakdown').then((module) => ({ default: module.CategoryBreakdown }))
+);
+const SpendingChart = React.lazy(() =>
+  import('@/components/dashboard/SpendingChart').then((module) => ({ default: module.SpendingChart }))
+);
 
 interface EnhancedStats extends DashboardStats {
   savingsRate: number;
@@ -20,8 +26,34 @@ interface EnhancedStats extends DashboardStats {
   projectedMonthEnd: number;
 }
 
+function buildEnhancedStats(baseStats: DashboardStats, year: number, month: number): EnhancedStats {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const now = new Date();
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const currentDay = isCurrentMonth ? now.getDate() : daysInMonth;
+  const averageDailyExpense = currentDay > 0 ? baseStats.monthlyExpenses / currentDay : 0;
+  const projectedMonthEnd = isCurrentMonth
+    ? averageDailyExpense * daysInMonth
+    : baseStats.monthlyExpenses;
+  const savingsRate = baseStats.monthlyIncome > 0
+    ? ((baseStats.monthlyIncome - baseStats.monthlyExpenses) / baseStats.monthlyIncome) * 100
+    : 0;
+
+  return {
+    ...baseStats,
+    savingsRate,
+    averageDailyExpense,
+    projectedMonthEnd,
+  };
+}
+
+function AnalyticsCardSkeleton() {
+  return <Skeleton className="h-[360px] rounded-[1.5rem]" />;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { companyId, personId, isPJ } = useFinanceScope();
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [enhancedStats, setEnhancedStats] = React.useState<EnhancedStats | null>(null);
@@ -34,122 +66,92 @@ export default function Dashboard() {
     transactionsCount: 0,
   });
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = React.useState(true);
   const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth().toString());
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
+  const requestIdRef = React.useRef(0);
 
-  React.useEffect(() => {
-    loadDashboardData();
-  }, [selectedMonth, selectedYear, companyId, personId]);
+  const loadDashboardData = React.useCallback(async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      setIsLoadingAnalytics(false);
+      return;
+    }
 
-  const loadDashboardData = async () => {
+    const requestId = ++requestIdRef.current;
+
     try {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setIsLoadingAnalytics(true);
 
       const year = parseInt(selectedYear);
       const month = parseInt(selectedMonth);
       const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-      const [dashboardStats, expenses, monthly, accountList, cardList, txList] = await Promise.all([
+      let transactionsCountQuery = supabase
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (companyId !== undefined) {
+        transactionsCountQuery = companyId === null
+          ? transactionsCountQuery.is('company_id', null)
+          : transactionsCountQuery.eq('company_id', companyId);
+      }
+
+      if (personId !== undefined) {
+        transactionsCountQuery = personId === null
+          ? transactionsCountQuery.is('person_id', null)
+          : transactionsCountQuery.eq('person_id', personId);
+      }
+
+      const [dashboardStats, accountList, cardList, transactionsCountResult] = await Promise.all([
         transactionsApi.getDashboardStats(user.id, companyId, personId, month, year),
-        transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth, companyId, personId),
-        transactionsApi.getMonthlyData(user.id, 6, { companyId, personId, month, year }),
         accountsApi.getAccounts(user.id, companyId, personId),
         cardsApi.getCards(user.id, companyId, personId),
-        transactionsApi.getTransactions(user.id, {
-          companyId,
-          personId,
-        }),
+        transactionsCountQuery,
       ]);
 
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       setStats(dashboardStats);
-      setCategoryExpenses(expenses);
-      setMonthlyData(monthly);
+      setEnhancedStats(buildEnhancedStats(dashboardStats, year, month));
       setSetupStatus({
         accountsCount: accountList.length,
         cardsCount: cardList.length,
-        transactionsCount: txList.length,
+        transactionsCount: transactionsCountResult.count || 0,
       });
+      setIsLoading(false);
 
-      try {
-        const pendingBills = await billsToReceiveApi.getPending(user.id, companyId, personId);
-        const totalPending = pendingBills.reduce((sum, bill) => sum + bill.amount, 0);
-        setPendingToReceive(totalPending);
-      } catch (err) {
-        setPendingToReceive(0);
+      const [expenses, monthly, pendingBills] = await Promise.all([
+        transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth, companyId, personId),
+        transactionsApi.getMonthlyData(user.id, 6, { companyId, personId, month, year }),
+        billsToReceiveApi.getPending(user.id, companyId, personId).catch(() => []),
+      ]);
+
+      if (requestId !== requestIdRef.current) {
+        return;
       }
 
-      await loadEnhancedStats(user.id, dashboardStats, year, month);
+      setCategoryExpenses(expenses);
+      setMonthlyData(monthly);
+      setPendingToReceive(pendingBills.reduce((sum, bill) => sum + bill.amount, 0));
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadEnhancedStats = async (
-    userId: string,
-    baseStats: DashboardStats,
-    year: number,
-    month: number
-  ) => {
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const now = new Date();
-    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
-    const currentDay = isCurrentMonth ? now.getDate() : daysInMonth;
-
-    const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
-    const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
-
-    let transactionsQuery = supabase
-      .from('transactions')
-      .select('amount, type, is_transfer')
-      .eq('user_id', userId)
-      .gte('date', firstDay)
-      .lte('date', lastDay);
-
-    if (companyId !== undefined) {
-      if (companyId === null) {
-        transactionsQuery = transactionsQuery.is('company_id', null);
-      } else {
-        transactionsQuery = transactionsQuery.eq('company_id', companyId);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+        setIsLoadingAnalytics(false);
       }
     }
+  }, [companyId, personId, selectedMonth, selectedYear, user?.id]);
 
-    if (personId) {
-      transactionsQuery = transactionsQuery.eq('person_id', personId);
-    } else if (personId === null) {
-      transactionsQuery = transactionsQuery.is('person_id', null);
-    }
-
-    const { data: transactions } = await transactionsQuery;
-
-    const monthlyIncome = transactions
-      ?.filter((t: any) => t.type === 'income' && !t.is_transfer)
-      .reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0;
-
-    const monthlyExpenses = transactions
-      ?.filter((t: any) => t.type === 'expense' && !t.is_transfer)
-      .reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0;
-
-    const savingsRate = monthlyIncome > 0
-      ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100
-      : 0;
-
-    const averageDailyExpense = currentDay > 0 ? monthlyExpenses / currentDay : 0;
-    const projectedMonthEnd = isCurrentMonth ? averageDailyExpense * daysInMonth : monthlyExpenses;
-
-    setEnhancedStats({
-      ...baseStats,
-      monthlyIncome,
-      monthlyExpenses,
-      savingsRate,
-      averageDailyExpense,
-      projectedMonthEnd
-    });
-  };
+  React.useEffect(() => {
+    void loadDashboardData();
+  }, [loadDashboardData]);
 
   const months = [
     { value: '0', label: 'Janeiro' },
@@ -370,10 +372,22 @@ export default function Dashboard() {
       {/* Main Insights Grid */}
       <div className="grid gap-4 lg:grid-cols-3 pb-8">
         <div className="lg:col-span-2">
-          <SpendingChart data={monthlyData} />
+          {isLoadingAnalytics ? (
+            <AnalyticsCardSkeleton />
+          ) : (
+            <React.Suspense fallback={<AnalyticsCardSkeleton />}>
+              <SpendingChart data={monthlyData} />
+            </React.Suspense>
+          )}
         </div>
         <div>
-          <CategoryBreakdown categories={categoryExpenses} />
+          {isLoadingAnalytics ? (
+            <AnalyticsCardSkeleton />
+          ) : (
+            <React.Suspense fallback={<AnalyticsCardSkeleton />}>
+              <CategoryBreakdown categories={categoryExpenses} />
+            </React.Suspense>
+          )}
         </div>
       </div>
     </div>

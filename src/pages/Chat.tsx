@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -70,15 +70,13 @@ export default function Chat() {
   const loadUserFinancialContext = async () => {
     try {
       setIsLoadingContext(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const ctx = await loadFinancialContext(user.id, {
-          mode: isPF ? 'PF' : isPJ ? 'PJ' : 'GERAL',
-          companyId,
-          personId
-        });
-        setFinancialContext(ctx);
-      }
+      const user = await requireCurrentUser();
+      const ctx = await loadFinancialContext(user.id, {
+        mode: isPF ? 'PF' : isPJ ? 'PJ' : 'GERAL',
+        companyId,
+        personId
+      });
+      setFinancialContext(ctx);
     } catch (error) {
       console.error('Erro ao carregar contexto financeiro:', error);
     } finally {
@@ -241,8 +239,7 @@ export default function Chat() {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      const user = await requireCurrentUser();
 
       // If there's a file, process it for categorization
       if (selectedFile && fileContent) {

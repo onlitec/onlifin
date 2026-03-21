@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 import { accountsApi, transactionsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,8 +36,7 @@ export default function Reports() {
   const loadReportData = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const [accountList, transactionList] = await Promise.all([
         accountsApi.getAccounts(user.id, companyId, personId),

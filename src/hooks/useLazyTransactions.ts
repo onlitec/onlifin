@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { getCurrentUser, supabase } from '@/db/client';
 
 interface Transaction {
   id: string;
@@ -30,7 +30,7 @@ export function useLazyTransactions({
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
       const from = page * pageSize;

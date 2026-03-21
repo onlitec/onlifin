@@ -1,29 +1,27 @@
 import { Navigate } from 'react-router-dom';
 import * as React from 'react';
-import Dashboard from './pages/Dashboard';
-import Companies from './pages/Companies';
-import Accounts from './pages/Accounts';
-import Cards from './pages/Cards';
-import Transactions from './pages/Transactions';
-import Categories from './pages/Categories';
-import Reports from './pages/Reports';
-import ImportStatements from './pages/ImportStatements';
-import Reconciliation from './pages/Reconciliation';
-import Chat from './pages/Chat';
-import ForecastDashboard from './pages/ForecastDashboard';
-import BillsToPay from './pages/BillsToPay';
-import BillsToReceive from './pages/BillsToReceive';
-import People from './pages/People';
-import Debts from './pages/Debts';
-
-
-import AIAdmin from './pages/AIAdmin';
-import AdminGeneral from './pages/AdminGeneral';
-import UserManagement from './pages/UserManagement';
-import Login from './pages/Login';
-import ForceChangePassword from './pages/ForceChangePassword';
-import PWAInfo from './pages/PWAInfo';
-import SettingsPage from './pages/Settings';
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Companies = React.lazy(() => import('./pages/Companies'));
+const Accounts = React.lazy(() => import('./pages/Accounts'));
+const Cards = React.lazy(() => import('./pages/Cards'));
+const Transactions = React.lazy(() => import('./pages/Transactions'));
+const Categories = React.lazy(() => import('./pages/Categories'));
+const Reports = React.lazy(() => import('./pages/Reports'));
+const ImportStatements = React.lazy(() => import('./pages/ImportStatements'));
+const Reconciliation = React.lazy(() => import('./pages/Reconciliation'));
+const Chat = React.lazy(() => import('./pages/Chat'));
+const ForecastDashboard = React.lazy(() => import('./pages/ForecastDashboard'));
+const BillsToPay = React.lazy(() => import('./pages/BillsToPay'));
+const BillsToReceive = React.lazy(() => import('./pages/BillsToReceive'));
+const People = React.lazy(() => import('./pages/People'));
+const Debts = React.lazy(() => import('./pages/Debts'));
+const AIAdmin = React.lazy(() => import('./pages/AIAdmin'));
+const AdminGeneral = React.lazy(() => import('./pages/AdminGeneral'));
+const UserManagement = React.lazy(() => import('./pages/UserManagement'));
+const Login = React.lazy(() => import('./pages/Login'));
+const ForceChangePassword = React.lazy(() => import('./pages/ForceChangePassword'));
+const PWAInfo = React.lazy(() => import('./pages/PWAInfo'));
+const SettingsPage = React.lazy(() => import('./pages/Settings'));
 
 interface RouteConfig {
   name: string;

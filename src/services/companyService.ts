@@ -5,7 +5,7 @@
  * incluindo definição de empresa padrão e cálculo de métricas.
  */
 
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 import { assertCanCreateCompany } from '@/services/planService';
 import type {
     Company,
@@ -101,11 +101,7 @@ export const companyService = {
      * Cria uma nova empresa
      */
     async create(data: CreateCompanyDTO): Promise<Company> {
-        // Buscar usuário atual
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            throw new Error('Usuário não autenticado');
-        }
+        const user = await requireCurrentUser();
 
         await assertCanCreateCompany();
 
@@ -220,10 +216,7 @@ export const companyService = {
             console.error('Erro ao definir empresa padrão:', error);
 
             // Fallback: fazer manualmente
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                throw new Error('Usuário não autenticado');
-            }
+            const user = await requireCurrentUser();
 
             // Remover default de todas as empresas
             await supabase

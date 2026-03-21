@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 import { cardsApi, accountsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -60,8 +60,7 @@ export default function Cards() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const [cardsData, accountsData] = await Promise.all([
         cardsApi.getCards(user.id, companyId, personId),
@@ -84,8 +83,7 @@ export default function Cards() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
 
       const cardData = {
         name: formData.name,

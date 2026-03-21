@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/db/client';
+import { getCurrentUser } from '@/db/client';
 import { 
   transactionsApi, 
   forecastsApi, 
@@ -27,7 +27,7 @@ export function useDashboardData() {
 
   React.useEffect(() => {
     const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (user) {
         setUserId(user.id);
       }

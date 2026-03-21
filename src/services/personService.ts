@@ -2,7 +2,7 @@
  * Serviço de gerenciamento de pessoas (PF)
  */
 
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 import { assertCanCreateManagedPerson } from '@/services/planService';
 import { profileService } from '@/services/profileService';
 import type {
@@ -13,7 +13,7 @@ import type {
 
 export const personService = {
     async ensurePrimaryPerson(existingPeople?: Person[]): Promise<boolean> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await requireCurrentUser().catch(() => null);
         if (!user) {
             return false;
         }
@@ -123,10 +123,7 @@ export const personService = {
      * Cria uma nova pessoa
      */
     async create(data: CreatePersonDTO & { company_id?: string | null }): Promise<Person> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            throw new Error('Usuário não autenticado');
-        }
+        const user = await requireCurrentUser();
 
         await assertCanCreateManagedPerson();
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { APP_VERSION } from "@/config/version";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { getCurrentUser, supabase } from '@/db/client';
 import { profilesApi } from '@/db/api';
 import routes from '@/routes';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ export default function Header() {
 
   const loadProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       console.log('🔍 User from auth:', user);
       if (user) {
         const userProfile = await profilesApi.getProfile(user.id);

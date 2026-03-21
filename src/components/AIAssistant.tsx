@@ -7,7 +7,7 @@ import { MessageCircle, X, Send, Loader2, RotateCcw } from 'lucide-react';
 import { chatWithAssistant, getDegradedResponse, getDestructiveActionGuardrail } from '@/services/ollamaService';
 import { buildLocalFinancialResponse, loadFinancialContext, formatFinancialContextForPrompt } from '@/services/financialContext';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
-import { supabase } from '@/db/client';
+import { requireCurrentUser } from '@/db/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -83,25 +83,23 @@ export default function AIAssistant() {
       }
 
       // Carregar contexto financeiro
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await requireCurrentUser();
       let contextText: string | undefined;
 
-      if (user) {
-        try {
-          const financialContext = await loadFinancialContext(user.id, {
-            mode: isPF ? 'PF' : isPJ ? 'PJ' : 'GERAL',
-            companyId,
-            personId
-          });
-          const localResponse = buildLocalFinancialResponse(userMessage, financialContext);
-          if (localResponse) {
-            setMessages(prev => [...prev, { role: 'assistant', content: localResponse }]);
-            return;
-          }
-          contextText = formatFinancialContextForPrompt(financialContext);
-        } catch (ctxError) {
-          console.error('Erro ao carregar contexto financeiro:', ctxError);
+      try {
+        const financialContext = await loadFinancialContext(user.id, {
+          mode: isPF ? 'PF' : isPJ ? 'PJ' : 'GERAL',
+          companyId,
+          personId
+        });
+        const localResponse = buildLocalFinancialResponse(userMessage, financialContext);
+        if (localResponse) {
+          setMessages(prev => [...prev, { role: 'assistant', content: localResponse }]);
+          return;
         }
+        contextText = formatFinancialContextForPrompt(financialContext);
+      } catch (ctxError) {
+        console.error('Erro ao carregar contexto financeiro:', ctxError);
       }
 
       // Usar Ollama local para gerar resposta

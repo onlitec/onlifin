@@ -2,7 +2,7 @@
  * Serviço de gerenciamento de perfil e configurações
  */
 
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 import type { PlanCode } from '@/config/plans';
 
 export interface ProfileSettings {
@@ -28,7 +28,7 @@ export const profileService = {
      * Busca o perfil do usuário atual
      */
     async getProfile(): Promise<Profile | null> {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await requireCurrentUser().catch(() => null);
         if (!user) return null;
 
         const { data, error } = await supabase
@@ -49,8 +49,7 @@ export const profileService = {
      * Atualiza as configurações do perfil
      */
     async updateSettings(settings: Partial<ProfileSettings>): Promise<Profile> {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Usuário não autenticado');
+        const user = await requireCurrentUser();
 
         // Buscar configurações atuais primeiro para fazer merge
         const currentProfile = await this.getProfile();

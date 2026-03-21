@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { requireCurrentUser, supabase } from '@/db/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -145,8 +145,7 @@ export default function ImportStatements() {
 
   const loadAccounts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const user = await requireCurrentUser();
       const data = await accountsApi.getAccounts(user.id, companyId);
       setAccounts(data);
       if (data.length > 0 && !selectedAccountId) {
@@ -431,8 +430,7 @@ export default function ImportStatements() {
       // setCategorizedTransactions will be set after AI analysis
 
       // Get existing categories and accounts
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      const user = await requireCurrentUser();
 
       if (!selectedAccountId) {
         throw new Error('Selecione uma conta bancária antes de analisar');
@@ -611,8 +609,7 @@ export default function ImportStatements() {
     setIsImporting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      const user = await requireCurrentUser();
 
       // 1. Process new categories
       const selectedNewCategories = newCategorySuggestions.filter(c => c.selected);
@@ -803,8 +800,7 @@ export default function ImportStatements() {
   const finishEditing = async () => {
     setIsImporting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      const user = await requireCurrentUser();
 
       const transactionsToInsert = transactionsToEdit.map(t => ({
         user_id: user.id,
