@@ -3,7 +3,7 @@ import * as React from 'react';
 import { AuthProvider, RequireAuth, useAuth } from 'miaoda-auth-react';
 import { supabase } from '@/db/client';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { OnlifinSidebar } from '@/components/layout/OnlifinSidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { CompanyProvider } from '@/contexts/CompanyContext';
@@ -187,6 +187,15 @@ function MainLayout() {
   };
 
   const allRoutes = flattenRoutes(routes);
+
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <MainLayoutShell allRoutes={allRoutes} />
+    </SidebarProvider>
+  );
+}
+
+function MainLayoutShell({ allRoutes }: { allRoutes: Array<{ path: string; element?: React.ReactNode }> }) {
   const { isPJ, isPF } = useFinanceScope();
   const { user } = useAuth();
   const { profile } = useAuthProfile();
@@ -222,10 +231,10 @@ function MainLayout() {
   };
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <>
       <OnlifinSidebar />
-      <div className="flex flex-1 flex-col ml-0 md:ml-64 transition-[margin] duration-200 group-data-[state=collapsed]/sidebar-wrapper:md:ml-12 min-h-screen bg-background text-foreground">
-        <header className="sticky top-0 z-40 flex h-20 shrink-0 items-center justify-between gap-4 bg-white border-b-2 border-slate-300 px-8 transition-all duration-300 shadow-md">
+      <SidebarInset className="min-h-screen bg-background text-foreground">
+        <header className="sticky top-0 z-20 flex h-20 shrink-0 items-center justify-between gap-4 bg-white border-b-2 border-slate-300 px-8 transition-all duration-300 shadow-md">
           <div className="flex items-center gap-4 flex-1">
             <SidebarTrigger className="text-slate-500 hover:text-slate-900 transition-colors" />
             <div className="relative max-w-md w-full ml-4">
@@ -314,8 +323,8 @@ function MainLayout() {
         <React.Suspense fallback={null}>
           <AIAssistant />
         </React.Suspense>
-      </div>
-    </SidebarProvider>
+      </SidebarInset>
+    </>
   );
 }
 

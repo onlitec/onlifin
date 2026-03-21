@@ -227,7 +227,7 @@ export default function ForecastDashboard() {
             <div className="flex flex-col gap-3 sm:flex-row">
               {needsFirstAccount ? (
                 <>
-                  <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)} size="lg">
+                  <Button onClick={() => navigate(`${prefix}/accounts?onboarding=account`)} size="lg">
                     <Wallet className="mr-2 h-5 w-5" />
                     Criar Primeira Conta
                   </Button>
@@ -237,7 +237,7 @@ export default function ForecastDashboard() {
                 </>
               ) : needsFirstTransaction ? (
                 <>
-                  <Button onClick={() => navigate(`${prefix}/transactions?onboarding=1`)} size="lg">
+                  <Button onClick={() => navigate(`${prefix}/transactions?onboarding=transaction`)} size="lg">
                     <Plus className="mr-2 h-5 w-5" />
                     Registrar Primeira Transação
                   </Button>

@@ -12,14 +12,14 @@ export function BankIconSelector({ value, onChange, label = 'Banco' }: BankIconS
     return (
         <div className="space-y-2">
             {label && <Label>{label}</Label>}
-            <div className="grid grid-cols-5 gap-2 p-3 border rounded-lg bg-muted/30 max-h-[200px] overflow-y-auto">
+            <div className="grid grid-cols-4 gap-3 rounded-2xl border border-slate-300 bg-muted/30 p-4 max-h-[240px] overflow-y-auto sm:grid-cols-5">
                 {BRAZILIAN_BANKS.map((bank: BankConfig) => (
                     <button
                         key={bank.id}
                         type="button"
                         onClick={() => onChange(bank.id === value ? null : bank.id)}
                         className={cn(
-                            "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all hover:scale-105",
+                            "flex min-h-[92px] flex-col items-center justify-center rounded-xl border-2 px-2 py-3 transition-all hover:scale-[1.03]",
                             value === bank.id
                                 ? "border-primary bg-primary/10"
                                 : "border-transparent hover:border-muted-foreground/30"
@@ -29,9 +29,9 @@ export function BankIconSelector({ value, onChange, label = 'Banco' }: BankIconS
                         <img
                             src={bank.icon}
                             alt={bank.name}
-                            className="w-10 h-10 object-contain"
+                            className="h-12 w-12 object-contain sm:h-14 sm:w-14"
                         />
-                        <span className="text-xs text-muted-foreground mt-1 truncate max-w-full">
+                        <span className="mt-2 max-w-full truncate text-[11px] font-semibold text-muted-foreground">
                             {bank.name.split(' ')[0]}
                         </span>
                     </button>

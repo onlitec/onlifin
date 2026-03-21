@@ -68,6 +68,10 @@ const STARTER_CATEGORIES: Array<{
   { name: 'Serviços', type: 'expense', icon: 'Receipt', color: '#9B59B6' },
 ];
 
+function normalizeCategoryName(name: string): string {
+  return name.trim().toLocaleLowerCase('pt-BR');
+}
+
 export default function Categories() {
   const { companyId } = useFinanceScope();
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -102,14 +106,43 @@ export default function Categories() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const trimmedName = formData.name.trim();
+      if (!trimmedName) {
+        toast({
+          title: 'Nome inválido',
+          description: 'Informe um nome de categoria válido.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const duplicateCategory = categories.find((category) =>
+        category.type === formData.type &&
+        normalizeCategoryName(category.name) === normalizeCategoryName(trimmedName) &&
+        category.id !== editingCategory?.id
+      );
+
+      if (duplicateCategory) {
+        toast({
+          title: 'Categoria já existe',
+          description: 'Já existe uma categoria visível com esse nome e tipo.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
       const user = await requireCurrentUser();
 
       if (editingCategory) {
-        await categoriesApi.updateCategory(editingCategory.id, formData);
+        await categoriesApi.updateCategory(editingCategory.id, {
+          ...formData,
+          name: trimmedName,
+        });
         toast({ title: 'Sucesso', description: 'Categoria atualizada com sucesso' });
       } else {
         await categoriesApi.createCategory({
           ...formData,
+          name: trimmedName,
           user_id: user.id,
           company_id: companyId ?? null
         });
@@ -120,9 +153,12 @@ export default function Categories() {
       resetForm();
       loadCategories();
     } catch (error: any) {
+      const description = error.code === '23505'
+        ? 'Já existe uma categoria com esse nome e tipo.'
+        : error.message || 'Erro ao salvar categoria';
       toast({
         title: 'Erro',
-        description: error.message || 'Erro ao salvar categoria',
+        description,
         variant: 'destructive'
       });
     }

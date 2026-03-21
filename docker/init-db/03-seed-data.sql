@@ -17,25 +17,16 @@ BEGIN
         VALUES (v_admin_id, 'onlifinadmin', 'Administrador Onlifin', 'admin'::user_role)
         ON CONFLICT (id) DO NOTHING;
         
-        -- Categorias de receita
+        -- Categorias pessoais adicionais do admin
         INSERT INTO categories (user_id, name, type, icon, color) VALUES
-        (v_admin_id, 'Salário', 'income', 'Briefcase', '#10b981'),
-        (v_admin_id, 'Freelance', 'income', 'Code', '#3b82f6'),
-        (v_admin_id, 'Investimentos', 'income', 'TrendingUp', '#8b5cf6'),
         (v_admin_id, 'Vendas', 'income', 'ShoppingCart', '#06b6d4'),
-        (v_admin_id, 'Outros', 'income', 'DollarSign', '#6b7280');
-        
-        -- Categorias de despesa
+        (v_admin_id, 'Outros', 'income', 'DollarSign', '#6b7280')
+        ON CONFLICT DO NOTHING;
+
+        -- Categoria pessoal adicional do admin
         INSERT INTO categories (user_id, name, type, icon, color) VALUES
-        (v_admin_id, 'Alimentação', 'expense', 'Utensils', '#ef4444'),
-        (v_admin_id, 'Transporte', 'expense', 'Car', '#f97316'),
-        (v_admin_id, 'Moradia', 'expense', 'Home', '#eab308'),
-        (v_admin_id, 'Saúde', 'expense', 'Heart', '#ec4899'),
-        (v_admin_id, 'Educação', 'expense', 'BookOpen', '#8b5cf6'),
-        (v_admin_id, 'Lazer', 'expense', 'Film', '#06b6d4'),
-        (v_admin_id, 'Compras', 'expense', 'ShoppingBag', '#f43f5e'),
-        (v_admin_id, 'Contas', 'expense', 'FileText', '#64748b'),
-        (v_admin_id, 'Outros', 'expense', 'MoreHorizontal', '#6b7280');
+        (v_admin_id, 'Outros', 'expense', 'MoreHorizontal', '#6b7280')
+        ON CONFLICT DO NOTHING;
         
         -- Conta bancária de exemplo
         INSERT INTO accounts (user_id, name, bank, agency, account_number, balance, currency)

@@ -201,7 +201,7 @@ export default function Dashboard() {
         ? 'Crie a conta bancária principal da empresa para ativar o ambiente corporativo.'
         : 'Crie sua conta principal para começar a organizar o fluxo financeiro.',
       actionLabel: 'Criar Conta',
-      onClick: () => navigate(`${prefix}/accounts?onboarding=1`),
+      onClick: () => navigate(`${prefix}/accounts?onboarding=account`),
       icon: Wallet,
     },
     {
@@ -210,9 +210,8 @@ export default function Dashboard() {
       title: 'Registrar primeira transação',
       description: 'Lance uma receita ou despesa para iniciar o histórico e alimentar os gráficos.',
       actionLabel: 'Nova Transação',
-      onClick: () => navigate(`${prefix}/transactions?onboarding=1`),
+      onClick: () => navigate(`${prefix}/transactions?onboarding=transaction`),
       icon: Plus,
-      disabled: setupStatus.accountsCount === 0,
     },
     {
       key: 'card',
@@ -220,10 +219,9 @@ export default function Dashboard() {
       title: 'Cadastrar cartão',
       description: 'Etapa opcional para acompanhar limites, vencimentos e gastos no crédito.',
       actionLabel: 'Novo Cartão',
-      onClick: () => navigate(`${prefix}/cards?onboarding=1`),
+      onClick: () => navigate(`${prefix}/cards?onboarding=card`),
       icon: CreditCard,
       optional: true,
-      disabled: setupStatus.accountsCount === 0,
     },
   ];
   const shouldShowOnboarding = onboardingSteps.some((step) => !step.done);

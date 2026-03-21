@@ -83,6 +83,7 @@ export interface Transaction {
   amount: number;
   date: string;
   description: string | null;
+  notes?: string | null;
   tags: string[] | null;
   is_recurring: boolean;
   recurrence_pattern: string | null;

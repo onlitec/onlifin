@@ -464,7 +464,7 @@ export default function Chat() {
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+                      <Button onClick={() => navigate(`${prefix}/accounts?onboarding=account`)}>
                         <Wallet className="mr-2 h-4 w-4" />
                         Criar Primeira Conta
                       </Button>
@@ -483,7 +483,7 @@ export default function Chat() {
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button onClick={() => navigate(`${prefix}/transactions?onboarding=1`)}>
+                      <Button onClick={() => navigate(`${prefix}/transactions?onboarding=transaction`)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Registrar Primeira Transação
                       </Button>
@@ -515,7 +515,7 @@ export default function Chat() {
                         </Button>
                       ))}
                       {!hasCards && (
-                        <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/cards?onboarding=1`)}>
+                        <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/cards?onboarding=card`)}>
                           <CreditCard className="mr-2 h-4 w-4" />
                           Cadastrar Primeiro Cartão
                         </Button>

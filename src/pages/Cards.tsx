@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, CreditCard, Landmark, Calendar, DollarSign, Wallet } from 'lucide-react';
-import { CardBrandSelector } from '@/components/ui/card-brand-selector';
+import { CardBrandCombobox } from '@/components/ui/card-brand-combobox';
 import { getCardBrandById, getDefaultCardIcon } from '@/config/banks';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import type { Card as CardType, Account } from '@/types/types';
@@ -28,12 +28,14 @@ export default function Cards() {
     closing_day: '',
     due_day: '',
     account_id: '',
+    brand: '',
     icon: '' as string | null
   });
   const { toast } = useToast();
 
   const { companyId, isPJ, personId } = useFinanceScope();
-  const isOnboarding = searchParams.get('onboarding') === '1';
+  const onboardingMode = searchParams.get('onboarding');
+  const isOnboarding = onboardingMode === '1' || onboardingMode === 'card';
   const onboardingAccountId = searchParams.get('account_id') || '';
   const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
@@ -42,7 +44,7 @@ export default function Cards() {
   }, [companyId, personId]);
 
   React.useEffect(() => {
-    if (!isOnboarding || isLoading || accounts.length === 0 || isDialogOpen) {
+    if (!isOnboarding || isLoading || isDialogOpen) {
       return;
     }
 
@@ -91,7 +93,7 @@ export default function Cards() {
         closing_day: formData.closing_day ? Number(formData.closing_day) : null,
         due_day: formData.due_day ? Number(formData.due_day) : null,
         account_id: formData.account_id || null,
-        brand: formData.icon || null
+        brand: formData.brand || null
       };
 
       if (editingCard) {
@@ -161,6 +163,7 @@ export default function Cards() {
       closing_day: card.closing_day?.toString() || '',
       due_day: card.due_day?.toString() || '',
       account_id: card.account_id || '',
+      brand: card.brand || '',
       icon: card.icon || null
     });
     setIsDialogOpen(true);
@@ -174,6 +177,7 @@ export default function Cards() {
       closing_day: '',
       due_day: '',
       account_id: '',
+      brand: '',
       icon: null
     });
   };
@@ -185,14 +189,19 @@ export default function Cards() {
     }).format(value);
   };
 
-  const handleBrandChange = (icon: string | null) => {
-    const brandConfig = icon ? getCardBrandById(icon) : null;
-
+  const handleBrandChange = ({
+    brandName,
+    iconId,
+  }: {
+    brandName: string;
+    iconId: string | null;
+  }) => {
     setFormData((current) => ({
       ...current,
-      icon,
-      name: !editingCard && brandConfig && (!current.name || current.name.startsWith('Cartão '))
-        ? `Cartão ${brandConfig.name}`
+      brand: brandName,
+      icon: iconId,
+      name: !editingCard && iconId && iconId !== 'default' && (!current.name || current.name.startsWith('Cartão '))
+        ? `Cartão ${brandName}`
         : current.name,
       account_id: current.account_id || onboardingAccountId || (accounts.length === 1 ? accounts[0].id : ''),
     }));
@@ -225,116 +234,144 @@ export default function Cards() {
               Novo Cartão
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass-card premium-card border-white/10 backdrop-blur-3xl rounded-3xl p-0 overflow-hidden">
-            <div className="p-8 space-y-6">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-black tracking-tighter uppercase">
-                  {editingCard ? 'Modificar Parâmetros' : 'Novo Instrumento de Crédito'}
-                </DialogTitle>
-                <DialogDescription className="text-[10px] uppercase tracking-widest font-bold opacity-60">
-                  Configuração técnica de limite e vencimento
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Identificação do Cartão *</Label>
-                    <Input
-                      id="name"
-                      className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
-                      placeholder="Ex: Visa Infinite Platinum"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
+          <DialogContent className="w-[min(96vw,1400px)] max-w-[1400px] overflow-hidden rounded-3xl border-white/10 p-0 backdrop-blur-3xl">
+            <form onSubmit={handleSubmit} className="flex max-h-[85vh] flex-col bg-background/95">
+              <div className="border-b border-border/60 px-6 py-5 lg:px-8">
+                <DialogHeader className="space-y-2 text-left">
+                  <DialogTitle className="text-2xl font-black uppercase tracking-tight">
+                    {editingCard ? 'Modificar Parâmetros' : 'Novo Instrumento de Crédito'}
+                  </DialogTitle>
+                  <DialogDescription className="text-[11px] font-bold uppercase tracking-widest opacity-60">
+                    Layout mais largo, menos vertical e com o botão sempre visível no rodapé.
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="card_limit" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Limite de Crédito Disponível *</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-50" />
-                      <Input
-                        id="card_limit"
-                        type="number"
-                        step="0.01"
-                        className="glass-card border-white/5 h-14 rounded-xl pl-10 pr-4 font-black text-xl"
-                        placeholder="0.00"
-                        value={formData.card_limit}
-                        onChange={(e) => setFormData({ ...formData, card_limit: e.target.value })}
-                        required
+              <div className="flex-1 overflow-y-auto px-6 py-6 lg:px-8 lg:py-8">
+                <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Identificação do Cartão *</Label>
+                        <Input
+                          id="name"
+                          className="glass-card h-12 rounded-xl border-slate-300 px-4 font-bold"
+                          placeholder="Ex: Visa Infinite Platinum"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="card_limit" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Limite de Crédito Disponível *</Label>
+                        <div className="relative">
+                          <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-50" />
+                          <Input
+                            id="card_limit"
+                            type="number"
+                            step="0.01"
+                            className="glass-card h-14 rounded-xl border-slate-300 pl-10 pr-4 text-xl font-black"
+                            placeholder="0.00"
+                            value={formData.card_limit}
+                            onChange={(e) => setFormData({ ...formData, card_limit: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="closing_day" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Dia de Fechamento</Label>
+                          <Input
+                            id="closing_day"
+                            type="number"
+                            min="1"
+                            max="31"
+                            className="glass-card h-12 rounded-xl border-slate-300 px-4 font-bold"
+                            placeholder="1 a 31"
+                            value={formData.closing_day}
+                            onChange={(e) => setFormData({ ...formData, closing_day: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="due_day" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Dia de Vencimento</Label>
+                          <Input
+                            id="due_day"
+                            type="number"
+                            min="1"
+                            max="31"
+                            className="glass-card h-12 rounded-xl border-slate-300 px-4 font-bold"
+                            placeholder="1 a 31"
+                            value={formData.due_day}
+                            onChange={(e) => setFormData({ ...formData, due_day: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="account_id" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Débito em Conta (Opcional)</Label>
+                        <Select
+                          value={formData.account_id || 'none'}
+                          onValueChange={(value) => setFormData({ ...formData, account_id: value === 'none' ? '' : value })}
+                        >
+                          <SelectTrigger className="glass-card h-12 rounded-xl border-slate-300 px-4 font-bold">
+                            <SelectValue placeholder="Selecione uma conta" />
+                          </SelectTrigger>
+                          <SelectContent className="glass-card premium-card border-white/10">
+                            <SelectItem value="none">Nenhuma</SelectItem>
+                            {accounts.map(acc => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <CardBrandCombobox
+                        brandName={formData.brand}
+                        iconId={formData.icon}
+                        onChange={handleBrandChange}
+                        label="Bandeira / Identidade"
+                        placeholder="Selecionar ou digitar bandeira"
                       />
+                      <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                        <Label className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Identidade Visual da Bandeira</Label>
+                        <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 shadow-sm">
+                            <img
+                              src={formData.icon ? getCardBrandById(formData.icon)?.icon || getDefaultCardIcon() : getDefaultCardIcon()}
+                              alt={formData.brand || 'Bandeira selecionada'}
+                              className="h-10 w-10 object-contain"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-black uppercase tracking-wide text-slate-900">
+                              {formData.brand || 'Nenhuma bandeira selecionada'}
+                            </p>
+                            <p className="text-[11px] font-medium uppercase tracking-widest text-slate-500">
+                              {formData.icon && formData.icon !== 'default'
+                                ? 'Ícone aplicado automaticamente'
+                                : 'Ícone padrão para bandeira manual'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="closing_day" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Dia de Fechamento</Label>
-                      <Input
-                        id="closing_day"
-                        type="number"
-                        min="1"
-                        max="31"
-                        className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
-                        placeholder="1 a 31"
-                        value={formData.closing_day}
-                        onChange={(e) => setFormData({ ...formData, closing_day: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="due_day" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Dia de Vencimento</Label>
-                      <Input
-                        id="due_day"
-                        type="number"
-                        min="1"
-                        max="31"
-                        className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
-                        placeholder="1 a 31"
-                        value={formData.due_day}
-                        onChange={(e) => setFormData({ ...formData, due_day: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="account_id" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Débito em Conta (Opcional)</Label>
-                    <Select
-                      value={formData.account_id || 'none'}
-                      onValueChange={(value) => setFormData({ ...formData, account_id: value === 'none' ? '' : value })}
-                    >
-                      <SelectTrigger className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold">
-                        <SelectValue placeholder="Selecione uma conta" />
-                      </SelectTrigger>
-                      <SelectContent className="glass-card premium-card border-white/10">
-                        <SelectItem value="none">Nenhuma</SelectItem>
-                        {accounts.map(acc => (
-                          <SelectItem key={acc.id} value={acc.id}>
-                            {acc.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Bandeira / Identidade</Label>
-                    <CardBrandSelector
-                      value={formData.icon}
-                      onChange={handleBrandChange}
-                      label="Selecionar Bandeira"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="ghost" className="rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest" onClick={() => setIsDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button variant="outline" type="submit" className="glass border-primary/20 text-primary font-black uppercase tracking-widest px-8 h-12 rounded-xl">
-                    {editingCard ? 'Salvar Alterações' : 'Criar Cartão'}
-                  </Button>
-                </div>
-              </form>
-            </div>
+              <div className="flex flex-col-reverse gap-3 border-t border-border/60 bg-background/95 px-6 py-4 sm:flex-row sm:justify-end lg:px-8">
+                <Button type="button" variant="ghost" className="rounded-xl px-6 text-[10px] font-bold uppercase tracking-widest" onClick={() => setIsDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="outline" type="submit" className="glass h-12 rounded-xl border-primary/20 px-8 font-black uppercase tracking-widest text-primary">
+                  {editingCard ? 'Salvar Alterações' : 'Criar Cartão'}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -349,25 +386,29 @@ export default function Cards() {
             <p className="text-sm font-black uppercase tracking-widest text-slate-800 mb-1">Sem Cartões Registrados</p>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest text-center max-w-xs">
               {accounts.length === 0
-                ? 'Cadastre uma conta antes de vincular cartões ao fluxo financeiro.'
+                ? 'Você pode cadastrar o cartão agora e vincular uma conta depois, se quiser.'
                 : 'Adicione seus cartões de crédito para monitorar limites e faturas.'}
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              {accounts.length > 0 ? (
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                onClick={() => {
+                  resetForm();
+                  setEditingCard(null);
+                  setIsDialogOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Cadastrar Primeiro Cartão
+              </Button>
+              {accounts.length === 0 && (
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
-                  onClick={() => setIsDialogOpen(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Cadastrar Primeiro Cartão
-                </Button>
-              ) : (
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
-                  onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}
+                  variant="outline"
+                  className="font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => navigate(`${prefix}/accounts?onboarding=account`)}
                 >
                   <Wallet className="mr-2 h-4 w-4" />
-                  Cadastrar Primeira Conta
+                  Cadastrar Conta Depois
                 </Button>
               )}
               <Button

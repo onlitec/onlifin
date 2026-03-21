@@ -24,6 +24,8 @@ export const BRAZILIAN_BANKS: BankConfig[] = [
     { id: 'default', name: 'Outro Banco', icon: '/images/banks/default.svg', color: '#4B5563' },
 ];
 
+export const KNOWN_BRAZILIAN_BANKS: BankConfig[] = BRAZILIAN_BANKS.filter((bank) => bank.id !== 'default');
+
 // Configuração das bandeiras de cartões
 export interface CardBrandConfig {
     id: string;
@@ -39,20 +41,67 @@ export const CARD_BRANDS: CardBrandConfig[] = [
     { id: 'amex', name: 'American Express', icon: '/images/cards/amex.svg', color: '#006FCF' },
     { id: 'hipercard', name: 'Hipercard', icon: '/images/cards/hipercard.svg', color: '#B3131B' },
     { id: 'diners', name: 'Diners Club', icon: '/images/cards/diners.svg', color: '#004999' },
+    { id: 'discover', name: 'Discover', icon: '/images/cards/default.svg', color: '#FF6000' },
+    { id: 'jcb', name: 'JCB', icon: '/images/cards/default.svg', color: '#0B8F3F' },
+    { id: 'aura', name: 'Aura', icon: '/images/cards/default.svg', color: '#2F5DAA' },
+    { id: 'cabal', name: 'Cabal', icon: '/images/cards/default.svg', color: '#0072CE' },
+    { id: 'sorocred', name: 'Sorocred', icon: '/images/cards/default.svg', color: '#F58220' },
     { id: 'default', name: 'Outra Bandeira', icon: '/images/cards/default.svg', color: '#4B5563' },
 ];
 
+export const KNOWN_CARD_BRANDS: CardBrandConfig[] = CARD_BRANDS.filter((brand) => brand.id !== 'default');
+
 // Funções auxiliares
+export function normalizeBankName(value: string): string {
+    return value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+}
+
 export function getBankById(id: string): BankConfig | undefined {
     return BRAZILIAN_BANKS.find(bank => bank.id === id);
 }
 
 export function getBankByName(name: string): BankConfig | undefined {
-    const lowerName = name.toLowerCase();
-    return BRAZILIAN_BANKS.find(bank =>
-        bank.name.toLowerCase().includes(lowerName) ||
-        bank.id === lowerName
+    const normalizedName = normalizeBankName(name);
+    return KNOWN_BRAZILIAN_BANKS.find(bank =>
+        normalizeBankName(bank.name).includes(normalizedName) ||
+        bank.id === normalizedName
     );
+}
+
+export function searchBanks(query: string): BankConfig[] {
+    const normalizedQuery = normalizeBankName(query);
+    if (!normalizedQuery) {
+        return KNOWN_BRAZILIAN_BANKS;
+    }
+
+    return KNOWN_BRAZILIAN_BANKS.filter((bank) => {
+        const normalizedBankName = normalizeBankName(bank.name);
+        return normalizedBankName.includes(normalizedQuery) || bank.id.includes(normalizedQuery);
+    });
+}
+
+export function getCardBrandByName(name: string): CardBrandConfig | undefined {
+    const normalizedName = normalizeBankName(name);
+    return KNOWN_CARD_BRANDS.find((brand) =>
+        normalizeBankName(brand.name).includes(normalizedName) ||
+        brand.id === normalizedName
+    );
+}
+
+export function searchCardBrands(query: string): CardBrandConfig[] {
+    const normalizedQuery = normalizeBankName(query);
+    if (!normalizedQuery) {
+        return KNOWN_CARD_BRANDS;
+    }
+
+    return KNOWN_CARD_BRANDS.filter((brand) => {
+        const normalizedBrandName = normalizeBankName(brand.name);
+        return normalizedBrandName.includes(normalizedQuery) || brand.id.includes(normalizedQuery);
+    });
 }
 
 export function getCardBrandById(id: string): CardBrandConfig | undefined {

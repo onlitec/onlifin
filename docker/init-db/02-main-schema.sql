@@ -10,7 +10,7 @@ BEGIN
         CREATE TYPE user_role AS ENUM ('user', 'financeiro', 'admin');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'transaction_type') THEN
-        CREATE TYPE transaction_type AS ENUM ('income', 'expense');
+        CREATE TYPE transaction_type AS ENUM ('income', 'expense', 'transfer');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_permission_level') THEN
         CREATE TYPE ai_permission_level AS ENUM ('read_aggregated', 'read_transactional', 'read_full');
@@ -89,6 +89,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     total_installments integer,
     parent_transaction_id uuid REFERENCES transactions(id) ON DELETE CASCADE,
     is_reconciled boolean DEFAULT false,
+    transfer_destination_account_id uuid REFERENCES accounts(id) ON DELETE SET NULL,
+    notes text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
@@ -134,6 +136,7 @@ CREATE INDEX IF NOT EXISTS idx_cards_user_id ON cards(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_category_id ON transactions(category_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_transfer_destination_account_id ON transactions(transfer_destination_account_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_logs_user_id ON ai_chat_logs(user_id);
 
 -- Permissões para PostgREST

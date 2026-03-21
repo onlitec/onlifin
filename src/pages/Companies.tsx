@@ -201,7 +201,7 @@ export default function CompaniesPage() {
 
             if (isFirstCompany) {
                 selectCompany(newCompany.id);
-                navigate(`/pj/${newCompany.id}/accounts?onboarding=1`);
+                navigate(`/pj/${newCompany.id}/accounts?onboarding=account`);
                 toast({
                     title: 'Primeiro CNPJ configurado',
                     description: 'Agora cadastre a primeira conta bancária da empresa para concluir o setup.',

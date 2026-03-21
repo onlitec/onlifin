@@ -30,7 +30,6 @@ import {
 import {
     Collapsible,
     CollapsibleContent,
-    CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useAuth } from 'miaoda-auth-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -114,8 +113,8 @@ export function OnlifinSidebar() {
 
     return (
         <Sidebar collapsible="icon" className="border-r-2 border-slate-300 bg-white">
-            <SidebarHeader className="h-20 flex items-center px-6 mb-2">
-                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate(prefix)}>
+            <SidebarHeader className={`h-20 flex items-center mb-2 ${state === 'collapsed' ? 'justify-center px-2' : 'px-6'}`}>
+                <div className={`flex items-center group cursor-pointer ${state === 'collapsed' ? 'justify-center' : 'gap-3'}`} onClick={() => navigate(prefix)}>
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg transition-transform group-hover:scale-105">
                         <span className="text-xl font-bold">O</span>
                     </div>
@@ -129,7 +128,7 @@ export function OnlifinSidebar() {
                 </div>
             </SidebarHeader>
 
-            <SidebarContent className="px-3">
+            <SidebarContent className={state === 'collapsed' ? 'px-2' : 'px-3'}>
                 <SidebarGroup>
                     <SidebarMenu className="gap-1.5">
                         {menuItems.map((item) => {
@@ -137,23 +136,53 @@ export function OnlifinSidebar() {
 
                             if (item.subItems) {
                                 const isSubActive = item.subItems.some(sub => location.pathname === sub.path || location.pathname.startsWith(`${sub.path}/`));
+                                const isOpen = openMenus[item.title] || isSubActive;
+
+                                if (state === 'collapsed') {
+                                    return (
+                                        <SidebarMenuItem key={item.title}>
+                                            <SidebarMenuButton
+                                                asChild
+                                                tooltip={item.title}
+                                                className={`h-11 rounded-xl transition-all ${isSubActive ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                                            >
+                                                <Link to={item.path} className="flex items-center justify-center">
+                                                    <item.icon className="h-5 w-5 shrink-0" />
+                                                    <span className="sr-only">{item.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                }
+
                                 return (
                                     <Collapsible
                                         key={item.title}
-                                        open={openMenus[item.title] || isSubActive}
+                                        open={isOpen}
                                         onOpenChange={() => toggleMenu(item.title)}
                                     >
                                         <SidebarMenuItem>
-                                            <CollapsibleTrigger asChild>
+                                            <div className="flex items-center gap-1">
                                                 <SidebarMenuButton
+                                                    asChild
                                                     tooltip={item.title}
-                                                    className={`h-11 rounded-xl transition-all ${isSubActive || openMenus[item.title] ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                                                    className={`h-11 rounded-xl transition-all flex-1 ${isSubActive ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                                                 >
-                                                    <item.icon className="h-5 w-5" />
-                                                    <span className="font-semibold text-sm">{item.title}</span>
-                                                    <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${openMenus[item.title] ? 'rotate-180' : ''}`} />
+                                                    <Link to={item.path} className="flex items-center gap-3">
+                                                        <item.icon className="h-5 w-5" />
+                                                        <span className="font-bold text-sm">{item.title}</span>
+                                                    </Link>
                                                 </SidebarMenuButton>
-                                            </CollapsibleTrigger>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className={`h-11 w-11 rounded-xl transition-all ${isOpen ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                                                    onClick={() => toggleMenu(item.title)}
+                                                >
+                                                    <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                                </Button>
+                                            </div>
                                             <CollapsibleContent>
                                                 <SidebarMenuSub className="ml-4 pl-4 border-l border-slate-100 space-y-1 mt-1">
                                                     {item.subItems.map((subItem) => (
@@ -179,9 +208,13 @@ export function OnlifinSidebar() {
                                         tooltip={item.title}
                                         className={`h-11 rounded-xl transition-all ${isCurrentActive ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                                     >
-                                        <Link to={item.path} className="flex items-center gap-3">
+                                        <Link to={item.path} className={`flex items-center ${state === 'collapsed' ? 'justify-center' : 'gap-3'}`}>
                                             <item.icon className="h-5 w-5" />
-                                            <span className="font-bold text-sm">{item.title}</span>
+                                            {state === 'expanded' ? (
+                                                <span className="font-bold text-sm">{item.title}</span>
+                                            ) : (
+                                                <span className="sr-only">{item.title}</span>
+                                            )}
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -191,8 +224,8 @@ export function OnlifinSidebar() {
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter className="p-4 border-t-2 border-slate-300/40 mt-auto">
-                <div className="flex items-center gap-3 px-2">
+            <SidebarFooter className={`border-t-2 border-slate-300/40 mt-auto ${state === 'collapsed' ? 'p-2' : 'p-4'}`}>
+                <div className={`flex ${state === 'collapsed' ? 'flex-col items-center justify-center gap-2 px-0' : 'items-center gap-3 px-2'}`}>
                     <Avatar className="h-10 w-10 border border-slate-200">
                         <AvatarFallback className="bg-slate-100 text-blue-600 font-bold">{userInitials}</AvatarFallback>
                     </Avatar>
@@ -202,7 +235,7 @@ export function OnlifinSidebar() {
                             <p className="text-xs text-slate-500 font-medium truncate uppercase tracking-wider">{userRoleLabel}</p>
                         </div>
                     )}
-                    <Button variant="ghost" size="icon" className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => logout()}>
+                    <Button variant="ghost" size="icon" className="shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => logout()} title="Sair">
                         <LogOut className="h-5 w-5" />
                     </Button>
                 </div>

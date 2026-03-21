@@ -162,6 +162,19 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  const isIconCollapsed = collapsible === "icon" && isCollapsed;
+  const isOffcanvasCollapsed = collapsible === "offcanvas" && isCollapsed;
+  const floatingWidth = `calc(${SIDEBAR_WIDTH_ICON} + 1rem + 2px)`;
+  const desktopGapWidth = isOffcanvasCollapsed
+    ? "0px"
+    : variant === "floating" || variant === "inset"
+      ? (isIconCollapsed ? floatingWidth : SIDEBAR_WIDTH)
+      : (isIconCollapsed ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH);
+  const desktopContainerWidth = variant === "floating" || variant === "inset"
+    ? (isIconCollapsed ? floatingWidth : SIDEBAR_WIDTH)
+    : (isIconCollapsed ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH);
+  const desktopContainerPosition = isOffcanvasCollapsed ? `calc(${SIDEBAR_WIDTH} * -1)` : "0px";
 
   if (collapsible === "none") {
     return (
@@ -216,27 +229,30 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
-          "group-data-[collapsible=offcanvas]:w-0",
+          "relative bg-transparent transition-[width] duration-200 ease-linear",
           "group-data-[side=right]:rotate-180",
-          variant === "floating" || variant === "inset"
-            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
         )}
+        style={{ width: desktopGapWidth }}
       />
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 z-50 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex",
           side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
+            ? "left-0"
+            : "right-0",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
-            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            ? "p-2"
+            : "group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className
         )}
+        style={{
+          width: desktopContainerWidth,
+          ...(side === "left"
+            ? { left: desktopContainerPosition }
+            : { right: desktopContainerPosition }),
+        }}
         {...props}
       >
         <div
@@ -307,7 +323,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "bg-background relative flex w-full flex-1 flex-col",
+        "bg-background relative flex min-w-0 flex-1 flex-col",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}

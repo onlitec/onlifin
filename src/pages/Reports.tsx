@@ -138,12 +138,12 @@ export default function Reports() {
         <p className="text-sm text-muted-foreground">{description}</p>
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
           {setupStatus.accountsCount === 0 ? (
-            <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+            <Button onClick={() => navigate(`${prefix}/accounts?onboarding=account`)}>
               <Wallet className="mr-2 h-4 w-4" />
               Criar Primeira Conta
             </Button>
           ) : (
-            <Button onClick={() => navigate(`${prefix}/transactions?onboarding=1`)}>
+            <Button onClick={() => navigate(`${prefix}/transactions?onboarding=transaction`)}>
               <Plus className="mr-2 h-4 w-4" />
               Registrar Primeira Transação
             </Button>

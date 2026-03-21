@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, Building2, RefreshCw, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BankIconSelector } from '@/components/ui/bank-icon-selector';
+import { BankCombobox } from '@/components/ui/bank-combobox';
 import {
   Tooltip,
   TooltipContent,
@@ -42,7 +42,8 @@ export default function Accounts() {
   const { toast } = useToast();
 
   const { companyId, isPJ, personId } = useFinanceScope();
-  const isOnboarding = searchParams.get('onboarding') === '1';
+  const onboardingMode = searchParams.get('onboarding');
+  const isOnboarding = onboardingMode === '1' || onboardingMode === 'account';
   const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   React.useEffect(() => {
@@ -116,7 +117,7 @@ export default function Accounts() {
           setSearchParams({}, { replace: true });
           resetForm();
           await loadAccounts();
-          navigate(`${prefix}/transactions?onboarding=1&account_id=${createdAccount.id}`);
+          navigate(`${prefix}/transactions?onboarding=transaction&account_id=${createdAccount.id}`);
           return;
         }
 
@@ -213,15 +214,19 @@ export default function Accounts() {
     }
   };
 
-  const handleBankIconChange = (icon: string | null) => {
-    const bankConfig = icon ? getBankById(icon) : null;
-
+  const handleBankSelection = ({
+    bankName,
+    iconId,
+  }: {
+    bankName: string;
+    iconId: string | null;
+  }) => {
     setFormData((current) => ({
       ...current,
-      icon,
-      bank: bankConfig ? bankConfig.name : current.bank,
-      name: !editingAccount && bankConfig && (!current.name || current.name === current.bank || current.name.startsWith('Conta '))
-        ? `Conta ${bankConfig.name.split(' ')[0]}`
+      bank: bankName,
+      icon: iconId,
+      name: !editingAccount && iconId && iconId !== 'default' && (!current.name || current.name === current.bank || current.name.startsWith('Conta '))
+        ? `Conta ${bankName.split(' ')[0]}`
         : current.name,
     }));
   };
@@ -273,96 +278,118 @@ export default function Accounts() {
                 Inicializar Conta
               </Button>
             </DialogTrigger>
-            <DialogContent className="glass-card premium-card border-white/10 backdrop-blur-3xl rounded-3xl p-0 overflow-hidden">
-              <div className="p-8 space-y-6">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black tracking-tighter uppercase leading-tight">
-                    {editingAccount ? 'Modificar Conta' : 'Nova Fonte de Ativos'}
-                  </DialogTitle>
-                  <DialogDescription className="text-[10px] uppercase tracking-widest font-bold opacity-60">
-                    Estabelecendo um portal financeiro estruturado
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Apelido da Conta *</Label>
-                      <Input
-                        id="name"
-                        className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
-                        placeholder="Ex: Reserva Operacional Primária"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bank" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Instituição Financeira</Label>
-                      <Input
-                        id="bank"
-                        className="glass-card border-white/5 h-12 rounded-xl px-4 font-medium"
-                        placeholder="Ex: Banco do Brasil"
-                        value={formData.bank}
-                        onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
+            <DialogContent className="w-[min(96vw,1400px)] max-w-[1400px] overflow-hidden rounded-3xl border-white/10 p-0 backdrop-blur-3xl">
+              <form onSubmit={handleSubmit} className="flex max-h-[85vh] flex-col bg-background/95">
+                <div className="border-b border-border/60 px-6 py-5 lg:px-8">
+                  <DialogHeader className="space-y-2 text-left">
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tight leading-tight">
+                      {editingAccount ? 'Modificar Conta' : 'Nova Fonte de Ativos'}
+                    </DialogTitle>
+                    <DialogDescription className="text-[11px] font-bold uppercase tracking-widest opacity-60">
+                      Formulário mais largo, menos alto e com ação sempre visível no rodapé.
+                    </DialogDescription>
+                  </DialogHeader>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-6 lg:px-8 lg:py-8">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="agency" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Agência</Label>
+                        <Label htmlFor="name" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Apelido da Conta *</Label>
                         <Input
-                          id="agency"
-                          className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
-                          value={formData.agency}
-                          onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="account_number" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Número da Conta</Label>
-                        <Input
-                          id="account_number"
-                          className="glass-card border-white/5 h-12 rounded-xl px-4 font-bold"
-                          value={formData.account_number}
-                          onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Identidade Visual</Label>
-                      <BankIconSelector
-                        value={formData.icon}
-                        onChange={handleBankIconChange}
-                        label="Selecionar Ícone da Entidade"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="balance" className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Valor de Capital Inicial</Label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-50" />
-                        <Input
-                          id="balance"
-                          type="number"
-                          step="0.01"
-                          className="glass-card border-white/5 h-14 rounded-xl pl-10 pr-4 font-black text-xl"
-                          value={formData.balance}
-                          onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                          id="name"
+                          className="glass-card h-12 rounded-xl border-slate-300 px-4 font-bold"
+                          placeholder="Ex: Reserva Operacional Primária"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           required
                         />
                       </div>
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-40 ml-1">
-                        A soberania começa com um rastreamento preciso
-                      </p>
+                      <BankCombobox
+                        bankName={formData.bank}
+                        iconId={formData.icon}
+                        onChange={handleBankSelection}
+                        label="Instituição Financeira"
+                        placeholder="Selecionar ou digitar banco"
+                      />
+                      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                        <div className="flex h-full flex-col gap-2">
+                          <Label htmlFor="agency" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Agência</Label>
+                          <Input
+                            id="agency"
+                            className="glass-card h-12 rounded-xl border-slate-300 px-4 font-bold tracking-[0.12em]"
+                            placeholder="0001"
+                            value={formData.agency}
+                            onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
+                          />
+                        </div>
+                        <div className="flex h-full flex-col gap-2">
+                          <Label htmlFor="account_number" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Número da Conta</Label>
+                          <Input
+                            id="account_number"
+                            className="glass-card h-12 rounded-xl border-slate-300 px-4 font-bold tracking-[0.12em]"
+                            placeholder="12345-6"
+                            value={formData.account_number}
+                            onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                        <Label className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Identidade Visual do Banco</Label>
+                        <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 shadow-sm">
+                            <img
+                              src={formData.icon ? getBankById(formData.icon)?.icon || getDefaultBankIcon() : getDefaultBankIcon()}
+                              alt={formData.bank || 'Banco selecionado'}
+                              className="h-10 w-10 object-contain"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-black uppercase tracking-wide text-slate-900">
+                              {formData.bank || 'Nenhum banco selecionado'}
+                            </p>
+                            <p className="text-[11px] font-medium uppercase tracking-widest text-slate-500">
+                              {formData.icon && formData.icon !== 'default'
+                                ? 'Ícone aplicado automaticamente'
+                                : 'Ícone padrão para banco manual'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="balance" className="ml-1 text-[10px] font-black uppercase tracking-widest opacity-50">Valor de Capital Inicial</Label>
+                        <div className="relative">
+                          <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-50" />
+                          <Input
+                            id="balance"
+                            type="number"
+                            step="0.01"
+                            className="glass-card h-14 rounded-xl border-slate-300 pl-10 pr-4 text-xl font-black"
+                            value={formData.balance}
+                            onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <p className="ml-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground opacity-40">
+                          A soberania começa com um rastreamento preciso
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="ghost" className="rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest" onClick={() => setIsDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button variant="outline" type="submit" className="glass border-primary/20 text-primary font-black uppercase tracking-widest px-8 h-12 rounded-xl">
-                      {editingAccount ? 'Salvar Alterações' : 'Inicializar Ativo'}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-border/60 bg-background/95 px-6 py-4 sm:flex-row sm:justify-end lg:px-8">
+                  <Button type="button" variant="ghost" className="rounded-xl px-6 text-[10px] font-bold uppercase tracking-widest" onClick={() => setIsDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button variant="outline" type="submit" className="glass h-12 rounded-xl border-primary/20 px-8 font-black uppercase tracking-widest text-primary">
+                    {editingAccount ? 'Salvar Alterações' : 'Inicializar Ativo'}
+                  </Button>
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>

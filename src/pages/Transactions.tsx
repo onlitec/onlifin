@@ -46,7 +46,8 @@ export default function Transactions() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterDateStart, setFilterDateStart] = React.useState('');
   const [filterDateEnd, setFilterDateEnd] = React.useState('');
-  const isOnboarding = searchParams.get('onboarding') === '1';
+  const onboardingMode = searchParams.get('onboarding');
+  const isOnboarding = onboardingMode === '1' || onboardingMode === 'transaction';
   const onboardingAccountId = searchParams.get('account_id') || '';
   const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
@@ -70,7 +71,7 @@ export default function Transactions() {
   }, [filterType, filterAccountId, filterDateStart, filterDateEnd, companyId, personId, user]);
 
   React.useEffect(() => {
-    if (!isOnboarding || isLoading || accounts.length === 0 || isFormOpen) {
+    if (!isOnboarding || isLoading || isFormOpen) {
       return;
     }
 
@@ -123,6 +124,26 @@ export default function Transactions() {
     try {
       const user = await requireCurrentUser();
 
+      if (formData.type === 'transfer') {
+        if (!formData.account_id || !formData.destination_account_id) {
+          toast({
+            title: 'Dados incompletos',
+            description: 'Selecione a conta de origem e a conta de destino para registrar a transferência.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        if (formData.account_id === formData.destination_account_id) {
+          toast({
+            title: 'Transferência inválida',
+            description: 'A conta de destino precisa ser diferente da conta de origem.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
       const payload: Omit<Transaction, 'id' | 'created_at' | 'updated_at'> = {
         description: formData.description,
         amount: parseFloat(formData.amount),
@@ -162,7 +183,7 @@ export default function Transactions() {
           setSearchParams({}, { replace: true });
           resetForm();
           await loadData();
-          navigate(`${prefix}/cards?onboarding=1&account_id=${payload.account_id || ''}`);
+          navigate(`${prefix}/cards?onboarding=card&account_id=${payload.account_id || ''}`);
           return;
         }
 
@@ -369,30 +390,30 @@ export default function Transactions() {
               <h3 className="text-xl font-bold text-slate-900 tracking-tight">Vazio por aqui</h3>
               <p className="text-slate-400 font-medium">
                 {accounts.length === 0
-                  ? 'Cadastre uma conta antes de lançar movimentações.'
+                  ? 'Você pode registrar movimentações mesmo sem vincular uma conta neste momento.'
                   : 'Nenhuma transação encontrada para este período.'}
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-              {accounts.length > 0 ? (
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                onClick={() => {
+                  resetForm();
+                  setEditingId(null);
+                  setIsFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Registrar Primeira Transação
+              </Button>
+              {accounts.length === 0 && (
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
-                  onClick={() => {
-                    resetForm();
-                    setEditingId(null);
-                    setIsFormOpen(true);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Registrar Primeira Transação
-                </Button>
-              ) : (
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
-                  onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}
+                  variant="outline"
+                  className="font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => navigate(`${prefix}/accounts?onboarding=account`)}
                 >
                   <DollarSign className="mr-2 h-4 w-4" />
-                  Cadastrar Primeira Conta
+                  Cadastrar Conta Depois
                 </Button>
               )}
             </div>
@@ -505,150 +526,154 @@ export default function Transactions() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-2xl glass-card premium-card border-slate-300 backdrop-blur-3xl overflow-hidden rounded-3xl p-0 shadow-2xl">
-          <div className="p-10 space-y-8">
-            <DialogHeader className="space-y-2">
-              <DialogTitle className="text-2xl font-black tracking-tighter uppercase text-slate-900">
-                {editingId ? 'Editar Transação' : 'Nova Movimentação'}
-              </DialogTitle>
-              <DialogDescription className="text-xs uppercase tracking-widest font-bold text-slate-500">
-                Gestão analítica de fluxo de capital
-              </DialogDescription>
-            </DialogHeader>
+        <DialogContent className="w-[min(96vw,1400px)] max-w-[1400px] overflow-hidden rounded-3xl border-slate-300 p-0 shadow-2xl backdrop-blur-3xl">
+          <form onSubmit={handleSubmit} className="flex max-h-[85vh] flex-col bg-background/95">
+            <div className="border-b border-border/60 px-6 py-5 lg:px-8">
+              <DialogHeader className="space-y-2 text-left">
+                <DialogTitle className="text-2xl font-black uppercase tracking-tight text-slate-900">
+                  {editingId ? 'Editar Transação' : 'Nova Movimentação'}
+                </DialogTitle>
+                <DialogDescription className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                  Formulário mais largo, menos alto e com rodapé de ação fixo.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-widest font-black text-slate-500 ml-1">Tipo de Fluxo</Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(val: any) => setFormData({ ...formData, type: val })}
-                    >
-                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-200">
-                        <SelectItem value="income" className="text-emerald-600 font-bold">Receita</SelectItem>
-                        <SelectItem value="expense" className="text-red-600 font-bold">Despesa</SelectItem>
-                        <SelectItem value="transfer" className="text-blue-600 font-bold">Transferência</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <div className="flex-1 overflow-y-auto px-6 py-6 lg:px-8 lg:py-8">
+              <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-6">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Tipo de Fluxo</Label>
+                        <Select
+                          value={formData.type}
+                          onValueChange={(val: any) => setFormData({ ...formData, type: val })}
+                        >
+                          <SelectTrigger className="h-12 rounded-xl border-slate-300 bg-slate-50 font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-200">
+                            <SelectItem value="income" className="font-bold text-emerald-600">Receita</SelectItem>
+                            <SelectItem value="expense" className="font-bold text-red-600">Despesa</SelectItem>
+                            <SelectItem value="transfer" className="font-bold text-blue-600">Transferência</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-widest font-black text-slate-500 ml-1">Data</Label>
-                    <Input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold"
-                      required
-                    />
-                  </div>
-                </div>
+                      <div className="space-y-2">
+                        <Label className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Data</Label>
+                        <Input
+                          type="date"
+                          value={formData.date}
+                          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        className="h-12 rounded-xl border-slate-300 bg-slate-50 font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-widest font-black text-slate-500 ml-1">Descrição</Label>
-                  <Input
-                    placeholder="Ex: Assinatura Mensal, Venda de Produto..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="h-12 rounded-xl bg-slate-50 border-slate-200 font-medium"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-widest font-black text-slate-500 ml-1">Valor (BRL)</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <div className="space-y-2">
+                      <Label className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Descrição</Label>
                       <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0,00"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        className="pl-10 h-12 rounded-xl bg-slate-50 border-slate-200 font-black text-lg"
+                        placeholder="Ex: Assinatura Mensal, Venda de Produto..."
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        className="h-12 rounded-xl border-slate-300 bg-slate-50 font-medium"
                         required
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <Label className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Valor (BRL)</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0,00"
+                          value={formData.amount}
+                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          className="h-12 rounded-xl border-slate-300 bg-slate-50 pl-10 text-lg font-black"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-widest font-black text-slate-500 ml-1">Conta de Origem</Label>
-                    <Select
-                      value={formData.account_id}
-                      onValueChange={(val) => setFormData({ ...formData, account_id: val })}
-                    >
-                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold">
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-200">
-                        {accounts.map(acc => (
-                          <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Conta de Origem</Label>
+                      <Select
+                        value={formData.account_id}
+                        onValueChange={(val) => setFormData({ ...formData, account_id: val })}
+                      >
+                        <SelectTrigger className="h-12 rounded-xl border-slate-300 bg-slate-50 font-bold">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200">
+                          {accounts.map(acc => (
+                            <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.type === 'transfer' ? (
+                      <div className="space-y-2">
+                        <Label className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Conta de Destino</Label>
+                        <Select
+                          value={formData.destination_account_id}
+                          onValueChange={(val) => setFormData({ ...formData, destination_account_id: val })}
+                        >
+                          <SelectTrigger className="h-12 rounded-xl border-blue-300 bg-blue-50 font-bold text-blue-700">
+                            <SelectValue placeholder="Selecione destino..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-200">
+                            {accounts.map(acc => (
+                              <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Categoria</Label>
+                        <Select
+                          value={formData.category_id}
+                          onValueChange={(val) => setFormData({ ...formData, category_id: val })}
+                        >
+                          <SelectTrigger className="h-12 rounded-xl border-slate-300 bg-slate-50 font-bold">
+                            <SelectValue placeholder="Selecione categoria..." />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-200">
+                            {categories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.id}>{cat.icon} {cat.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                 </div>
+            </div>
 
-                {formData.type === 'transfer' ? (
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-widest font-black text-slate-500 ml-1">Conta de Destino</Label>
-                    <Select
-                      value={formData.destination_account_id}
-                      onValueChange={(val) => setFormData({ ...formData, destination_account_id: val })}
-                    >
-                      <SelectTrigger className="h-12 rounded-xl bg-blue-50 border-blue-200 font-bold text-blue-700">
-                        <SelectValue placeholder="Selecione destino..." />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-200">
-                        {accounts.map(acc => (
-                          <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase tracking-widest font-black text-slate-500 ml-1">Categoria</Label>
-                    <Select
-                      value={formData.category_id}
-                      onValueChange={(val) => setFormData({ ...formData, category_id: val })}
-                    >
-                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold">
-                        <SelectValue placeholder="Selecione categoria..." />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-200">
-                        {categories.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>{cat.icon} {cat.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-3 pt-6">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="rounded-xl px-6 font-bold text-slate-500 hover:text-slate-900"
-                  onClick={() => setIsFormOpen(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12 rounded-xl shadow-lg transition-all active:scale-95"
-                >
-                  {editingId ? 'Salvar Alterações' : 'Confirmar Registro'}
-                </Button>
-              </div>
-            </form>
-          </div>
+            <div className="flex flex-col-reverse gap-3 border-t border-border/60 bg-background/95 px-6 py-4 sm:flex-row sm:justify-end lg:px-8">
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-xl px-6 font-bold text-slate-500 hover:text-slate-900"
+                onClick={() => setIsFormOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="h-12 rounded-xl bg-blue-600 px-8 font-bold text-white shadow-lg transition-all active:scale-95 hover:bg-blue-700"
+              >
+                {editingId ? 'Salvar Alterações' : 'Confirmar Registro'}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 

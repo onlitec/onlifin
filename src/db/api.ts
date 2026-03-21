@@ -23,6 +23,57 @@ import type {
 } from '@/types/types';
 import { forecastLocalService } from '@/services/forecastLocalService';
 
+function normalizeCategoryName(name: string): string {
+  return name.trim().toLocaleLowerCase('pt-BR');
+}
+
+function getCategoryVisibilityPriority(
+  category: Partial<Category>,
+  companyId?: string | null
+): number {
+  let score = 0;
+
+  if (category.user_id) {
+    score += 2;
+  }
+
+  if (companyId !== undefined && category.company_id === companyId) {
+    score += 4;
+  } else if (category.company_id) {
+    score += 1;
+  }
+
+  return score;
+}
+
+function deduplicateVisibleCategories(
+  categories: Category[],
+  companyId?: string | null
+): Category[] {
+  const byKey = new Map<string, Category>();
+
+  for (const category of categories) {
+    const key = `${category.type}:${normalizeCategoryName(category.name)}`;
+    const current = byKey.get(key);
+
+    if (!current) {
+      byKey.set(key, category);
+      continue;
+    }
+
+    const currentPriority = getCategoryVisibilityPriority(current, companyId);
+    const nextPriority = getCategoryVisibilityPriority(category, companyId);
+
+    if (nextPriority > currentPriority) {
+      byKey.set(key, category);
+    }
+  }
+
+  return Array.from(byKey.values()).sort((left, right) =>
+    left.name.localeCompare(right.name, 'pt-BR', { sensitivity: 'base' })
+  );
+}
+
 export const profilesApi = {
   async getProfile(userId: string): Promise<Profile | null> {
     const { data, error } = await supabase
@@ -296,7 +347,7 @@ export const categoriesApi = {
     const { data, error } = await query.order('name', { ascending: true });
 
     if (error) throw error;
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? deduplicateVisibleCategories(data, companyId) : [];
   },
 
   async getCategory(id: string): Promise<Category | null> {
@@ -313,7 +364,10 @@ export const categoriesApi = {
   async createCategory(category: Omit<Category, 'id' | 'created_at'>): Promise<Category | null> {
     const { data, error } = await supabase
       .from('categories')
-      .insert(category)
+      .insert({
+        ...category,
+        name: category.name.trim()
+      })
       .select()
       .maybeSingle();
 
@@ -324,7 +378,10 @@ export const categoriesApi = {
   async updateCategory(id: string, updates: Partial<Category>): Promise<Category | null> {
     const { data, error } = await supabase
       .from('categories')
-      .update(updates)
+      .update({
+        ...updates,
+        ...(typeof updates.name === 'string' ? { name: updates.name.trim() } : {})
+      })
       .eq('id', id)
       .select()
       .maybeSingle();
