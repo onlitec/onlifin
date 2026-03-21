@@ -3,9 +3,13 @@
  */
 
 import { supabase } from '@/db/client';
+import type { PlanCode } from '@/config/plans';
 
 export interface ProfileSettings {
     hide_titular?: boolean;
+    titular_name?: string;
+    plan_code?: PlanCode;
+    owner_person_id?: string;
     [key: string]: any;
 }
 
@@ -13,6 +17,7 @@ export interface Profile {
     id: string;
     username: string;
     full_name: string | null;
+    email?: string | null;
     role: string;
     settings: ProfileSettings;
     default_company_id: string | null;

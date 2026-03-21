@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
-import { chatWithAssistant, categorizeTransactionsWithAI, getDegradedResponse } from '@/services/ollamaService';
-import { loadFinancialContext, formatFinancialContextForPrompt, FinancialContext } from '@/services/financialContext';
-import { Bot, User, Send, Loader2, Paperclip, FileText, X, RotateCcw, XCircle, RefreshCw } from 'lucide-react';
+import { chatWithAssistant, categorizeTransactionsWithAI, getDegradedResponse, getDestructiveActionGuardrail } from '@/services/ollamaService';
+import { buildLocalFinancialResponse, loadFinancialContext, formatFinancialContextForPrompt, FinancialContext } from '@/services/financialContext';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
+import { Bot, User, Send, Loader2, Paperclip, FileText, X, RotateCcw, XCircle, RefreshCw, Wallet, Plus, CreditCard, ArrowRight } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -58,18 +59,24 @@ export default function Chat() {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { companyId, personId, isPF, isPJ } = useFinanceScope();
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   // Carregar contexto financeiro ao montar
   React.useEffect(() => {
     loadUserFinancialContext();
-  }, []);
+  }, [companyId, personId, isPF, isPJ]);
 
   const loadUserFinancialContext = async () => {
     try {
       setIsLoadingContext(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const ctx = await loadFinancialContext(user.id);
+        const ctx = await loadFinancialContext(user.id, {
+          mode: isPF ? 'PF' : isPJ ? 'PJ' : 'GERAL',
+          companyId,
+          personId
+        });
         setFinancialContext(ctx);
       }
     } catch (error) {
@@ -96,7 +103,7 @@ export default function Chat() {
 
   // Fechar chat
   const handleCloseChat = () => {
-    navigate('/dashboard');
+    navigate(prefix);
   };
 
   React.useEffect(() => {
@@ -223,6 +230,17 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
+      const destructiveGuardrail = getDestructiveActionGuardrail(userMessage);
+      if (destructiveGuardrail) {
+        const guardrailMessage: Message = {
+          role: 'assistant',
+          content: destructiveGuardrail,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, guardrailMessage]);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
@@ -312,26 +330,34 @@ export default function Chat() {
         // Regular chat message using Ollama
         let responseText: string;
         try {
-          // Build conversation history from messages
-          const conversationHistory = messages.map(m => ({
-            role: m.role,
-            content: m.content
-          }));
+          const localResponse = buildLocalFinancialResponse(input, financialContext);
 
-          // Format financial context for the AI
-          const contextText = financialContext
-            ? formatFinancialContextForPrompt(financialContext)
-            : undefined;
+          if (localResponse) {
+            responseText = localResponse;
+          } else {
+            // Build conversation history from messages
+            const conversationHistory = messages.map(m => ({
+              role: m.role,
+              content: m.content
+            }));
 
-          responseText = await chatWithAssistant(input, conversationHistory, contextText);
-        } catch (aiError: any) {
-          console.warn('Ollama indisponível, usando modo degradado:', aiError.message);
+            // Format financial context for the AI
+            const contextText = financialContext
+              ? formatFinancialContextForPrompt(financialContext)
+              : undefined;
+
+            responseText = await chatWithAssistant(input, conversationHistory, contextText);
+            if (!responseText.trim()) {
+              responseText = getDegradedResponse(input);
+            }
+          }
+        } catch {
           responseText = getDegradedResponse(input);
         }
 
         const assistantMessage: Message = {
           role: 'assistant',
-          content: responseText || 'Desculpe, não consegui processar sua mensagem.',
+          content: responseText || getDegradedResponse(input),
           timestamp: new Date()
         };
 
@@ -362,6 +388,17 @@ export default function Chat() {
       handleSend();
     }
   };
+
+  const hasAccounts = (financialContext?.accounts.total ?? 0) > 0;
+  const hasTransactions = (financialContext?.transactions.count ?? 0) > 0;
+  const hasCards = (financialContext?.cards.total ?? 0) > 0;
+  const quickPrompts = hasTransactions
+    ? [
+      'Resuma minhas despesas do mês e diga o que mais pesou no orçamento.',
+      'Quais próximos passos devo seguir para melhorar meu caixa?',
+      'Analise minhas contas a pagar e destaque riscos dos próximos dias.',
+    ]
+    : [];
 
   return (
     <div className="w-full max-w-[1600px] mx-auto p-6 h-[calc(100vh-8rem)]">
@@ -418,6 +455,81 @@ export default function Chat() {
           </div>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+          {!isLoadingContext && (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col gap-3 py-4">
+                {!hasAccounts ? (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-slate-900">Cadastre a primeira conta para destravar o assistente</p>
+                      <p className="text-sm text-muted-foreground">
+                        Sem contas ou movimentações, a IA responde de forma genérica e perde contexto do seu financeiro.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+                        <Wallet className="mr-2 h-4 w-4" />
+                        Criar Primeira Conta
+                      </Button>
+                      <Button variant="outline" onClick={() => navigate(prefix)}>
+                        <ArrowRight className="mr-2 h-4 w-4" />
+                        Ir para o Dashboard
+                      </Button>
+                    </div>
+                  </>
+                ) : !hasTransactions ? (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-slate-900">Registre movimentações para respostas mais úteis</p>
+                      <p className="text-sm text-muted-foreground">
+                        Com transações no histórico, a IA consegue analisar padrões, caixa, categorias e próximos riscos.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button onClick={() => navigate(`${prefix}/transactions?onboarding=1`)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Registrar Primeira Transação
+                      </Button>
+                      <Button variant="outline" onClick={() => navigate(`${prefix}/import-statements`)}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Importar Extrato
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-slate-900">Ações rápidas</p>
+                      <p className="text-sm text-muted-foreground">
+                        Use um atalho para começar uma análise útil sem digitar tudo do zero.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {quickPrompts.map((prompt) => (
+                        <Button
+                          key={prompt}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setInput(prompt)}
+                          disabled={isLoading}
+                          className="h-auto whitespace-normal text-left"
+                        >
+                          {prompt}
+                        </Button>
+                      ))}
+                      {!hasCards && (
+                        <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/cards?onboarding=1`)}>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Cadastrar Primeiro Cartão
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((message, index) => (

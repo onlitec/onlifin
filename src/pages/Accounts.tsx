@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { accountsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import type { Account } from '@/types/types';
 
 export default function Accounts() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isRecalculating, setIsRecalculating] = React.useState(false);
@@ -41,10 +42,24 @@ export default function Accounts() {
   const { toast } = useToast();
 
   const { companyId, isPJ, personId } = useFinanceScope();
+  const isOnboarding = searchParams.get('onboarding') === '1';
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   React.useEffect(() => {
     loadAccounts();
   }, [companyId, personId]);
+
+  React.useEffect(() => {
+    if (!isOnboarding || isLoading || accounts.length > 0 || isDialogOpen) {
+      return;
+    }
+
+    setIsDialogOpen(true);
+    toast({
+      title: isPJ ? 'Configure a primeira conta PJ' : 'Configure a primeira conta PF',
+      description: 'Cadastre a conta inicial para começar a movimentar o ambiente.',
+    });
+  }, [accounts.length, isDialogOpen, isLoading, isOnboarding, isPJ, toast]);
 
   const loadAccounts = async () => {
     setIsLoading(true);
@@ -86,17 +101,34 @@ export default function Accounts() {
         await accountsApi.updateAccount(editingAccount.id, accountData);
         toast({ title: 'Sucesso', description: 'Conta atualizada com sucesso' });
       } else {
-        await accountsApi.createAccount({
+        const createdAccount = await accountsApi.createAccount({
           ...accountData,
           balance: Number(formData.balance), // Also set current balance to initial on create
           user_id: user.id,
           company_id: companyId ?? null, // Associar ao ID da URL (null para PF)
           person_id: personId ?? null // Associar à pessoa selecionada (PF)
         });
+
+        if (isOnboarding && createdAccount?.id) {
+          toast({
+            title: 'Conta inicial configurada',
+            description: 'Agora registre a primeira transação para ativar o histórico financeiro.',
+          });
+          setIsDialogOpen(false);
+          setSearchParams({}, { replace: true });
+          resetForm();
+          await loadAccounts();
+          navigate(`${prefix}/transactions?onboarding=1&account_id=${createdAccount.id}`);
+          return;
+        }
+
         toast({ title: 'Sucesso', description: 'Conta criada com sucesso' });
       }
 
       setIsDialogOpen(false);
+      if (isOnboarding) {
+        setSearchParams({}, { replace: true });
+      }
       resetForm();
       loadAccounts();
     } catch (error: any) {
@@ -184,6 +216,19 @@ export default function Accounts() {
     }
   };
 
+  const handleBankIconChange = (icon: string | null) => {
+    const bankConfig = icon ? getBankById(icon) : null;
+
+    setFormData((current) => ({
+      ...current,
+      icon,
+      bank: bankConfig ? bankConfig.name : current.bank,
+      name: !editingAccount && bankConfig && (!current.name || current.name === current.bank || current.name.startsWith('Conta '))
+        ? `Conta ${bankConfig.name.split(' ')[0]}`
+        : current.name,
+    }));
+  };
+
   return (
     <TooltipProvider delayDuration={0}>
       <div className="w-full max-w-[1600px] mx-auto p-4 lg:p-6 space-y-6 animate-slide-up bg-slate-50/30 min-h-screen">
@@ -218,7 +263,12 @@ export default function Accounts() {
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
-            if (!open) resetForm();
+            if (!open) {
+              if (isOnboarding) {
+                setSearchParams({}, { replace: true });
+              }
+              resetForm();
+            }
           }}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95">
@@ -283,7 +333,7 @@ export default function Accounts() {
                       <Label className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Identidade Visual</Label>
                       <BankIconSelector
                         value={formData.icon}
-                        onChange={(icon) => setFormData({ ...formData, icon })}
+                        onChange={handleBankIconChange}
                         label="Selecionar Ícone da Entidade"
                       />
                     </div>
@@ -390,8 +440,26 @@ export default function Accounts() {
               </div>
               <p className="text-lg font-black uppercase tracking-tighter mb-2 text-slate-900">Sem Contas Registradas</p>
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
-                Inicie sua jornada financeira consolidando seus primeiros ativos.
+                {isPJ
+                  ? 'Cadastre a primeira conta bancária da empresa para iniciar o controle corporativo.'
+                  : 'Cadastre sua primeira conta pessoal para iniciar o controle financeiro.'}
               </p>
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => setIsDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Cadastrar Primeira Conta
+                </Button>
+                <Button
+                  variant="outline"
+                  className="font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => navigate(isPJ && companyId ? `/pj/${companyId}` : '/pf')}
+                >
+                  Voltar ao Painel
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -468,7 +536,6 @@ export default function Accounts() {
                       variant="ghost"
                       className="mt-2 sm:mt-0 px-4 h-9 rounded-xl bg-primary/5 hover:bg-primary hover:text-white text-primary text-[10px] font-black uppercase tracking-widest group/btn transition-all"
                       onClick={() => {
-                        const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
                         navigate(`${prefix}/transactions?account_id=${account.id}`);
                       }}
                     >

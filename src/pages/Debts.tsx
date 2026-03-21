@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useAuth } from 'miaoda-auth-react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
@@ -1201,6 +1202,7 @@ function EmptyPanel({
 }
 
 export default function Debts() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { companyId, personId, isPJ } = useFinanceScope();
@@ -1211,6 +1213,7 @@ export default function Debts() {
   const [statusFilter, setStatusFilter] = React.useState<'TODOS' | DebtStatus>('TODOS');
   const [selectedDebt, setSelectedDebt] = React.useState<Debt | null>(null);
   const [dialog, setDialog] = React.useState<DebtDialogState>(null);
+  const debtFormRef = React.useRef<HTMLDivElement | null>(null);
 
   const loadDebts = React.useCallback(async () => {
     if (!user?.id) return;
@@ -1252,6 +1255,7 @@ export default function Debts() {
   const totalPaid = debts.reduce((sum, debt) => sum + Number(debt.total_paid || 0), 0);
   const totalAbated = debts.reduce((sum, debt) => sum + Number(debt.total_abated || 0), 0);
   const overdueCount = debts.filter((debt) => debt.status === 'VENCIDO').length;
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   const handleDelete = async (debt: Debt) => {
     const confirmed = window.confirm(
@@ -1276,6 +1280,10 @@ export default function Debts() {
   const handleActionSuccess = async () => {
     setDialog(null);
     await loadDebts();
+  };
+
+  const scrollToDebtForm = () => {
+    debtFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const statusTabs: Array<{ key: 'TODOS' | DebtStatus; label: string }> = [
@@ -1367,10 +1375,35 @@ export default function Debts() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[2rem] border border-slate-100 bg-slate-50">
                   <RotateCcw size={24} className="text-slate-300" />
                 </div>
-                <p className="text-base font-black text-slate-700">Nada no radar</p>
-                <p className="mt-1 text-xs font-medium text-slate-400">
-                  {error || 'Nenhum titulo corresponde aos filtros atuais.'}
-                </p>
+                {debts.length === 0 && !search && statusFilter === 'TODOS' ? (
+                  <>
+                    <p className="text-base font-black text-slate-700">Nenhuma dívida cadastrada</p>
+                    <p className="mt-1 text-xs font-medium text-slate-400">
+                      Comece registrando o primeiro passivo ou use contas a pagar quando a obrigação ainda não precisa de gestão detalhada.
+                    </p>
+                    <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                      <button
+                        onClick={scrollToDebtForm}
+                        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                      >
+                        Cadastrar Primeira Dívida
+                      </button>
+                      <button
+                        onClick={() => navigate(`${prefix}/bills-to-pay`)}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                      >
+                        Ir para Contas a Pagar
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-base font-black text-slate-700">Nada no radar</p>
+                    <p className="mt-1 text-xs font-medium text-slate-400">
+                      {error || 'Nenhum titulo corresponde aos filtros atuais.'}
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -1464,7 +1497,7 @@ export default function Debts() {
           </div>
         </div>
 
-        <div className="w-full xl:col-span-4">
+        <div ref={debtFormRef} className="w-full xl:col-span-4">
           <div className="space-y-4 xl:sticky xl:top-24">
             {user?.id ? (
               <DebtForm

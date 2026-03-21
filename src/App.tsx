@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import * as React from 'react';
 import { AuthProvider, RequireAuth, useAuth } from 'miaoda-auth-react';
 import { supabase } from '@/db/client';
+import { profilesApi } from '@/db/api';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { OnlifinSidebar } from '@/components/layout/OnlifinSidebar';
@@ -16,16 +18,19 @@ import { CompanySelectorCompact } from '@/components/company';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { PersonProvider } from '@/contexts/PersonContext';
 import routes from './routes';
-import { Search, Bell, Building2, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Bell, Building2, User, Loader2 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCompany } from '@/contexts/CompanyContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PersonSelector } from '@/components/person/PersonSelector';
+import type { Profile } from '@/types/types';
 
-const PUBLIC_PATHS = new Set(['/login', '/change-password']);
+const LOGIN_PATH = '/login';
+const CHANGE_PASSWORD_PATH = '/change-password';
+const PUBLIC_PATHS = new Set([LOGIN_PATH]);
 const ADMIN_PATHS = new Set([
   '/admin-general',
   '/categories',
@@ -35,7 +40,8 @@ const ADMIN_PATHS = new Set([
 ]);
 
 function App() {
-  const publicRoutes = routes.filter((route) => PUBLIC_PATHS.has(route.path));
+  const loginRoute = routes.find((route) => route.path === LOGIN_PATH);
+  const changePasswordRoute = routes.find((route) => route.path === CHANGE_PASSWORD_PATH);
 
   return (
     <Router>
@@ -47,18 +53,30 @@ function App() {
             <UpdateNotification />
             <InstallPrompt />
             <Routes>
-              {publicRoutes.map((route, index) => (
-                <Route key={index} path={route.path} element={route.element} />
-              ))}
+              {loginRoute && <Route path={loginRoute.path} element={loginRoute.element} />}
+              {changePasswordRoute && (
+                <Route
+                  path={changePasswordRoute.path}
+                  element={
+                    <RequireAuth>
+                      <ProfileAccessGuard>
+                        {changePasswordRoute.element}
+                      </ProfileAccessGuard>
+                    </RequireAuth>
+                  }
+                />
+              )}
               <Route
                 path="/*"
                 element={
                   <RequireAuth>
-                    <CompanyProvider>
-                      <PersonProvider>
-                        <MainLayout />
-                      </PersonProvider>
-                    </CompanyProvider>
+                    <ProfileAccessGuard>
+                      <CompanyProvider>
+                        <PersonProvider>
+                          <MainLayout />
+                        </PersonProvider>
+                      </CompanyProvider>
+                    </ProfileAccessGuard>
                   </RequireAuth>
                 }
               />
@@ -68,6 +86,81 @@ function App() {
       </ThemeProvider>
     </Router>
   );
+}
+
+function ProfileAccessGuard({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const [profile, setProfile] = React.useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      if (!user?.id) {
+        if (isMounted) {
+          setProfile(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const nextProfile = await profilesApi.getProfile(user.id);
+        if (isMounted) {
+          setProfile(nextProfile);
+        }
+      } catch (error) {
+        console.error('Falha ao carregar perfil autenticado:', error);
+        if (isMounted) {
+          setProfile(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    if (profile?.status && profile.status !== 'active') {
+      void supabase.auth.signOut();
+    }
+  }, [profile?.status]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const forcePasswordChange = Boolean(profile?.force_password_change);
+
+  if (profile?.status && profile.status !== 'active') {
+    return <Navigate to={LOGIN_PATH} replace />;
+  }
+
+  if (forcePasswordChange && location.pathname !== CHANGE_PASSWORD_PATH) {
+    return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
+  }
+
+  if (!forcePasswordChange && location.pathname === CHANGE_PASSWORD_PATH) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function RequireAdmin({ children }: { children: React.ReactNode }) {
@@ -103,9 +196,10 @@ function MainLayout() {
   const { isPJ, isPF } = useFinanceScope();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const userLabel = user?.email?.split('@')[0] || 'usuario';
+  const [profile, setProfile] = React.useState<Profile | null>(null);
   const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
   const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
+  const userLabel = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'usuario';
   const userInitials = userLabel
     .split(/[._\s-]+/)
     .filter(Boolean)
@@ -127,6 +221,34 @@ function MainLayout() {
     if (isPF) return;
     navigate('/pf');
   };
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      if (!user?.id) {
+        if (isMounted) {
+          setProfile(null);
+        }
+        return;
+      }
+
+      try {
+        const nextProfile = await profilesApi.getProfile(user.id);
+        if (isMounted) {
+          setProfile(nextProfile);
+        }
+      } catch (error) {
+        console.error('Falha ao carregar perfil do layout principal:', error);
+      }
+    };
+
+    void loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   return (
     <SidebarProvider defaultOpen={true}>

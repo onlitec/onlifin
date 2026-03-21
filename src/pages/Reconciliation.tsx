@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -8,12 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, AlertCircle, Loader2, Save } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Loader2, Save, Plus, Wallet } from 'lucide-react';
 import { accountsApi, transactionsApi, categoriesApi } from '@/db/api';
 import { Account, Transaction, Category } from '@/types/types';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function Reconciliation() {
+  const navigate = useNavigate();
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [selectedAccount, setSelectedAccount] = React.useState<string>('');
@@ -26,6 +28,7 @@ export default function Reconciliation() {
   const { toast } = useToast();
 
   const { companyId, isPJ } = useFinanceScope();
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   React.useEffect(() => {
     loadAccounts();
@@ -236,6 +239,23 @@ export default function Reconciliation() {
         </p>
       </div>
 
+      {accounts.length === 0 && (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardContent className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-900">Cadastre uma conta antes de conciliar</p>
+              <p className="text-sm text-muted-foreground">
+                A conciliação depende de uma conta bancária com transações para comparar com o extrato.
+              </p>
+            </div>
+            <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+              <Wallet className="mr-2 h-4 w-4" />
+              Criar Primeira Conta
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -353,8 +373,19 @@ export default function Reconciliation() {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : transactions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma transação encontrada para esta conta
+              <div className="text-center py-10 space-y-3">
+                <p className="text-muted-foreground">
+                  Nenhuma transação encontrada para esta conta.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <Button onClick={() => navigate(`${prefix}/transactions?onboarding=1&account_id=${selectedAccount}`)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Registrar Primeira Transação
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate(`${prefix}/import-statements`)}>
+                    Importar Extrato
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="rounded-md border">

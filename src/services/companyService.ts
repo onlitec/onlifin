@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@/db/client';
+import { assertCanCreateCompany } from '@/services/planService';
 import type {
     Company,
     CreateCompanyDTO,
@@ -105,6 +106,8 @@ export const companyService = {
         if (!user) {
             throw new Error('Usuário não autenticado');
         }
+
+        await assertCanCreateCompany();
 
         // Verificar se CNPJ já existe
         const existingCompany = await this.getByCNPJ(data.cnpj);
@@ -360,10 +363,14 @@ export const companyService = {
         }
 
         const total_accounts = accounts?.length || 0;
-        const total_balance = accounts?.reduce((sum, acc) => sum + (Number(acc.balance) || 0), 0) || 0;
+        const total_balance = accounts?.reduce((sum: number, acc: { balance: number | string | null }) => sum + (Number(acc.balance) || 0), 0) || 0;
         const total_transactions = transactions?.length || 0;
-        const total_income = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + (Number(t.amount) || 0), 0) || 0;
-        const total_expense = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + (Number(t.amount) || 0), 0) || 0;
+        const total_income = transactions
+            ?.filter((transaction: { type: string }) => transaction.type === 'income')
+            .reduce((sum: number, transaction: { amount: number | string | null }) => sum + (Number(transaction.amount) || 0), 0) || 0;
+        const total_expense = transactions
+            ?.filter((transaction: { type: string }) => transaction.type === 'expense')
+            .reduce((sum: number, transaction: { amount: number | string | null }) => sum + (Number(transaction.amount) || 0), 0) || 0;
 
         return {
             total_accounts,

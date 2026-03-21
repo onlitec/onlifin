@@ -1,6 +1,7 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
-import { forecastsApi } from '@/db/api';
+import { accountsApi, forecastsApi, transactionsApi } from '@/db/api';
 import type { FinancialForecast } from '@/types/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,17 +28,22 @@ import {
   RefreshCw,
   Calendar,
   DollarSign,
-  Lightbulb
+  Lightbulb,
+  Wallet,
+  Plus,
+  Upload
 } from 'lucide-react';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function ForecastDashboard() {
+  const navigate = useNavigate();
   const { companyId, personId } = useFinanceScope();
   const { toast } = useToast();
   const [userId, setUserId] = React.useState<string | null>(null);
   const [forecast, setForecast] = React.useState<FinancialForecast | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [generating, setGenerating] = React.useState(false);
+  const [setupStatus, setSetupStatus] = React.useState({ accountsCount: 0, transactionsCount: 0 });
 
   React.useEffect(() => {
     const initUser = async () => {
@@ -55,6 +61,8 @@ export default function ForecastDashboard() {
     }
   }, [userId, companyId, personId]);
 
+  const prefix = companyId ? `/pj/${companyId}` : '/pf';
+
   const formatDate = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
     if (!dateStr) return '';
     try {
@@ -68,8 +76,16 @@ export default function ForecastDashboard() {
   const loadForecast = async () => {
     try {
       setLoading(true);
-      const data = await forecastsApi.getLatest(userId!, companyId, personId);
+      const [data, accountList, transactionList] = await Promise.all([
+        forecastsApi.getLatest(userId!, companyId, personId),
+        accountsApi.getAccounts(userId!, companyId, personId),
+        transactionsApi.getTransactions(userId!, { companyId, personId }),
+      ]);
       setForecast(data);
+      setSetupStatus({
+        accountsCount: accountList.length,
+        transactionsCount: transactionList.length,
+      });
     } catch (error) {
       console.error('Erro ao carregar previsão:', error);
       toast({
@@ -179,6 +195,9 @@ export default function ForecastDashboard() {
   }
 
   if (!forecast) {
+    const needsFirstAccount = setupStatus.accountsCount === 0;
+    const needsFirstTransaction = setupStatus.accountsCount > 0 && setupStatus.transactionsCount === 0;
+
     return (
       <div className="w-full max-w-[1600px] mx-auto p-4 xl:p-8 space-y-6">
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-2">
@@ -191,23 +210,58 @@ export default function ForecastDashboard() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <TrendingUp className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Nenhuma previsão disponível</h3>
+            <h3 className="text-xl font-semibold mb-2">
+              {needsFirstAccount
+                ? 'Cadastre sua primeira conta'
+                : needsFirstTransaction
+                  ? 'Registre suas primeiras movimentações'
+                  : 'Nenhuma previsão disponível'}
+            </h3>
             <p className="text-muted-foreground text-center mb-6">
-              Gere sua primeira previsão financeira para visualizar insights e alertas inteligentes
+              {needsFirstAccount
+                ? 'A previsão financeira depende de uma conta para começar a consolidar seu ambiente.'
+                : needsFirstTransaction
+                  ? 'Com algumas transações registradas, o sistema já consegue projetar saldo, alertas e tendências.'
+                  : 'Gere sua primeira previsão financeira para visualizar insights e alertas inteligentes.'}
             </p>
-            <Button onClick={handleGenerateForecast} disabled={generating} size="lg">
-              {generating ? (
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {needsFirstAccount ? (
                 <>
-                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                  Gerando Previsão...
+                  <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)} size="lg">
+                    <Wallet className="mr-2 h-5 w-5" />
+                    Criar Primeira Conta
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate(prefix)} size="lg">
+                    Ver Dashboard
+                  </Button>
+                </>
+              ) : needsFirstTransaction ? (
+                <>
+                  <Button onClick={() => navigate(`${prefix}/transactions?onboarding=1`)} size="lg">
+                    <Plus className="mr-2 h-5 w-5" />
+                    Registrar Primeira Transação
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate(`${prefix}/import-statements`)} size="lg">
+                    <Upload className="mr-2 h-5 w-5" />
+                    Importar Extrato
+                  </Button>
                 </>
               ) : (
-                <>
-                  <TrendingUp className="mr-2 h-5 w-5" />
-                  Gerar Previsão Agora
-                </>
+                <Button onClick={handleGenerateForecast} disabled={generating} size="lg">
+                  {generating ? (
+                    <>
+                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                      Gerando Previsão...
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="mr-2 h-5 w-5" />
+                      Gerar Previsão Agora
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -269,6 +323,16 @@ export default function ForecastDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {setupStatus.transactionsCount > 0 && setupStatus.transactionsCount < 5 && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Base de dados ainda pequena</AlertTitle>
+          <AlertDescription>
+            Esta previsão já funciona, mas tende a ficar mais útil quando houver mais movimentações no histórico.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Alertas */}
       {forecast.alerts && forecast.alerts.length > 0 && (

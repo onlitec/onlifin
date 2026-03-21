@@ -1,10 +1,12 @@
 import * as React from 'react';
 import { supabase } from '@/db/client';
-import { transactionsApi, billsToReceiveApi } from '@/db/api';
+import { transactionsApi, billsToReceiveApi, accountsApi, cardsApi } from '@/db/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { DashboardStats, CategoryExpense, MonthlyData } from '@/types/types';
+import { useNavigate } from 'react-router-dom';
+import { Building2, CreditCard, Plus, Wallet } from 'lucide-react';
 
 import { BalanceCards } from '@/components/dashboard/BalanceCards';
 import { CategoryBreakdown } from '@/components/dashboard/CategoryBreakdown';
@@ -19,12 +21,18 @@ interface EnhancedStats extends DashboardStats {
 }
 
 export default function Dashboard() {
-  const { companyId, personId } = useFinanceScope();
+  const navigate = useNavigate();
+  const { companyId, personId, isPJ } = useFinanceScope();
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [enhancedStats, setEnhancedStats] = React.useState<EnhancedStats | null>(null);
   const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
   const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
   const [pendingToReceive, setPendingToReceive] = React.useState(0);
+  const [setupStatus, setSetupStatus] = React.useState({
+    accountsCount: 0,
+    cardsCount: 0,
+    transactionsCount: 0,
+  });
   const [isLoading, setIsLoading] = React.useState(true);
   const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth().toString());
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
@@ -44,15 +52,26 @@ export default function Dashboard() {
       const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-      const [dashboardStats, expenses, monthly] = await Promise.all([
+      const [dashboardStats, expenses, monthly, accountList, cardList, txList] = await Promise.all([
         transactionsApi.getDashboardStats(user.id, companyId, personId, month, year),
         transactionsApi.getCategoryExpenses(user.id, firstDayOfMonth, lastDayOfMonth, companyId, personId),
-        transactionsApi.getMonthlyData(user.id, 6, { companyId, personId, month, year })
+        transactionsApi.getMonthlyData(user.id, 6, { companyId, personId, month, year }),
+        accountsApi.getAccounts(user.id, companyId, personId),
+        cardsApi.getCards(user.id, companyId, personId),
+        transactionsApi.getTransactions(user.id, {
+          companyId,
+          personId,
+        }),
       ]);
 
       setStats(dashboardStats);
       setCategoryExpenses(expenses);
       setMonthlyData(monthly);
+      setSetupStatus({
+        accountsCount: accountList.length,
+        cardsCount: cardList.length,
+        transactionsCount: txList.length,
+      });
 
       try {
         const pendingBills = await billsToReceiveApi.getPending(user.id, companyId, personId);
@@ -170,6 +189,42 @@ export default function Dashboard() {
   }
 
   const currentMonthLabel = months.find(m => m.value === selectedMonth)?.label;
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
+  const onboardingSteps = [
+    {
+      key: 'account',
+      done: setupStatus.accountsCount > 0,
+      title: isPJ ? 'Cadastrar primeira conta PJ' : 'Cadastrar primeira conta',
+      description: isPJ
+        ? 'Crie a conta bancária principal da empresa para ativar o ambiente corporativo.'
+        : 'Crie sua conta principal para começar a organizar o fluxo financeiro.',
+      actionLabel: 'Criar Conta',
+      onClick: () => navigate(`${prefix}/accounts?onboarding=1`),
+      icon: Wallet,
+    },
+    {
+      key: 'transaction',
+      done: setupStatus.transactionsCount > 0,
+      title: 'Registrar primeira transação',
+      description: 'Lance uma receita ou despesa para iniciar o histórico e alimentar os gráficos.',
+      actionLabel: 'Nova Transação',
+      onClick: () => navigate(`${prefix}/transactions?onboarding=1`),
+      icon: Plus,
+      disabled: setupStatus.accountsCount === 0,
+    },
+    {
+      key: 'card',
+      done: setupStatus.cardsCount > 0,
+      title: 'Cadastrar cartão',
+      description: 'Etapa opcional para acompanhar limites, vencimentos e gastos no crédito.',
+      actionLabel: 'Novo Cartão',
+      onClick: () => navigate(`${prefix}/cards?onboarding=1`),
+      icon: CreditCard,
+      optional: true,
+      disabled: setupStatus.accountsCount === 0,
+    },
+  ];
+  const shouldShowOnboarding = onboardingSteps.some((step) => !step.done);
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto animate-slide-up bg-slate-50/30 min-h-screen">
@@ -231,6 +286,69 @@ export default function Dashboard() {
           </Button>
         </div>
       </header>
+
+      {shouldShowOnboarding && (
+        <section className="bg-white border border-blue-100 rounded-3xl p-5 lg:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Primeiros Passos</p>
+              <h2 className="text-xl font-black tracking-tight text-slate-900">
+                {isPJ ? 'Complete o setup da empresa' : 'Complete o setup da conta'}
+              </h2>
+            </div>
+            {isPJ && (
+              <Button
+                variant="outline"
+                className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest"
+                onClick={() => navigate('/companies')}
+              >
+                <Building2 className="mr-2 h-4 w-4" />
+                Gerenciar CNPJs
+              </Button>
+            )}
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {onboardingSteps.map((step) => {
+              const Icon = step.icon;
+
+              return (
+                <div
+                  key={step.key}
+                  className={`rounded-2xl border p-4 transition-all ${
+                    step.done
+                      ? 'border-emerald-100 bg-emerald-50/60'
+                      : 'border-slate-200 bg-slate-50/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${step.done ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${step.done ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {step.done ? 'Concluído' : step.optional ? 'Opcional' : 'Pendente'}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-1">
+                    <h3 className="text-sm font-black text-slate-900">{step.title}</h3>
+                    <p className="text-xs text-slate-500">{step.description}</p>
+                  </div>
+
+                  <Button
+                    className="mt-4 h-10 rounded-xl font-black text-[10px] uppercase tracking-widest"
+                    variant={step.done ? 'outline' : 'default'}
+                    disabled={step.done || step.disabled}
+                    onClick={step.onClick}
+                  >
+                    {step.actionLabel}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Primary Stats */}
       <section className="space-y-4">

@@ -1,17 +1,46 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/db/client';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { persistSessionFromToken, supabase } from '@/db/client';
+import { profilesApi } from '@/db/api';
+import { profileService } from '@/services/profileService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertCircle, ShieldCheck, Mail, Lock } from 'lucide-react';
-import { isValidUsername, validatePassword, checkRateLimit, resetRateLimit } from '@/utils/security';
+import { Loader2, AlertCircle, Mail, Lock } from 'lucide-react';
+import { isValidUsername, checkRateLimit, resetRateLimit } from '@/utils/security';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const LOGIN_RATE_LIMIT_KEY = 'login_attempts';
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 60000;
+
+const isValidPlanCode = (value: string | null): value is 'basic' | 'medium' | 'full' =>
+  value === 'basic' || value === 'medium' || value === 'full';
+
+const resolvePostLoginPath = ({
+  forcePasswordChange,
+  selectedPlanFromQuery,
+  isSignupFlow,
+}: {
+  forcePasswordChange?: boolean;
+  selectedPlanFromQuery: string | null;
+  isSignupFlow: boolean;
+}) => {
+  if (forcePasswordChange) {
+    return '/change-password';
+  }
+
+  if (!isSignupFlow) {
+    return '/';
+  }
+
+  if (selectedPlanFromQuery === 'medium' || selectedPlanFromQuery === 'full') {
+    return '/companies';
+  }
+
+  return '/pf';
+};
 
 export default function Login() {
   const [username, setUsername] = React.useState('');
@@ -19,9 +48,18 @@ export default function Login() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isLocked, setIsLocked] = React.useState(false);
   const [lockoutEndsAt, setLockoutEndsAt] = React.useState<number | null>(null);
-  const [remainingAttempts, setRemainingAttempts] = React.useState(MAX_LOGIN_ATTEMPTS);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const selectedPlanFromQuery = searchParams.get('plan');
+  const isSignupFlow = searchParams.get('signup') === '1';
+
+  React.useEffect(() => {
+    const prefilledEmail = searchParams.get('email');
+    if (prefilledEmail) {
+      setUsername(prefilledEmail.toLowerCase());
+    }
+  }, [searchParams]);
 
   React.useEffect(() => {
     const { blocked } = checkRateLimit(LOGIN_RATE_LIMIT_KEY, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MS);
@@ -38,16 +76,76 @@ export default function Login() {
       if (remaining <= 0) {
         setIsLocked(false);
         setLockoutEndsAt(null);
-        setRemainingAttempts(MAX_LOGIN_ATTEMPTS);
         resetRateLimit(LOGIN_RATE_LIMIT_KEY);
       }
     }, 1000);
     return () => clearInterval(interval);
   }, [isLocked, lockoutEndsAt]);
 
+  React.useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const tokenFromHash = hashParams.get('token');
+    if (!tokenFromHash) return;
+
+    let isMounted = true;
+
+    const completeSignupLogin = async () => {
+      setIsLoading(true);
+
+      try {
+        const session = persistSessionFromToken(tokenFromHash);
+        const profile = session.user?.id ? await profilesApi.getProfile(session.user.id) : null;
+
+        if (isValidPlanCode(selectedPlanFromQuery) && !(profile as any)?.settings?.plan_code) {
+          await profileService.updateSettings({ plan_code: selectedPlanFromQuery });
+        }
+
+        resetRateLimit(LOGIN_RATE_LIMIT_KEY);
+        window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+
+        if (!isMounted) return;
+
+        navigate(
+          resolvePostLoginPath({
+            forcePasswordChange: profile?.force_password_change,
+            selectedPlanFromQuery,
+            isSignupFlow,
+          }),
+          { replace: true }
+        );
+        toast({
+          title: 'Bem-vindo!',
+          description: isSignupFlow && (selectedPlanFromQuery === 'medium' || selectedPlanFromQuery === 'full')
+            ? 'Conta criada. Cadastre agora seu primeiro CNPJ.'
+            : 'Conta criada e conectada com sucesso'
+        });
+      } catch (error: any) {
+        window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+
+        if (!isMounted) return;
+
+        toast({
+          title: 'Erro de Acesso',
+          description: error.message || 'Não foi possível concluir o login automático.',
+          variant: 'destructive'
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void completeSignupLogin();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isSignupFlow, navigate, searchParams, selectedPlanFromQuery, toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { blocked, remainingAttempts: remaining } = checkRateLimit(
+    const { blocked } = checkRateLimit(
       LOGIN_RATE_LIMIT_KEY,
       MAX_LOGIN_ATTEMPTS,
       LOCKOUT_DURATION_MS
@@ -60,7 +158,6 @@ export default function Login() {
       return;
     }
 
-    setRemainingAttempts(remaining);
     setIsLoading(true);
 
     if (!username || !password) {
@@ -76,23 +173,43 @@ export default function Login() {
     }
 
     const email = username.includes('@') ? username : `${username}@miaoda.com`;
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      toast({ title: 'Erro', description: passwordValidation.message, variant: 'destructive' });
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+
+      const profile = data.user?.id ? await profilesApi.getProfile(data.user.id) : null;
+
+      if (isValidPlanCode(selectedPlanFromQuery) && !(profile as any)?.settings?.plan_code) {
+        await profileService.updateSettings({ plan_code: selectedPlanFromQuery });
+      }
+
       resetRateLimit(LOGIN_RATE_LIMIT_KEY);
-      navigate('/');
-      toast({ title: 'Bem-vindo!', description: 'Conectado com sucesso' });
+      navigate(
+        resolvePostLoginPath({
+          forcePasswordChange: profile?.force_password_change,
+          selectedPlanFromQuery,
+          isSignupFlow,
+        })
+      );
+      toast({
+        title: 'Bem-vindo!',
+        description: profile?.force_password_change
+          ? 'Troque sua senha provisória para continuar.'
+          : isSignupFlow && (selectedPlanFromQuery === 'medium' || selectedPlanFromQuery === 'full')
+            ? 'Conta criada. Cadastre agora seu primeiro CNPJ.'
+            : 'Conectado com sucesso'
+      });
     } catch (error: any) {
-      toast({ title: 'Erro de Acesso', description: 'Credenciais inválidas.', variant: 'destructive' });
+      toast({
+        title: 'Erro de Acesso',
+        description: error.message || 'Credenciais inválidas.',
+        variant: 'destructive'
+      });
       const { remainingAttempts: newRemaining } = checkRateLimit(LOGIN_RATE_LIMIT_KEY, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MS);
-      setRemainingAttempts(newRemaining);
+      if (newRemaining <= 0) {
+        setIsLocked(true);
+        setLockoutEndsAt(Date.now() + LOCKOUT_DURATION_MS);
+      }
     } finally {
       setIsLoading(false);
     }

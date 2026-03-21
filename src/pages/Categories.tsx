@@ -52,11 +52,28 @@ const COLOR_OPTIONS = [
   { name: 'Ciano', value: '#00BCD4' }
 ];
 
+const STARTER_CATEGORIES: Array<{
+  name: string;
+  type: 'income' | 'expense';
+  icon: string;
+  color: string;
+}> = [
+  { name: 'Salário', type: 'income', icon: 'Wallet', color: '#27AE60' },
+  { name: 'Pró-Labore', type: 'income', icon: 'Briefcase', color: '#2C3E50' },
+  { name: 'Vendas', type: 'income', icon: 'TrendingUp', color: '#00BCD4' },
+  { name: 'Moradia', type: 'expense', icon: 'Home', color: '#2C3E50' },
+  { name: 'Alimentação', type: 'expense', icon: 'Utensils', color: '#E67E22' },
+  { name: 'Transporte', type: 'expense', icon: 'Car', color: '#00BCD4' },
+  { name: 'Saúde', type: 'expense', icon: 'Heart', color: '#E74C3C' },
+  { name: 'Serviços', type: 'expense', icon: 'Receipt', color: '#9B59B6' },
+];
+
 export default function Categories() {
   const { companyId } = useFinanceScope();
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingCategory, setEditingCategory] = React.useState<Category | null>(null);
+  const [isSeedingStarterCategories, setIsSeedingStarterCategories] = React.useState(false);
   const [formData, setFormData] = React.useState({
     name: '',
     type: 'expense' as 'income' | 'expense',
@@ -95,7 +112,7 @@ export default function Categories() {
         await categoriesApi.createCategory({
           ...formData,
           user_id: user.id,
-          company_id: companyId
+          company_id: companyId ?? null
         });
         toast({ title: 'Sucesso', description: 'Categoria criada com sucesso' });
       }
@@ -152,6 +169,54 @@ export default function Categories() {
   const incomeCategories = categories.filter(c => c.type === 'income');
   const expenseCategories = categories.filter(c => c.type === 'expense');
   const userCategories = categories.filter(c => c.user_id !== null);
+
+  const handleCreateStarterCategories = async () => {
+    setIsSeedingStarterCategories(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const existingKeys = new Set(
+        categories.map((category) => `${category.type}:${category.name.trim().toLowerCase()}`)
+      );
+
+      const missingCategories = STARTER_CATEGORIES.filter(
+        (category) => !existingKeys.has(`${category.type}:${category.name.trim().toLowerCase()}`)
+      );
+
+      if (missingCategories.length === 0) {
+        toast({
+          title: 'Sugestões já disponíveis',
+          description: 'As categorias recomendadas já existem neste ambiente.',
+        });
+        return;
+      }
+
+      await Promise.all(
+        missingCategories.map((category) =>
+          categoriesApi.createCategory({
+            ...category,
+            user_id: user.id,
+            company_id: companyId ?? null,
+          })
+        )
+      );
+
+      toast({
+        title: 'Categorias sugeridas criadas',
+        description: `${missingCategories.length} categoria(s) adicionada(s) ao seu ambiente.`,
+      });
+      await loadCategories();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao criar sugestões',
+        description: error.message || 'Não foi possível criar as categorias sugeridas.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSeedingStarterCategories(false);
+    }
+  };
 
   // Helper to render category icon (Lucide or emoji)
   const renderCategoryIcon = (iconName: string | null, color: string | null) => {
@@ -225,12 +290,24 @@ export default function Categories() {
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="lg" className="glass border-primary/20 hover:bg-primary/20 text-primary font-black uppercase tracking-widest px-8 h-14 rounded-2xl shadow-xl shadow-primary/10 transition-all hover:scale-105 active:scale-95">
-              <Plus className="mr-2 h-5 w-5" />
-              Definir Segmento
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="outline"
+              size="lg"
+              disabled={isSeedingStarterCategories}
+              className="glass border-slate-200 hover:bg-slate-100 text-slate-700 font-black uppercase tracking-widest px-8 h-14 rounded-2xl shadow-xl transition-all"
+              onClick={handleCreateStarterCategories}
+            >
+              <Tag className="mr-2 h-5 w-5" />
+              {isSeedingStarterCategories ? 'Criando Sugestões...' : 'Adicionar Sugestões'}
             </Button>
-          </DialogTrigger>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="lg" className="glass border-primary/20 hover:bg-primary/20 text-primary font-black uppercase tracking-widest px-8 h-14 rounded-2xl shadow-xl shadow-primary/10 transition-all hover:scale-105 active:scale-95">
+                <Plus className="mr-2 h-5 w-5" />
+                Definir Segmento
+              </Button>
+            </DialogTrigger>
+          </div>
           <DialogContent className="glass-card premium-card border-white/10 backdrop-blur-3xl rounded-3xl p-0 overflow-hidden">
             <div className="p-8 space-y-6">
               <DialogHeader>
@@ -360,6 +437,24 @@ export default function Categories() {
                   <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
                     Nenhuma lógica de taxonomia especializada foi estabelecida ainda.
                   </p>
+                  <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      disabled={isSeedingStarterCategories}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                      onClick={handleCreateStarterCategories}
+                    >
+                      <Tag className="mr-2 h-4 w-4" />
+                      {isSeedingStarterCategories ? 'Criando...' : 'Usar Sugestões'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                      onClick={() => setIsDialogOpen(true)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Criar Manualmente
+                    </Button>
+                  </div>
                 </div>
               )}
             </TabsContent>

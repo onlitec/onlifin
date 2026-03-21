@@ -34,6 +34,40 @@ interface LocalSession {
     expires_at?: number;
 }
 
+function buildSessionFromToken(token: string): LocalSession | null {
+    if (!token || token.split('.').length !== 3) {
+        return null;
+    }
+
+    const payload = parseJwt(token);
+    if (!payload?.user_id) {
+        return null;
+    }
+
+    const user: LocalUser = {
+        id: payload.user_id,
+        email: payload.email,
+        role: payload.app_role || 'user',
+        app_metadata: {
+            role: payload.app_role,
+            status: payload.status,
+            force_password_change: payload.force_password_change
+        },
+        user_metadata: {
+            status: payload.status,
+            force_password_change: payload.force_password_change
+        },
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+    };
+
+    return {
+        access_token: token,
+        user,
+        expires_at: payload.exp
+    };
+}
+
 // Carregar sessão do localStorage
 function loadSession(): LocalSession | null {
     try {
@@ -188,7 +222,11 @@ const auth = {
             });
 
             if (!response.ok) {
-                return { data: { user: null, session: null }, error: new Error('Credenciais inválidas ou erro no servidor') };
+                const errorText = (await response.text()).replace(/^"/, '').replace(/"$/, '').trim();
+                return {
+                    data: { user: null, session: null },
+                    error: new Error(errorText || 'Credenciais inválidas ou erro no servidor')
+                };
             }
 
             let token = await response.text();
@@ -198,31 +236,15 @@ const auth = {
                 return { data: { user: null, session: null }, error: new Error('Resposta inválida do servidor') };
             }
 
-            const payload = parseJwt(token);
-            if (!payload) {
+            const session = buildSessionFromToken(token);
+            if (!session) {
                 return { data: { user: null, session: null }, error: new Error('Token inválido ou corrompido') };
             }
-
-            const user: LocalUser = {
-                id: payload.user_id,
-                email: payload.email,
-                role: payload.app_role || 'user',
-                app_metadata: { role: payload.app_role },
-                user_metadata: {},
-                aud: 'authenticated',
-                created_at: new Date().toISOString()
-            };
-
-            const session: LocalSession = {
-                access_token: token,
-                user,
-                expires_at: payload.exp
-            };
 
             saveSession(session);
             authListeners.forEach(l => l('SIGNED_IN', session));
 
-            return { data: { user, session }, error: null };
+            return { data: { user: session.user, session }, error: null };
         } catch (e: any) {
             console.error('❌ Exceção no login:', e);
             return { data: { user: null, session: null }, error: e };
@@ -295,6 +317,17 @@ const auth = {
         }
     }
 };
+
+export function persistSessionFromToken(token: string) {
+    const session = buildSessionFromToken(token);
+    if (!session) {
+        throw new Error('Token inválido ou corrompido');
+    }
+
+    saveSession(session);
+    authListeners.forEach((listener) => listener('SIGNED_IN', session));
+    return session;
+}
 
 // Objeto de exportação unificado com suporte a tudo que a aplicação usa
 // Usamos Proxy para garantir que todos os métodos do onlifinClient (incluindo prototype) sejam acessíveis

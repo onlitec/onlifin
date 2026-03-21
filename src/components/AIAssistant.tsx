@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { MessageCircle, X, Send, Loader2, RotateCcw } from 'lucide-react';
-import { chatWithAssistant, getDegradedResponse } from '@/services/ollamaService';
-import { loadFinancialContext, formatFinancialContextForPrompt } from '@/services/financialContext';
+import { chatWithAssistant, getDegradedResponse, getDestructiveActionGuardrail } from '@/services/ollamaService';
+import { buildLocalFinancialResponse, loadFinancialContext, formatFinancialContextForPrompt } from '@/services/financialContext';
+import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { supabase } from '@/db/client';
 
 interface Message {
@@ -33,6 +34,7 @@ export default function AIAssistant() {
   const [isLoading, setIsLoading] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { companyId, personId, isPF, isPJ } = useFinanceScope();
 
   // Carregar histórico do localStorage ao montar o componente
   React.useEffect(() => {
@@ -74,13 +76,28 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
+      const destructiveGuardrail = getDestructiveActionGuardrail(userMessage);
+      if (destructiveGuardrail) {
+        setMessages(prev => [...prev, { role: 'assistant', content: destructiveGuardrail }]);
+        return;
+      }
+
       // Carregar contexto financeiro
       const { data: { user } } = await supabase.auth.getUser();
       let contextText: string | undefined;
 
       if (user) {
         try {
-          const financialContext = await loadFinancialContext(user.id);
+          const financialContext = await loadFinancialContext(user.id, {
+            mode: isPF ? 'PF' : isPJ ? 'PJ' : 'GERAL',
+            companyId,
+            personId
+          });
+          const localResponse = buildLocalFinancialResponse(userMessage, financialContext);
+          if (localResponse) {
+            setMessages(prev => [...prev, { role: 'assistant', content: localResponse }]);
+            return;
+          }
           contextText = formatFinancialContextForPrompt(financialContext);
         } catch (ctxError) {
           console.error('Erro ao carregar contexto financeiro:', ctxError);
@@ -92,12 +109,13 @@ export default function AIAssistant() {
       try {
         // Passamos o histórico de mensagens (não apenas a última) e o contexto financeiro
         responseText = await chatWithAssistant(userMessage, updatedMessages, contextText);
-      } catch (aiError: any) {
-        console.warn('Ollama indisponível, usando modo degradado:', aiError.message);
+        if (!responseText.trim()) {
+          responseText = getDegradedResponse(userMessage);
+        }
+      } catch {
         responseText = getDegradedResponse(userMessage);
       }
-
-      const assistantMessage = responseText || 'Desculpe, não consegui processar sua solicitação.';
+      const assistantMessage = responseText || getDegradedResponse(userMessage);
       setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
 
     } catch (error: any) {

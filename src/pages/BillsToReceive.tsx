@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 
 import { billsToReceiveApi, accountsApi, categoriesApi } from '@/db/api';
@@ -25,11 +26,12 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark } from 'lucide-react';
+import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark, Wallet, Upload } from 'lucide-react';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { cn } from '@/lib/utils';
 
 export default function BillsToReceive() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [userId, setUserId] = React.useState<string | null>(null);
   const [bills, setBills] = React.useState<BillToReceive[]>([]);
@@ -304,7 +306,9 @@ export default function BillsToReceive() {
 
   const pendingBills = bills.filter(b => b.status === 'pending');
   const overdueBills = bills.filter(b => b.status === 'overdue');
-  const paidBills = bills.filter(b => b.status === 'paid');
+  const receivedBills = bills.filter(b => b.status === 'received');
+  const hasAccounts = accounts.length > 0;
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -512,6 +516,23 @@ export default function BillsToReceive() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {!hasAccounts && !loading && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-900">Cadastre uma conta antes de controlar suas entradas</p>
+              <p className="text-sm text-slate-600">
+                Assim você já define o destino dos recebimentos e melhora previsão, conciliação e relatórios.
+              </p>
+            </div>
+            <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+              <Wallet className="mr-2 h-4 w-4" />
+              Criar Primeira Conta
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-slate-200 p-4 rounded-2xl relative overflow-hidden group shadow-sm">
           <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -545,10 +566,10 @@ export default function BillsToReceive() {
           </div>
           <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 block mb-1">Realizado: Confirmado</span>
           <p className="text-xl font-black tracking-tight text-emerald-600">
-            R$ {paidBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {receivedBills.reduce((sum, b) => sum + b.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <div className="mt-2 text-[9px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-50 inline-block px-2 py-0.5 rounded">
-            {paidBills.length} Efetuados
+            {receivedBills.length} Efetuados
           </div>
         </div>
       </div>
@@ -573,10 +594,43 @@ export default function BillsToReceive() {
               <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full transition-all group-hover:bg-blue-500/30" />
               <Landmark className="h-16 w-16 text-blue-500 relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
             </div>
-            <p className="text-xl font-black uppercase tracking-tighter mb-2">Sem Previsão de Entrada</p>
-            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
-              Registre os recebimentos futuros para gerenciar sua previsão de liquidez.
+            <p className="text-xl font-black uppercase tracking-tighter mb-2">
+              {hasAccounts ? 'Sem Previsão de Entrada' : 'Estruture o Caixa Primeiro'}
             </p>
+            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-md text-center">
+              {hasAccounts
+                ? 'Registre o primeiro recebimento futuro para visualizar entradas esperadas e melhorar sua previsão de liquidez.'
+                : 'Cadastre a conta que vai receber seus valores para começar o controle de entradas com contexto.'}
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              {hasAccounts ? (
+                <>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                    onClick={() => setIsDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Registrar Primeira Receita
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                    onClick={() => navigate(`${prefix}/import-statements`)}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Importar Extrato
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Criar Primeira Conta
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="divide-y divide-white/5">

@@ -1,18 +1,20 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
-import { transactionsApi } from '@/db/api';
+import { accountsApi, transactionsApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Plus, Wallet } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { CategoryExpense, MonthlyData } from '@/types/types';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 
 export default function Reports() {
+  const navigate = useNavigate();
   const [startDate, setStartDate] = React.useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() - 6);
@@ -22,6 +24,7 @@ export default function Reports() {
   const [reportType, setReportType] = React.useState<'category' | 'monthly' | 'cashflow'>('category');
   const [categoryExpenses, setCategoryExpenses] = React.useState<CategoryExpense[]>([]);
   const [monthlyData, setMonthlyData] = React.useState<MonthlyData[]>([]);
+  const [setupStatus, setSetupStatus] = React.useState({ accountsCount: 0, transactionsCount: 0 });
   const [isLoading, setIsLoading] = React.useState(false);
   const { companyId, personId } = useFinanceScope();
   const { toast } = useToast();
@@ -35,6 +38,16 @@ export default function Reports() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      const [accountList, transactionList] = await Promise.all([
+        accountsApi.getAccounts(user.id, companyId, personId),
+        transactionsApi.getTransactions(user.id, { companyId, personId }),
+      ]);
+
+      setSetupStatus({
+        accountsCount: accountList.length,
+        transactionsCount: transactionList.length,
+      });
 
       if (reportType === 'category') {
         const expenses = await transactionsApi.getCategoryExpenses(user.id, startDate, endDate, companyId, personId);
@@ -108,6 +121,38 @@ export default function Reports() {
       currency: 'BRL'
     }).format(value);
   };
+
+  const prefix = companyId ? `/pj/${companyId}` : '/pf';
+  const EmptyReportState = ({
+    title,
+    description,
+  }: {
+    title: string;
+    description: string;
+  }) => (
+    <div className="flex h-[400px] items-center justify-center">
+      <div className="text-center space-y-3 max-w-sm px-6">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 border border-slate-100">
+          <FileText className="h-8 w-8 text-slate-300" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+          {setupStatus.accountsCount === 0 ? (
+            <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+              <Wallet className="mr-2 h-4 w-4" />
+              Criar Primeira Conta
+            </Button>
+          ) : (
+            <Button onClick={() => navigate(`${prefix}/transactions?onboarding=1`)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Registrar Primeira Transação
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
@@ -191,9 +236,10 @@ export default function Reports() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-[400px] text-muted-foreground">
-                  Nenhum dado disponível
-                </div>
+                <EmptyReportState
+                  title="Sem dados para o gráfico"
+                  description="As despesas por categoria aparecem aqui depois que você registra as primeiras movimentações."
+                />
               )}
             </CardContent>
           </Card>
@@ -218,7 +264,7 @@ export default function Reports() {
                 ))}
                 {categoryExpenses.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">
-                    Nenhuma despesa no período selecionado
+                    Nenhuma despesa encontrada no período selecionado.
                   </p>
                 )}
               </div>
@@ -269,9 +315,10 @@ export default function Reports() {
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-[400px] text-muted-foreground">
-                Nenhum dado disponível
-              </div>
+              <EmptyReportState
+                title="Sem histórico mensal"
+                description="O comparativo mensal será gerado assim que existirem movimentações suficientes."
+              />
             )}
           </CardContent>
         </Card>
@@ -308,9 +355,10 @@ export default function Reports() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[400px] text-muted-foreground">
-                Nenhum dado disponível
-              </div>
+              <EmptyReportState
+                title="Sem base para fluxo de caixa"
+                description="Registre receitas e despesas para visualizar a evolução do fluxo de caixa."
+              />
             )}
           </CardContent>
         </Card>

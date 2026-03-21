@@ -2,7 +2,7 @@
  * Página de gerenciamento de pessoas (PF)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
     User,
     Plus,
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,6 +38,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getCurrentPlanInfo, getCurrentPlanUsage, getPlanSourceLabel } from '@/services/planService';
 
 export default function PeoplePage() {
     const { isPJ } = useFinanceScope();
@@ -56,6 +58,36 @@ export default function PeoplePage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingPerson, setEditingPerson] = useState<Person | null>(null);
     const [deletingPerson, setDeletingPerson] = useState<Person | null>(null);
+    const [planLimit, setPlanLimit] = useState<number | null>(null);
+    const [planName, setPlanName] = useState<string>('Plano');
+    const [planSource, setPlanSource] = useState<string>('compatibilidade');
+    const [totalPeopleCount, setTotalPeopleCount] = useState(0);
+    const [isLoadingPlan, setIsLoadingPlan] = useState(true);
+    const ownerPersonId = !isPJ ? (settings.owner_person_id || null) : null;
+    const shouldShowVirtualTitular = !isPJ && !settings.hide_titular && !ownerPersonId;
+
+    const loadPlanContext = useCallback(async () => {
+        setIsLoadingPlan(true);
+        try {
+            const [planInfo, usage] = await Promise.all([
+                getCurrentPlanInfo(),
+                getCurrentPlanUsage(),
+            ]);
+
+            setPlanLimit(planInfo.plan.limits.managedPeople);
+            setPlanName(planInfo.plan.name);
+            setPlanSource(getPlanSourceLabel(planInfo.source));
+            setTotalPeopleCount(usage.peopleCount);
+        } catch (error) {
+            console.error('Erro ao carregar contexto de plano:', error);
+        } finally {
+            setIsLoadingPlan(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadPlanContext();
+    }, [loadPlanContext, people.length]);
 
     // Filtrar pessoas pelo termo de busca
     const filteredPeople = people.filter(person => {
@@ -69,9 +101,17 @@ export default function PeoplePage() {
     });
 
     const handleAddPerson = useCallback(() => {
+        if (planLimit !== null && totalPeopleCount >= planLimit) {
+            toast({
+                title: 'Limite do plano atingido',
+                description: `${planName} permite ate ${planLimit} pessoa(s) cadastrada(s).`,
+                variant: 'destructive',
+            });
+            return;
+        }
         setEditingPerson(null);
         setIsDialogOpen(true);
-    }, []);
+    }, [planLimit, planName, toast, totalPeopleCount]);
 
     const handleEditPerson = useCallback((person: Person) => {
         setEditingPerson(person);
@@ -79,24 +119,42 @@ export default function PeoplePage() {
     }, []);
 
     const handleDeletePerson = useCallback((person: Person) => {
+        if (person.id === ownerPersonId) {
+            toast({
+                title: 'Pessoa titular protegida',
+                description: 'A pessoa principal da conta nao pode ser excluida.',
+                variant: 'destructive',
+            });
+            return;
+        }
         setDeletingPerson(person);
-    }, []);
+    }, [ownerPersonId, toast]);
 
     const handleSavePerson = useCallback(async (data: CreatePersonDTO | UpdatePersonDTO) => {
-        if (editingPerson) {
-            await updatePerson(editingPerson.id, data as UpdatePersonDTO);
+        try {
+            if (editingPerson) {
+                await updatePerson(editingPerson.id, data as UpdatePersonDTO);
+                toast({
+                    title: 'Pessoa atualizada',
+                    description: 'Os dados foram salvos com sucesso.',
+                });
+            } else {
+                await createPerson(data as CreatePersonDTO);
+                toast({
+                    title: 'Pessoa criada',
+                    description: 'Novo membro adicionado com sucesso.',
+                });
+            }
+            await loadPlanContext();
+        } catch (error: any) {
             toast({
-                title: 'Pessoa atualizada',
-                description: 'Os dados foram salvos com sucesso.',
+                title: 'Nao foi possivel salvar',
+                description: error.message || 'Falha ao salvar a pessoa.',
+                variant: 'destructive',
             });
-        } else {
-            await createPerson(data as CreatePersonDTO);
-            toast({
-                title: 'Pessoa criada',
-                description: 'Novo membro adicionado com sucesso.',
-            });
+            throw error;
         }
-    }, [createPerson, editingPerson, toast, updatePerson]);
+    }, [createPerson, editingPerson, loadPlanContext, toast, updatePerson]);
 
     const confirmDelete = useCallback(async () => {
         if (!deletingPerson) return;
@@ -108,6 +166,12 @@ export default function PeoplePage() {
                 toast({
                     title: 'Opção desabilitada',
                     description: 'A visualização Geral foi removida do seletor.',
+                });
+            } else if (deletingPerson.id === ownerPersonId) {
+                toast({
+                    title: 'Pessoa titular protegida',
+                    description: 'A pessoa principal da conta nao pode ser excluida.',
+                    variant: 'destructive',
                 });
             } else {
                 await deletePerson(deletingPerson.id);
@@ -126,7 +190,7 @@ export default function PeoplePage() {
         } finally {
             setDeletingPerson(null);
         }
-    }, [deletePerson, deletingPerson, toast, updateSettings]);
+    }, [deletePerson, deletingPerson, ownerPersonId, toast, updateSettings]);
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -151,6 +215,33 @@ export default function PeoplePage() {
                     </Button>
                 </div>
             </div>
+
+            <Card className="border-blue-200 bg-blue-50/30">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Capacidade do plano</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
+                    {isLoadingPlan ? (
+                        <Skeleton className="h-5 w-56" />
+                    ) : (
+                        <>
+                            <p>
+                                {planName}: {totalPeopleCount} de {planLimit ?? 0} pessoa(s) cadastrada(s).
+                            </p>
+                            <p>Origem da regra: {planSource}.</p>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
+
+            {planLimit !== null && totalPeopleCount >= planLimit && (
+                <Alert variant="destructive">
+                    <AlertTitle>Limite de pessoas atingido</AlertTitle>
+                    <AlertDescription>
+                        O {planName} permite ate {planLimit} pessoa(s) cadastrada(s). Exclua um cadastro ou altere o plano para continuar.
+                    </AlertDescription>
+                </Alert>
+            )}
 
             {/* Barra de Busca */}
             <div className="flex items-center space-x-2">
@@ -178,14 +269,14 @@ export default function PeoplePage() {
                         <User className="h-12 w-12 text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold">Nenhuma pessoa encontrada</h3>
                         <p className="text-muted-foreground mt-1">
-                            {searchTerm ? `Nenhum resultado para "${searchTerm}"` : "Adicione membros da família para começar."}
+                            {searchTerm ? `Nenhum resultado para "${searchTerm}"` : "A pessoa titular da conta sera exibida aqui automaticamente."}
                         </p>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {/* Card Virtual para Principal (Geral) */}
-                    {!settings.hide_titular && (
+                    {shouldShowVirtualTitular && (
                         <Card className="border-primary/20 bg-primary/5">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -243,9 +334,16 @@ export default function PeoplePage() {
                                     />
                                     {person.name}
                                 </CardTitle>
-                                {person.is_default && (
-                                    <Badge variant="secondary">Padrão</Badge>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {person.id === ownerPersonId && (
+                                        <Badge variant="default" className="bg-blue-600 text-white border-none">
+                                            Titular
+                                        </Badge>
+                                    )}
+                                    {person.is_default && (
+                                        <Badge variant="secondary">Padrão</Badge>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-xs text-muted-foreground mb-4">
@@ -265,14 +363,16 @@ export default function PeoplePage() {
                                                         size="icon"
                                                         className="text-destructive hover:text-destructive"
                                                         onClick={() => handleDeletePerson(person)}
-                                                        disabled={people.length <= 1}
+                                                        disabled={people.length <= 1 || person.id === ownerPersonId}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                {people.length <= 1 ? (
+                                                {person.id === ownerPersonId ? (
+                                                    <p>Esta e a pessoa titular da conta e nao pode ser excluida.</p>
+                                                ) : people.length <= 1 ? (
                                                     <p>É necessário pelo menos um membro na família.</p>
                                                 ) : person.is_default ? (
                                                     <p>Ao excluir o membro principal, outro será promovido automaticamente.</p>

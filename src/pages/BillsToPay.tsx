@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/db/client';
 import { billsToPayApi, accountsApi, categoriesApi } from '@/db/api';
 import { BillTransactionService } from '@/services/billTransactionService';
@@ -24,11 +25,12 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark } from 'lucide-react';
+import { Plus, Calendar, DollarSign, CheckCircle, AlertCircle, Pencil, Trash2, Landmark, Wallet, Upload } from 'lucide-react';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import { cn } from '@/lib/utils';
 
 export default function BillsToPay() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [userId, setUserId] = React.useState<string | null>(null);
   const [bills, setBills] = React.useState<BillToPay[]>([]);
@@ -295,6 +297,8 @@ export default function BillsToPay() {
   const pendingBills = bills.filter(b => b.status === 'pending');
   const overdueBills = bills.filter(b => b.status === 'overdue');
   const paidBills = bills.filter(b => b.status === 'paid');
+  const hasAccounts = accounts.length > 0;
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -503,6 +507,23 @@ export default function BillsToPay() {
         </Dialog>
       </div>
 
+      {!hasAccounts && !loading && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-900">Cadastre uma conta antes de estruturar seus pagamentos</p>
+              <p className="text-sm text-slate-600">
+                Vincular a origem do pagamento desde o início facilita conciliação, previsões e relatórios.
+              </p>
+            </div>
+            <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+              <Wallet className="mr-2 h-4 w-4" />
+              Criar Primeira Conta
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-slate-200 p-4 rounded-2xl relative overflow-hidden group shadow-sm">
@@ -565,10 +586,43 @@ export default function BillsToPay() {
               <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full transition-all group-hover:bg-primary/30" />
               <Landmark className="h-16 w-16 text-primary relative z-10 opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" />
             </div>
-            <p className="text-xl font-black uppercase tracking-tighter mb-2">Zero Compromissos Fiscais</p>
-            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-xs text-center">
-              Seu horizonte financeiro está atualmente livre de obrigações pendentes.
+            <p className="text-xl font-black uppercase tracking-tighter mb-2">
+              {hasAccounts ? 'Nenhuma Conta a Pagar Registrada' : 'Comece Pela Estrutura Básica'}
             </p>
+            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-50 max-w-md text-center">
+              {hasAccounts
+                ? 'Registre o primeiro vencimento para acompanhar saídas futuras, atrasos e previsões de caixa.'
+                : 'Sem conta cadastrada, vale iniciar pela base do financeiro antes de registrar obrigações.'}
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              {hasAccounts ? (
+                <>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                    onClick={() => setIsDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Lançar Primeira Conta
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                    onClick={() => navigate(`${prefix}/import-statements`)}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Importar Extrato
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Criar Primeira Conta
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="divide-y divide-white/5">

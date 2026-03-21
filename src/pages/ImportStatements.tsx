@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles, History, X, Pencil, Activity } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle2, AlertCircle, Sparkles, History, X, Pencil, Activity, Plus } from 'lucide-react';
 import { parseOFX, isValidOFX } from '@/utils/ofxParser';
 import type { Category, Account, Transaction } from '@/types/types';
 import { accountsApi, categoriesApi } from '@/db/api';
@@ -134,9 +134,13 @@ export default function ImportStatements() {
   const [analysisLog, setAnalysisLog] = React.useState<string[]>([]);
   const [currentAnalysisStep, setCurrentAnalysisStep] = React.useState('');
   const { companyId, isPJ } = useFinanceScope();
+  const hasAccounts = accounts.length > 0;
+  const hasCategories = existingCategories.length > 0;
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   React.useEffect(() => {
     loadAccounts();
+    loadInitialCategories();
   }, [companyId]);
 
   const loadAccounts = async () => {
@@ -150,6 +154,15 @@ export default function ImportStatements() {
       }
     } catch (error: any) {
       console.error('Erro ao carregar contas:', error);
+    }
+  };
+
+  const loadInitialCategories = async () => {
+    try {
+      const data = await categoriesApi.getCategories(companyId);
+      setExistingCategories(data);
+    } catch (error) {
+      console.error('Erro ao carregar categorias iniciais:', error);
     }
   };
 
@@ -1137,6 +1150,40 @@ export default function ImportStatements() {
         </AlertDescription>
       </Alert>
 
+      {!hasAccounts && (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardContent className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-900">Cadastre uma conta antes de importar</p>
+              <p className="text-sm text-muted-foreground">
+                O extrato precisa ser vinculado a uma conta para que as transações entrem no ambiente correto.
+              </p>
+            </div>
+            <Button onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Criar Primeira Conta
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {hasAccounts && !hasCategories && (
+        <Card className="border-blue-200 bg-blue-50/40">
+          <CardContent className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-900">Categorias ajudam a IA a sugerir melhor</p>
+              <p className="text-sm text-muted-foreground">
+                Você pode importar agora, mas criar categorias sugeridas antes melhora a revisão e os relatórios.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => navigate('/categories')}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Revisar Categorias
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Carregar Extrato</CardTitle>
@@ -1145,6 +1192,25 @@ export default function ImportStatements() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="space-y-2 mb-6">
+            <Label htmlFor="account">Conta para Importação *</Label>
+            <Select value={selectedAccountId} onValueChange={setSelectedAccountId} disabled={!hasAccounts}>
+              <SelectTrigger id="account">
+                <SelectValue placeholder={hasAccounts ? 'Selecione a conta...' : 'Cadastre uma conta primeiro'} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>
+                    {acc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              Escolha a conta onde essas movimentações devem ser importadas.
+            </p>
+          </div>
+
           <Tabs defaultValue="file">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="file">
@@ -1157,31 +1223,15 @@ export default function ImportStatements() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="file" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="account">Conta para Importação *</Label>
-                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                    <SelectTrigger id="account">
-                      <SelectValue placeholder="Selecione a conta..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map(acc => (
-                        <SelectItem key={acc.id} value={acc.id}>
-                          {acc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="file">Arquivo de Extrato *</Label>
-                  <Input
-                    id="file"
-                    type="file"
-                    accept=".csv,.txt,.ofx"
-                    onChange={handleFileUpload}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="file">Arquivo de Extrato *</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  accept=".csv,.txt,.ofx"
+                  onChange={handleFileUpload}
+                  disabled={!hasAccounts}
+                />
               </div>
               <p className="text-sm text-muted-foreground">
                 Formatos aceitos: CSV, TXT ou OFX. Selecione a conta onde essas transações ocorreram.
@@ -1222,6 +1272,7 @@ export default function ImportStatements() {
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
                   rows={10}
+                  disabled={!hasAccounts}
                 />
                 <p className="text-sm text-muted-foreground">
                   Cole o texto do seu extrato. A IA tentará identificar as transações automaticamente.
@@ -1279,7 +1330,7 @@ export default function ImportStatements() {
       <div className="flex justify-end">
         <Button
           onClick={analyzeTransactions}
-          disabled={isAnalyzing || (!fileContent && !textContent)}
+          disabled={isAnalyzing || (!fileContent && !textContent) || !hasAccounts || !selectedAccountId}
           size="lg"
         >
           {isAnalyzing ? (

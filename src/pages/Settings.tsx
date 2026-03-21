@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from 'miaoda-auth-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -10,24 +12,43 @@ import {
     AlertCircle,
     CheckCircle2,
     Loader2,
-    ShieldCheck
+    ShieldCheck,
+    Users,
+    Bot,
+    Settings2
 } from 'lucide-react';
 import { backupService, BackupData } from '@/services/backupService';
 import { profileService, ProfileSettings } from '@/services/profileService';
+import { getCurrentPlanInfo, getCurrentPlanUsage, getPlanSourceLabel } from '@/services/planService';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 
 export default function Settings() {
+    const navigate = useNavigate();
+    const { user } = useAuth();
     const [isExporting, setIsExporting] = React.useState(false);
     const [isImporting, setIsImporting] = React.useState(false);
     const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
     const [settings, setSettings] = React.useState<ProfileSettings>({});
+    const [planSummary, setPlanSummary] = React.useState<{
+        name: string;
+        source: string;
+        peopleLimit: number;
+        companiesLimit: number;
+        peopleCount: number;
+        companiesCount: number;
+        isConfigured: boolean;
+    } | null>(null);
     const [importProgress, setImportProgress] = React.useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
+    const isAdmin = userRole === 'admin';
+    const hasPrimaryPerson = Boolean(settings.owner_person_id);
 
     React.useEffect(() => {
         loadSettings();
+        loadPlanSummary();
     }, []);
 
     const loadSettings = async () => {
@@ -38,6 +59,27 @@ export default function Settings() {
             }
         } catch (error) {
             console.error('Error loading settings:', error);
+        }
+    };
+
+    const loadPlanSummary = async () => {
+        try {
+            const [planInfo, usage] = await Promise.all([
+                getCurrentPlanInfo(),
+                getCurrentPlanUsage(),
+            ]);
+
+            setPlanSummary({
+                name: planInfo.plan.name,
+                source: getPlanSourceLabel(planInfo.source),
+                peopleLimit: planInfo.plan.limits.managedPeople,
+                companiesLimit: planInfo.plan.limits.companies,
+                peopleCount: usage.peopleCount,
+                companiesCount: usage.companiesCount,
+                isConfigured: planInfo.isConfigured,
+            });
+        } catch (error) {
+            console.error('Error loading plan summary:', error);
         }
     };
 
@@ -156,6 +198,110 @@ export default function Settings() {
                 </p>
             </div>
 
+            {isAdmin && (
+                <Card className="border-blue-200 bg-blue-50/40">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Settings2 className="h-5 w-5 text-blue-600" />
+                            Administração
+                        </CardTitle>
+                        <CardDescription>
+                            Atalhos das configurações administrativas da plataforma.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-3">
+                        <Button
+                            variant="outline"
+                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                            onClick={() => navigate('/user-management')}
+                        >
+                            <div className="flex items-center gap-2 text-slate-900">
+                                <Users className="h-4 w-4 text-blue-600" />
+                                <span className="font-bold">Gestão de Usuários</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-normal">
+                                Criar, editar, resetar senha e acompanhar status dos usuários.
+                            </span>
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                            onClick={() => navigate('/ai-admin')}
+                        >
+                            <div className="flex items-center gap-2 text-slate-900">
+                                <Bot className="h-4 w-4 text-blue-600" />
+                                <span className="font-bold">Configuração IA</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-normal">
+                                Ajustar modelo, permissões e parâmetros operacionais da IA.
+                            </span>
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="h-auto min-h-24 flex-col items-start gap-2 border-blue-200 bg-white px-4 py-4 text-left hover:bg-blue-50"
+                            onClick={() => navigate('/admin-general')}
+                        >
+                            <div className="flex items-center gap-2 text-slate-900">
+                                <Settings2 className="h-4 w-4 text-blue-600" />
+                                <span className="font-bold">Painel Geral</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground whitespace-normal">
+                                Ver logs, manutenção e controles globais da instância.
+                            </span>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+
+            <Card className="border-slate-200">
+                <CardHeader>
+                    <CardTitle>Plano Atual</CardTitle>
+                    <CardDescription>
+                        Limites comerciais aplicados a pessoas cadastradas e CNPJs ativos.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {planSummary ? (
+                        <>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">Plano</p>
+                                    <p className="mt-1 text-lg font-semibold">{planSummary.name}</p>
+                                </div>
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">Pessoas</p>
+                                    <p className="mt-1 text-lg font-semibold">
+                                        {planSummary.peopleCount} / {planSummary.peopleLimit}
+                                    </p>
+                                </div>
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">CNPJs</p>
+                                    <p className="mt-1 text-lg font-semibold">
+                                        {planSummary.companiesCount} / {planSummary.companiesLimit}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <Alert>
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Origem da regra</AlertTitle>
+                                <AlertDescription>
+                                    O plano foi resolvido a partir de {planSummary.source}.
+                                    {!planSummary.isConfigured && ' Nenhum plano explicito foi encontrado; a aplicacao esta usando fallback de compatibilidade.'}
+                                </AlertDescription>
+                            </Alert>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Carregando informacoes do plano...
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Export Card */}
                 <Card className="hover:shadow-md transition-shadow">
@@ -251,21 +397,27 @@ export default function Settings() {
                     <CardContent className="space-y-6">
                         <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50">
                             <div className="space-y-1">
-                                <p className="text-sm font-bold leading-none">Ocultar Membro "Titular"</p>
+                                <p className="text-sm font-bold leading-none">
+                                    {hasPrimaryPerson ? 'Pessoa titular principal' : 'Ocultar Membro "Titular"'}
+                                </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Remove o perfil padrão do sistema caso existam outros membros.
+                                    {hasPrimaryPerson
+                                        ? 'Sua conta já usa uma pessoa titular real e protegida como referência principal.'
+                                        : 'Remove o perfil padrão do sistema caso existam outros membros.'}
                                 </p>
                             </div>
                             <Switch
                                 checked={settings.hide_titular}
                                 onCheckedChange={(val) => handleUpdateSetting('hide_titular', val)}
-                                disabled={isUpdatingSettings}
+                                disabled={isUpdatingSettings || hasPrimaryPerson}
                             />
                         </div>
 
                         <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/10 text-xs">
                             <AlertCircle className="h-4 w-4 text-purple-500 inline mr-2 mb-1" />
-                            Esta opção facilita o uso se você gerencia apenas familiares ou perfis específicos, eliminando o "Titular" genérico das listas.
+                            {hasPrimaryPerson
+                                ? 'A visualização antiga de titular genérico foi substituída por uma pessoa titular real da conta.'
+                                : 'Esta opção facilita o uso se você gerencia apenas familiares ou perfis específicos, eliminando o "Titular" genérico das listas.'}
                         </div>
                     </CardContent>
                 </Card>

@@ -48,13 +48,29 @@ export function PersonProvider({ children }: PersonProviderProps) {
         setError(null);
 
         try {
-            const [peopleData, profile] = await Promise.all([
+            const [loadedPeople, profile] = await Promise.all([
                 personService.getAll(companyId),
                 profileService.getProfile()
             ]);
 
+            let peopleData = loadedPeople;
+            let userSettings = profile?.settings || {};
+
+            if (companyId === null) {
+                const primaryPersonChanged = await personService.ensurePrimaryPerson(peopleData);
+
+                if (primaryPersonChanged) {
+                    const [refreshedPeople, refreshedProfile] = await Promise.all([
+                        personService.getAll(companyId),
+                        profileService.getProfile()
+                    ]);
+
+                    peopleData = refreshedPeople;
+                    userSettings = refreshedProfile?.settings || userSettings;
+                }
+            }
+
             setPeople(peopleData);
-            const userSettings = profile?.settings || {};
             setSettings(userSettings);
 
             // Recuperar pessoa selecionada do localStorage

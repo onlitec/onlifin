@@ -97,11 +97,9 @@ export const profilesApi = {
   },
 
   async deleteUser(userId: string): Promise<void> {
-    // Delete user profile (cascade will handle related data)
-    const { error } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
+    const { error } = await supabase.rpc('admin_delete_user', {
+      p_user_id: userId
+    });
 
     if (error) throw error;
   }

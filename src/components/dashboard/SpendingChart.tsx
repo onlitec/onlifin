@@ -52,6 +52,35 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export function SpendingChart({ data }: SpendingChartProps) {
+    const hasMeaningfulData = data.some((item) => item.income > 0 || item.expenses > 0);
+
+    if (!hasMeaningfulData) {
+        return (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 lg:p-6 h-full flex flex-col gap-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase">Evolução Mensal</h3>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Performance Fiscal</p>
+                    </div>
+                </div>
+                <div className="flex-1 flex items-center justify-center min-h-[220px]">
+                    <div className="text-center space-y-2 max-w-xs">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 border border-slate-100">
+                            <svg className="h-8 w-8 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 3v18h18" />
+                                <path d="m7 14 4-4 3 3 5-7" />
+                            </svg>
+                        </div>
+                        <p className="text-sm font-bold text-slate-900">Sem histórico suficiente</p>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                            O gráfico será preenchido após as primeiras receitas e despesas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 lg:p-6 h-full flex flex-col gap-4 shadow-sm">
             <div className="flex items-center justify-between">

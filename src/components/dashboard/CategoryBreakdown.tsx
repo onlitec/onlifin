@@ -48,6 +48,28 @@ export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
         color: CATEGORY_CONFIG[cat.category]?.color || DEFAULT_CONFIG.color
     }));
 
+    if (topCategories.length === 0 || total === 0) {
+        return (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 lg:p-6 h-full flex flex-col gap-4 shadow-sm">
+                <div className="space-y-0.5">
+                    <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase">Gastos por Categoria</h3>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Distribuição Mensal</p>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center space-y-2 max-w-xs">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 border border-slate-100">
+                            <MoreHorizontal className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-900">Sem despesas categorizadas</p>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                            As categorias aparecem aqui depois das primeiras transações de despesa.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 lg:p-6 h-full flex flex-col gap-4 shadow-sm">
             <div className="space-y-0.5">

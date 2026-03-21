@@ -1,11 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# Script para aplicar a migration atual de gestão de usuários/auth flow
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-MIGRATION_FILE="${PROJECT_ROOT}/migrations/20260321_fix_user_management_auth_flow.sql"
+MIGRATION_FILE="${PROJECT_ROOT}/migrations/20260321_add_plan_columns_to_tenants.sql"
 DB_USER="${DB_USER:-onlifin}"
 DB_NAME="${DB_NAME:-onlifin}"
 
@@ -57,25 +55,23 @@ resolve_container_name() {
 }
 
 if [ ! -f "$MIGRATION_FILE" ]; then
-    log_error "Migration não encontrada: $MIGRATION_FILE"
+    log_error "Migration nao encontrada: $MIGRATION_FILE"
     exit 1
 fi
 
 if ! DOCKER_CMD="$(resolve_docker_cmd)"; then
-    log_error "Não foi possível acessar o Docker. Rode com um usuário que tenha acesso ao daemon ou use sudo."
+    log_error "Nao foi possivel acessar o Docker."
     exit 1
 fi
 
 if ! DB_CONTAINER="$(resolve_container_name "$DOCKER_CMD")"; then
-    log_error "Container do banco não encontrado. Esperado: onlifin-db ou onlifin-database."
+    log_error "Container do banco nao encontrado. Esperado: onlifin-db ou onlifin-database."
     exit 1
 fi
 
-log_info "Aplicando migration de gestão de usuários/auth flow"
+log_info "Aplicando migration de planos em tenants"
 log_info "Arquivo: $MIGRATION_FILE"
 log_info "Container: $DB_CONTAINER"
-
-$DOCKER_CMD exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1" >/dev/null
 
 cat "$MIGRATION_FILE" | $DOCKER_CMD exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME"
 
@@ -83,12 +79,43 @@ log_info "Migration aplicada com sucesso"
 log_info "Recarregando schema do PostgREST"
 $DOCKER_CMD exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "NOTIFY pgrst, 'reload schema';" >/dev/null
 
-log_info "Validação rápida"
+log_info "Validacao rapida"
 $DOCKER_CMD exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "
-SELECT
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'force_password_change') AS has_force_password_change,
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'last_login_at') AS has_last_login_at,
-  EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'admin_delete_user') AS has_admin_delete_user;
+DO \$\$
+DECLARE
+    has_tenants boolean;
+    normalized_rows integer;
+BEGIN
+    SELECT to_regclass('public.tenants') IS NOT NULL INTO has_tenants;
+
+    IF NOT has_tenants THEN
+        RAISE NOTICE 'Tabela public.tenants nao encontrada apos migration.';
+        RETURN;
+    END IF;
+
+    SELECT COUNT(*)
+    INTO normalized_rows
+    FROM public.tenants
+    WHERE COALESCE(plan_code, '') IN ('basic', 'medium', 'full');
+
+    RAISE NOTICE 'has_plan_code=%, has_plan=%, normalized_rows=%',
+        EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'tenants'
+              AND column_name = 'plan_code'
+        ),
+        EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'tenants'
+              AND column_name = 'plan'
+        ),
+        normalized_rows;
+END
+\$\$;
 "
 
-log_warn "Próximo passo: reinicie app/API se necessário e teste login, reset de senha e exclusão de usuário."
+log_warn "Se existirem tenants antigos sem plano no perfil, rode tambem ./scripts/apply-plan-backfill.sh"

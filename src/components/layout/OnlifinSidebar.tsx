@@ -33,9 +33,11 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useAuth } from 'miaoda-auth-react';
+import { profilesApi } from '@/db/api';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
+import type { Profile } from '@/types/types';
 
 export function OnlifinSidebar() {
     const location = useLocation();
@@ -44,7 +46,8 @@ export function OnlifinSidebar() {
     const { state } = useSidebar();
     const { isPJ, companyId } = useFinanceScope();
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
-    const userLabel = user?.email?.split('@')[0] || 'usuario';
+    const [profile, setProfile] = React.useState<Profile | null>(null);
+    const userLabel = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'usuario';
     const userRole = ((user as any)?.app_metadata?.role || (user as any)?.role || 'user').toString();
     const isAdmin = userRole === 'admin';
     const userRoleLabel = userRole === 'admin' ? 'Admin' : 'Usuário';
@@ -75,7 +78,17 @@ export function OnlifinSidebar() {
         { title: 'Previsão Financeira', icon: TrendingUp, path: `${prefix}/forecast` },
         { title: 'Empresas', icon: Building2, path: '/companies' },
         { title: 'Relatórios', icon: FileText, path: `${prefix}/reports` },
-        { title: 'Configurações', icon: Settings, path: '/settings' },
+        {
+            title: 'Configurações', icon: Settings, path: '/settings', subItems: [
+                { title: 'Preferências e Backup', path: '/settings' },
+                ...(isAdmin
+                    ? [
+                        { title: 'Gestão de Usuários', path: '/user-management' },
+                        { title: 'Configuração IA', path: '/ai-admin' }
+                    ]
+                    : [])
+            ]
+        },
         ...(isAdmin ? [{
             title: 'Administração', icon: Settings, path: '/admin', subItems: [
                 { title: 'Geral', path: '/admin-general' },
@@ -94,6 +107,34 @@ export function OnlifinSidebar() {
     const toggleMenu = (title: string) => {
         setOpenMenus(prev => ({ ...prev, [title]: !prev[title] }));
     };
+
+    React.useEffect(() => {
+        let isMounted = true;
+
+        const loadProfile = async () => {
+            if (!user?.id) {
+                if (isMounted) {
+                    setProfile(null);
+                }
+                return;
+            }
+
+            try {
+                const nextProfile = await profilesApi.getProfile(user.id);
+                if (isMounted) {
+                    setProfile(nextProfile);
+                }
+            } catch (error) {
+                console.error('Falha ao carregar perfil no sidebar:', error);
+            }
+        };
+
+        void loadProfile();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [user?.id]);
 
     return (
         <Sidebar collapsible="icon" className="border-r-2 border-slate-300 bg-white">
@@ -119,7 +160,7 @@ export function OnlifinSidebar() {
                             const isCurrentActive = isActive(item.path);
 
                             if (item.subItems) {
-                                const isSubActive = item.subItems.some(sub => location.pathname === sub.path);
+                                const isSubActive = item.subItems.some(sub => location.pathname === sub.path || location.pathname.startsWith(`${sub.path}/`));
                                 return (
                                     <Collapsible
                                         key={item.title}

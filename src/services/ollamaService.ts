@@ -23,7 +23,15 @@ interface OllamaChatResponse {
     done: boolean;
 }
 
+const MAX_FINANCIAL_CONTEXT_CHARS = 1800;
+const MAX_HISTORY_MESSAGES = 6;
+const MAX_MESSAGE_CHARS = 600;
+
 let cachedModelAvailability: boolean | null = null;
+
+function isRecoverableOllamaStatus(status: number): boolean {
+    return status === 401 || status === 403 || status === 404 || status === 408 || status === 429 || status >= 500;
+}
 
 async function isOllamaModelAvailable(): Promise<boolean> {
     if (cachedModelAvailability !== null) {
@@ -127,7 +135,6 @@ export async function chatWithOllama(
 ): Promise<string> {
     const modelAvailable = await isOllamaModelAvailable();
     if (!modelAvailable) {
-        console.warn(`Modelo Ollama indisponível: ${OLLAMA_MODEL}. Usando fallback local.`);
         return '';
     }
 
@@ -137,36 +144,111 @@ export async function chatWithOllama(
         stream: false,
         options: {
             temperature: 0.3,
-            num_predict: 2000 // Limitar resposta para evitar timeout
+            num_predict: 120 // Limitar resposta para evitar timeout
         }
     };
 
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
-        const response = await fetch('/ollama/api/chat', {
+        const responsePromise = fetch('/ollama/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestBody),
-            signal: controller.signal
+        }).then(async response => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (isRecoverableOllamaStatus(response.status)) {
+                    return '';
+                }
+                throw new Error(`Ollama error: ${response.status} - ${errorText}`);
+            }
+
+            const data: OllamaChatResponse = await response.json();
+            return data.message.content || '';
         });
 
-        clearTimeout(timeoutId);
+        const timeoutPromise = new Promise<string>((resolve) => {
+            setTimeout(() => resolve(''), 20000);
+        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Ollama error: ${response.status} - ${errorText}`);
-        }
-
-        const data: OllamaChatResponse = await response.json();
-        return data.message.content || '';
+        return await Promise.race([responsePromise, timeoutPromise]);
     } catch (error: any) {
-        console.error('Erro ao chamar Ollama Chat:', error.message);
         throw error;
     }
+}
+
+function compactText(text: string, maxChars: number): string {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (normalized.length <= maxChars) {
+        return normalized;
+    }
+
+    return `${normalized.slice(0, maxChars - 3)}...`;
+}
+
+function normalizeConversationHistory(
+    conversationHistory?: { role: 'user' | 'assistant'; content: string }[]
+): OllamaMessage[] {
+    if (!conversationHistory?.length) {
+        return [];
+    }
+
+    return conversationHistory
+        .filter(msg => {
+            const content = msg.content.trim();
+            if (!content) {
+                return false;
+            }
+
+            // Não enviar novamente a mensagem de boas-vindas gigante do frontend.
+            if (msg.role === 'assistant' && content.includes('Como posso ajudar você hoje?')) {
+                return false;
+            }
+
+            return true;
+        })
+        .slice(-MAX_HISTORY_MESSAGES)
+        .map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: compactText(msg.content, MAX_MESSAGE_CHARS)
+        }));
+}
+
+export function getDestructiveActionGuardrail(message: string): string | null {
+    const lowerMessage = message.toLowerCase();
+    const destructiveVerb =
+        lowerMessage.includes('excluir') ||
+        lowerMessage.includes('apagar') ||
+        lowerMessage.includes('apague') ||
+        lowerMessage.includes('deletar') ||
+        lowerMessage.includes('delete') ||
+        lowerMessage.includes('remover') ||
+        lowerMessage.includes('remova') ||
+        lowerMessage.includes('limpar');
+
+    if (!destructiveVerb) {
+        return null;
+    }
+
+    const explicitTarget =
+        lowerMessage.includes('transa') ||
+        lowerMessage.includes('conta') ||
+        lowerMessage.includes('cart') ||
+        lowerMessage.includes('extrato') ||
+        lowerMessage.includes('importa') ||
+        lowerMessage.includes('dívid') ||
+        lowerMessage.includes('divid') ||
+        lowerMessage.includes('previs') ||
+        lowerMessage.includes('categoria') ||
+        lowerMessage.includes('pessoa') ||
+        lowerMessage.includes('empresa');
+
+    if (!explicitTarget) {
+        return '⚠️ Detectei um pedido potencialmente destrutivo. Eu não apago nem limpo dados sem que você diga exatamente o que deseja remover e confirme isso explicitamente.';
+    }
+
+    return '⚠️ Regra de segurança ativa: eu não excluo, limpo ou apago dados automaticamente pelo assistente. Se você realmente quiser remover algo, diga exatamente qual dado deseja excluir e confirme de forma explícita antes de qualquer ação.';
 }
 
 // Mantendo suporte para generate se necessário
@@ -463,35 +545,36 @@ export async function chatWithAssistant(
     conversationHistory?: { role: 'user' | 'assistant'; content: string }[],
     financialContextText?: string
 ): Promise<string> {
+    const destructiveGuardrail = getDestructiveActionGuardrail(message);
+    if (destructiveGuardrail) {
+        return destructiveGuardrail;
+    }
+
+    const compactFinancialContext = financialContextText
+        ? compactText(financialContextText, MAX_FINANCIAL_CONTEXT_CHARS)
+        : 'Nenhum dado financeiro disponível.';
+
     const systemPrompt = `Você é o Onlifin AI, assistente financeiro pessoal.
-Responda sempre em Português (PT-BR). Seja conciso, direto e amigável. Use emojis.
-Analise os dados financeiros abaixo para fundamentar suas respostas. Se não houver dados, peça para o usuário cadastrar.
+Responda sempre em Português (PT-BR).
+Seja conciso, objetivo e útil.
+Use no máximo 6 frases curtas ou uma lista breve.
+Baseie a resposta nos dados financeiros abaixo quando eles forem relevantes.
+Se faltarem dados, diga isso claramente.
+Você tem acesso total somente para leitura aos dados financeiros da plataforma no escopo fornecido.
+Nunca exclua, limpe, altere ou confirme remoção de dados sem pedido explícito e confirmação clara do usuário.
+Se o usuário pedir uma ação destrutiva, peça confirmação e descreva exatamente o alvo antes de qualquer passo.
 
-DADOS FINANCEIROS DO USUÁRIO:
-${financialContextText || 'Nenhum dado financeiro disponível.'}
-
-INSTRUÇÕES:
-1. Use os dados acima para responder perguntas sobre gastos, saldo e economia.
-2. Identifique tendências ou gastos excessivos.
-3. Se o usuário perguntar algo não financeiro, tente trazer o assunto de volta para finanças.`;
+DADOS FINANCEIROS:
+${compactFinancialContext}`;
 
     const messages: OllamaMessage[] = [
         { role: 'system', content: systemPrompt }
     ];
 
-    // Adicionar histórico (últimas 10 mensagens para manter contexto sem estourar token limit)
-    if (conversationHistory && conversationHistory.length > 0) {
-        const recentHistory = conversationHistory.slice(-10);
-        recentHistory.forEach(msg => {
-            messages.push({
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content
-            });
-        });
-    }
+    messages.push(...normalizeConversationHistory(conversationHistory));
 
     // Adicionar a mensagem atual
-    messages.push({ role: 'user', content: message });
+    messages.push({ role: 'user', content: compactText(message, MAX_MESSAGE_CHARS) });
 
     return chatWithOllama(messages);
 }

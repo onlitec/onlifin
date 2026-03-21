@@ -47,10 +47,15 @@ export function PersonSelector({
     }
 
     const titularName = settings.titular_name || 'Principal (Geral)';
+    const ownerPerson = settings.owner_person_id
+        ? people.find((person) => person.id === settings.owner_person_id)
+        : null;
+    const fallbackPersonName = ownerPerson?.name || people.find((person) => person.is_default)?.name || people[0]?.name || 'Titular';
+    const shouldShowVirtualTitular = !settings.hide_titular && !settings.owner_person_id;
 
     const currentName = selectedPerson
         ? selectedPerson.name
-        : (!settings.hide_titular ? titularName : (people.find(p => p.is_default)?.name || 'Titular'));
+        : (shouldShowVirtualTitular ? titularName : fallbackPersonName);
 
     return (
         <DropdownMenu>
@@ -82,7 +87,7 @@ export function PersonSelector({
                 <DropdownMenuSeparator className="bg-white/5 mx--2" />
 
                 <div className="space-y-1 mt-1">
-                    {!settings.hide_titular && (
+                    {shouldShowVirtualTitular && (
                         <DropdownMenuItem
                             className={cn(
                                 "flex items-center gap-3 cursor-pointer rounded-xl transition-all duration-200 py-2.5 px-3 hover:bg-white/5",

@@ -12,8 +12,11 @@ import { CardBrandSelector } from '@/components/ui/card-brand-selector';
 import { getCardBrandById, getDefaultCardIcon } from '@/config/banks';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import type { Card as CardType, Account } from '@/types/types';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function Cards() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [cards, setCards] = React.useState<CardType[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -30,10 +33,29 @@ export default function Cards() {
   const { toast } = useToast();
 
   const { companyId, isPJ, personId } = useFinanceScope();
+  const isOnboarding = searchParams.get('onboarding') === '1';
+  const onboardingAccountId = searchParams.get('account_id') || '';
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   React.useEffect(() => {
     loadData();
   }, [companyId, personId]);
+
+  React.useEffect(() => {
+    if (!isOnboarding || isLoading || accounts.length === 0 || isDialogOpen) {
+      return;
+    }
+
+    setFormData((current) => ({
+      ...current,
+      account_id: onboardingAccountId || current.account_id || accounts[0]?.id || '',
+    }));
+    setIsDialogOpen(true);
+    toast({
+      title: 'Cadastro de cartão',
+      description: 'Esta etapa é opcional. Se usar cartão, configure-o agora.',
+    });
+  }, [accounts, isDialogOpen, isLoading, isOnboarding, onboardingAccountId, toast]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -88,6 +110,20 @@ export default function Cards() {
           company_id: companyId ?? null,
           person_id: personId ?? null
         });
+
+        if (isOnboarding) {
+          toast({
+            title: 'Cartão configurado',
+            description: 'Setup inicial concluído. Você já pode acompanhar tudo no painel.',
+          });
+          setIsDialogOpen(false);
+          setSearchParams({}, { replace: true });
+          resetForm();
+          await loadData();
+          navigate(prefix);
+          return;
+        }
+
         toast({ title: 'Sucesso', description: 'Cartão criado com sucesso' });
       }
 
@@ -151,6 +187,19 @@ export default function Cards() {
     }).format(value);
   };
 
+  const handleBrandChange = (icon: string | null) => {
+    const brandConfig = icon ? getCardBrandById(icon) : null;
+
+    setFormData((current) => ({
+      ...current,
+      icon,
+      name: !editingCard && brandConfig && (!current.name || current.name.startsWith('Cartão '))
+        ? `Cartão ${brandConfig.name}`
+        : current.name,
+      account_id: current.account_id || onboardingAccountId || (accounts.length === 1 ? accounts[0].id : ''),
+    }));
+  };
+
   return (
     <div className="w-full max-w-[1600px] mx-auto p-4 lg:p-6 space-y-6 animate-slide-up bg-slate-50/30 min-h-screen">
       {/* Header Section */}
@@ -165,7 +214,12 @@ export default function Cards() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
-          if (!open) resetForm();
+          if (!open) {
+            if (isOnboarding) {
+              setSearchParams({}, { replace: true });
+            }
+            resetForm();
+          }
         }}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95">
@@ -267,7 +321,7 @@ export default function Cards() {
                     <Label className="text-[10px] uppercase tracking-widest font-black ml-1 opacity-50">Bandeira / Identidade</Label>
                     <CardBrandSelector
                       value={formData.icon}
-                      onChange={(icon) => setFormData({ ...formData, icon })}
+                      onChange={handleBrandChange}
                       label="Selecionar Bandeira"
                     />
                   </div>
@@ -296,8 +350,36 @@ export default function Cards() {
             </div>
             <p className="text-sm font-black uppercase tracking-widest text-slate-800 mb-1">Sem Cartões Registrados</p>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest text-center max-w-xs">
-              Adicione seus cartões de crédito para monitorar limites e faturas.
+              {accounts.length === 0
+                ? 'Cadastre uma conta antes de vincular cartões ao fluxo financeiro.'
+                : 'Adicione seus cartões de crédito para monitorar limites e faturas.'}
             </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              {accounts.length > 0 ? (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => setIsDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Cadastrar Primeiro Cartão
+                </Button>
+              ) : (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Cadastrar Primeira Conta
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                onClick={() => navigate(prefix)}
+              >
+                Ir para o Painel
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useAuth } from 'miaoda-auth-react';
 import { profilesApi } from '@/db/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,11 @@ import {
   Calendar,
   Edit,
   Check,
-  KeyRound
+  KeyRound,
+  UserCheck,
+  UserCog,
+  ShieldAlert,
+  Clock3
 } from 'lucide-react';
 import type { Profile, UserStatus } from '@/types/types';
 import { format } from 'date-fns';
@@ -45,6 +50,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/db/client';
+import { validatePassword } from '@/utils/security';
 
 interface UserFormData {
   username: string;
@@ -83,9 +89,13 @@ const initialFormData: UserFormData = {
 };
 
 export default function UserManagement() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = React.useState<Profile[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isCreating, setIsCreating] = React.useState(false);
+  const [isSavingEdit, setIsSavingEdit] = React.useState(false);
+  const [resettingUserId, setResettingUserId] = React.useState<string | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [deleteUserId, setDeleteUserId] = React.useState<string | null>(null);
@@ -137,10 +147,11 @@ export default function UserManagement() {
       return;
     }
 
-    if (formData.password.length < 6) {
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.valid) {
       toast({
         title: 'Erro',
-        description: 'A senha deve ter no mínimo 6 caracteres',
+        description: passwordValidation.message,
         variant: 'destructive'
       });
       return;
@@ -200,6 +211,7 @@ export default function UserManagement() {
     e.preventDefault();
     if (!editingUser) return;
 
+    setIsSavingEdit(true);
     try {
       const updateData: Partial<Profile> = {
         full_name: formData.full_name || null,
@@ -233,6 +245,8 @@ export default function UserManagement() {
         description: error.message || 'Erro ao atualizar usuário',
         variant: 'destructive'
       });
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -270,6 +284,7 @@ export default function UserManagement() {
       return;
     }
 
+    setResettingUserId(userId);
     try {
       const { error } = await supabase.rpc('admin_reset_password', {
         p_user_id: userId,
@@ -295,12 +310,15 @@ export default function UserManagement() {
         description: error.message,
         variant: 'destructive'
       });
+    } finally {
+      setResettingUserId(null);
     }
   };
 
   const handleDeleteUser = async () => {
     if (!deleteUserId) return;
 
+    setIsDeletingUser(true);
     try {
       await profilesApi.deleteUser(deleteUserId);
       toast({
@@ -315,6 +333,8 @@ export default function UserManagement() {
         description: error.message || 'Erro ao excluir usuário',
         variant: 'destructive'
       });
+    } finally {
+      setIsDeletingUser(false);
     }
   };
 
@@ -357,6 +377,24 @@ export default function UserManagement() {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  const summary = React.useMemo(() => {
+    return {
+      total: users.length,
+      active: users.filter((user) => user.status === 'active').length,
+      admins: users.filter((user) => user.role === 'admin').length,
+      passwordResetPending: users.filter((user) => user.force_password_change).length,
+    };
+  }, [users]);
+
+  const formatDateTime = (value: string | null) => {
+    if (!value) return 'Nunca';
+    try {
+      return format(new Date(value), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    } catch {
+      return 'Data inválida';
+    }
+  };
 
   return (
     <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
@@ -599,6 +637,45 @@ export default function UserManagement() {
         </Dialog>
       </div>
 
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-sm text-muted-foreground">Total de usuários</p>
+              <p className="text-3xl font-bold">{summary.total}</p>
+            </div>
+            <Users className="h-8 w-8 text-primary" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-sm text-muted-foreground">Ativos</p>
+              <p className="text-3xl font-bold text-green-600">{summary.active}</p>
+            </div>
+            <UserCheck className="h-8 w-8 text-green-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-sm text-muted-foreground">Administradores</p>
+              <p className="text-3xl font-bold text-red-600">{summary.admins}</p>
+            </div>
+            <UserCog className="h-8 w-8 text-red-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-sm text-muted-foreground">Troca de senha pendente</p>
+              <p className="text-3xl font-bold text-amber-600">{summary.passwordResetPending}</p>
+            </div>
+            <ShieldAlert className="h-8 w-8 text-amber-600" />
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filtros */}
       <Card>
         <CardHeader>
@@ -665,10 +742,13 @@ export default function UserManagement() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user) => {
+                const isCurrentUser = currentUser?.id === user.id;
+
+                return (
                 <div
                   key={user.id}
-                  className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex items-start justify-between gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
@@ -684,10 +764,15 @@ export default function UserManagement() {
                       <div className="flex gap-2 ml-3">
                         {getRoleBadge(user.role)}
                         {getStatusBadge(user.status)}
+                        {user.force_password_change && (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                            Senha pendente
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-muted-foreground ml-12">
+                    <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground ml-12 md:grid-cols-2 xl:grid-cols-4">
                       {user.email && (
                         <div className="flex items-center gap-1">
                           <Mail className="h-3 w-3" />
@@ -708,20 +793,35 @@ export default function UserManagement() {
                       )}
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(user.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                        Criado em {format(new Date(user.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock3 className="h-3 w-3" />
+                        Último login: {formatDateTime(user.last_login_at)}
                       </div>
                     </div>
+
+                    {user.admin_notes && (
+                      <p className="ml-12 text-sm text-muted-foreground line-clamp-2">
+                        {user.admin_notes}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-start">
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Resetar Senha"
+                      title={isCurrentUser ? 'Use a tela de alteração de senha da sua conta' : 'Resetar Senha'}
                       className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
                       onClick={() => handleResetPassword(user.id)}
+                      disabled={isCurrentUser || resettingUserId === user.id}
                     >
-                      <KeyRound className="h-4 w-4" />
+                      {resettingUserId === user.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <KeyRound className="h-4 w-4" />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
@@ -735,12 +835,15 @@ export default function UserManagement() {
                       size="icon"
                       onClick={() => setDeleteUserId(user.id)}
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title={isCurrentUser ? 'Você não pode excluir sua própria conta' : 'Excluir usuário'}
+                      disabled={isCurrentUser}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -922,11 +1025,12 @@ export default function UserManagement() {
                 type="button"
                 variant="outline"
                 onClick={() => setIsEditDialogOpen(false)}
+                disabled={isSavingEdit}
               >
                 Cancelar
               </Button>
-              <Button type="submit">
-                <Check className="mr-2 h-4 w-4" />
+              <Button type="submit" disabled={isSavingEdit}>
+                {isSavingEdit ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
                 Salvar Alterações
               </Button>
             </DialogFooter>
@@ -945,7 +1049,12 @@ export default function UserManagement() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={isDeletingUser}
+            >
+              {isDeletingUser ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

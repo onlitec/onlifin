@@ -24,13 +24,14 @@ import type { Transaction, Account, Category } from '@/types/types';
 import { cn } from '@/lib/utils';
 import { useFinanceScope } from '@/hooks/useFinanceScope';
 import ReceiptScanner from '@/components/transactions/ReceiptScanner';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function Transactions() {
   const { toast } = useToast();
-  const { companyId, personId } = useFinanceScope();
+  const { companyId, personId, isPJ } = useFinanceScope();
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -45,6 +46,9 @@ export default function Transactions() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterDateStart, setFilterDateStart] = React.useState('');
   const [filterDateEnd, setFilterDateEnd] = React.useState('');
+  const isOnboarding = searchParams.get('onboarding') === '1';
+  const onboardingAccountId = searchParams.get('account_id') || '';
+  const prefix = isPJ && companyId ? `/pj/${companyId}` : '/pf';
 
   // Form State
   const [formData, setFormData] = React.useState({
@@ -64,6 +68,22 @@ export default function Transactions() {
   React.useEffect(() => {
     loadData();
   }, [filterType, filterAccountId, filterDateStart, filterDateEnd, companyId, personId, user]);
+
+  React.useEffect(() => {
+    if (!isOnboarding || isLoading || accounts.length === 0 || isFormOpen) {
+      return;
+    }
+
+    setFormData((current) => ({
+      ...current,
+      account_id: onboardingAccountId || current.account_id || accounts[0]?.id || '',
+    }));
+    setIsFormOpen(true);
+    toast({
+      title: 'Registre a primeira transação',
+      description: 'Lance uma receita, despesa ou transferência para iniciar seu histórico.',
+    });
+  }, [accounts, isFormOpen, isLoading, isOnboarding, onboardingAccountId, toast]);
 
   const loadData = async () => {
     try {
@@ -132,6 +152,21 @@ export default function Transactions() {
         toast({ title: 'Sucesso', description: 'Transação atualizada' });
       } else {
         await transactionsApi.createTransaction(payload);
+
+        if (isOnboarding) {
+          toast({
+            title: 'Primeira transação registrada',
+            description: 'Se usar cartão, você pode cadastrá-lo agora. Caso contrário, siga para o painel.',
+          });
+          setIsFormOpen(false);
+          setEditingId(null);
+          setSearchParams({}, { replace: true });
+          resetForm();
+          await loadData();
+          navigate(`${prefix}/cards?onboarding=1&account_id=${payload.account_id || ''}`);
+          return;
+        }
+
         toast({ title: 'Sucesso', description: 'Transação criada' });
       }
 
@@ -180,7 +215,7 @@ export default function Transactions() {
       amount: '',
       type: 'expense',
       date: new Date().toISOString().split('T')[0],
-      account_id: '',
+      account_id: onboardingAccountId,
       destination_account_id: '',
       category_id: '',
       is_recurring: false,
@@ -265,9 +300,9 @@ export default function Transactions() {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Conta</Label>
-            <Select value={filterAccountId} onValueChange={setFilterAccountId}>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Conta</Label>
+              <Select value={filterAccountId} onValueChange={setFilterAccountId}>
               <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 font-bold">
                 <SelectValue placeholder="Todas Contas" />
               </SelectTrigger>
@@ -333,7 +368,34 @@ export default function Transactions() {
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-slate-900 tracking-tight">Vazio por aqui</h3>
-              <p className="text-slate-400 font-medium">Nenhuma transação encontrada para este período.</p>
+              <p className="text-slate-400 font-medium">
+                {accounts.length === 0
+                  ? 'Cadastre uma conta antes de lançar movimentações.'
+                  : 'Nenhuma transação encontrada para este período.'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              {accounts.length > 0 ? (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => {
+                    resetForm();
+                    setEditingId(null);
+                    setIsFormOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Registrar Primeira Transação
+                </Button>
+              ) : (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest h-10 px-6 rounded-lg"
+                  onClick={() => navigate(`${prefix}/accounts?onboarding=1`)}
+                >
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Cadastrar Primeira Conta
+                </Button>
+              )}
             </div>
           </div>
         ) : (

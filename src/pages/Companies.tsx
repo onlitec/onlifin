@@ -41,11 +41,9 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { companyService } from '@/services/companyService';
+import { getCurrentPlanInfo, getCurrentPlanUsage, getPlanSourceLabel } from '@/services/planService';
 import { CompanyCard, CompanyCardSkeleton, CompanyDialog } from '@/components/company';
 import type { Company, CreateCompanyDTO, UpdateCompanyDTO, CompanyWithMetrics } from '@/types/company';
-
-// Limite máximo de empresas por usuário
-const MAX_COMPANIES = 50;
 
 /**
  * Formata valor monetário
@@ -82,6 +80,10 @@ export default function CompaniesPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [companiesWithMetrics, setCompaniesWithMetrics] = useState<CompanyWithMetrics[]>([]);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+    const [planLimit, setPlanLimit] = useState<number | null>(null);
+    const [planName, setPlanName] = useState<string>('Plano');
+    const [planSource, setPlanSource] = useState<string>('compatibilidade');
+    const [isLoadingPlan, setIsLoadingPlan] = useState(true);
 
     // Carregar métricas das empresas
     useEffect(() => {
@@ -102,6 +104,32 @@ export default function CompaniesPage() {
         loadMetrics();
     }, [companies]);
 
+    useEffect(() => {
+        const loadPlanContext = async () => {
+            setIsLoadingPlan(true);
+            try {
+                const [planInfo, usage] = await Promise.all([
+                    getCurrentPlanInfo(),
+                    getCurrentPlanUsage(),
+                ]);
+
+                setPlanLimit(planInfo.plan.limits.companies);
+                setPlanName(planInfo.plan.name);
+                setPlanSource(getPlanSourceLabel(planInfo.source));
+
+                if (usage.companiesCount !== companies.length) {
+                    console.warn('Contagem de empresas do plano divergente da lista atual', usage.companiesCount, companies.length);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar contexto de plano:', error);
+            } finally {
+                setIsLoadingPlan(false);
+            }
+        };
+
+        loadPlanContext();
+    }, [companies.length]);
+
     // Filtrar empresas pelo termo de busca
     const filteredCompanies = companies.filter(company => {
         if (!searchTerm) return true;
@@ -120,17 +148,17 @@ export default function CompaniesPage() {
 
     // Handlers
     const handleAddCompany = useCallback(() => {
-        if (companies.length >= MAX_COMPANIES) {
+        if (planLimit !== null && companies.length >= planLimit) {
             toast({
                 title: 'Limite atingido',
-                description: `Você atingiu o limite máximo de ${MAX_COMPANIES} empresas.`,
+                description: `${planName} permite ate ${planLimit} CNPJ(s) ativo(s).`,
                 variant: 'destructive',
             });
             return;
         }
         setEditingCompany(null);
         setIsDialogOpen(true);
-    }, [companies.length, toast]);
+    }, [companies.length, planLimit, planName, toast]);
 
     const handleEditCompany = useCallback((company: Company) => {
         setEditingCompany(company);
@@ -171,9 +199,19 @@ export default function CompaniesPage() {
         if (editingCompany) {
             await updateCompany(editingCompany.id, data as UpdateCompanyDTO);
         } else {
-            await createCompany(data as CreateCompanyDTO);
+            const isFirstCompany = companies.length === 0;
+            const newCompany = await createCompany(data as CreateCompanyDTO);
+
+            if (isFirstCompany) {
+                selectCompany(newCompany.id);
+                navigate(`/pj/${newCompany.id}/accounts?onboarding=1`);
+                toast({
+                    title: 'Primeiro CNPJ configurado',
+                    description: 'Agora cadastre a primeira conta bancária da empresa para concluir o setup.',
+                });
+            }
         }
-    }, [createCompany, editingCompany, updateCompany]);
+    }, [companies.length, createCompany, editingCompany, navigate, selectCompany, toast, updateCompany]);
 
     const confirmDelete = useCallback(async () => {
         if (!deletingCompany) return;
@@ -261,7 +299,7 @@ export default function CompaniesPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{totals.totalCompanies}</div>
                         <p className="text-xs text-muted-foreground">
-                            de {MAX_COMPANIES} disponíveis
+                            {isLoadingPlan ? 'Carregando plano...' : `de ${planLimit ?? 0} disponiveis no ${planName}`}
                         </p>
                     </CardContent>
                 </Card>
@@ -333,6 +371,24 @@ export default function CompaniesPage() {
                 </Card>
             </div>
 
+            <Card className="border-blue-200 bg-blue-50/30">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Capacidade do plano</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
+                    {isLoadingPlan ? (
+                        <Skeleton className="h-5 w-56" />
+                    ) : (
+                        <>
+                            <p>
+                                {planName}: {companies.length} de {planLimit ?? 0} CNPJ(s) ativos.
+                            </p>
+                            <p>Origem da regra: {planSource}.</p>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
+
             {/* Barra de Ferramentas */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="relative flex-1 max-w-md">
@@ -368,13 +424,13 @@ export default function CompaniesPage() {
             </div>
 
             {/* Limite atingido */}
-            {companies.length >= MAX_COMPANIES && (
+            {planLimit !== null && companies.length >= planLimit && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Limite de empresas atingido</AlertTitle>
                     <AlertDescription>
-                        Você atingiu o limite máximo de {MAX_COMPANIES} empresas.
-                        Para adicionar novas empresas, exclua algumas existentes.
+                        O {planName} permite ate {planLimit} CNPJ(s) ativos.
+                        Para adicionar novas empresas, exclua algumas existentes ou altere o plano.
                     </AlertDescription>
                 </Alert>
             )}
@@ -412,12 +468,19 @@ export default function CompaniesPage() {
                             <>
                                 <h3 className="text-lg font-semibold">Nenhuma empresa cadastrada</h3>
                                 <p className="text-muted-foreground mt-1">
-                                    Adicione sua primeira empresa para começar
+                                    {isLoadingPlan
+                                        ? 'Adicione sua primeira empresa para começar'
+                                        : `${planName} permite ${planLimit ?? 0} CNPJ(s) ativo(s). Cadastre o primeiro para liberar o ambiente PJ.`}
                                 </p>
-                                <Button className="mt-4" onClick={handleAddCompany}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Nova Empresa
-                                </Button>
+                                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                                    <Button onClick={handleAddCompany}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Cadastrar Primeiro CNPJ
+                                    </Button>
+                                    <Button variant="outline" onClick={() => navigate('/pf')}>
+                                        Continuar no PF
+                                    </Button>
+                                </div>
                             </>
                         )}
                     </CardContent>
