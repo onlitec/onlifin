@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.35.0] - 2026-03-22
+
+### feat: move notification integrations into platform settings
+
+---
+
+
+
 ## [1.34.2] - 2026-03-21
 
 ### test: expand admin access smoke coverage
