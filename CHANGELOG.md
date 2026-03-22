@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.35.2] - 2026-03-22
+
+### fix: disable unavailable personal notification channels
+
+---
+
+
+
 ## [1.35.1] - 2026-03-22
 
 ### chore: align notification scripts with database credentials
