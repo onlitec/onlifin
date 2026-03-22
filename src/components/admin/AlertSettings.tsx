@@ -12,6 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 
+interface NotificationWorkerHealth {
+  smtpConfigured: boolean;
+  whatsappConfigured: boolean;
+}
+
 interface AlertSettingsProps {
   userId: string;
   emailDestination?: string;
@@ -22,6 +27,7 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
   const { toast } = useToast();
   const [preferences, setPreferences] = React.useState<AlertPreferences | null>(null);
   const [globalSettings, setGlobalSettings] = React.useState<NotificationSettings | null>(null);
+  const [workerHealth, setWorkerHealth] = React.useState<NotificationWorkerHealth | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isTesting, setIsTesting] = React.useState(false);
@@ -56,6 +62,32 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
   React.useEffect(() => {
     void loadPreferences();
   }, [loadPreferences]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadWorkerHealth = async () => {
+      try {
+        const response = await fetch('/api/worker/notification-health');
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json() as NotificationWorkerHealth;
+        if (isMounted) {
+          setWorkerHealth(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar health do worker para preferencias pessoais:', error);
+      }
+    };
+
+    void loadWorkerHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const savePreferences = async () => {
     if (!preferences) return;
@@ -121,6 +153,10 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
   const whatsappAvailable = Boolean(globalSettings?.whatsapp_enabled);
   const hasEmailDestination = emailDestination.trim().length > 0;
   const hasWhatsappDestination = whatsappDestination.trim().length > 0;
+  const smtpReady = workerHealth?.smtpConfigured ?? true;
+  const whatsappReady = workerHealth?.whatsappConfigured ?? true;
+  const emailChannelReady = emailAvailable && smtpReady;
+  const whatsappChannelReady = whatsappAvailable && whatsappReady;
 
   return (
     <div className="space-y-6">
@@ -130,6 +166,17 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
           <AlertDescription>
             Os canais disponiveis seguem a configuracao global da plataforma.
             {channelOverrideLocked ? ' O administrador bloqueou alteracoes individuais de canal.' : ' Voce pode personalizar seus canais dentro do que estiver habilitado.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {workerHealth && (!workerHealth.smtpConfigured || !workerHealth.whatsappConfigured) && (
+        <Alert>
+          <ShieldAlert className="h-4 w-4" />
+          <AlertDescription>
+            Alguns canais externos ainda não estão prontos na plataforma.
+            {!workerHealth.smtpConfigured ? ' E-mail externo indisponível.' : ''}
+            {!workerHealth.whatsappConfigured ? ' WhatsApp externo indisponível.' : ''}
           </AlertDescription>
         </Alert>
       )}
@@ -304,6 +351,8 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
                     <p className="text-xs text-muted-foreground">
                       {!emailAvailable
                         ? 'Canal desabilitado pela administração.'
+                        : !smtpReady
+                          ? 'Integração global de e-mail ainda não está pronta na plataforma.'
                         : hasEmailDestination
                           ? 'Receber alertas por e-mail.'
                           : 'Informe antes um e-mail de recebimento nas suas preferências.'}
@@ -311,7 +360,7 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
                   </div>
                 </div>
                 <Switch
-                  disabled={channelOverrideLocked || !emailAvailable || !hasEmailDestination}
+                  disabled={channelOverrideLocked || !emailChannelReady || !hasEmailDestination}
                   checked={preferences.email_notifications}
                   onCheckedChange={(checked) => setPreferences((current) => current ? { ...current, email_notifications: checked } : current)}
                 />
@@ -325,6 +374,8 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
                     <p className="text-xs text-muted-foreground">
                       {!whatsappAvailable
                         ? 'Canal desabilitado pela administração.'
+                        : !whatsappReady
+                          ? 'Integração global de WhatsApp ainda não está pronta na plataforma.'
                         : hasWhatsappDestination
                           ? 'Receber alertas transacionais por WhatsApp.'
                           : 'Informe antes um WhatsApp de recebimento nas suas preferências.'}
@@ -332,7 +383,7 @@ export function AlertSettings({ userId, emailDestination = '', whatsappDestinati
                   </div>
                 </div>
                 <Switch
-                  disabled={channelOverrideLocked || !whatsappAvailable || !hasWhatsappDestination}
+                  disabled={channelOverrideLocked || !whatsappChannelReady || !hasWhatsappDestination}
                   checked={preferences.whatsapp_notifications}
                   onCheckedChange={(checked) => setPreferences((current) => current ? { ...current, whatsapp_notifications: checked } : current)}
                 />
