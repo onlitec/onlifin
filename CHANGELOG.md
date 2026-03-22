@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.35.3] - 2026-03-22
+
+### fix: preserve auto-login after marketing signup
+
+---
+
+
+
 ## [1.35.2] - 2026-03-22
 
 ### fix: disable unavailable personal notification channels
