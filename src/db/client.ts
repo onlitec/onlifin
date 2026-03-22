@@ -319,7 +319,12 @@ const auth = {
     onAuthStateChange(callback: (event: string, session: any) => void) {
         authListeners.push(callback);
         const session = loadSession();
-        callback(session ? 'SIGNED_IN' : 'SIGNED_OUT', session);
+        // Evita um SIGNED_OUT imediato na inscricao inicial, porque isso
+        // interfere em fluxos publicos que ainda vao persistir a sessao
+        // (ex.: auto-login apos cadastro vindo do marketing).
+        if (session) {
+            callback('SIGNED_IN', session);
+        }
 
         return {
             data: {
