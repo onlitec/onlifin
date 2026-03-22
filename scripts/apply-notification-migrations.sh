@@ -10,6 +10,7 @@ MIGRATION_FILES=(
     "${PROJECT_ROOT}/migrations/20260321_notification_admin_read_access.sql"
     "${PROJECT_ROOT}/migrations/20260321_fix_current_app_role_claims.sql"
     "${PROJECT_ROOT}/migrations/20260321_account_admin_access_controls.sql"
+    "${PROJECT_ROOT}/migrations/20260322_notification_channel_credentials.sql"
 )
 DB_USER="${DB_USER:-onlifin}"
 DB_NAME="${DB_NAME:-onlifin}"

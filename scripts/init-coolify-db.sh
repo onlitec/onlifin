@@ -129,6 +129,10 @@ if [ -f "$SCRIPT_DIR/../migrations/20260321_account_admin_access_controls.sql" ]
     run_sql "$SCRIPT_DIR/../migrations/20260321_account_admin_access_controls.sql" "Separando admin da conta de admin da plataforma"
 fi
 
+if [ -f "$SCRIPT_DIR/../migrations/20260322_notification_channel_credentials.sql" ]; then
+    run_sql "$SCRIPT_DIR/../migrations/20260322_notification_channel_credentials.sql" "Aplicando credenciais globais dos canais de notificação"
+fi
+
 echo ""
 echo -e "${GREEN}✅ Banco de dados inicializado com sucesso!${NC}"
 echo ""

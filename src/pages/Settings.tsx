@@ -1,220 +1,340 @@
 import * as React from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from 'miaoda-auth-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import {
-    Download,
-    Upload,
-    Database,
-    FileJson,
     AlertCircle,
-    CheckCircle2,
-    Loader2,
-    ShieldCheck,
-    Users,
+    BellRing,
     Bot,
+    Loader2,
+    Save,
     Settings2,
-    BellRing
+    ShieldCheck,
+    Smartphone,
+    Users
 } from 'lucide-react';
-import { backupService, BackupData } from '@/services/backupService';
-import { profileService, ProfileSettings } from '@/services/profileService';
-import { getCurrentPlanInfo, getCurrentPlanUsage, getPlanSourceLabel } from '@/services/planService';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { AlertSettings } from '@/components/admin/AlertSettings';
+import { useToast } from '@/hooks/use-toast';
 import { useAuthProfile } from '@/contexts/AuthProfileContext';
-import { canAccessAdministration, canAccessPlatformSettings } from '@/lib/access';
+import { canAccessPlatformSettings } from '@/lib/access';
+import { notificationChannelCredentialsApi, notificationSettingsApi } from '@/db/api';
+import type { NotificationChannelCredentials, NotificationSettings } from '@/types/types';
+
+const DEFAULT_NOTIFICATION_SETTINGS: Pick<NotificationSettings, 'email_from_name' | 'email_from_address'> = {
+    email_from_name: 'OnliFin',
+    email_from_address: null,
+};
+
+const DEFAULT_CHANNEL_CREDENTIALS: Pick<
+    NotificationChannelCredentials,
+    'smtp_host' | 'smtp_port' | 'smtp_secure' | 'smtp_user' | 'smtp_pass' | 'whatsapp_provider' | 'whatsapp_api_base_url' | 'whatsapp_api_token' | 'whatsapp_sender'
+> = {
+    smtp_host: null,
+    smtp_port: 587,
+    smtp_secure: false,
+    smtp_user: null,
+    smtp_pass: null,
+    whatsapp_provider: 'generic',
+    whatsapp_api_base_url: null,
+    whatsapp_api_token: null,
+    whatsapp_sender: null,
+};
 
 export default function Settings() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { profile } = useAuthProfile();
-    const [isExporting, setIsExporting] = React.useState(false);
-    const [isImporting, setIsImporting] = React.useState(false);
-    const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
-    const [settings, setSettings] = React.useState<ProfileSettings>({});
-    const [planSummary, setPlanSummary] = React.useState<{
-        name: string;
-        source: string;
-        peopleLimit: number;
-        companiesLimit: number;
-        peopleCount: number;
-        companiesCount: number;
-        isConfigured: boolean;
-    } | null>(null);
-    const [importProgress, setImportProgress] = React.useState<string | null>(null);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     const isPlatformAdmin = canAccessPlatformSettings(profile, user as any);
-    const canManageAdministration = canAccessAdministration(profile, user as any);
-    const hasPrimaryPerson = Boolean(settings.owner_person_id);
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [notificationSettings, setNotificationSettings] = React.useState(DEFAULT_NOTIFICATION_SETTINGS);
+    const [channelCredentials, setChannelCredentials] = React.useState(DEFAULT_CHANNEL_CREDENTIALS);
 
     React.useEffect(() => {
-        loadSettings();
-        loadPlanSummary();
+        void loadSettings();
     }, []);
 
     const loadSettings = async () => {
+        setIsLoading(true);
         try {
-            const profile = await profileService.getProfile();
-            if (profile?.settings) {
-                setSettings(profile.settings);
-            }
-        } catch (error) {
-            console.error('Error loading settings:', error);
-        }
-    };
-
-    const loadPlanSummary = async () => {
-        try {
-            const [planInfo, usage] = await Promise.all([
-                getCurrentPlanInfo(),
-                getCurrentPlanUsage(),
+            const [settingsData, credentialsData] = await Promise.all([
+                notificationSettingsApi.getGlobal().catch(() => null),
+                notificationChannelCredentialsApi.getGlobal().catch(() => null),
             ]);
 
-            setPlanSummary({
-                name: planInfo.plan.name,
-                source: getPlanSourceLabel(planInfo.source),
-                peopleLimit: planInfo.plan.limits.managedPeople,
-                companiesLimit: planInfo.plan.limits.companies,
-                peopleCount: usage.peopleCount,
-                companiesCount: usage.companiesCount,
-                isConfigured: planInfo.isConfigured,
+            setNotificationSettings({
+                email_from_name: settingsData?.email_from_name ?? DEFAULT_NOTIFICATION_SETTINGS.email_from_name,
+                email_from_address: settingsData?.email_from_address ?? DEFAULT_NOTIFICATION_SETTINGS.email_from_address,
+            });
+
+            setChannelCredentials({
+                smtp_host: credentialsData?.smtp_host ?? DEFAULT_CHANNEL_CREDENTIALS.smtp_host,
+                smtp_port: credentialsData?.smtp_port ?? DEFAULT_CHANNEL_CREDENTIALS.smtp_port,
+                smtp_secure: credentialsData?.smtp_secure ?? DEFAULT_CHANNEL_CREDENTIALS.smtp_secure,
+                smtp_user: credentialsData?.smtp_user ?? DEFAULT_CHANNEL_CREDENTIALS.smtp_user,
+                smtp_pass: credentialsData?.smtp_pass ?? DEFAULT_CHANNEL_CREDENTIALS.smtp_pass,
+                whatsapp_provider: credentialsData?.whatsapp_provider ?? DEFAULT_CHANNEL_CREDENTIALS.whatsapp_provider,
+                whatsapp_api_base_url: credentialsData?.whatsapp_api_base_url ?? DEFAULT_CHANNEL_CREDENTIALS.whatsapp_api_base_url,
+                whatsapp_api_token: credentialsData?.whatsapp_api_token ?? DEFAULT_CHANNEL_CREDENTIALS.whatsapp_api_token,
+                whatsapp_sender: credentialsData?.whatsapp_sender ?? DEFAULT_CHANNEL_CREDENTIALS.whatsapp_sender,
             });
         } catch (error) {
-            console.error('Error loading plan summary:', error);
-        }
-    };
-
-    const handleUpdateSetting = async (key: keyof ProfileSettings, value: any) => {
-        setIsUpdatingSettings(true);
-        try {
-            const newSettings = { [key]: value };
-            await profileService.updateSettings(newSettings);
-            setSettings(prev => ({ ...prev, ...newSettings }));
+            console.error('Erro ao carregar configurações da plataforma:', error);
             toast({
-                title: 'Configuração Salva',
-                description: 'Suas preferências foram atualizadas.',
-            });
-        } catch (error: any) {
-            toast({
-                title: 'Erro ao Salvar',
-                description: error.message,
+                title: 'Erro',
+                description: 'Não foi possível carregar as integrações globais da plataforma.',
                 variant: 'destructive',
             });
         } finally {
-            setIsUpdatingSettings(false);
+            setIsLoading(false);
         }
     };
 
-    const handleExport = async () => {
-        setIsExporting(true);
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            const data = await backupService.exportBackup();
-            backupService.downloadAsJson(data);
+            await Promise.all([
+                notificationSettingsApi.upsertGlobal({
+                    email_from_name: notificationSettings.email_from_name?.trim() || null,
+                    email_from_address: notificationSettings.email_from_address?.trim() || null,
+                }),
+                notificationChannelCredentialsApi.upsertGlobal({
+                    smtp_host: channelCredentials.smtp_host?.trim() || null,
+                    smtp_port: Number(channelCredentials.smtp_port || 587),
+                    smtp_secure: Boolean(channelCredentials.smtp_secure),
+                    smtp_user: channelCredentials.smtp_user?.trim() || null,
+                    smtp_pass: channelCredentials.smtp_pass?.trim() || null,
+                    whatsapp_provider: channelCredentials.whatsapp_provider?.trim() || 'generic',
+                    whatsapp_api_base_url: channelCredentials.whatsapp_api_base_url?.trim() || null,
+                    whatsapp_api_token: channelCredentials.whatsapp_api_token?.trim() || null,
+                    whatsapp_sender: channelCredentials.whatsapp_sender?.trim() || null,
+                }),
+            ]);
+
             toast({
-                title: 'Backup Concluído',
-                description: 'Seus dados foram exportados com sucesso.',
+                title: 'Integrações salvas',
+                description: 'As credenciais globais da plataforma foram atualizadas.',
             });
         } catch (error: any) {
-            console.error('Export error:', error);
+            console.error('Erro ao salvar integrações:', error);
             toast({
-                title: 'Erro na Exportação',
-                description: error.message || 'Não foi possível gerar o backup.',
+                title: 'Erro ao salvar',
+                description: error.message || 'Não foi possível salvar as integrações globais.',
                 variant: 'destructive',
             });
         } finally {
-            setIsExporting(false);
+            setIsSaving(false);
         }
-    };
-
-    const handleImportClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        setIsImporting(true);
-        setImportProgress('Lendo arquivo...');
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const content = e.target?.result as string;
-                const backupData = JSON.parse(content) as BackupData;
-
-                // Validação básica
-                if (!backupData.version || !backupData.data) {
-                    throw new Error('Arquivo de backup inválido ou corrompido.');
-                }
-
-                setImportProgress('Restaurando dados no banco...');
-                const result = await backupService.importBackup(backupData);
-
-                if (result.success) {
-                    toast({
-                        title: 'Restauração Concluída',
-                        description: 'Todos os registros foram importados com sucesso.',
-                    });
-                } else {
-                    toast({
-                        title: 'Concluído com Alertas',
-                        description: `Importação finalizada com ${result.errors.length} erros.`,
-                        variant: 'destructive',
-                    });
-                }
-            } catch (error: any) {
-                console.error('Import error:', error);
-                toast({
-                    title: 'Erro na Importação',
-                    description: error.message || 'Falha ao processar o arquivo de backup.',
-                    variant: 'destructive',
-                });
-            } finally {
-                setIsImporting(false);
-                setImportProgress(null);
-                if (fileInputRef.current) fileInputRef.current.value = '';
-            }
-        };
-
-        reader.onerror = () => {
-            toast({
-                title: 'Erro de Leitura',
-                description: 'Não foi possível ler o arquivo selecionado.',
-                variant: 'destructive',
-            });
-            setIsImporting(false);
-            setImportProgress(null);
-        };
-
-        reader.readAsText(file);
     };
 
     if (!isPlatformAdmin) {
-        return <Navigate to={canManageAdministration ? '/admin-general' : '/pf'} replace />;
+        return <Navigate to="/preferences" replace />;
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando configurações da plataforma...
+            </div>
+        );
     }
 
     return (
         <div className="w-full max-w-[1200px] mx-auto p-6 space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Configurações da Plataforma</h1>
                 <p className="text-muted-foreground text-lg">
-                    Gerencie seus dados, preferências e segurança da conta.
+                    Área restrita para integrações, parâmetros globais e superfícies administrativas da instância.
                 </p>
             </div>
+
+            <Alert className="border-blue-200 bg-blue-50 text-blue-950">
+                <ShieldCheck className="h-4 w-4" />
+                <AlertTitle>Escopo desta página</AlertTitle>
+                <AlertDescription>
+                    Os usuários do tenant configuram apenas seus destinos pessoais de recebimento em <strong>Preferências</strong>.
+                    Nesta tela, apenas administradores da plataforma definem remetente SMTP, provedor WhatsApp e credenciais globais.
+                </AlertDescription>
+            </Alert>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+                <Card className="border-slate-200">
+                    <CardHeader>
+                        <CardTitle>E-mail da plataforma</CardTitle>
+                        <CardDescription>
+                            Credenciais SMTP e remetente padrão usados para notificações externas por e-mail.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="smtp-host">SMTP host</Label>
+                                <Input
+                                    id="smtp-host"
+                                    value={channelCredentials.smtp_host || ''}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, smtp_host: event.target.value }))}
+                                    placeholder="smtp.seuprovedor.com"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="smtp-port">SMTP porta</Label>
+                                <Input
+                                    id="smtp-port"
+                                    type="number"
+                                    value={String(channelCredentials.smtp_port || 587)}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, smtp_port: Number(event.target.value || 587) }))}
+                                    placeholder="587"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="smtp-user">SMTP usuário</Label>
+                                <Input
+                                    id="smtp-user"
+                                    value={channelCredentials.smtp_user || ''}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, smtp_user: event.target.value }))}
+                                    placeholder="apikey ou usuario"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="smtp-pass">SMTP senha</Label>
+                                <Input
+                                    id="smtp-pass"
+                                    type="password"
+                                    value={channelCredentials.smtp_pass || ''}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, smtp_pass: event.target.value }))}
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email-from-name">Nome do remetente</Label>
+                                <Input
+                                    id="email-from-name"
+                                    value={notificationSettings.email_from_name || ''}
+                                    onChange={(event) => setNotificationSettings((current) => ({ ...current, email_from_name: event.target.value }))}
+                                    placeholder="OnliFin"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email-from-address">E-mail remetente</Label>
+                                <Input
+                                    id="email-from-address"
+                                    type="email"
+                                    value={notificationSettings.email_from_address || ''}
+                                    onChange={(event) => setNotificationSettings((current) => ({ ...current, email_from_address: event.target.value }))}
+                                    placeholder="notificacoes@onlifin.com"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-xl border p-4">
+                            <div>
+                                <Label>SMTP seguro</Label>
+                                <p className="text-xs text-muted-foreground">Ative para provedores que exigem TLS/SSL direto.</p>
+                            </div>
+                            <Switch
+                                checked={channelCredentials.smtp_secure}
+                                onCheckedChange={(checked) => setChannelCredentials((current) => ({ ...current, smtp_secure: checked }))}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-slate-200">
+                    <CardHeader>
+                        <CardTitle>WhatsApp da plataforma</CardTitle>
+                        <CardDescription>
+                            Integração global do provedor e número remetente usado nos envios transacionais.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="whatsapp-provider">Provider</Label>
+                                <Input
+                                    id="whatsapp-provider"
+                                    value={channelCredentials.whatsapp_provider || ''}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, whatsapp_provider: event.target.value }))}
+                                    placeholder="generic ou twilio"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="whatsapp-sender">Telefone remetente</Label>
+                                <Input
+                                    id="whatsapp-sender"
+                                    value={channelCredentials.whatsapp_sender || ''}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, whatsapp_sender: event.target.value }))}
+                                    placeholder="+5511999999999"
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="whatsapp-base-url">Base URL da integração</Label>
+                                <Input
+                                    id="whatsapp-base-url"
+                                    value={channelCredentials.whatsapp_api_base_url || ''}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, whatsapp_api_base_url: event.target.value }))}
+                                    placeholder="https://api.seuprovedor.com"
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="whatsapp-token">Token da integração</Label>
+                                <Input
+                                    id="whatsapp-token"
+                                    type="password"
+                                    value={channelCredentials.whatsapp_api_token || ''}
+                                    onChange={(event) => setChannelCredentials((current) => ({ ...current, whatsapp_api_token: event.target.value }))}
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+
+                        <Alert>
+                            <Smartphone className="h-4 w-4" />
+                            <AlertDescription>
+                                O número remetente é global da plataforma. O número destino continua sendo definido por cada usuário em suas preferências pessoais.
+                            </AlertDescription>
+                        </Alert>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card className="border-slate-200">
+                <CardHeader>
+                    <CardTitle>Comportamento operacional</CardTitle>
+                    <CardDescription>
+                        Os campos salvos aqui passam a ser lidos pelo worker com fallback para o deploy atual enquanto a configuração do banco estiver vazia.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            Use <strong>Administração &gt; Notificações</strong> para validar canais, templates, testes administrativos, fila e histórico de entregas após salvar as integrações.
+                        </AlertDescription>
+                    </Alert>
+
+                    <div className="flex justify-end">
+                        <Button onClick={() => void handleSave()} disabled={isSaving}>
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Salvar integrações
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <Card className="border-blue-200 bg-blue-50/40">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Settings2 className="h-5 w-5 text-blue-600" />
-                        Administração
+                        Administração da plataforma
                     </CardTitle>
                     <CardDescription>
-                        Atalhos das configurações administrativas da plataforma.
+                        Atalhos operacionais e de configuração global.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-4">
@@ -228,7 +348,7 @@ export default function Settings() {
                             <span className="font-bold">Gestão de Usuários</span>
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-normal">
-                            Criar, editar, resetar senha e acompanhar status dos usuários.
+                            Criar, editar, resetar senha e acompanhar status dos usuários da instância.
                         </span>
                     </Button>
 
@@ -256,7 +376,7 @@ export default function Settings() {
                             <span className="font-bold">Notificações</span>
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-normal">
-                            Configurar canais, templates, testes e entregas do sistema.
+                            Configurar canais globais, templates, testes administrativos, fila e histórico de entregas.
                         </span>
                     </Button>
 
@@ -275,209 +395,6 @@ export default function Settings() {
                     </Button>
                 </CardContent>
             </Card>
-
-            <Card className="border-slate-200">
-                <CardHeader>
-                    <CardTitle>Plano Atual</CardTitle>
-                    <CardDescription>
-                        Limites comerciais aplicados a pessoas cadastradas e CNPJs ativos.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {planSummary ? (
-                        <>
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <div className="rounded-lg border bg-muted/30 p-4">
-                                    <p className="text-xs font-medium text-muted-foreground">Plano</p>
-                                    <p className="mt-1 text-lg font-semibold">{planSummary.name}</p>
-                                </div>
-                                <div className="rounded-lg border bg-muted/30 p-4">
-                                    <p className="text-xs font-medium text-muted-foreground">Pessoas</p>
-                                    <p className="mt-1 text-lg font-semibold">
-                                        {planSummary.peopleCount} / {planSummary.peopleLimit}
-                                    </p>
-                                </div>
-                                <div className="rounded-lg border bg-muted/30 p-4">
-                                    <p className="text-xs font-medium text-muted-foreground">CNPJs</p>
-                                    <p className="mt-1 text-lg font-semibold">
-                                        {planSummary.companiesCount} / {planSummary.companiesLimit}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <Alert>
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Origem da regra</AlertTitle>
-                                <AlertDescription>
-                                    O plano foi resolvido a partir de {planSummary.source}.
-                                    {!planSummary.isConfigured && ' Nenhum plano explicito foi encontrado; a aplicacao esta usando fallback de compatibilidade.'}
-                                </AlertDescription>
-                            </Alert>
-                        </>
-                    ) : (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Carregando informacoes do plano...
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {user?.id && (
-                <Card className="border-slate-200">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <BellRing className="h-5 w-5 text-blue-500" />
-                            Notificações
-                        </CardTitle>
-                        <CardDescription>
-                            Ajuste seus canais e preferências individuais de notificações.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <AlertSettings userId={user.id} />
-                    </CardContent>
-                </Card>
-            )}
-
-            <div className="grid gap-6 md:grid-cols-2">
-                {/* Export Card */}
-                <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Download className="h-5 w-5 text-blue-500" />
-                            Exportar Dados
-                        </CardTitle>
-                        <CardDescription>
-                            Baixe uma cópia completa de seus dados financeiros (PF e PJ) em formato JSON.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 flex gap-3 text-sm">
-                            <ShieldCheck className="h-5 w-5 text-blue-500 shrink-0" />
-                            <p className="text-blue-700 dark:text-blue-300">
-                                Seus backups são protegidos por criptografia de transporte e só podem ser restaurados na sua conta ou em instâncias compatíveis.
-                            </p>
-                        </div>
-                        <Button
-                            className="w-full gap-2"
-                            size="lg"
-                            onClick={handleExport}
-                            disabled={isExporting || isImporting}
-                        >
-                            {isExporting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <FileJson className="h-4 w-4" />
-                            )}
-                            Gerar Backup Completo
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                {/* Import Card */}
-                <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Upload className="h-5 w-5 text-green-500" />
-                            Restaurar Backup
-                        </CardTitle>
-                        <CardDescription>
-                            Suba um arquivo de backup previamente gerado para restaurar seus registros.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <Alert variant="default" className="bg-amber-500/5 border-amber-500/20 text-amber-700 dark:text-amber-300">
-                            <AlertCircle className="h-4 w-4 !text-amber-500" />
-                            <AlertTitle>Importante</AlertTitle>
-                            <AlertDescription className="text-xs">
-                                O processo de restauração irá manter registros existentes e inserir apenas os novos, ou atualizar registros modificados baseados no ID.
-                            </AlertDescription>
-                        </Alert>
-
-                        <input
-                            type="file"
-                            accept=".json"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                        />
-
-                        <Button
-                            variant="outline"
-                            className="w-full gap-2 h-12 border-dashed border-2 hover:border-green-500 hover:bg-green-500/5 transition-all"
-                            onClick={handleImportClick}
-                            disabled={isExporting || isImporting}
-                        >
-                            {isImporting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Database className="h-4 w-4" />
-                            )}
-                            {importProgress || 'Selecionar Arquivo JSON'}
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-                {/* Interface Preferences */}
-                <Card className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldCheck className="h-5 w-5 text-purple-500" />
-                            Preferências de Interface
-                        </CardTitle>
-                        <CardDescription>
-                            Personalize como o sistema exibe informações para você.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50">
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold leading-none">
-                                    {hasPrimaryPerson ? 'Pessoa titular principal' : 'Ocultar Membro "Titular"'}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {hasPrimaryPerson
-                                        ? 'Sua conta já usa uma pessoa titular real e protegida como referência principal.'
-                                        : 'Remove o perfil padrão do sistema caso existam outros membros.'}
-                                </p>
-                            </div>
-                            <Switch
-                                checked={settings.hide_titular}
-                                onCheckedChange={(val) => handleUpdateSetting('hide_titular', val)}
-                                disabled={isUpdatingSettings || hasPrimaryPerson}
-                            />
-                        </div>
-
-                        <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/10 text-xs">
-                            <AlertCircle className="h-4 w-4 text-purple-500 inline mr-2 mb-1" />
-                            {hasPrimaryPerson
-                                ? 'A visualização antiga de titular genérico foi substituída por uma pessoa titular real da conta.'
-                                : 'Esta opção facilita o uso se você gerencia apenas familiares ou perfis específicos, eliminando o "Titular" genérico das listas.'}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-muted bg-muted/20">
-                    <CardHeader>
-                        <CardTitle className="text-xl">Status do Sistema</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="flex items-center justify-between p-4 rounded-lg bg-white/50 border">
-                            <div className="flex items-center gap-3">
-                                <div className="h-2 w-2 rounded-full bg-green-500" />
-                                <div>
-                                    <p className="font-medium text-sm">Integridade dos Dados</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Sincronizado</p>
-                                </div>
-                            </div>
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
         </div>
     );
 }

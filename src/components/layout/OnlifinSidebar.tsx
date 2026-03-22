@@ -81,9 +81,10 @@ export function OnlifinSidebar() {
         { title: 'Previsão Financeira', icon: TrendingUp, path: `${prefix}/forecast` },
         { title: 'Empresas', icon: Building2, path: '/companies' },
         { title: 'Relatórios', icon: FileText, path: `${prefix}/reports` },
+        { title: 'Preferências', icon: Settings, path: '/preferences' },
         ...(canManagePlatformSettings ? [{
             title: 'Configurações', icon: Settings, path: '/settings', subItems: [
-                { title: 'Preferências e Backup', path: '/settings' },
+                { title: 'Plataforma', path: '/settings' },
                 { title: 'Gestão de Usuários', path: '/user-management' },
                 { title: 'Configuração IA', path: '/ai-admin' }
             ]

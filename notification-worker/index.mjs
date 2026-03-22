@@ -24,6 +24,7 @@ const {
   WHATSAPP_API_BASE_URL,
   WHATSAPP_API_TOKEN,
   WHATSAPP_PROVIDER = 'generic',
+  WHATSAPP_SENDER,
   WORKER_HEALTH_PORT = '8091'
 } = process.env;
 
@@ -35,41 +36,85 @@ const pool = new pg.Pool({
   password: DB_PASSWORD
 });
 
-const transporter = SMTP_HOST
-  ? nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: Number(SMTP_PORT),
-      secure: SMTP_SECURE === 'true',
-      auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined
-    })
-  : null;
+function hasTextValue(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
 
-function getMissingSmtpEnvKeys() {
+function resolveValue(primaryValue, fallbackValue) {
+  return hasTextValue(primaryValue) ? primaryValue.trim() : (hasTextValue(fallbackValue) ? fallbackValue.trim() : null);
+}
+
+function resolveCredentialSource(primaryValue, fallbackValue) {
+  if (hasTextValue(primaryValue)) {
+    return 'database';
+  }
+
+  if (hasTextValue(fallbackValue)) {
+    return 'environment';
+  }
+
+  return 'missing';
+}
+
+function getDefaultChannelCredentials() {
+  return {
+    smtp_host: resolveValue(null, SMTP_HOST),
+    smtp_port: Number(SMTP_PORT),
+    smtp_secure: SMTP_SECURE === 'true',
+    smtp_user: resolveValue(null, SMTP_USER),
+    smtp_pass: resolveValue(null, SMTP_PASS),
+    whatsapp_provider: resolveValue(null, WHATSAPP_PROVIDER) || 'generic',
+    whatsapp_api_base_url: resolveValue(null, WHATSAPP_API_BASE_URL),
+    whatsapp_api_token: resolveValue(null, WHATSAPP_API_TOKEN),
+    whatsapp_sender: resolveValue(null, WHATSAPP_SENDER),
+    smtpCredentialSource: resolveCredentialSource(null, SMTP_HOST),
+    whatsappCredentialSource: resolveCredentialSource(null, WHATSAPP_API_BASE_URL)
+  };
+}
+
+function resolveChannelCredentials(rawCredentials) {
+  return {
+    smtp_host: resolveValue(rawCredentials?.smtp_host, SMTP_HOST),
+    smtp_port: Number(rawCredentials?.smtp_port ?? SMTP_PORT),
+    smtp_secure: rawCredentials?.smtp_secure ?? (SMTP_SECURE === 'true'),
+    smtp_user: resolveValue(rawCredentials?.smtp_user, SMTP_USER),
+    smtp_pass: resolveValue(rawCredentials?.smtp_pass, SMTP_PASS),
+    whatsapp_provider: resolveValue(rawCredentials?.whatsapp_provider, WHATSAPP_PROVIDER) || 'generic',
+    whatsapp_api_base_url: resolveValue(rawCredentials?.whatsapp_api_base_url, WHATSAPP_API_BASE_URL),
+    whatsapp_api_token: resolveValue(rawCredentials?.whatsapp_api_token, WHATSAPP_API_TOKEN),
+    whatsapp_sender: resolveValue(rawCredentials?.whatsapp_sender, WHATSAPP_SENDER),
+    smtpCredentialSource: resolveCredentialSource(rawCredentials?.smtp_host, SMTP_HOST),
+    whatsappCredentialSource: resolveCredentialSource(rawCredentials?.whatsapp_api_base_url, WHATSAPP_API_BASE_URL)
+  };
+}
+
+function getMissingSmtpConfigKeys(settings, channelCredentials) {
   const missing = [];
 
-  if (!SMTP_HOST) {
+  if (!channelCredentials.smtp_host) {
     missing.push('SMTP_HOST');
   }
 
-  if (!SMTP_FROM_ADDRESS && !process.env.EMAIL_FROM_ADDRESS) {
+  const fromAddress = resolveValue(settings?.email_from_address, SMTP_FROM_ADDRESS || process.env.EMAIL_FROM_ADDRESS);
+  if (!fromAddress) {
     missing.push('SMTP_FROM_ADDRESS');
   }
 
-  if (SMTP_USER && !SMTP_PASS) {
+  if (channelCredentials.smtp_user && !channelCredentials.smtp_pass) {
     missing.push('SMTP_PASS');
   }
 
-  if (!SMTP_USER && SMTP_PASS) {
+  if (!channelCredentials.smtp_user && channelCredentials.smtp_pass) {
     missing.push('SMTP_USER');
   }
 
   return missing;
 }
 
-function getMissingWhatsappEnvKeys() {
+function getMissingWhatsappConfigKeys(channelCredentials) {
   const missing = [];
 
-  if (!WHATSAPP_API_BASE_URL) {
+  if (!channelCredentials.whatsapp_api_base_url) {
     missing.push('WHATSAPP_API_BASE_URL');
   }
 
@@ -273,6 +318,27 @@ async function loadGlobalSettings(client) {
   );
 
   return rows[0] || DEFAULT_SETTINGS;
+}
+
+async function loadChannelCredentials(client) {
+  try {
+    const { rows } = await client.query(
+      `
+      SELECT *
+      FROM public.notification_channel_credentials
+      WHERE credentials_key = 'global'
+      LIMIT 1
+      `
+    );
+
+    return rows[0] || null;
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === '42P01') {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 async function loadTemplates(client) {
@@ -488,8 +554,8 @@ async function generateBillToPayNotifications(client, settings, templates) {
       bill.notification_mode,
       bill.notification_frequency,
       bill.custom_days_before,
-      profile.email,
-      profile.whatsapp,
+      COALESCE(NULLIF(BTRIM(profile.settings ->> 'notification_email'), ''), NULLIF(BTRIM(profile.email), '')) AS email,
+      COALESCE(NULLIF(BTRIM(profile.settings ->> 'notification_whatsapp'), ''), NULLIF(BTRIM(profile.whatsapp), '')) AS whatsapp,
       profile.status AS profile_status,
       pref.days_before_due,
       pref.days_before_overdue,
@@ -621,8 +687,8 @@ async function generateBillToReceiveNotifications(client, settings, templates) {
       bill.notification_mode,
       bill.notification_frequency,
       bill.custom_days_before,
-      profile.email,
-      profile.whatsapp,
+      COALESCE(NULLIF(BTRIM(profile.settings ->> 'notification_email'), ''), NULLIF(BTRIM(profile.email), '')) AS email,
+      COALESCE(NULLIF(BTRIM(profile.settings ->> 'notification_whatsapp'), ''), NULLIF(BTRIM(profile.whatsapp), '')) AS whatsapp,
       profile.status AS profile_status,
       pref.days_before_due,
       pref.alert_received,
@@ -835,18 +901,28 @@ async function markQueueFailure(client, item, errorMessage) {
   );
 }
 
-async function sendEmail(item) {
-  if (!transporter) {
+async function sendEmail(item, settings, channelCredentials) {
+  if (!channelCredentials.smtp_host) {
     throw new Error('SMTP nao configurado no worker');
   }
 
-  const fromAddress = SMTP_FROM_ADDRESS || process.env.EMAIL_FROM_ADDRESS;
+  const transporter = nodemailer.createTransport({
+    host: channelCredentials.smtp_host,
+    port: Number(channelCredentials.smtp_port || 587),
+    secure: Boolean(channelCredentials.smtp_secure),
+    auth: channelCredentials.smtp_user && channelCredentials.smtp_pass
+      ? { user: channelCredentials.smtp_user, pass: channelCredentials.smtp_pass }
+      : undefined
+  });
+
+  const fromName = resolveValue(settings?.email_from_name, SMTP_FROM_NAME) || 'OnliFin';
+  const fromAddress = resolveValue(settings?.email_from_address, SMTP_FROM_ADDRESS || process.env.EMAIL_FROM_ADDRESS);
   if (!fromAddress) {
     throw new Error('Endereco remetente SMTP nao configurado');
   }
 
   const result = await transporter.sendMail({
-    from: `"${SMTP_FROM_NAME}" <${fromAddress}>`,
+    from: `"${fromName}" <${fromAddress}>`,
     to: item.destination,
     subject: item.subject || 'OnliFin',
     text: item.content,
@@ -860,44 +936,50 @@ async function sendEmail(item) {
   };
 }
 
-async function sendWhatsapp(item) {
-  if (!WHATSAPP_API_BASE_URL) {
+async function sendWhatsapp(item, channelCredentials) {
+  if (!channelCredentials.whatsapp_api_base_url) {
     throw new Error('Base URL do WhatsApp nao configurada');
   }
 
+  const payload = {
+    to: item.destination,
+    message: item.content,
+    channel: 'whatsapp'
+  };
+
+  if (channelCredentials.whatsapp_sender) {
+    payload.from = channelCredentials.whatsapp_sender;
+  }
+
   const response = await axios.post(
-    `${WHATSAPP_API_BASE_URL.replace(/\/$/, '')}/messages`,
-    {
-      to: item.destination,
-      message: item.content,
-      channel: 'whatsapp'
-    },
+    `${channelCredentials.whatsapp_api_base_url.replace(/\/$/, '')}/messages`,
+    payload,
     {
       headers: {
         'Content-Type': 'application/json',
-        ...(WHATSAPP_API_TOKEN ? { Authorization: `Bearer ${WHATSAPP_API_TOKEN}` } : {})
+        ...(channelCredentials.whatsapp_api_token ? { Authorization: `Bearer ${channelCredentials.whatsapp_api_token}` } : {})
       },
       timeout: 15000
     }
   );
 
   return {
-    provider: WHATSAPP_PROVIDER,
+    provider: channelCredentials.whatsapp_provider,
     status: response.status,
     data: response.data
   };
 }
 
-async function processItem(item) {
+async function processItem(item, settings, channelCredentials) {
   const client = await pool.connect();
   try {
-    let provider = item.channel === 'email' ? 'smtp' : WHATSAPP_PROVIDER;
+    let provider = item.channel === 'email' ? 'smtp' : channelCredentials.whatsapp_provider;
     let providerResponse = {};
 
     if (item.channel === 'email') {
-      providerResponse = await sendEmail(item);
+      providerResponse = await sendEmail(item, settings, channelCredentials);
     } else if (item.channel === 'whatsapp') {
-      providerResponse = await sendWhatsapp(item);
+      providerResponse = await sendWhatsapp(item, channelCredentials);
     } else {
       throw new Error(`Canal nao suportado: ${item.channel}`);
     }
@@ -911,7 +993,7 @@ async function processItem(item) {
     try {
       await client.query('BEGIN');
       await markQueueFailure(client, item, message);
-      await logDelivery(client, item, 'failed', item.channel === 'email' ? 'smtp' : WHATSAPP_PROVIDER, {}, message);
+      await logDelivery(client, item, 'failed', item.channel === 'email' ? 'smtp' : channelCredentials.whatsapp_provider, {}, message);
       await client.query('COMMIT');
     } catch (dbError) {
       await client.query('ROLLBACK');
@@ -928,9 +1010,19 @@ async function processQueue() {
   }
   isRunning = true;
   try {
+    const bootstrapClient = await pool.connect();
+    let settings = DEFAULT_SETTINGS;
+    let channelCredentials = getDefaultChannelCredentials();
+    try {
+      settings = await loadGlobalSettings(bootstrapClient);
+      channelCredentials = resolveChannelCredentials(await loadChannelCredentials(bootstrapClient));
+    } finally {
+      bootstrapClient.release();
+    }
+
     const items = await claimQueueItems(Number(NOTIFICATION_WORKER_BATCH_SIZE));
     for (const item of items) {
-      await processItem(item);
+      await processItem(item, settings, channelCredentials);
     }
     lastRunAt = new Date().toISOString();
     lastError = null;
@@ -1080,9 +1172,24 @@ async function boot() {
   await processPendingWorkerCommands();
 }
 
-const server = http.createServer((_, response) => {
-  const missingSmtpEnvKeys = getMissingSmtpEnvKeys();
-  const missingWhatsappEnvKeys = getMissingWhatsappEnvKeys();
+const server = http.createServer(async (_, response) => {
+  let settings = DEFAULT_SETTINGS;
+  let channelCredentials = getDefaultChannelCredentials();
+
+  try {
+    const client = await pool.connect();
+    try {
+      settings = await loadGlobalSettings(client);
+      channelCredentials = resolveChannelCredentials(await loadChannelCredentials(client));
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[notification-worker] Erro ao montar health de credenciais:', error);
+  }
+
+  const missingSmtpEnvKeys = getMissingSmtpConfigKeys(settings, channelCredentials);
+  const missingWhatsappEnvKeys = getMissingWhatsappConfigKeys(channelCredentials);
 
   response.writeHead(200, { 'Content-Type': 'application/json' });
   response.end(JSON.stringify({
@@ -1098,6 +1205,9 @@ const server = http.createServer((_, response) => {
     lastCommandError,
     smtpConfigured: missingSmtpEnvKeys.length === 0,
     whatsappConfigured: missingWhatsappEnvKeys.length === 0,
+    smtpCredentialSource: channelCredentials.smtpCredentialSource,
+    whatsappCredentialSource: channelCredentials.whatsappCredentialSource,
+    whatsappSenderConfigured: Boolean(channelCredentials.whatsapp_sender),
     missingSmtpEnvKeys,
     missingWhatsappEnvKeys,
     workerIntervalMs: Number(NOTIFICATION_WORKER_INTERVAL_MS),

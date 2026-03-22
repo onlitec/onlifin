@@ -385,6 +385,22 @@ export interface NotificationSettings {
   updated_at: string;
 }
 
+export interface NotificationChannelCredentials {
+  id: string;
+  credentials_key: string;
+  smtp_host: string | null;
+  smtp_port: number;
+  smtp_secure: boolean;
+  smtp_user: string | null;
+  smtp_pass: string | null;
+  whatsapp_provider: string;
+  whatsapp_api_base_url: string | null;
+  whatsapp_api_token: string | null;
+  whatsapp_sender: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface NotificationTemplate {
   id: string;
   event_key: string;

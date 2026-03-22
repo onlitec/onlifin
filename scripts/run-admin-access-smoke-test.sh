@@ -285,8 +285,14 @@ async function validateAccountAdmin(browser) {
   const page = await context.newPage();
 
   await login(page, accountAdminEmail, accountAdminPassword);
+  await page.goto(`${baseUrl}/preferences`, { waitUntil: 'domcontentloaded' });
+  await expectVisible(page, 'Preferências', 'Admin da Conta nao abriu /preferences.');
+  await expectVisible(page, 'Destinos pessoais de notificação', 'Admin da Conta nao visualizou os destinos pessoais de notificacao.');
+
+  await page.goto(`${baseUrl}/pf`, { waitUntil: 'domcontentloaded' });
   await expectVisible(page, 'Administração', 'Admin da Conta nao exibiu o menu Administração.');
   await expectHidden(page, 'Configurações', 'Admin da Conta nao deveria ver o menu Configurações.');
+  await expectVisible(page, 'Preferências', 'Admin da Conta nao exibiu o menu Preferências.');
   await expectVisible(page, 'Admin da Conta', 'Rotulo de Admin da Conta nao apareceu.');
 
   await page.goto(`${baseUrl}/settings`, { waitUntil: 'domcontentloaded' });
@@ -311,8 +317,14 @@ async function validatePlatformAdmin(browser) {
   const page = await context.newPage();
 
   await login(page, platformAdminEmail, platformAdminPassword);
+  await page.goto(`${baseUrl}/preferences`, { waitUntil: 'domcontentloaded' });
+  await expectVisible(page, 'Preferências', 'Admin da Plataforma nao abriu /preferences.');
+  await expectVisible(page, 'Destinos pessoais de notificação', 'Admin da Plataforma nao visualizou os destinos pessoais de notificacao.');
+
+  await page.goto(`${baseUrl}/pf`, { waitUntil: 'domcontentloaded' });
   await expectVisible(page, 'Administração', 'Admin da Plataforma nao exibiu o menu Administração.');
   await expectVisible(page, 'Configurações', 'Admin da Plataforma nao exibiu o menu Configurações.');
+  await expectVisible(page, 'Preferências', 'Admin da Plataforma nao exibiu o menu Preferências.');
   await expectVisible(page, 'Admin da Plataforma', 'Rotulo de Admin da Plataforma nao apareceu.');
 
   await page.goto(`${baseUrl}/settings`, { waitUntil: 'domcontentloaded' });
@@ -320,7 +332,7 @@ async function validatePlatformAdmin(browser) {
     throw new Error('Admin da Plataforma deveria permanecer em /settings.');
   }
 
-  await expectVisible(page, 'Atalhos das configurações administrativas da plataforma.', 'Tela Configurações nao abriu para Admin da Plataforma.');
+  await expectVisible(page, 'Configurações da Plataforma', 'Tela Configurações nao abriu para Admin da Plataforma.');
 
   await page.goto(`${baseUrl}/admin-notifications`, { waitUntil: 'domcontentloaded' });
   await expectVisible(page, 'Processar fila agora', 'Admin da Plataforma nao abriu /admin-notifications.');

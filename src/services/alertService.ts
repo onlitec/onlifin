@@ -233,6 +233,20 @@ function renderTemplate(template: string | null | undefined, payload: Record<str
   });
 }
 
+function getProfileNotificationDestination(
+  profile: Awaited<ReturnType<typeof profilesApi.getProfile>>,
+  channel: 'email' | 'whatsapp'
+): string | undefined {
+  const settings = profile?.settings && typeof profile.settings === 'object'
+    ? profile.settings as Record<string, unknown>
+    : {};
+  const settingsKey = channel === 'email' ? 'notification_email' : 'notification_whatsapp';
+  const settingsValue = typeof settings[settingsKey] === 'string' ? settings[settingsKey] : null;
+  const profileValue = channel === 'email' ? profile?.email : profile?.whatsapp;
+  const resolved = (settingsValue || profileValue || '').trim();
+  return resolved || undefined;
+}
+
 function getDefaultPreferences(userId: string, settings: NotificationSettings): AlertPreferences {
   return {
     id: '',
@@ -477,8 +491,8 @@ export class AlertService {
         await this.sendToastNotification(options, basePayload);
       }
 
-      const emailDestination = options.destinations?.email || profile?.email || undefined;
-      const whatsappDestination = options.destinations?.whatsapp || profile?.whatsapp || undefined;
+      const emailDestination = options.destinations?.email || getProfileNotificationDestination(profile, 'email');
+      const whatsappDestination = options.destinations?.whatsapp || getProfileNotificationDestination(profile, 'whatsapp');
 
       if ((channelOverride.email ?? true) && settings.email_enabled && canUseEmail && canDeliverNow && emailDestination) {
         const template = await this.getTemplate(eventKey, 'email');

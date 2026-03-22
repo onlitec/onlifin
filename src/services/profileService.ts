@@ -10,6 +10,8 @@ export interface ProfileSettings {
     titular_name?: string;
     plan_code?: PlanCode;
     owner_person_id?: string;
+    notification_email?: string | null;
+    notification_whatsapp?: string | null;
     [key: string]: any;
 }
 

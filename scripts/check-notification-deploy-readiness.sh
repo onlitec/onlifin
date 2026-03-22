@@ -93,8 +93,29 @@ $DOCKER_CMD inspect onlifin-notification-worker --format '{{range .Config.Env}}{
 echo
 
 info "Health publicado"
-curl -fsS http://127.0.0.1:8081/api/worker/notification-health
+health_payload="$(curl -fsS http://127.0.0.1:8081/api/worker/notification-health || true)"
+
+if [ -n "$health_payload" ]; then
+  echo "$health_payload"
+  echo
+  echo "$health_payload" | node -e '
+    let input = "";
+    process.stdin.on("data", (chunk) => input += chunk);
+    process.stdin.on("end", () => {
+      try {
+        const health = JSON.parse(input);
+        console.log(`  - smtpConfigured: ${health.smtpConfigured} (${health.smtpCredentialSource || "unknown"})`);
+        console.log(`  - whatsappConfigured: ${health.whatsappConfigured} (${health.whatsappCredentialSource || "unknown"})`);
+        console.log(`  - whatsappSenderConfigured: ${Boolean(health.whatsappSenderConfigured)}`);
+      } catch (error) {
+        console.log("  - nao foi possivel interpretar o payload de health");
+      }
+    });
+  '
+else
+  warn "Health do worker indisponivel nesta verificacao."
+fi
 echo
 echo
 
-warn "Se algum campo estiver empty, atualize o deploy e reinicie o container onlifin-notification-worker."
+warn "Campos em .env agora sao fallback do deploy. Se o health mostrar source=database, a configuracao da UI administrativa ja prevalece sobre o env."

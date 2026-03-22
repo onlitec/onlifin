@@ -23,6 +23,7 @@ const Login = React.lazy(() => import('./pages/Login'));
 const ForceChangePassword = React.lazy(() => import('./pages/ForceChangePassword'));
 const PWAInfo = React.lazy(() => import('./pages/PWAInfo'));
 const SettingsPage = React.lazy(() => import('./pages/Settings'));
+const UserPreferences = React.lazy(() => import('./pages/UserPreferences'));
 
 interface RouteConfig {
   name: string;
@@ -101,6 +102,12 @@ const routes: RouteConfig[] = [
     path: '/pwa-info',
     element: <PWAInfo />,
     visible: false
+  },
+  {
+    name: 'Preferências',
+    path: '/preferences',
+    element: <UserPreferences />,
+    visible: true
   },
   {
     name: 'Admin',

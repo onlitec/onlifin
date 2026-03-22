@@ -186,7 +186,7 @@ function RequirePlatformAdmin({ children }: { children: React.ReactNode }) {
   }
 
   if (!canAccessPlatformSettings(profile, user as any)) {
-    return <Navigate to="/pf" replace />;
+    return <Navigate to="/preferences" replace />;
   }
 
   return <>{children}</>;

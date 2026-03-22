@@ -18,6 +18,7 @@ import type {
   Notification,
   AlertPreferences,
   NotificationSettings,
+  NotificationChannelCredentials,
   NotificationTemplate,
   NotificationDeliveryQueueItem,
   NotificationDelivery,
@@ -1500,6 +1501,38 @@ export const notificationSettingsApi = {
     const { data, error } = await supabase
       .from('notification_settings')
       .upsert(payload, { onConflict: 'settings_key' })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+};
+
+export const notificationChannelCredentialsApi = {
+  async getGlobal(): Promise<NotificationChannelCredentials | null> {
+    const { data, error } = await supabase
+      .from('notification_channel_credentials')
+      .select('*')
+      .eq('credentials_key', 'global')
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async upsertGlobal(credentials: Partial<NotificationChannelCredentials>): Promise<NotificationChannelCredentials | null> {
+    const current = await this.getGlobal().catch(() => null);
+    const payload = {
+      ...(current || {}),
+      ...credentials,
+      credentials_key: 'global',
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('notification_channel_credentials')
+      .upsert(payload, { onConflict: 'credentials_key' })
       .select()
       .maybeSingle();
 

@@ -14,9 +14,11 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AlertSettingsProps {
   userId: string;
+  emailDestination?: string;
+  whatsappDestination?: string;
 }
 
-export function AlertSettings({ userId }: AlertSettingsProps) {
+export function AlertSettings({ userId, emailDestination = '', whatsappDestination = '' }: AlertSettingsProps) {
   const { toast } = useToast();
   const [preferences, setPreferences] = React.useState<AlertPreferences | null>(null);
   const [globalSettings, setGlobalSettings] = React.useState<NotificationSettings | null>(null);
@@ -117,6 +119,8 @@ export function AlertSettings({ userId }: AlertSettingsProps) {
   const channelOverrideLocked = globalSettings ? !globalSettings.allow_user_channel_overrides : false;
   const emailAvailable = Boolean(globalSettings?.email_enabled);
   const whatsappAvailable = Boolean(globalSettings?.whatsapp_enabled);
+  const hasEmailDestination = emailDestination.trim().length > 0;
+  const hasWhatsappDestination = whatsappDestination.trim().length > 0;
 
   return (
     <div className="space-y-6">
@@ -298,12 +302,16 @@ export function AlertSettings({ userId }: AlertSettingsProps) {
                   <div>
                     <Label>E-mail</Label>
                     <p className="text-xs text-muted-foreground">
-                      {emailAvailable ? 'Receber alertas por e-mail.' : 'Canal desabilitado pela administração.'}
+                      {!emailAvailable
+                        ? 'Canal desabilitado pela administração.'
+                        : hasEmailDestination
+                          ? 'Receber alertas por e-mail.'
+                          : 'Informe antes um e-mail de recebimento nas suas preferências.'}
                     </p>
                   </div>
                 </div>
                 <Switch
-                  disabled={channelOverrideLocked || !emailAvailable}
+                  disabled={channelOverrideLocked || !emailAvailable || !hasEmailDestination}
                   checked={preferences.email_notifications}
                   onCheckedChange={(checked) => setPreferences((current) => current ? { ...current, email_notifications: checked } : current)}
                 />
@@ -315,12 +323,16 @@ export function AlertSettings({ userId }: AlertSettingsProps) {
                   <div>
                     <Label>WhatsApp</Label>
                     <p className="text-xs text-muted-foreground">
-                      {whatsappAvailable ? 'Receber alertas transacionais por WhatsApp.' : 'Canal desabilitado pela administração.'}
+                      {!whatsappAvailable
+                        ? 'Canal desabilitado pela administração.'
+                        : hasWhatsappDestination
+                          ? 'Receber alertas transacionais por WhatsApp.'
+                          : 'Informe antes um WhatsApp de recebimento nas suas preferências.'}
                     </p>
                   </div>
                 </div>
                 <Switch
-                  disabled={channelOverrideLocked || !whatsappAvailable}
+                  disabled={channelOverrideLocked || !whatsappAvailable || !hasWhatsappDestination}
                   checked={preferences.whatsapp_notifications}
                   onCheckedChange={(checked) => setPreferences((current) => current ? { ...current, whatsapp_notifications: checked } : current)}
                 />

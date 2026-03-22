@@ -1,6 +1,6 @@
 # Notification System Tracker
 
-Ultima atualizacao: 2026-03-21 22:55 UTC
+Ultima atualizacao: 2026-03-22 00:20 UTC
 
 Legenda:
 - `[x]` Concluido
@@ -9,7 +9,7 @@ Legenda:
 
 ## Status Geral
 
-Implementacao de codigo estimada: `98%`
+Implementacao de codigo estimada: `99%`
 
 Passos grandes restantes para finalizar no ambiente: `2`
 
@@ -34,6 +34,8 @@ Restante:
 - [x] Resolucao correta de papel admin via claim JWT `app_role`
 - [x] Separacao entre admin da conta e admin da plataforma nas claims JWT (`account_admin`, `tenant_id`)
 - [x] Health do worker detalha chaves de ambiente faltantes por canal
+- [x] Destinos pessoais de notificacao resolvidos por `profiles.settings` com fallback para email/whatsapp legados
+- [x] Credenciais globais SMTP/WhatsApp persistidas em tabela admin-only separada
 - [x] Worker de notificacoes criado
 - [x] Geracao automatica de notificacoes para contas a pagar/receber
 - [x] Fila de entrega externa com retry/backoff
@@ -44,8 +46,11 @@ Restante:
 - [x] Tela `AdminNotifications` criada e roteada
 - [x] Guardas de rota separadas para `Administração` x `Configurações`
 - [x] Sidebar diferencia `Admin da Conta` de `Admin da Plataforma`
+- [x] Pagina pessoal `Preferências` criada para qualquer usuario autenticado
 - [x] `Administração > Geral` adaptada para admin da conta sem expor controles globais
 - [x] `Configurações` restrita a admins da plataforma
+- [x] Usuario final informa apenas seus destinos pessoais (`notification_email`, `notification_whatsapp`) na UI
+- [x] Admin da plataforma informa credenciais globais SMTP/WhatsApp na UI de `Configurações`
 - [x] Gestao global de canais e defaults
 - [x] Estado efetivo dos canais externos visivel na UI (ligado x credencial real)
 - [x] UI publicada mostra variaveis faltantes do worker para SMTP/WhatsApp
@@ -66,6 +71,7 @@ Restante:
 - [x] Script unico para aplicar o pacote de migrations manualmente (`scripts/apply-notification-migrations.sh`)
 - [x] Script manual de migrations atualizado para incluir a separacao `account_admin`
 - [x] Script de diagnostico do deploy criado (`scripts/check-notification-deploy-readiness.sh`)
+- [x] Checker ajustado para considerar credenciais vindas do banco via health do worker
 - [x] Script de configuracao assistida de credenciais criado (`scripts/configure-notification-channel-env.sh`)
 - [x] Script de smoke test externo criado (`scripts/run-notification-channel-smoke-test.sh`)
 - [x] Script de smoke test da segregacao administrativa criado (`scripts/run-admin-access-smoke-test.sh`)
@@ -77,6 +83,9 @@ Restante:
 - [x] Frontend republicado com preservacao da aba ativa no polling
 - [x] Migration de separacao `admin da conta` x `admin da plataforma` aplicada no banco real
 - [x] Frontend republicado com as novas guardas de acesso e menu por perfil
+- [x] Migration de credenciais globais dos canais aplicada no banco real
+- [x] Frontend republicado com formulario de integracoes globais da plataforma
+- [x] Worker republicado lendo credenciais do banco com fallback para env
 
 ## Pendente
 
@@ -112,6 +121,8 @@ Restante:
     - `Admin da Plataforma` ve `Administracao` e `Configuracoes`
   - [x] smoke test reutilizavel da segregacao administrativa validado no ambiente publicado
   - [x] bloqueio direto de rotas globais (`/settings`, `/admin-notifications`, `/user-management`, `/ai-admin`) validado para `Admin da Conta`
+  - [x] tela `Preferências` validada publicada para `Admin da Conta` e `Admin da Plataforma`
+  - [x] salvamento administrativo de credenciais SMTP/WhatsApp validado pela UI publicada com reflexo no banco e no health do worker
   - [ ] teste administrativo por e-mail com SMTP real
   - [ ] teste administrativo por WhatsApp com provider real
   - [x] reenfileiramento de falhas validado pela UI publicada
