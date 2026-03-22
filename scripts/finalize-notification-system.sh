@@ -18,6 +18,7 @@ WHATSAPP_KEYS=(
   "WHATSAPP_API_BASE_URL"
   "WHATSAPP_API_TOKEN"
   "WHATSAPP_PROVIDER"
+  "WHATSAPP_SENDER"
 )
 TEST_KEYS=(
   "TEST_EMAIL_DESTINATION"
@@ -54,7 +55,7 @@ Uso:
 
 Fluxo:
   1. roda o checker de prontidão
-  2. se encontrar SMTP_* e/ou WHATSAPP_* no ambiente atual, aplica no deploy
+  2. se encontrar SMTP_* e/ou WHATSAPP_* no ambiente atual, salva nas credenciais globais do banco
   3. roda o checker novamente
   4. se encontrar TEST_EMAIL_DESTINATION e/ou TEST_WHATSAPP_DESTINATION, executa o smoke test
 
@@ -69,6 +70,7 @@ Exemplo completo:
   export WHATSAPP_API_BASE_URL="https://provider.example.com"
   export WHATSAPP_API_TOKEN="segredo"
   export WHATSAPP_PROVIDER="generic"
+  export WHATSAPP_SENDER="+5511999999999"
   export TEST_EMAIL_DESTINATION="financeiro@example.com"
   export TEST_WHATSAPP_DESTINATION="+5511999999999"
 
@@ -77,6 +79,7 @@ Exemplo completo:
 Observações:
   - sem SMTP_*/WHATSAPP_* o script apenas diagnostica
   - sem TEST_* o script não roda o smoke test
+  - por padrão as credenciais são gravadas no banco; use APPLY_ENV_FALLBACK=true se quiser também sincronizar o deploy/.env
   - os segredos nunca são impressos; só é indicado se a chave foi fornecida
 EOF
 }

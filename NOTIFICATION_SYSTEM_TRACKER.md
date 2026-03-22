@@ -73,9 +73,11 @@ Restante:
 - [x] Script de diagnostico do deploy criado (`scripts/check-notification-deploy-readiness.sh`)
 - [x] Checker ajustado para considerar credenciais vindas do banco via health do worker
 - [x] Script de configuracao assistida de credenciais criado (`scripts/configure-notification-channel-env.sh`)
+- [x] Script de configuracao assistida adaptado para gravar credenciais globais no banco por padrao
 - [x] Script de smoke test externo criado (`scripts/run-notification-channel-smoke-test.sh`)
 - [x] Script de smoke test da segregacao administrativa criado (`scripts/run-admin-access-smoke-test.sh`)
 - [x] Script orquestrador final criado (`scripts/finalize-notification-system.sh`)
+- [x] Orquestrador final ajustado para fluxo banco-first com fallback opcional para env
 - [x] Migrations aplicadas no banco real com sucesso
 - [x] Frontend publicado no `onlifin-app` com bundle atualizado
 - [x] `notification-worker` publicado e reiniciado no ambiente atual
