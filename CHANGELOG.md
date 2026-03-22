@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [1.35.1] - 2026-03-22
+
+### chore: align notification scripts with database credentials
+
+---
+
+
+
 ## [1.35.0] - 2026-03-22
 
 ### feat: move notification integrations into platform settings
